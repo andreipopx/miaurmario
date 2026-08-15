@@ -90,9 +90,32 @@
     "errorCredentialsSignin": "Credenciales inválidas",
     "errorAccessDenied": "Acceso denegado",
     "errorUndefined": "No hay proveedor de autenticación configurado. Define OIDC_ISSUER_URL o activa DEV_MODE.",
-    "errorGeneric": "Ocurrió un error al iniciar sesión"
+    "errorGeneric": "Ocurrió un error al iniciar sesión",
+    "magicLink": {
+      "emailLabel": "Tu correo",
+      "emailPlaceholder": "tu@correo.com",
+      "cta": "Enviarme el enlace",
+      "sentTitle": "Revisa tu correo",
+      "sentBody": "Si el correo existe, te hemos enviado un enlace para entrar. Caduca en 15 minutos.",
+      "rateLimited": "Has pedido demasiados enlaces. Espera un rato antes de volver a intentarlo.",
+      "genericError": "No hemos podido enviar el enlace. Inténtalo de nuevo en un momento."
+    }
   },
   "onboarding": {
+    "username": {
+      "title": "Elige tu nombre",
+      "subtitle": "Así te encontrarán tus amigos en Miaurmario.",
+      "usernameLabel": "Usuario",
+      "bioLabel": "Bio (opcional)",
+      "bioPlaceholder": "Cuenta algo tuyo en 280 caracteres.",
+      "rulesHint": "3–20 caracteres. Solo minúsculas, números y guiones bajos.",
+      "checking": "Comprobando disponibilidad…",
+      "available": "Disponible",
+      "takenError": "Ese nombre ya está cogido.",
+      "formatError": "Solo minúsculas, números y guiones bajos. Entre 3 y 20 caracteres.",
+      "genericError": "Algo ha fallado. Inténtalo de nuevo.",
+      "continue": "Continuar"
+    },
     "steps": {
       "welcome": "Bienvenido",
       "family": "Familia",

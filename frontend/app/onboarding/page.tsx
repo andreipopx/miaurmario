@@ -771,6 +771,12 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completing, setCompleting] = useState(false);
 
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user && !user.username) {
+      router.replace('/onboarding/username');
+    }
+  }, [isLoading, isAuthenticated, user, router]);
+
   const nextStep = () => setCurrentStep((s) => Math.min(s + 1, STEPS.length));
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 0));
 

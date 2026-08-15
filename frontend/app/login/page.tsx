@@ -98,6 +98,82 @@ function DevLogin({ callbackUrl }: { callbackUrl: string }) {
   );
 }
 
+function MagicLinkForm() {
+  const t = useTranslations('login.magicLink');
+  const tCommon = useTranslations('common');
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/auth/magic-link/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (res.status === 202 || res.status === 200) {
+        setSent(true);
+      } else if (res.status === 429) {
+        setErrorMsg(t('rateLimited'));
+      } else {
+        setErrorMsg(t('genericError'));
+      }
+    } catch {
+      setErrorMsg(t('genericError'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="border-l-2 border-l-gold px-4 py-4 bg-card">
+        <p className="font-display text-base leading-tight mb-1">{t('sentTitle')}</p>
+        <p className="text-sm text-muted-foreground">{t('sentBody')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-6">
+      <div className="space-y-2">
+        <label htmlFor="ml-email" className="label-editorial block">
+          {t('emailLabel')}
+        </label>
+        <input
+          id="ml-email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={t('emailPlaceholder')}
+          className="w-full h-11 border-0 border-b border-border-solid/60 bg-transparent px-1 py-2 text-base text-foreground font-body placeholder:font-editorial placeholder:italic placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary transition-colors duration-200 ease-editorial"
+        />
+      </div>
+      {errorMsg && <p className="text-sm text-destructive">{errorMsg}</p>}
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full h-12 bg-primary text-primary-foreground border border-primary uppercase tracking-widest text-xs hover:bg-transparent hover:text-primary transition-all duration-200 ease-editorial disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {tCommon('signingIn')}
+          </>
+        ) : (
+          t('cta')
+        )}
+      </button>
+    </form>
+  );
+}
+
 function EditorialAlert({ title, body }: { title: string; body: string }) {
   return (
     <div className="border-l-2 border-l-primary px-4 py-3 bg-card">
@@ -138,6 +214,7 @@ function LoginContent() {
 
   const syncError = syncErrorParam || session?.syncError;
   const [authMode, setAuthMode] = useState<'loading' | 'oidc' | 'dev' | 'unconfigured'>('loading');
+  const [magicLinkEnabled, setMagicLinkEnabled] = useState(false);
 
   useEffect(() => {
     getProviders().then((providers) => {
@@ -145,6 +222,10 @@ function LoginContent() {
       else if (providers?.['dev-credentials']) setAuthMode('dev');
       else setAuthMode('unconfigured');
     });
+    fetch('/api/v1/auth/config')
+      .then((r) => r.json())
+      .then((data) => setMagicLinkEnabled(!!data?.magic_link?.enabled))
+      .catch(() => {});
   }, []);
 
   if (status === 'loading' || authMode === 'loading') {
@@ -177,9 +258,10 @@ function LoginContent() {
       )}
 
       <div className="space-y-4">
+        {magicLinkEnabled && <MagicLinkForm />}
         {authMode === 'oidc' && <OIDCLoginButton callbackUrl={callbackUrl} />}
         {authMode === 'dev' && <DevLogin callbackUrl={callbackUrl} />}
-        {authMode === 'unconfigured' && (
+        {authMode === 'unconfigured' && !magicLinkEnabled && (
           <div className="border-l-2 border-l-primary px-4 py-4 bg-card">
             <p className="font-display text-lg leading-tight mb-2">{t('notConfiguredTitle')}</p>
             <p className="text-sm text-muted-foreground">

@@ -1,3 +1,7 @@
+import hashlib
+import logging
+import secrets
+import uuid
 from datetime import datetime, timedelta
 from typing import Annotated
 from urllib.parse import urlencode
@@ -5,12 +9,16 @@ from urllib.parse import urlencode
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import DEFAULT_SECRET_KEY, get_settings
 from app.database import get_db
+from app.models.magic_link import MagicLinkToken
 from app.models.user import User
 from app.schemas.user import (
+    AuthConfigMagicLink,
     AuthConfigOIDC,
     AuthConfigResponse,
     AuthStatusResponse,
@@ -20,8 +28,11 @@ from app.schemas.user import (
 )
 from app.services.user_service import UserEmailConflictError, UserService
 from app.utils.auth import get_current_user
+from app.utils.email import send_magic_link_email
 from app.utils.oidc import validate_oidc_id_token
-from app.utils.rate_limit import rate_limit_by_ip
+from app.utils.rate_limit import _get_client_ip, check_rate_limit, rate_limit_by_ip
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 settings = get_settings()
@@ -49,7 +60,20 @@ def _oidc_configured() -> bool:
     return bool(settings.oidc_issuer_url and settings.oidc_client_id)
 
 
+def _magic_link_configured() -> bool:
+    return bool(settings.resend_api_key)
+
+
+def require_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
+    return current_user
+
+
 MOBILE_APP_SCHEME = "wardrowbe"
+MAGIC_LINK_TTL_MINUTES = 15
 
 
 @router.get("/mobile-callback")
@@ -72,6 +96,7 @@ async def get_auth_config() -> AuthConfigResponse:
             if oidc_enabled
             else None,
         ),
+        magic_link=AuthConfigMagicLink(enabled=_magic_link_configured()),
         dev_mode=_is_dev_mode(),
     )
 
@@ -197,3 +222,105 @@ async def get_session(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserResponse:
     return UserResponse.model_validate(current_user)
+
+
+class MagicLinkRequest(BaseModel):
+    email: EmailStr
+
+
+class MagicLinkAcceptedResponse(BaseModel):
+    status: str = "sent"
+
+
+def _hash_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+@router.post(
+    "/magic-link/request",
+    response_model=MagicLinkAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def request_magic_link(
+    payload: MagicLinkRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MagicLinkAcceptedResponse:
+    if not _magic_link_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Magic link auth is not configured",
+        )
+
+    await rate_limit_by_ip(request, "magic_link_request", 10, 3600)
+    email_l = payload.email.lower().strip()
+    await check_rate_limit(f"rate_limit:magic_link_email:{email_l}", 5, 3600)
+
+    user_service = UserService(db)
+    user = await user_service.get_by_email(email_l)
+
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = _hash_token(raw_token)
+    now = datetime.utcnow()
+
+    db.add(
+        MagicLinkToken(
+            id=uuid.uuid4(),
+            user_id=user.id if user else None,
+            email=email_l,
+            token_hash=token_hash,
+            expires_at=now + timedelta(minutes=MAGIC_LINK_TTL_MINUTES),
+            ip_created=_get_client_ip(request),
+        )
+    )
+    await db.commit()
+
+    link = f"{settings.magic_link_base_url.rstrip('/')}/auth/callback?token={raw_token}"
+    try:
+        await send_magic_link_email(email_l, link)
+    except Exception as exc:
+        logger.exception("Magic link email dispatch failed for %s: %s", email_l, exc)
+        # Do NOT reveal failure — still return 202 to avoid email enumeration.
+
+    return MagicLinkAcceptedResponse()
+
+
+@router.get("/magic-link/consume")
+async def consume_magic_link(
+    token: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> RedirectResponse:
+    if not _magic_link_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Magic link auth is not configured",
+        )
+
+    token_hash = _hash_token(token)
+    result = await db.execute(
+        select(MagicLinkToken).where(MagicLinkToken.token_hash == token_hash)
+    )
+    row = result.scalar_one_or_none()
+    now = datetime.utcnow()
+    if row is None or row.used_at is not None or row.expires_at < now:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired link")
+
+    row.used_at = now
+    user_service = UserService(db)
+    user = await user_service.get_or_create_by_email(row.email)
+    await db.commit()
+
+    access_token = create_access_token(user.external_id)
+    landing = "/onboarding" if not user.username else "/dashboard"
+    base = settings.magic_link_base_url.rstrip("/")
+    resp = RedirectResponse(url=f"{base}{landing}", status_code=302)
+    resp.set_cookie(
+        "access_token",
+        access_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=7 * 24 * 3600,
+        path="/",
+    )
+    return resp

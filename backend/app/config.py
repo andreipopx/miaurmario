@@ -50,6 +50,14 @@ class Settings(BaseSettings):
     oidc_mobile_client_id: str | None = None
     oidc_ca_bundle: str | None = Field(default=None)
 
+    # Authentication - Magic link (Sprint 2)
+    resend_api_key: str | None = Field(default=None)
+    resend_from_email: str = Field(default="Miaurmario <hola@miaurmario.andreipop.org>")
+    magic_link_base_url: str = Field(default="http://localhost:3000")
+
+    # Authorization - admin promotion
+    admin_emails: str = Field(default="")
+
     # AI capability switches.
     # ai_internal_enabled is the master switch; ai_vision_enabled / ai_text_enabled
     # inherit it when left unset (None). Defaults preserve current behavior
@@ -150,10 +158,11 @@ class Settings(BaseSettings):
 
         oidc_configured = oidc_issuer and oidc_client
         is_dev = self.debug and self.secret_key == DEFAULT_SECRET_KEY
-        if not oidc_configured and not is_dev:
+        magic_link_configured = bool(self.resend_api_key)
+        if not oidc_configured and not is_dev and not magic_link_configured:
             return (
                 "No authentication method configured. "
-                "Set OIDC_ISSUER_URL + OIDC_CLIENT_ID, or enable DEBUG mode."
+                "Set OIDC_ISSUER_URL + OIDC_CLIENT_ID, RESEND_API_KEY, or enable DEBUG mode."
             )
 
         return None
@@ -163,7 +172,12 @@ class Settings(BaseSettings):
             return "dev"
         if self.oidc_issuer_url and self.oidc_client_id:
             return "oidc"
+        if self.resend_api_key:
+            return "magic_link"
         return "unknown"
+
+    def admin_email_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
 
     def get_geocoding_user_agent(self) -> str:
         return self.geocoding_user_agent or "Wardrowbe/1.0"

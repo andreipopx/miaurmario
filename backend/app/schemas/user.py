@@ -85,6 +85,11 @@ class AuthConfigOIDC(BaseModel):
     client_id: str | None = None
 
 
+class AuthConfigMagicLink(BaseModel):
+    enabled: bool
+
+
 class AuthConfigResponse(BaseModel):
     oidc: AuthConfigOIDC
+    magic_link: AuthConfigMagicLink = AuthConfigMagicLink(enabled=False)
     dev_mode: bool = False

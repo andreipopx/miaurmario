@@ -122,6 +122,47 @@ class UserService:
         user.onboarding_completed = True
         await self.db.flush()
 
+    async def get_or_create_by_email(self, email: str) -> User:
+        """Idempotent lookup by email for passwordless flows (magic link).
+
+        Uses `magic:<email>` as external_id when creating a fresh account.
+        Applies admin promotion/demotion based on ADMIN_EMAILS on every call.
+        """
+        from app.config import get_settings
+
+        settings = get_settings()
+        admin_set = settings.admin_email_set()
+        email_l = email.strip().lower()
+
+        user = await self.get_by_email(email_l)
+        if user is None:
+            user = User(
+                external_id=f"magic:{email_l}",
+                email=email_l,
+                display_name=email_l.split("@")[0],
+                role="admin" if email_l in admin_set else "member",
+                last_login_at=datetime.now(UTC),
+            )
+            self.db.add(user)
+            await self.db.flush()
+            await self.db.refresh(user)
+            return user
+
+        desired_role = "admin" if email_l in admin_set else "member"
+        if user.role != desired_role and user.role in ("admin", "member"):
+            user.role = desired_role
+        user.last_login_at = datetime.now(UTC)
+        await self.db.flush()
+        await self.db.refresh(user)
+        return user
+
+    async def username_taken(self, username: str, exclude_user_id: UUID | None = None) -> bool:
+        query = select(User.id).where(User.username == username.lower())
+        if exclude_user_id is not None:
+            query = query.where(User.id != exclude_user_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none() is not None
+
 
 class UserEmailConflictError(Exception):
     pass

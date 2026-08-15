@@ -1,14 +1,18 @@
+import re
 from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
 from app.services.user_service import UserService
 from app.utils.auth import get_current_user
+
+USERNAME_REGEX = re.compile(r"^[a-z0-9_]{3,20}$")
 
 router = APIRouter(prefix="/users/me", tags=["Users"])
 
@@ -20,6 +24,8 @@ class OnboardingCompleteResponse(BaseModel):
 class UserProfileResponse(BaseModel):
     id: str
     email: str
+    username: str | None = None
+    bio: str | None = None
     display_name: str
     avatar_url: str | None = None
     timezone: str
@@ -34,11 +40,18 @@ class UserProfileResponse(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     display_name: str | None = None
+    username: str | None = Field(default=None, min_length=3, max_length=20)
+    bio: str | None = Field(default=None, max_length=280)
     timezone: str | None = None
     location_lat: Decimal | None = None
     location_lon: Decimal | None = None
     location_name: str | None = None
     body_measurements: dict | None = None
+
+
+class UsernameAvailableResponse(BaseModel):
+    available: bool
+    reason: str | None = None
 
 
 @router.get("", response_model=UserProfileResponse)
@@ -65,20 +78,54 @@ async def update_profile(
                     detail=f"{key} must be a positive number",
                 )
 
+    if "username" in update_data and update_data["username"] is not None:
+        normalized = update_data["username"].lower()
+        if not USERNAME_REGEX.match(normalized):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="username must match ^[a-z0-9_]{3,20}$",
+            )
+        user_service = UserService(db)
+        if await user_service.username_taken(normalized, exclude_user_id=current_user.id):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username_taken")
+        update_data["username"] = normalized
+
     for field, value in update_data.items():
         setattr(current_user, field, value)
 
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="username_taken"
+        ) from None
     await db.refresh(current_user)
     await db.commit()
 
     return _user_response(current_user)
 
 
+@router.get("/username-available", response_model=UsernameAvailableResponse)
+async def username_available(
+    value: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> UsernameAvailableResponse:
+    normalized = value.lower()
+    if not USERNAME_REGEX.match(normalized):
+        return UsernameAvailableResponse(available=False, reason="format")
+    user_service = UserService(db)
+    taken = await user_service.username_taken(normalized, exclude_user_id=current_user.id)
+    return UsernameAvailableResponse(available=not taken, reason=None if not taken else "taken")
+
+
 def _user_response(user: User) -> UserProfileResponse:
     return UserProfileResponse(
         id=str(user.id),
         email=user.email,
+        username=user.username,
+        bio=user.bio,
         display_name=user.display_name,
         avatar_url=user.avatar_url,
         timezone=user.timezone,

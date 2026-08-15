@@ -175,7 +175,7 @@ def pairing_to_response(outfit: Outfit) -> PairingResponse:
     family_ratings_list = None
     family_rating_average = None
     family_rating_count = None
-    if hasattr(outfit, "family_ratings") and outfit.family_ratings:
+    if hasattr(outfit, "family_ratings") and outfit.ratings:
         family_ratings_list = [
             FamilyRatingResponse(
                 id=r.id,
@@ -186,12 +186,12 @@ def pairing_to_response(outfit: Outfit) -> PairingResponse:
                 comment=r.comment,
                 created_at=r.created_at,
             )
-            for r in outfit.family_ratings
+            for r in outfit.ratings
         ]
-        family_rating_count = len(outfit.family_ratings)
+        family_rating_count = len(outfit.ratings)
         if family_rating_count > 0:
             family_rating_average = (
-                sum(r.rating for r in outfit.family_ratings) / family_rating_count
+                sum(r.rating for r in outfit.ratings) / family_rating_count
             )
 
     return PairingResponse(

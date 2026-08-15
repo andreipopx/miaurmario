@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, LogOut } from 'lucide-react';
+import { Menu, LogOut, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { usePendingIncomingCount } from '@/lib/hooks/use-social';
 import { LanguageSwitcher, SHOW_LANGUAGE_SWITCHER } from '@/components/language-switcher';
 
 interface HeaderProps {
@@ -17,6 +18,8 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const t = useTranslations('common');
+  const tFriends = useTranslations('friends');
+  const pendingCount = usePendingIncomingCount().data ?? 0;
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   const handleLogout = () => signOut({ callbackUrl: '/login' });
@@ -60,6 +63,22 @@ export function Header({ onMenuClick }: HeaderProps) {
           >
             {theme === 'dark' ? t('lightMode') : t('darkMode')}
           </button>
+
+          <Link
+            href="/dashboard/friends"
+            className="relative text-muted-foreground hover:text-primary transition-colors duration-200 ease-editorial"
+            aria-label={tFriends('title')}
+          >
+            <Users className="h-4 w-4" strokeWidth={1.5} />
+            {pendingCount > 0 && (
+              <span
+                className="absolute -top-1 -right-2 min-w-[1.1rem] bg-primary px-1 text-[10px] font-medium text-primary-foreground"
+                aria-label={tFriends('pending.badge', { count: pendingCount })}
+              >
+                {pendingCount}
+              </span>
+            )}
+          </Link>
 
           <div className="hidden lg:block h-4 w-px bg-border-solid/60" aria-hidden="true" />
 

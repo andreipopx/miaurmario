@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 from app.models.item import ClothingItem, ItemStatus
 from app.models.learning import ItemPairScore, UserLearningProfile
 from app.models.outfit import (
-    FamilyOutfitRating,
+    OutfitRating,
     Outfit,
     OutfitItem,
     OutfitSource,
@@ -629,7 +629,7 @@ class RecommendationService:
             .options(
                 selectinload(Outfit.items).selectinload(OutfitItem.item),
                 selectinload(Outfit.feedback),
-                selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
+                selectinload(Outfit.ratings).selectinload(OutfitRating.user),
             )
         )
         outfit = result.scalar_one()

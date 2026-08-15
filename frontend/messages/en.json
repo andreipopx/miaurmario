@@ -1584,5 +1584,62 @@
     "viewInPairings": "View them in the Combinations section",
     "close": "Close",
     "viewPairings": "See combinations"
+  },
+  "friends": {
+    "title": "Friends",
+    "subtitle": "Add friends by their username and see what they're wearing.",
+    "loading": "Loading…",
+    "empty": "You don't have any friends yet. Search by username to add one.",
+    "tabs": {
+      "friends": "Friends",
+      "pending": "Pending",
+      "search": "Search"
+    },
+    "direction": {
+      "outgoing": "request sent",
+      "incoming": "added you"
+    },
+    "pending": {
+      "empty": "No pending requests.",
+      "wantsToConnect": "Wants to be friends",
+      "awaitingReply": "Awaiting reply",
+      "badge": "{count, plural, one {# pending request} other {# pending requests}}"
+    },
+    "actions": {
+      "accept": "Accept",
+      "decline": "Decline"
+    },
+    "search": {
+      "label": "Username",
+      "placeholder": "username",
+      "send": "Send request",
+      "sending": "Sending…",
+      "sentTo": "Request sent to @{username}"
+    },
+    "errors": {
+      "invalidFormat": "Invalid username. Use 3-20 characters: lowercase letters, digits or underscores.",
+      "generic": "We couldn't complete that action. Please try again."
+    }
+  },
+  "feed": {
+    "title": "Outfit of the day",
+    "subtitle": "Today's looks from your friends.",
+    "loading": "Loading outfits…",
+    "loadingMore": "Loading more…",
+    "loadMore": "Load more",
+    "empty": "No one has posted their outfit today yet.",
+    "error": "We couldn't load the feed."
+  },
+  "outfitCard": {
+    "rateAction": "Rate",
+    "rate": {
+      "title": "Rate this outfit",
+      "cancel": "Cancel",
+      "submit": "Submit",
+      "sending": "Sending…",
+      "pickRating": "Pick a rating from 1 to 5.",
+      "commentPlaceholder": "Optional comment…",
+      "errorGeneric": "We couldn't submit your rating."
+    }
   }
 }

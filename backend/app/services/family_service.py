@@ -184,6 +184,8 @@ class FamilyService:
         return invite
 
     async def get_invite_by_id(self, invite_id: UUID) -> FamilyInvite | None:
+        # NOTE: intentionally not scoped — callers MUST verify invite.family_id
+        # matches the current user's family_id before acting on the result.
         result = await self.db.execute(select(FamilyInvite).where(FamilyInvite.id == invite_id))
         return result.scalar_one_or_none()
 

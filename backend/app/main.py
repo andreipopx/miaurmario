@@ -1,15 +1,15 @@
 import logging
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
+from starlette.datastructures import MutableHeaders
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.api.router import api_router
 from app.config import get_settings
@@ -18,36 +18,49 @@ from app.database import engine
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+_CSP_EXEMPT_PATHS = frozenset({"/docs", "/redoc", "/openapi.json"})
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+
+class SecurityHeadersMiddleware:
+    """Pure ASGI middleware. Avoids the BaseHTTPMiddleware buffering that would
+    otherwise materialize FileResponse bodies (image endpoints) into RAM."""
+
     def __init__(self, app: ASGIApp, *, enable_hsts: bool, hsts_max_age: int) -> None:
-        super().__init__(app)
+        self._app = app
         self._enable_hsts = enable_hsts
         self._hsts_max_age = hsts_max_age
 
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]],
-    ) -> Response:
-        response = await call_next(request)
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault(
-            "Permissions-Policy",
-            "geolocation=(), camera=(), microphone=(), payment=()",
-        )
-        response.headers.setdefault(
-            "Content-Security-Policy",
-            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
-        )
-        if self._enable_hsts:
-            response.headers.setdefault(
-                "Strict-Transport-Security",
-                f"max-age={self._hsts_max_age}; includeSubDomains",
-            )
-        return response
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        skip_csp = scope.get("path", "") in _CSP_EXEMPT_PATHS
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers.setdefault("X-Content-Type-Options", "nosniff")
+                headers.setdefault("X-Frame-Options", "DENY")
+                headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+                headers.setdefault(
+                    "Permissions-Policy",
+                    "geolocation=(), camera=(), microphone=(), payment=()",
+                )
+                headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+                if not skip_csp:
+                    headers.setdefault(
+                        "Content-Security-Policy",
+                        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+                    )
+                if self._enable_hsts:
+                    headers.setdefault(
+                        "Strict-Transport-Security",
+                        f"max-age={self._hsts_max_age}; includeSubDomains",
+                    )
+            await send(message)
+
+        await self._app(scope, receive, send_wrapper)
 
 
 @asynccontextmanager
@@ -70,7 +83,18 @@ app = FastAPI(
     openapi_url="/openapi.json" if settings.debug else None,
 )
 
-# Configure CORS
+# Middleware registration order matters — Starlette wraps in reverse of
+# add order (last added = outermost). We want CORS to be the outermost layer
+# so preflight OPTIONS responses short-circuit before hitting SecurityHeaders.
+if settings.security_headers_enabled:
+    app.add_middleware(
+        SecurityHeadersMiddleware,
+        enable_hsts=settings.hsts_enabled,
+        hsts_max_age=settings.hsts_max_age,
+    )
+
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -78,16 +102,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
-
-# Enable GZip compression for responses > 500 bytes
-app.add_middleware(GZipMiddleware, minimum_size=500)
-
-if settings.security_headers_enabled:
-    app.add_middleware(
-        SecurityHeadersMiddleware,
-        enable_hsts=settings.hsts_enabled,
-        hsts_max_age=settings.hsts_max_age,
-    )
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
 

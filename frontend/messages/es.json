@@ -1584,5 +1584,62 @@
     "viewInPairings": "Míralos en la sección de Combinaciones",
     "close": "Cerrar",
     "viewPairings": "Ver combinaciones"
+  },
+  "friends": {
+    "title": "Amigos",
+    "subtitle": "Añade amigos por su nombre de usuario y descubre qué llevan puesto.",
+    "loading": "Cargando…",
+    "empty": "Aún no tienes amigos. Búscalos por su nombre de usuario.",
+    "tabs": {
+      "friends": "Amigos",
+      "pending": "Pendientes",
+      "search": "Buscar"
+    },
+    "direction": {
+      "outgoing": "solicitud enviada",
+      "incoming": "te añadió"
+    },
+    "pending": {
+      "empty": "Sin solicitudes pendientes.",
+      "wantsToConnect": "Quiere ser tu amigo",
+      "awaitingReply": "Esperando respuesta",
+      "badge": "{count, plural, one {# solicitud pendiente} other {# solicitudes pendientes}}"
+    },
+    "actions": {
+      "accept": "Aceptar",
+      "decline": "Rechazar"
+    },
+    "search": {
+      "label": "Nombre de usuario",
+      "placeholder": "nombre_usuario",
+      "send": "Enviar solicitud",
+      "sending": "Enviando…",
+      "sentTo": "Solicitud enviada a @{username}"
+    },
+    "errors": {
+      "invalidFormat": "Nombre de usuario inválido. Usa 3-20 caracteres: letras minúsculas, dígitos o guiones bajos.",
+      "generic": "No hemos podido completar la acción. Inténtalo de nuevo."
+    }
+  },
+  "feed": {
+    "title": "Outfit del día",
+    "subtitle": "Los looks de hoy de tus amigos.",
+    "loading": "Cargando outfits…",
+    "loadingMore": "Cargando más…",
+    "loadMore": "Cargar más",
+    "empty": "Nadie ha publicado su outfit hoy todavía.",
+    "error": "No hemos podido cargar el feed."
+  },
+  "outfitCard": {
+    "rateAction": "Puntuar",
+    "rate": {
+      "title": "Puntúa este outfit",
+      "cancel": "Cancelar",
+      "submit": "Enviar",
+      "sending": "Enviando…",
+      "pickRating": "Elige una puntuación de 1 a 5.",
+      "commentPlaceholder": "Comentario opcional…",
+      "errorGeneric": "No hemos podido enviar tu puntuación."
+    }
   }
 }

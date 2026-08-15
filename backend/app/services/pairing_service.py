@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.item import ClothingItem, ItemStatus
-from app.models.outfit import FamilyOutfitRating, Outfit, OutfitItem, OutfitSource, OutfitStatus
+from app.models.outfit import Outfit, OutfitItem, OutfitRating, OutfitSource, OutfitStatus
 from app.models.user import User
 from app.services.ai_service import AIService, require_internal_ai
 from app.utils.clothing import deduplicate_by_body_slot
@@ -293,7 +293,7 @@ class PairingService:
                     selectinload(Outfit.items).selectinload(OutfitItem.item),
                     selectinload(Outfit.feedback),
                     selectinload(Outfit.source_item),
-                    selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
+                    selectinload(Outfit.ratings).selectinload(OutfitRating.user),
                 )
             )
             loaded_outfits.append(result.scalar_one())
@@ -335,7 +335,7 @@ class PairingService:
                 selectinload(Outfit.items).selectinload(OutfitItem.item),
                 selectinload(Outfit.feedback),
                 selectinload(Outfit.source_item),
-                selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
+                selectinload(Outfit.ratings).selectinload(OutfitRating.user),
             )
             .order_by(Outfit.created_at.desc())
             .offset((page - 1) * page_size)
@@ -377,7 +377,7 @@ class PairingService:
                 selectinload(Outfit.items).selectinload(OutfitItem.item),
                 selectinload(Outfit.feedback),
                 selectinload(Outfit.source_item),
-                selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
+                selectinload(Outfit.ratings).selectinload(OutfitRating.user),
             )
             .order_by(Outfit.created_at.desc())
             .offset((page - 1) * page_size)

@@ -42,6 +42,18 @@ class OutfitSource(enum.StrEnum):
     pairing = "pairing"
 
 
+class OutfitVisibility(enum.StrEnum):
+    private = "private"
+    friends = "friends"
+    public = "public"
+
+
+class RatingScope(enum.StrEnum):
+    family = "family"
+    friend = "friend"
+    public = "public"
+
+
 class Outfit(Base):
     __tablename__ = "outfits"
 
@@ -79,6 +91,13 @@ class Outfit(Base):
 
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+    visibility: Mapped[OutfitVisibility] = mapped_column(
+        Enum(OutfitVisibility, name="outfit_visibility"),
+        default=OutfitVisibility.private,
+        server_default=OutfitVisibility.private.value,
+        nullable=False,
+    )
+
     replaces_outfit_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("outfits.id", ondelete="SET NULL"),
@@ -109,8 +128,8 @@ class Outfit(Base):
     feedback: Mapped[Optional["UserFeedback"]] = relationship(
         "UserFeedback", back_populates="outfit", uselist=False, cascade="all, delete-orphan"
     )
-    family_ratings: Mapped[list["FamilyOutfitRating"]] = relationship(
-        "FamilyOutfitRating", back_populates="outfit", cascade="all, delete-orphan"
+    ratings: Mapped[list["OutfitRating"]] = relationship(
+        "OutfitRating", back_populates="outfit", cascade="all, delete-orphan"
     )
     source_item: Mapped[Optional["ClothingItem"]] = relationship(
         "ClothingItem", foreign_keys=[source_item_id]
@@ -186,7 +205,9 @@ class UserFeedback(Base):
     outfit: Mapped["Outfit"] = relationship("Outfit", back_populates="feedback")
 
 
-class FamilyOutfitRating(Base):
+class OutfitRating(Base):
+    # Table name preserved for backwards-compatibility with existing rows and
+    # references; the class was renamed as part of the Sprint 3 social refactor.
     __tablename__ = "family_outfit_ratings"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -199,6 +220,12 @@ class FamilyOutfitRating(Base):
 
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text)
+    scope: Mapped[RatingScope] = mapped_column(
+        Enum(RatingScope, name="rating_scope"),
+        default=RatingScope.family,
+        server_default=RatingScope.family.value,
+        nullable=False,
+    )
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -206,5 +233,9 @@ class FamilyOutfitRating(Base):
     )
 
     # Relationships
-    outfit: Mapped["Outfit"] = relationship("Outfit", back_populates="family_ratings")
+    outfit: Mapped["Outfit"] = relationship("Outfit", back_populates="ratings")
     user: Mapped["User"] = relationship("User")
+
+
+# Transition alias — external imports may still say `FamilyOutfitRating`.
+FamilyOutfitRating = OutfitRating

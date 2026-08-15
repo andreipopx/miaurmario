@@ -14,13 +14,16 @@ from app.config import get_settings
 from app.database import get_db
 from app.models.item import ClothingItem
 from app.models.outfit import (
-    FamilyOutfitRating,
     Outfit,
     OutfitItem,
+    OutfitRating,
     OutfitStatus,
+    OutfitVisibility,
+    RatingScope,
     UserFeedback,
 )
 from app.models.user import User
+from app.services.access_control import are_friends, can_view_outfit
 from app.schemas.item import DEFAULT_WASH_INTERVALS
 from app.services.ai_service import AIDisabledError
 from app.services.item_service import ItemService
@@ -383,7 +386,7 @@ def outfit_to_response(
     family_ratings_list = None
     family_rating_average = None
     family_rating_count = None
-    if hasattr(outfit, "family_ratings") and outfit.family_ratings:
+    if hasattr(outfit, "ratings") and outfit.ratings:
         family_ratings_list = [
             FamilyRatingResponse(
                 id=r.id,
@@ -394,12 +397,12 @@ def outfit_to_response(
                 comment=r.comment,
                 created_at=r.created_at,
             )
-            for r in outfit.family_ratings
+            for r in outfit.ratings
         ]
-        family_rating_count = len(outfit.family_ratings)
+        family_rating_count = len(outfit.ratings)
         if family_rating_count > 0:
             family_rating_average = (
-                sum(r.rating for r in outfit.family_ratings) / family_rating_count
+                sum(r.rating for r in outfit.ratings) / family_rating_count
             )
 
     return OutfitResponse(
@@ -572,7 +575,7 @@ async def get_outfit(
         .options(
             selectinload(Outfit.items).selectinload(OutfitItem.item),
             selectinload(Outfit.feedback),
-            selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
+            selectinload(Outfit.ratings).selectinload(OutfitRating.user),
         )
     )
 
@@ -602,7 +605,7 @@ async def accept_outfit(
         .options(
             selectinload(Outfit.items).selectinload(OutfitItem.item),
             selectinload(Outfit.feedback),
-            selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
+            selectinload(Outfit.ratings).selectinload(OutfitRating.user),
         )
     )
 
@@ -637,7 +640,7 @@ async def reject_outfit(
         .options(
             selectinload(Outfit.items).selectinload(OutfitItem.item),
             selectinload(Outfit.feedback),
-            selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
+            selectinload(Outfit.ratings).selectinload(OutfitRating.user),
         )
     )
 
@@ -861,17 +864,38 @@ async def get_feedback(
     )
 
 
-@router.post("/{outfit_id}/family-rating", response_model=FamilyRatingResponse)
-async def submit_family_rating(
+async def _resolve_rating_scope(
+    db: AsyncSession, current_user: User, outfit: Outfit
+) -> RatingScope | None:
+    """Return the scope to record for a rating, or None if the user can't rate."""
+    if outfit.user_id == current_user.id:
+        return None
+    owner = (
+        await db.execute(
+            select(User).where(User.id == outfit.user_id, User.is_active == True)  # noqa: E712
+        )
+    ).scalar_one_or_none()
+    if not owner:
+        return None
+    if current_user.family_id and owner.family_id == current_user.family_id:
+        return RatingScope.family
+    if await are_friends(db, current_user.id, outfit.user_id):
+        return RatingScope.friend
+    if outfit.visibility == OutfitVisibility.public:
+        return RatingScope.public
+    return None
+
+
+@router.post("/{outfit_id}/rate", response_model=FamilyRatingResponse)
+async def rate_outfit(
     outfit_id: UUID,
     request: FamilyRatingRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> FamilyRatingResponse:
-    result = await db.execute(select(Outfit).where(Outfit.id == outfit_id))
-    outfit = result.scalar_one_or_none()
+    outfit = (await db.execute(select(Outfit).where(Outfit.id == outfit_id))).scalar_one_or_none()
 
-    if not outfit:
+    if not outfit or not await can_view_outfit(db, current_user, outfit):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found")
 
     if outfit.scheduled_for is None:
@@ -889,33 +913,15 @@ async def submit_family_rating(
             detail="Cannot rate your own outfit",
         )
 
-    if not current_user.family_id or not outfit.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "You must be in the same family to rate outfits",
-                "error_code": "NOT_IN_FAMILY",
-            },
-        )
-
-    owner_result = await db.execute(
-        select(User).where(User.id == outfit.user_id, User.is_active == True)  # noqa: E712
-    )
-    owner = owner_result.scalar_one_or_none()
-    if not owner or owner.family_id != current_user.family_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "You must be in the same family to rate outfits",
-                "error_code": "NOT_IN_FAMILY",
-            },
-        )
+    scope = await _resolve_rating_scope(db, current_user, outfit)
+    if scope is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found")
 
     existing = await db.execute(
-        select(FamilyOutfitRating).where(
+        select(OutfitRating).where(
             and_(
-                FamilyOutfitRating.outfit_id == outfit_id,
-                FamilyOutfitRating.user_id == current_user.id,
+                OutfitRating.outfit_id == outfit_id,
+                OutfitRating.user_id == current_user.id,
             )
         )
     )
@@ -924,12 +930,14 @@ async def submit_family_rating(
     if rating:
         rating.rating = request.rating
         rating.comment = request.comment
+        rating.scope = scope
     else:
-        rating = FamilyOutfitRating(
+        rating = OutfitRating(
             outfit_id=outfit_id,
             user_id=current_user.id,
             rating=request.rating,
             comment=request.comment,
+            scope=scope,
         )
         db.add(rating)
 
@@ -947,33 +955,37 @@ async def submit_family_rating(
     )
 
 
-@router.get("/{outfit_id}/family-ratings", response_model=list[FamilyRatingResponse])
-async def get_family_ratings(
+@router.post(
+    "/{outfit_id}/family-rating",
+    response_model=FamilyRatingResponse,
+    deprecated=True,
+    description="Deprecated: use POST /outfits/{outfit_id}/rate.",
+)
+async def submit_family_rating(
+    outfit_id: UUID,
+    request: FamilyRatingRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> FamilyRatingResponse:
+    return await rate_outfit(outfit_id, request, db, current_user)
+
+
+@router.get("/{outfit_id}/ratings", response_model=list[FamilyRatingResponse])
+async def get_outfit_ratings(
     outfit_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[FamilyRatingResponse]:
-    result = await db.execute(select(Outfit).where(Outfit.id == outfit_id))
-    outfit = result.scalar_one_or_none()
+    outfit = (await db.execute(select(Outfit).where(Outfit.id == outfit_id))).scalar_one_or_none()
 
-    if not outfit:
+    if not outfit or not await can_view_outfit(db, current_user, outfit):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found")
 
-    if outfit.user_id != current_user.id:
-        if not current_user.family_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-        owner_result = await db.execute(
-            select(User).where(User.id == outfit.user_id, User.is_active == True)  # noqa: E712
-        )
-        owner = owner_result.scalar_one_or_none()
-        if not owner or owner.family_id != current_user.family_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
     ratings_result = await db.execute(
-        select(FamilyOutfitRating)
-        .where(FamilyOutfitRating.outfit_id == outfit_id)
-        .options(selectinload(FamilyOutfitRating.user))
-        .order_by(FamilyOutfitRating.created_at.desc())
+        select(OutfitRating)
+        .where(OutfitRating.outfit_id == outfit_id)
+        .options(selectinload(OutfitRating.user))
+        .order_by(OutfitRating.created_at.desc())
     )
     ratings = list(ratings_result.scalars().all())
 
@@ -989,6 +1001,20 @@ async def get_family_ratings(
         )
         for r in ratings
     ]
+
+
+@router.get(
+    "/{outfit_id}/family-ratings",
+    response_model=list[FamilyRatingResponse],
+    deprecated=True,
+    description="Deprecated: use GET /outfits/{outfit_id}/ratings.",
+)
+async def get_family_ratings(
+    outfit_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[FamilyRatingResponse]:
+    return await get_outfit_ratings(outfit_id, db, current_user)
 
 
 def _check_studio_kill_switch() -> None:
@@ -1345,17 +1371,17 @@ async def patch_outfit_endpoint(
     return outfit_to_response(full)
 
 
-@router.delete("/{outfit_id}/family-rating", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_family_rating(
+@router.delete("/{outfit_id}/rate", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_rating(
     outfit_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
     result = await db.execute(
-        select(FamilyOutfitRating).where(
+        select(OutfitRating).where(
             and_(
-                FamilyOutfitRating.outfit_id == outfit_id,
-                FamilyOutfitRating.user_id == current_user.id,
+                OutfitRating.outfit_id == outfit_id,
+                OutfitRating.user_id == current_user.id,
             )
         )
     )
@@ -1369,3 +1395,17 @@ async def delete_family_rating(
 
     await db.delete(rating)
     await db.flush()
+
+
+@router.delete(
+    "/{outfit_id}/family-rating",
+    status_code=status.HTTP_204_NO_CONTENT,
+    deprecated=True,
+    description="Deprecated: use DELETE /outfits/{outfit_id}/rate.",
+)
+async def delete_family_rating(
+    outfit_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    return await delete_rating(outfit_id, db, current_user)

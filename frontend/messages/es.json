@@ -186,6 +186,7 @@
     "wardrobe": "Armario",
     "outfits": "Conjuntos",
     "pairings": "Combinaciones",
+    "pins": "Pins",
     "suggest": "Sugerir",
     "history": "Historial",
     "family": "Familia",
@@ -1584,5 +1585,37 @@
     "viewInPairings": "Míralos en la sección de Combinaciones",
     "close": "Cerrar",
     "viewPairings": "Ver combinaciones"
+  },
+  "integrations": {
+    "title": "Integraciones",
+    "subtitle": "Conecta servicios externos para nutrir tu armario.",
+    "pinterest": {
+      "title": "Pinterest",
+      "description": "Importa tableros de inspiración desde Pinterest.",
+      "manage": "Gestionar Pinterest",
+      "connectTitle": "Conecta tu cuenta de Pinterest",
+      "connectDescription": "Autoriza a Miaurmario a leer tus tableros y pines. Podrás desconectar en cualquier momento.",
+      "connectButton": "Conectar Pinterest",
+      "loadingBoards": "Cargando tableros…",
+      "boardsTitle": "Tus tableros",
+      "importBoard": "Importar tablero",
+      "importQueued": "Importación en marcha. Los pines aparecerán en unos minutos.",
+      "importFailed": "No se pudo iniciar la importación.",
+      "noBoards": "No hay tableros en esta cuenta.",
+      "pinCount": "{count, plural, one {# pin} other {# pines}}",
+      "disconnect": "Desconectar",
+      "disconnectSuccess": "Pinterest desconectado. Se borraron los pines guardados.",
+      "errorGeneric": "Algo salió mal al conectar con Pinterest. Inténtalo de nuevo."
+    }
+  },
+  "pins": {
+    "title": "Pins",
+    "subtitle": "Tu inspiración importada desde Pinterest.",
+    "loading": "Cargando pines…",
+    "empty": "Aún no has importado ningún pin.",
+    "connectCta": "Conectar Pinterest",
+    "manageConnection": "Gestionar conexión",
+    "previous": "Anterior",
+    "next": "Siguiente"
   }
 }

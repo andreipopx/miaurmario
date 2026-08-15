@@ -186,6 +186,7 @@
     "wardrobe": "Wardrobe",
     "outfits": "Outfits",
     "pairings": "Pairings",
+    "pins": "Pins",
     "suggest": "Suggest",
     "history": "History",
     "family": "Family",
@@ -1584,5 +1585,37 @@
     "viewInPairings": "View them in the Combinations section",
     "close": "Close",
     "viewPairings": "See combinations"
+  },
+  "integrations": {
+    "title": "Integrations",
+    "subtitle": "Connect external services to feed your wardrobe.",
+    "pinterest": {
+      "title": "Pinterest",
+      "description": "Import inspiration boards from Pinterest.",
+      "manage": "Manage Pinterest",
+      "connectTitle": "Connect your Pinterest account",
+      "connectDescription": "Authorize Miaurmario to read your boards and pins. You can disconnect at any time.",
+      "connectButton": "Connect Pinterest",
+      "loadingBoards": "Loading boards…",
+      "boardsTitle": "Your boards",
+      "importBoard": "Import board",
+      "importQueued": "Import queued. Pins will appear in a few minutes.",
+      "importFailed": "Could not start the import.",
+      "noBoards": "No boards in this account.",
+      "pinCount": "{count, plural, one {# pin} other {# pins}}",
+      "disconnect": "Disconnect",
+      "disconnectSuccess": "Pinterest disconnected. Saved pins were removed.",
+      "errorGeneric": "Something went wrong connecting to Pinterest. Please try again."
+    }
+  },
+  "pins": {
+    "title": "Pins",
+    "subtitle": "Your inspiration imported from Pinterest.",
+    "loading": "Loading pins…",
+    "empty": "You haven't imported any pins yet.",
+    "connectCta": "Connect Pinterest",
+    "manageConnection": "Manage connection",
+    "previous": "Previous",
+    "next": "Next"
   }
 }

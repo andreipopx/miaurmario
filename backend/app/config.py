@@ -96,6 +96,11 @@ class Settings(BaseSettings):
     bg_removal_url: str | None = Field(default=None)  # URL for http provider (e.g. withoutbg)
     bg_removal_api_key: str | None = Field(default=None)  # API key for http provider
 
+    # Security headers
+    security_headers_enabled: bool = True
+    hsts_enabled: bool = False
+    hsts_max_age: int = 31536000
+
     # Image processing
     thumbnail_size: int = 400
     medium_size: int = 800

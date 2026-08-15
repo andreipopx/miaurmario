@@ -2,7 +2,7 @@ import hashlib
 import logging
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from urllib.parse import urlencode
 
@@ -39,7 +39,7 @@ settings = get_settings()
 
 
 def create_access_token(external_id: str, expires_delta: timedelta | None = None) -> str:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta
     else:
@@ -261,7 +261,7 @@ async def request_magic_link(
 
     raw_token = secrets.token_urlsafe(32)
     token_hash = _hash_token(raw_token)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     db.add(
         MagicLinkToken(
@@ -301,7 +301,7 @@ async def consume_magic_link(
         select(MagicLinkToken).where(MagicLinkToken.token_hash == token_hash)
     )
     row = result.scalar_one_or_none()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if row is None or row.used_at is not None or row.expires_at < now:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired link")
 

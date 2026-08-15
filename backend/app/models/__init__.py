@@ -9,6 +9,7 @@ from app.models.learning import (
 from app.models.magic_link import MagicLinkToken
 from app.models.notification import Notification, NotificationSettings
 from app.models.outfit import FamilyOutfitRating, Outfit, OutfitItem, UserFeedback
+from app.models.pinterest import PinterestConnection, PinterestPin
 from app.models.preference import UserPreference
 from app.models.schedule import Schedule
 from app.models.user import User
@@ -34,4 +35,6 @@ __all__ = [
     "OutfitItem",
     "UserFeedback",
     "Notification",
+    "PinterestConnection",
+    "PinterestPin",
 ]

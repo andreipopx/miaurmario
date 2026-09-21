@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -13,6 +14,7 @@ type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'format';
 
 export default function UsernameOnboardingPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const t = useTranslations('onboarding.username');
   const { user, isLoading } = useAuth();
 
@@ -54,6 +56,9 @@ export default function UsernameOnboardingPage() {
     setSubmitting(true);
     try {
       await api.patch('/users/me', { username, bio: bio || null });
+      // Refresh the cached user before navigating: /onboarding reads ['auth-user']
+      // and would bounce straight back here while it still lacks a username.
+      await queryClient.refetchQueries({ queryKey: ['auth-user'] });
       router.replace('/onboarding');
     } catch (err: any) {
       if (err?.status === 409) setError(t('takenError'));

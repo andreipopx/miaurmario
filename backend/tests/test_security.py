@@ -219,6 +219,7 @@ class TestAuthEmailValidation:
             mock_settings.oidc_issuer_url = "https://auth.example.com"
             mock_settings.oidc_client_id = "test-client"
             mock_settings.oidc_mobile_client_id = None
+            mock_settings.access_token_days = 30
 
             response = await client.post(
                 "/api/v1/auth/sync",
@@ -249,6 +250,7 @@ class TestAuthEmailValidation:
             mock_settings.oidc_issuer_url = "https://auth.example.com"
             mock_settings.oidc_client_id = "test-client"
             mock_settings.oidc_mobile_client_id = None
+            mock_settings.access_token_days = 30
             mock_settings.secret_key = "test-secret"
 
             response = await client.post(
@@ -281,6 +283,7 @@ class TestProviderMigrationRequiresVerifiedEmail:
             mock_settings.oidc_issuer_url = "https://auth.example.com"
             mock_settings.oidc_client_id = "test-client"
             mock_settings.oidc_mobile_client_id = None
+            mock_settings.access_token_days = 30
 
             response = await client.post(
                 "/api/v1/auth/sync",
@@ -311,6 +314,7 @@ class TestProviderMigrationRequiresVerifiedEmail:
             mock_settings.oidc_issuer_url = "https://auth.example.com"
             mock_settings.oidc_client_id = "test-client"
             mock_settings.oidc_mobile_client_id = None
+            mock_settings.access_token_days = 30
             mock_settings.secret_key = "test-secret"
 
             response = await client.post(

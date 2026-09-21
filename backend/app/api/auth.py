@@ -3,7 +3,7 @@ import logging
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import urlencode
 
 import jwt
@@ -20,6 +20,7 @@ from app.models.user import User
 from app.schemas.user import (
     AuthConfigMagicLink,
     AuthConfigOIDC,
+    AuthConfigPassword,
     AuthConfigResponse,
     AuthStatusResponse,
     UserResponse,
@@ -30,7 +31,18 @@ from app.services.user_service import UserEmailConflictError, UserService
 from app.utils.auth import get_current_user
 from app.utils.email import send_magic_link_email
 from app.utils.oidc import validate_oidc_id_token
-from app.utils.rate_limit import _get_client_ip, check_rate_limit, rate_limit_by_ip
+from app.utils.passwords import (
+    PASSWORD_MAX_LENGTH,
+    hash_password_async,
+    needs_rehash,
+    verify_password_async,
+)
+from app.utils.rate_limit import (
+    _get_client_ip,
+    check_rate_limit,
+    rate_limit_by_ip,
+    rate_limit_by_user,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +51,16 @@ settings = get_settings()
 
 
 def create_access_token(external_id: str, expires_delta: timedelta | None = None) -> str:
+    """Issue an API access token (HS256, signed with SECRET_KEY).
+
+    Lifetime defaults to ACCESS_TOKEN_DAYS; clients slide it with POST
+    /auth/refresh. Rotating SECRET_KEY invalidates every outstanding token.
+    """
     now = datetime.now(UTC)
     if expires_delta:
         expire = now + expires_delta
     else:
-        expire = now + timedelta(days=7)
+        expire = now + timedelta(days=settings.access_token_days)
     to_encode = {
         "sub": external_id,
         "exp": expire,
@@ -97,6 +114,7 @@ async def get_auth_config() -> AuthConfigResponse:
             else None,
         ),
         magic_link=AuthConfigMagicLink(enabled=_magic_link_configured()),
+        password=AuthConfigPassword(enabled=settings.password_login_enabled),
         dev_mode=_is_dev_mode(),
     )
 
@@ -225,8 +243,33 @@ async def get_session(
     return UserResponse.model_validate(current_user)
 
 
+class RefreshResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+@router.post("/refresh", response_model=RefreshResponse)
+async def refresh_access_token(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> RefreshResponse:
+    """Exchange a still-valid access token for a fresh one (sliding session).
+
+    get_current_user already rejected expired/forged tokens, unknown and
+    inactive users, so an expired token can never be revived here. The
+    frontend calls this about once a day per active session.
+    """
+    await rate_limit_by_user(current_user.id, "auth_refresh", 30, 3600)
+    return RefreshResponse(
+        access_token=create_access_token(current_user.external_id),
+        expires_in=settings.access_token_days * 86400,
+    )
+
+
 class MagicLinkRequest(BaseModel):
     email: EmailStr
+    # UI language of the page that asked for the link; picks the email copy.
+    locale: Literal["es", "en"] | None = None
 
 
 class MagicLinkAcceptedResponse(BaseModel):
@@ -281,7 +324,7 @@ async def request_magic_link(
     # attacker-controlled origin.
     link = f"{settings.magic_link_origin}/auth/callback?token={raw_token}"
     try:
-        await send_magic_link_email(email_l, link)
+        await send_magic_link_email(email_l, link, locale=payload.locale)
     except Exception as exc:
         logger.exception("Magic link email dispatch failed for %s: %s", email_l, exc)
         # Do NOT reveal failure — still return 202 to avoid email enumeration.
@@ -293,7 +336,9 @@ class MagicLinkVerifyRequest(BaseModel):
     token: str = Field(..., min_length=16, max_length=512)
 
 
-class MagicLinkVerifyResponse(BaseModel):
+class LoginResponse(BaseModel):
+    """Token payload shared by every first-party login (magic link, password)."""
+
     id: uuid.UUID
     external_id: str
     email: str
@@ -304,6 +349,30 @@ class MagicLinkVerifyResponse(BaseModel):
     onboarding_completed: bool
     needs_username: bool
     access_token: str
+
+
+# Kept for backwards compatibility with existing imports/tests.
+MagicLinkVerifyResponse = LoginResponse
+
+
+def _login_response(user: User, *, is_new: bool) -> LoginResponse:
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive",
+        )
+    return LoginResponse(
+        id=user.id,
+        external_id=user.external_id,
+        email=user.email,
+        display_name=user.display_name,
+        username=user.username,
+        avatar_url=user.avatar_url,
+        is_new_user=is_new,
+        onboarding_completed=user.onboarding_completed,
+        needs_username=not user.username,
+        access_token=create_access_token(user.external_id),
+    )
 
 
 async def _consume_magic_link_token(db: AsyncSession, raw_token: str) -> str | None:
@@ -360,21 +429,61 @@ async def verify_magic_link(
     user = await user_service.get_or_create_by_email(email)
     await db.commit()
 
+    return _login_response(user, is_new=is_new)
+
+
+class PasswordLoginRequest(BaseModel):
+    identifier: str = Field(..., min_length=1, max_length=255, description="Email or username")
+    password: str = Field(..., min_length=1, max_length=PASSWORD_MAX_LENGTH)
+
+
+INVALID_CREDENTIALS = "Invalid credentials"
+
+
+@router.post("/password/login", response_model=LoginResponse)
+async def password_login(
+    payload: PasswordLoginRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> LoginResponse:
+    """Log in with email-or-username + password (optional, per user).
+
+    Called server-side by the NextAuth `password` credentials provider, which
+    forwards the end user's X-Forwarded-For. Unknown identifiers and accounts
+    without a password burn one argon2 verification against a dummy hash and
+    get the same generic 401, so neither timing nor wording reveals whether an
+    account exists or has a password.
+    """
+    if not settings.password_login_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Password login is disabled",
+        )
+
+    identifier = payload.identifier.strip().lower()
+    await rate_limit_by_ip(request, "password_login", 10, 900)
+    ident_key = hashlib.sha256(identifier.encode()).hexdigest()
+    await check_rate_limit(f"rate_limit:password_login:ident:{ident_key}", 10, 900)
+
+    user_service = UserService(db)
+    user = await user_service.get_by_login_identifier(identifier)
+    stored_hash = user.password_hash if user else None
+
+    if not await verify_password_async(stored_hash, payload.password) or user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=INVALID_CREDENTIALS,
+        )
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
         )
 
-    return MagicLinkVerifyResponse(
-        id=user.id,
-        external_id=user.external_id,
-        email=user.email,
-        display_name=user.display_name,
-        username=user.username,
-        avatar_url=user.avatar_url,
-        is_new_user=is_new,
-        onboarding_completed=user.onboarding_completed,
-        needs_username=not user.username,
-        access_token=create_access_token(user.external_id),
-    )
+    if stored_hash and needs_rehash(stored_hash):
+        user.password_hash = await hash_password_async(payload.password)
+    await user_service.record_login(user)
+    await db.commit()
+
+    return _login_response(user, is_new=False)

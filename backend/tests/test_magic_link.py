@@ -175,6 +175,22 @@ class TestMagicLinkVerify:
 
 
 class TestMagicLinkRequestToVerify:
+    async def test_request_forwards_ui_locale_to_email(
+        self, client: AsyncClient, magic_link_enabled
+    ):
+        with patch.object(auth_module, "send_magic_link_email", new=AsyncMock()) as send:
+            resp = await client.post(
+                "/api/v1/auth/magic-link/request", json={"email": _email(), "locale": "en"}
+            )
+        assert resp.status_code == 202
+        assert send.await_args.kwargs["locale"] == "en"
+
+    async def test_request_rejects_unknown_locale(self, client: AsyncClient, magic_link_enabled):
+        resp = await client.post(
+            "/api/v1/auth/magic-link/request", json={"email": _email(), "locale": "xx"}
+        )
+        assert resp.status_code == 422
+
     async def test_request_emails_configured_origin_link_that_verifies(
         self, client: AsyncClient, magic_link_enabled
     ):

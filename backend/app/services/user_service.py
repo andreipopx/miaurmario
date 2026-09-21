@@ -148,13 +148,35 @@ class UserService:
             await self.db.refresh(user)
             return user
 
-        desired_role = "admin" if email_l in admin_set else "member"
+        await self.record_login(user)
+        return user
+
+    async def record_login(self, user: User) -> None:
+        """Bookkeeping shared by every first-party login (magic link, password):
+        ADMIN_EMAILS promotion/demotion and last_login_at."""
+        from app.config import get_settings
+
+        admin_set = get_settings().admin_email_set()
+        desired_role = "admin" if user.email.lower() in admin_set else "member"
         if user.role != desired_role and user.role in ("admin", "member"):
             user.role = desired_role
         user.last_login_at = datetime.now(UTC)
         await self.db.flush()
         await self.db.refresh(user)
-        return user
+
+    async def get_by_login_identifier(self, identifier: str) -> User | None:
+        """Look up a user by email or username, case-insensitively.
+
+        Every write path stores emails and usernames lower-cased, so a plain
+        (indexed) equality on the normalized input is case-insensitive. Anything
+        containing "@" is treated as an email (usernames cannot contain "@").
+        """
+        ident = identifier.strip().lower()
+        if not ident:
+            return None
+        column = User.email if "@" in ident else User.username
+        result = await self.db.execute(select(User).where(column == ident))
+        return result.scalar_one_or_none()
 
     async def username_taken(self, username: str, exclude_user_id: UUID | None = None) -> bool:
         query = select(User.id).where(User.username == username.lower())

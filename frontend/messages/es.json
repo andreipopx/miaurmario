@@ -106,7 +106,11 @@
       "sentBody": "Si el correo existe, te hemos enviado un enlace para entrar. Caduca en 15 minutos.",
       "rateLimited": "Has pedido demasiados enlaces. Espera un rato antes de volver a intentarlo.",
       "genericError": "No hemos podido enviar el enlace. Inténtalo de nuevo en un momento.",
-      "verifying": "Iniciando sesión…"
+      "verifying": "Iniciando sesión…",
+      "invited": "Te han invitado a Miaurmario. Escribe tu email para crear tu cuenta.",
+      "inviteInvalid": "Esta invitación ya no es válida. Pide otra a quien te la envió.",
+      "closedBetaTitle": "Miaurmario está en beta cerrada",
+      "closedBetaBody": "Pide una invitación para crear tu cuenta. Si ya tienes cuenta, revisa que el email sea el mismo."
     },
     "noPasswords": "Sin contraseñas obligatorias: te mandamos un enlace mágico.",
     "termsRich": "Al entrar aceptas la <link>privacidad y los términos</link>.",
@@ -249,7 +253,10 @@
     "primary": "Principal",
     "profileMenu": "Tu perfil y menú",
     "familySettings": "Gestionar familia",
-    "viewProfile": "Tu perfil y ajustes"
+    "viewProfile": "Tu perfil y ajustes",
+    "sendFeedback": "Enviar sugerencia o fallo",
+    "admin": "Admin",
+    "adminBadge": "{count, plural, one {# sugerencia nueva} other {# sugerencias nuevas}}"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -2159,7 +2166,280 @@
     "errors": {
       "cannot_deactivate_admin": "No puedes desactivar a un admin desde aquí.",
       "user_uses_own_key": "Este usuario usa su propia clave; no hay regalo que quitar.",
-      "user_not_found": "Usuario no encontrado."
+      "user_not_found": "Usuario no encontrado.",
+      "cannot_delete_self": "No puedes borrar tu propia cuenta.",
+      "cannot_delete_admin": "No se puede borrar a un admin.",
+      "confirm_mismatch": "El texto no coincide.",
+      "not_failed": "Solo se pueden reintentar borrados fallidos."
+    },
+    "panelTitle": "Admin",
+    "panelSubtitle": "Cómo va Miaurmario: usuarios, registro, buzón y sistema.",
+    "tabs": {
+      "label": "Secciones de admin",
+      "summary": "Resumen",
+      "users": "Usuarios",
+      "signup": "Registro",
+      "inbox": "Buzón",
+      "system": "Sistema"
+    },
+    "summary": {
+      "loadError": "No se pudo cargar el resumen.",
+      "users": "Usuarios",
+      "newThisWeek": "{count, plural, =0 {sin altas esta semana} one {+# esta semana} other {+# esta semana}}",
+      "active": "Activos 7 d · 30 d",
+      "activeHint": "Entraron, usaron IA o añadieron algo",
+      "onboarding": "Onboarding completo",
+      "onboardingHint": "{count, plural, one {# usuario} other {# usuarios}}",
+      "content": "Prendas",
+      "contentHint": "{outfits, plural, one {# look} other {# looks}}",
+      "signupsTitle": "Altas por día",
+      "signupsBody": "Últimos 14 días · {count, plural, one {# alta} other {# altas}} en 7 días",
+      "signupsChart": "Altas por día, últimos 14 días",
+      "aiTitle": "IA este mes",
+      "aiMonth": "Mes {month} (UTC). Coste estimado a partir de los tokens que informa el proveedor.",
+      "requests": "Peticiones",
+      "tokensIn": "Tokens entrada",
+      "tokensOut": "Tokens salida",
+      "unsplit": "+{count} sin desglose (precio de salida)",
+      "cost": "Coste estimado",
+      "approx": "aprox., no es una factura",
+      "budgetLabel": "Presupuesto mensual",
+      "noBudgetSet": "Sin presupuesto mensual. Ponlo abajo para recibir avisos al 80 % y al 100 %.",
+      "topUsers": "Quién más usa la IA",
+      "noUsage": "Nadie ha usado la IA este mes.",
+      "topUserUsage": "{requests} pet. · {tokens} tokens",
+      "budgetWarningTitle": "Llevas más del 80 % del presupuesto de IA",
+      "budgetExceededTitle": "Presupuesto de IA superado",
+      "budgetBody": "Gastado aprox. {cost} de {budget} ({pct} %) este mes.",
+      "pricing": {
+        "title": "Precios y presupuesto",
+        "description": "Precio por millón de tokens en USD (por defecto DeepSeek, horario valle) y cambio a euros.",
+        "input": "Entrada (USD / 1M)",
+        "output": "Salida (USD / 1M)",
+        "rate": "Cambio USD → EUR",
+        "budget": "Presupuesto (€ / mes)",
+        "noBudget": "Sin límite",
+        "hint": "Solo afecta a la estimación y a los avisos; no corta la IA.",
+        "save": "Guardar precios"
+      }
+    },
+    "users": {
+      "privacy": "Por privacidad, el panel nunca muestra armarios, looks ni fotos de nadie: solo recuentos.",
+      "rowSummary": "{items, plural, one {# prenda} other {# prendas}} · {requests} pet. IA este mes",
+      "deletionPending": "Borrado en curso",
+      "onboarding": "Onboarding",
+      "password": "Contraseña",
+      "outfits": "Looks",
+      "friends": "Amigos",
+      "integrations": "Integraciones",
+      "none": "Ninguna",
+      "yes": "Sí",
+      "no": "No",
+      "aiTitle": "IA",
+      "aiUsage": "{requests} peticiones · {tokensIn} entrada · {tokensOut} salida · ≈ {cost} este mes",
+      "accountTitle": "Cuenta",
+      "removePassword": "Quitar contraseña",
+      "removePasswordTitle": "¿Quitar la contraseña?",
+      "removePasswordBody": "Solo podrá entrar con el enlace mágico por email hasta que ponga una nueva.",
+      "passwordRemoved": "Contraseña eliminada.",
+      "deleteAccount": "Borrar cuenta",
+      "delete": {
+        "title": "Borrar la cuenta de {name}",
+        "body": "Se borran para siempre sus prendas, looks, fotos, integraciones y ajustes. No se puede deshacer. El borrado se hace en segundo plano y queda registrado.",
+        "typeToConfirm": "Escribe <target></target> para confirmar",
+        "cancel": "Cancelar",
+        "confirm": "Borrar para siempre",
+        "queued": "Borrado en marcha. La cuenta ya está bloqueada."
+      },
+      "deletions": {
+        "title": "Cuentas borradas",
+        "description": "Registro de borrados (sin datos personales).",
+        "noUsername": "sin usuario",
+        "retry": "Reintentar",
+        "status": {
+          "pending": "En cola",
+          "running": "Borrando",
+          "done": "Borrada",
+          "failed": "Error"
+        }
+      }
+    },
+    "signup": {
+      "modeTitle": "Modo de registro",
+      "modeBody": "Quién puede crear cuenta nueva. Quien ya tiene cuenta siempre puede entrar.",
+      "open": "Abierto",
+      "inviteOnly": "Solo con invitación",
+      "openHint": "Cualquiera con email puede crear cuenta.",
+      "inviteOnlyHint": "Beta cerrada: las cuentas nuevas necesitan un enlace de invitación.",
+      "modeOpenSaved": "Registro abierto.",
+      "modeInviteSaved": "Ahora solo se entra con invitación.",
+      "create": {
+        "title": "Nueva invitación",
+        "description": "Genera un enlace del tipo /login?invite=CÓDIGO.",
+        "note": "Nota (solo para ti)",
+        "notePlaceholder": "Para quién es",
+        "maxUses": "Usos máximos",
+        "unlimited": "Ilimitados",
+        "expires": "Caduca",
+        "submit": "Crear invitación",
+        "created": "Invitación creada.",
+        "createdCopied": "Invitación creada y enlace copiado."
+      },
+      "listTitle": "Invitaciones",
+      "empty": "Aún no hay invitaciones.",
+      "status": {
+        "active": "Activa",
+        "revoked": "Revocada",
+        "expired": "Caducada",
+        "used_up": "Agotada"
+      },
+      "usesOf": "{uses} / {max} usos",
+      "uses": "{uses, plural, one {# uso} other {# usos}}",
+      "expiresOn": "Caduca el {date}",
+      "noExpiry": "No caduca",
+      "copyLink": "Copiar enlace",
+      "copyCode": "Copiar código",
+      "linkCopied": "Enlace copiado.",
+      "codeCopied": "Código copiado.",
+      "copyFailed": "No se pudo copiar.",
+      "revoke": "Revocar",
+      "revoked": "Invitación revocada."
+    },
+    "inbox": {
+      "openScreenshot": "Ver captura",
+      "screenshot": "Captura de pantalla",
+      "kind": {
+        "suggestion": "Sugerencia",
+        "bug": "Fallo",
+        "other": "Otro"
+      },
+      "status": {
+        "new": "Nueva",
+        "seen": "Vista",
+        "done": "Hecha"
+      },
+      "statusLabel": "Estado",
+      "context": "Contexto",
+      "page": "Página",
+      "build": "Versión",
+      "userAgent": "Navegador",
+      "note": "Nota interna",
+      "notePlaceholder": "Solo la ven los admins",
+      "saveNote": "Guardar nota",
+      "noteSaved": "Nota guardada.",
+      "filters": {
+        "new": "Nuevas",
+        "seen": "Vistas",
+        "done": "Hechas",
+        "all": "Todas"
+      },
+      "loadError": "No se pudo cargar el buzón.",
+      "emptyTitle": "Buzón vacío",
+      "emptyBody": "Aquí llegan las sugerencias y fallos que envían los usuarios."
+    },
+    "system": {
+      "loadError": "No se pudo cargar el estado del sistema.",
+      "statusTitle": "Estado",
+      "backup": "Última copia de seguridad",
+      "notConfigured": "No configurado",
+      "backupError": "No se pudo leer el estado ({error})",
+      "backupOk": "Correcta",
+      "uploads": "Fotos subidas",
+      "uploadsValue": "{size} · {files, plural, one {# archivo} other {# archivos}} (calculado a las {at})",
+      "uploadsMissing": "La carpeta de subidas no existe",
+      "database": "Base de datos",
+      "version": "Versión",
+      "worker": "Worker (tareas en segundo plano)",
+      "redisDown": "Redis no responde",
+      "workerAlive": "Vivo · {queued, plural, =0 {cola vacía} one {# tarea en cola} other {# tareas en cola}}",
+      "workerDown": "Sin latido reciente · {queued, plural, =0 {cola vacía} one {# tarea en cola} other {# tareas en cola}}",
+      "spotify": "Spotify (modo desarrollo)",
+      "spotifySlots": "{used} / {total} plazas usadas",
+      "pinterest": "Pinterest",
+      "configured": "Configurado",
+      "announcement": {
+        "title": "Aviso global",
+        "description": "Un banner para todos los usuarios; cada uno puede cerrarlo.",
+        "placeholder": "Ej.: Esta noche hay mantenimiento de 23:00 a 23:30.",
+        "text": "Texto del aviso",
+        "level": "Tipo de aviso",
+        "info": "Info",
+        "warning": "Importante",
+        "expires": "Caduca (opcional)",
+        "publish": "Publicar aviso",
+        "update": "Actualizar aviso",
+        "clear": "Quitar aviso",
+        "saved": "Aviso publicado.",
+        "cleared": "Aviso retirado.",
+        "live": "Hay un aviso publicado. Al actualizarlo vuelve a aparecer a quien lo cerró.",
+        "none": "Ahora mismo no hay aviso."
+      },
+      "audit": {
+        "title": "Acciones de admin",
+        "description": "Todo cambio hecho desde este panel queda registrado.",
+        "empty": "Sin acciones todavía.",
+        "actions": {
+          "user": {
+            "update": "Usuario editado",
+            "password_removed": "Contraseña quitada",
+            "delete_requested": "Borrado de cuenta",
+            "delete_retried": "Borrado reintentado"
+          },
+          "settings": {
+            "ai_pricing": "Precios de IA",
+            "signup_mode": "Modo de registro"
+          },
+          "invite": {
+            "create": "Invitación creada",
+            "revoke": "Invitación revocada"
+          },
+          "feedback": {
+            "update": "Buzón actualizado"
+          },
+          "announcement": {
+            "set": "Aviso publicado",
+            "clear": "Aviso retirado"
+          }
+        }
+      }
     }
+  },
+  "appFeedback": {
+    "title": "Enviar sugerencia o fallo",
+    "description": "Lo lee directamente quien hace Miaurmario. ¡Gracias!",
+    "kindLabel": "Tipo",
+    "kinds": {
+      "suggestion": "Sugerencia",
+      "bug": "Fallo",
+      "other": "Otro"
+    },
+    "textLabel": {
+      "suggestion": "¿Qué te gustaría?",
+      "bug": "¿Qué ha pasado?",
+      "other": "Cuéntanos"
+    },
+    "placeholder": {
+      "suggestion": "Me encantaría poder…",
+      "bug": "Estaba en… pulsé… y pasó…",
+      "other": "Escribe aquí"
+    },
+    "addScreenshot": "Añadir captura",
+    "removeScreenshot": "Quitar",
+    "screenshotPreview": "Vista previa de la captura",
+    "fileType": "Solo imágenes PNG, JPEG o WebP.",
+    "fileTooLarge": "La captura pesa más de {mb} MB.",
+    "contextNote": "Se adjunta la página actual, la versión de la app y tu navegador.",
+    "send": "Enviar",
+    "sent": "¡Recibido! Gracias por ayudar.",
+    "error": "No se pudo enviar. Inténtalo otra vez.",
+    "errors": {
+      "screenshot_too_large": "La captura es demasiado grande.",
+      "screenshot_invalid": "La captura no es una imagen válida.",
+      "text_required": "Escribe algo antes de enviar.",
+      "text_too_long": "El texto es demasiado largo."
+    }
+  },
+  "announcement": {
+    "dismiss": "Cerrar aviso"
   }
 }

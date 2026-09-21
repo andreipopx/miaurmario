@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ from app.utils.passwords import (
     verify_password_async,
 )
 from app.utils.rate_limit import rate_limit_by_user
+from app.utils.timezone import is_valid_timezone
 
 USERNAME_REGEX = re.compile(r"^[a-z0-9_]{3,20}$")
 
@@ -53,11 +54,28 @@ class UserProfileUpdate(BaseModel):
     display_name: str | None = None
     username: str | None = Field(default=None, min_length=3, max_length=20)
     bio: str | None = Field(default=None, max_length=280)
-    timezone: str | None = None
-    location_lat: Decimal | None = None
-    location_lon: Decimal | None = None
-    location_name: str | None = None
+    timezone: str | None = Field(default=None, max_length=50)
+    location_lat: Decimal | None = Field(default=None, ge=-90, le=90)
+    location_lon: Decimal | None = Field(default=None, ge=-180, le=180)
+    location_name: str | None = Field(default=None, max_length=100)
     body_measurements: dict | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def _valid_timezone(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not is_valid_timezone(value):
+            raise ValueError("invalid_timezone")
+        return value
+
+    @field_validator("location_name")
+    @classmethod
+    def _clean_location_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return " ".join(value.split()) or None
 
 
 class UsernameAvailableResponse(BaseModel):

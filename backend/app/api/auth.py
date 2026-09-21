@@ -2,15 +2,15 @@ import hashlib
 import logging
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from urllib.parse import urlencode
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
+from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import DEFAULT_SECRET_KEY, get_settings
@@ -39,7 +39,7 @@ settings = get_settings()
 
 
 def create_access_token(external_id: str, expires_delta: timedelta | None = None) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if expires_delta:
         expire = now + expires_delta
     else:
@@ -110,7 +110,8 @@ async def auth_status() -> AuthStatusResponse:
             mode=mode,
             error=(
                 "No authentication method configured. "
-                "Set OIDC_ISSUER_URL + OIDC_CLIENT_ID, or enable DEBUG mode."
+                "Set OIDC_ISSUER_URL + OIDC_CLIENT_ID, RESEND_API_KEY (magic link), "
+                "or enable DEBUG mode."
             ),
         )
     return AuthStatusResponse(configured=True, mode=mode)
@@ -261,7 +262,7 @@ async def request_magic_link(
 
     raw_token = secrets.token_urlsafe(32)
     token_hash = _hash_token(raw_token)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     db.add(
         MagicLinkToken(
@@ -275,7 +276,10 @@ async def request_magic_link(
     )
     await db.commit()
 
-    link = f"{settings.magic_link_base_url.rstrip('/')}/auth/callback?token={raw_token}"
+    # Always built from configuration, never from the request Host header:
+    # a spoofed Host would otherwise make us email a token-bearing link to an
+    # attacker-controlled origin.
+    link = f"{settings.magic_link_origin}/auth/callback?token={raw_token}"
     try:
         await send_magic_link_email(email_l, link)
     except Exception as exc:
@@ -285,42 +289,92 @@ async def request_magic_link(
     return MagicLinkAcceptedResponse()
 
 
-@router.get("/magic-link/consume")
-async def consume_magic_link(
-    token: str,
+class MagicLinkVerifyRequest(BaseModel):
+    token: str = Field(..., min_length=16, max_length=512)
+
+
+class MagicLinkVerifyResponse(BaseModel):
+    id: uuid.UUID
+    external_id: str
+    email: str
+    display_name: str
+    username: str | None = None
+    avatar_url: str | None = None
+    is_new_user: bool
+    onboarding_completed: bool
+    needs_username: bool
+    access_token: str
+
+
+async def _consume_magic_link_token(db: AsyncSession, raw_token: str) -> str | None:
+    """Atomically mark a magic-link token as used and return its email.
+
+    A single conditional UPDATE ... RETURNING guarantees single use even under
+    concurrent requests: only one caller can flip used_at from NULL. Returns
+    None when the token is unknown, already used or expired.
+    """
+    now = datetime.now(UTC)
+    result = await db.execute(
+        update(MagicLinkToken)
+        .where(
+            MagicLinkToken.token_hash == _hash_token(raw_token),
+            MagicLinkToken.used_at.is_(None),
+            MagicLinkToken.expires_at > now,
+        )
+        .values(used_at=now)
+        .returning(MagicLinkToken.email)
+        .execution_options(synchronize_session=False)
+    )
+    return result.scalar_one_or_none()
+
+
+@router.post("/magic-link/verify", response_model=MagicLinkVerifyResponse)
+async def verify_magic_link(
+    payload: MagicLinkVerifyRequest,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> RedirectResponse:
+) -> MagicLinkVerifyResponse:
+    """Consume a magic-link token and return an API access token as JSON.
+
+    Called server-side by the NextAuth `magic-link` credentials provider, which
+    turns the result into a NextAuth JWT session (the frontend authenticates
+    API calls with session.accessToken, not cookies).
+    """
     if not _magic_link_configured():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Magic link auth is not configured",
         )
 
-    token_hash = _hash_token(token)
-    result = await db.execute(
-        select(MagicLinkToken).where(MagicLinkToken.token_hash == token_hash)
-    )
-    row = result.scalar_one_or_none()
-    now = datetime.now(timezone.utc)
-    if row is None or row.used_at is not None or row.expires_at < now:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired link")
+    await rate_limit_by_ip(request, "magic_link_verify", 20, 900)
 
-    row.used_at = now
+    email = await _consume_magic_link_token(db, payload.token)
+    if email is None:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired link"
+        )
+
     user_service = UserService(db)
-    user = await user_service.get_or_create_by_email(row.email)
+    is_new = await user_service.get_by_email(email) is None
+    user = await user_service.get_or_create_by_email(email)
     await db.commit()
 
-    access_token = create_access_token(user.external_id)
-    landing = "/onboarding" if not user.username else "/dashboard"
-    base = settings.magic_link_base_url.rstrip("/")
-    resp = RedirectResponse(url=f"{base}{landing}", status_code=302)
-    resp.set_cookie(
-        "access_token",
-        access_token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=7 * 24 * 3600,
-        path="/",
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive",
+        )
+
+    return MagicLinkVerifyResponse(
+        id=user.id,
+        external_id=user.external_id,
+        email=user.email,
+        display_name=user.display_name,
+        username=user.username,
+        avatar_url=user.avatar_url,
+        is_new_user=is_new,
+        onboarding_completed=user.onboarding_completed,
+        needs_username=not user.username,
+        access_token=create_access_token(user.external_id),
     )
-    return resp

@@ -91,6 +91,9 @@
     "errorAccessDenied": "Acceso denegado",
     "errorUndefined": "No hay proveedor de autenticación configurado. Define OIDC_ISSUER_URL o activa DEV_MODE.",
     "errorGeneric": "Ocurrió un error al iniciar sesión",
+    "errorMagicLinkTitle": "Enlace de acceso no válido",
+    "errorMagicLinkInvalid": "Este enlace de acceso no es válido, ha caducado o ya se usó. Pide uno nuevo abajo.",
+    "errorMagicLinkMissing": "El enlace de acceso está incompleto. Pide uno nuevo abajo.",
     "magicLink": {
       "emailLabel": "Tu correo",
       "emailPlaceholder": "tu@correo.com",
@@ -98,7 +101,8 @@
       "sentTitle": "Revisa tu correo",
       "sentBody": "Si el correo existe, te hemos enviado un enlace para entrar. Caduca en 15 minutos.",
       "rateLimited": "Has pedido demasiados enlaces. Espera un rato antes de volver a intentarlo.",
-      "genericError": "No hemos podido enviar el enlace. Inténtalo de nuevo en un momento."
+      "genericError": "No hemos podido enviar el enlace. Inténtalo de nuevo en un momento.",
+      "verifying": "Iniciando sesión…"
     }
   },
   "onboarding": {

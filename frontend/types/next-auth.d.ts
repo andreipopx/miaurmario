@@ -12,7 +12,17 @@ declare module 'next-auth' {
     accessToken?: string;
     isNewUser?: boolean;
     onboardingCompleted?: boolean;
+    needsUsername?: boolean;
     syncError?: string;
+  }
+
+  // Extra fields returned by the magic-link CredentialsProvider.authorize()
+  interface User {
+    backendAccessToken?: string;
+    backendUserId?: string;
+    isNewUser?: boolean;
+    onboardingCompleted?: boolean;
+    needsUsername?: boolean;
   }
 }
 
@@ -23,6 +33,7 @@ declare module 'next-auth/jwt' {
     backendUserId?: string;
     isNewUser?: boolean;
     onboardingCompleted?: boolean;
+    needsUsername?: boolean;
     syncError?: string;
   }
 }

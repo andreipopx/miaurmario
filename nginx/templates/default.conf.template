@@ -1,3 +1,16 @@
+# Preserve the scheme/host set by an upstream proxy (Caddy / Cloudflare Tunnel)
+# instead of overwriting them with this hop's values: $scheme is always "http"
+# here, which would make NextAuth build http:// URLs for the public HTTPS site.
+map $http_x_forwarded_proto $forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+map $http_x_forwarded_host $forwarded_host {
+    default $http_x_forwarded_host;
+    ""      $host;
+}
+
 upstream frontend {
     server frontend:3000;
 }
@@ -27,7 +40,8 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        proxy_set_header X-Forwarded-Host $forwarded_host;
         proxy_cache_bypass $http_upgrade;
     }
 
@@ -38,7 +52,8 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        proxy_set_header X-Forwarded-Host $forwarded_host;
         proxy_read_timeout ${NGINX_AI_TIMEOUT}s;
         proxy_send_timeout ${NGINX_AI_TIMEOUT}s;
         proxy_connect_timeout 10s;
@@ -53,7 +68,8 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        proxy_set_header X-Forwarded-Host $forwarded_host;
         proxy_cache_bypass $http_upgrade;
         proxy_read_timeout 120s;
     }
@@ -74,7 +90,8 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        proxy_set_header X-Forwarded-Host $forwarded_host;
         proxy_cache_bypass $http_upgrade;
     }
 }

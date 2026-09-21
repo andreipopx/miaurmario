@@ -53,7 +53,12 @@ class Settings(BaseSettings):
     # Authentication - Magic link (Sprint 2)
     resend_api_key: str | None = Field(default=None)
     resend_from_email: str = Field(default="Miaurmario <hola@miaurmario.andreipop.org>")
-    magic_link_base_url: str = Field(default="http://localhost:3000")
+    # Public origin the emailed link points to. Falls back to APP_URL when unset.
+    # Must be fixed config (never derived from the request Host header).
+    magic_link_base_url: str | None = Field(default=None)
+
+    # Canonical public origin of the web app (notification/invite links, etc.)
+    app_url: str = Field(default="http://localhost:3000")
 
     # Authorization - admin promotion
     admin_emails: str = Field(default="")
@@ -175,6 +180,10 @@ class Settings(BaseSettings):
         if self.resend_api_key:
             return "magic_link"
         return "unknown"
+
+    @property
+    def magic_link_origin(self) -> str:
+        return (self.magic_link_base_url or self.app_url).rstrip("/")
 
     def admin_email_set(self) -> set[str]:
         return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}

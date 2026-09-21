@@ -82,7 +82,84 @@ const DevCredentialsProvider = CredentialsProvider({
     };
   },
 });
-// Determine which provider to use
+
+function backendUrl(): string {
+  return (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000').replace(
+    /\/+$/,
+    '',
+  );
+}
+
+interface MagicLinkVerifyResponse {
+  id: string;
+  external_id: string;
+  email: string;
+  display_name: string;
+  username?: string | null;
+  avatar_url?: string | null;
+  is_new_user: boolean;
+  onboarding_completed: boolean;
+  needs_username: boolean;
+  access_token: string;
+}
+
+// Magic link provider: the emailed link lands on /auth/callback, which calls
+// signIn('magic-link', { token }). authorize() exchanges the single-use token
+// with the backend for an API access token, which the jwt callback stores in
+// the NextAuth session (same shape as the OIDC/dev flows). The backend is the
+// gate: if magic link is not configured it answers 503 and sign-in fails.
+export const MagicLinkProvider = CredentialsProvider({
+  id: 'magic-link',
+  name: 'Magic link',
+  credentials: {
+    token: { label: 'Token', type: 'text' },
+  },
+  async authorize(credentials, req) {
+    const token = credentials?.token;
+    if (typeof token !== 'string' || token.length < 16 || token.length > 512) {
+      return null;
+    }
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    // Preserve the end-user IP so the backend's per-IP rate limit is not
+    // applied to the frontend container as a whole.
+    const xff = req?.headers?.['x-forwarded-for'];
+    if (typeof xff === 'string' && xff) {
+      headers['X-Forwarded-For'] = xff;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${backendUrl()}/api/v1/auth/magic-link/verify`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ token }),
+        cache: 'no-store',
+      });
+    } catch (error) {
+      console.error('Magic link verify: backend unreachable', error);
+      return null;
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as MagicLinkVerifyResponse;
+    return {
+      id: data.external_id,
+      email: data.email,
+      name: data.display_name,
+      image: data.avatar_url ?? null,
+      backendAccessToken: data.access_token,
+      backendUserId: data.id,
+      isNewUser: data.is_new_user,
+      onboardingCompleted: data.onboarding_completed,
+      needsUsername: data.needs_username,
+    };
+  },
+});
+
 function getProviders() {
   const providers = [];
 
@@ -90,6 +167,15 @@ function getProviders() {
     providers.push(OIDCProvider);
   }
 
+  // Always registered (unless explicitly disabled): availability is decided by
+  // the backend (RESEND_API_KEY), which the login page reads from
+  // /api/v1/auth/config. Must NOT depend on DEV_MODE.
+  if (process.env.MAGIC_LINK_ENABLED !== 'false') {
+    providers.push(MagicLinkProvider);
+  }
+
+  // Dev credentials accept ANY email without verification. Never enable in a
+  // publicly reachable deployment.
   if (process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development') {
     providers.push(DevCredentialsProvider);
   }
@@ -100,7 +186,7 @@ export const authOptions: NextAuthOptions = {
   providers: getProviders(),
   callbacks: {
     async jwt({ token, user, account, trigger }) {
-      const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000';
+      const apiUrl = backendUrl();
 
       // Session update triggered - refresh user data from backend
       if (trigger === 'update' && token.accessToken) {
@@ -116,6 +202,7 @@ export const authOptions: NextAuthOptions = {
             return {
               ...token,
               onboardingCompleted: userData.onboarding_completed,
+              needsUsername: !userData.username,
             };
           }
         } catch (error) {
@@ -124,7 +211,22 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
-      // Initial sign in - sync with backend and get API token
+      // Magic link sign in - the backend already verified the token and issued
+      // an API access token in authorize(); no /auth/sync round-trip.
+      if (user && account?.provider === 'magic-link') {
+        return {
+          ...token,
+          accessToken: user.backendAccessToken,
+          sub: user.id,
+          backendUserId: user.backendUserId,
+          isNewUser: user.isNewUser,
+          onboardingCompleted: user.onboardingCompleted,
+          needsUsername: user.needsUsername,
+          syncError: undefined,
+        };
+      }
+
+      // Initial sign in (OIDC / dev) - sync with backend and get API token
       if (user) {
         try {
           const response = await fetch(`${apiUrl}/api/v1/auth/sync`, {
@@ -183,6 +285,7 @@ export const authOptions: NextAuthOptions = {
         accessToken: token.accessToken,
         isNewUser: token.isNewUser,
         onboardingCompleted: token.onboardingCompleted,
+        needsUsername: token.needsUsername,
         syncError: token.syncError,
       };
     },
@@ -195,9 +298,11 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   secret: process.env.NEXTAUTH_SECRET,
-  // Trust the X-Forwarded-Host header so callback URLs match whichever origin
-  // the request arrived on (LAN http://miaurmario.home vs public
-  // https://miaurmario.andreipop.org via Cloudflare Tunnel). Without this,
-  // NEXTAUTH_URL locks every callback to a single origin.
-  trustHost: true,
+  // Origin handling (next-auth v4): callback/redirect URLs and the Secure flag
+  // on session cookies come from NEXTAUTH_URL, unless the env var
+  // AUTH_TRUST_HOST=true is set, in which case the origin is derived per
+  // request from X-Forwarded-Host (or Host) + X-Forwarded-Proto. That env var
+  // is what lets the LAN (http://miaurmario.home) and public
+  // (https://miaurmario.andreipop.org) hostnames coexist. The `trustHost`
+  // option is Auth.js v5 only and is ignored by v4, so it is not set here.
 };

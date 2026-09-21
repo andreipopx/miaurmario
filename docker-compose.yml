@@ -88,6 +88,8 @@ services:
       BACKEND_URL: ${BACKEND_URL:-${NEXT_PUBLIC_API_URL:-http://backend:8000}}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production}
+      # Derive auth origin per request (multi-hostname setups); see .env.example.
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-}
       DEV_MODE: ${DEBUG:-false}
       PUID: ${PUID:-1001}
       PGID: ${PGID:-1001}

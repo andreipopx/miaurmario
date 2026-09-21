@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import { getRequestOrigin } from '@/lib/request-origin';
 
 export async function GET(request: Request) {
-  const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  // Use the origin the browser is on (LAN or public), not a fixed NEXTAUTH_URL,
+  // so logging out never bounces the user to the other hostname.
+  const appUrl = getRequestOrigin(request.headers);
   const endSessionUrl = process.env.OIDC_END_SESSION_URL;
   const tinyAuthUrl = process.env.TINYAUTH_URL;
 

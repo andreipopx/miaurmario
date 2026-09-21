@@ -91,6 +91,9 @@
     "errorAccessDenied": "Access denied",
     "errorUndefined": "No authentication provider is configured. Set OIDC_ISSUER_URL or enable DEV_MODE.",
     "errorGeneric": "An error occurred during sign in",
+    "errorMagicLinkTitle": "Sign-in link not valid",
+    "errorMagicLinkInvalid": "This sign-in link is invalid, expired or was already used. Request a new one below.",
+    "errorMagicLinkMissing": "The sign-in link is incomplete. Request a new one below.",
     "magicLink": {
       "emailLabel": "Your email",
       "emailPlaceholder": "you@email.com",
@@ -98,7 +101,8 @@
       "sentTitle": "Check your inbox",
       "sentBody": "If the email exists, we sent a link to sign in. It expires in 15 minutes.",
       "rateLimited": "Too many requests. Please wait a bit before trying again.",
-      "genericError": "We couldn't send the link. Try again in a moment."
+      "genericError": "We couldn't send the link. Try again in a moment.",
+      "verifying": "Signing you in…"
     }
   },
   "onboarding": {

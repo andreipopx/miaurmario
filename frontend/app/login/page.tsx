@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { LanguageSwitcher, SHOW_LANGUAGE_SWITCHER } from '@/components/language-switcher';
+import { safeCallbackPath } from '@/lib/magic-link';
 
 function ThemeButton() {
   const { theme, setTheme } = useTheme();
@@ -190,7 +191,9 @@ function LoginContent() {
   const { data: session, status } = useSession();
   const error = searchParams.get('error');
   const syncErrorParam = searchParams.get('syncError');
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  // Relative path only: an absolute callbackUrl may point at the other hostname
+  // (LAN vs public) and router.push would send the user there.
+  const callbackUrl = safeCallbackPath(searchParams.get('callbackUrl'));
   const [backendError, setBackendError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -243,7 +246,7 @@ function LoginContent() {
 
       {error && !backendError && !syncError && (
         <EditorialAlert
-          title={t('backendErrorTitle')}
+          title={error.startsWith('MagicLink') ? t('errorMagicLinkTitle') : t('backendErrorTitle')}
           body={
             (error === 'OAuthSignin' && t('errorOAuthSignin')) ||
             (error === 'OAuthCallback' && t('errorOAuthCallback')) ||
@@ -252,6 +255,8 @@ function LoginContent() {
             (error === 'CredentialsSignin' && t('errorCredentialsSignin')) ||
             (error === 'AccessDenied' && t('errorAccessDenied')) ||
             (error === 'undefined' && t('errorUndefined')) ||
+            (error === 'MagicLinkInvalid' && t('errorMagicLinkInvalid')) ||
+            (error === 'MagicLinkMissing' && t('errorMagicLinkMissing')) ||
             t('errorGeneric')
           }
         />

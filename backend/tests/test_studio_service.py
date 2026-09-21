@@ -571,3 +571,43 @@ async def test_legacy_outfits_still_have_null_layout(
         assert oi.scale == 1.0
         assert oi.rotation == 0.0
         assert oi.z_index == 0
+
+
+@pytest.mark.asyncio
+async def test_list_outfits_was_worn_filter(db_session, studio_user, wardrobe_items):
+    from app.services.outfit_service import OutfitListFilters, OutfitService
+
+    service = StudioService(db_session)
+    shirt, jeans, sneakers = wardrobe_items[0], wardrobe_items[1], wardrobe_items[2]
+    worn = await service.create_from_scratch(
+        user=studio_user,
+        item_ids=[shirt.id, jeans.id, sneakers.id],
+        occasion="casual",
+        name="worn",
+        scheduled_for=date.today(),
+        mark_worn=True,
+        source_item_id=None,
+    )
+    not_worn = await service.create_from_scratch(
+        user=studio_user,
+        item_ids=[shirt.id, jeans.id, sneakers.id],
+        occasion="casual",
+        name="not worn",
+        scheduled_for=date.today(),
+        mark_worn=False,
+        source_item_id=None,
+    )
+    await db_session.commit()
+
+    outfits = OutfitService(db_session)
+    only_worn, total = await outfits.list_with_filters(
+        OutfitListFilters(user_id=studio_user.id, was_worn=True), 1, 20
+    )
+    assert total == 1
+    assert [o.id for o in only_worn] == [worn.id]
+
+    never_worn, total = await outfits.list_with_filters(
+        OutfitListFilters(user_id=studio_user.id, was_worn=False), 1, 20
+    )
+    assert total == 1
+    assert [o.id for o in never_worn] == [not_worn.id]

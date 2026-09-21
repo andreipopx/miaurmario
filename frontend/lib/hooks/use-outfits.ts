@@ -91,6 +91,7 @@ export interface OutfitFilters {
   has_source_item?: boolean;
   search?: string;
   cloned_from_outfit_id?: string;
+  was_worn?: boolean;
 }
 
 export interface FeedbackData {
@@ -144,6 +145,7 @@ export function useOutfits(filters: OutfitFilters = {}, page = 1, pageSize = 20)
   if (filters.search) params.search = filters.search;
   if (filters.cloned_from_outfit_id)
     params.cloned_from_outfit_id = filters.cloned_from_outfit_id;
+  if (filters.was_worn !== undefined) params.was_worn = String(filters.was_worn);
 
   return useQuery({
     queryKey: ['outfits', filters, page, pageSize],

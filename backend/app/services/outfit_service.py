@@ -14,6 +14,7 @@ from app.models.outfit import (
     OutfitItem,
     OutfitSource,
     OutfitStatus,
+    UserFeedback,
 )
 from app.models.user import User
 
@@ -33,6 +34,7 @@ class OutfitListFilters:
     family_member_view: bool = False
     search: str | None = None
     cloned_from_outfit_id: UUID | None = None
+    was_worn: bool | None = None
 
 
 class OutfitService:
@@ -128,6 +130,12 @@ class OutfitService:
 
         if filters.cloned_from_outfit_id is not None:
             clauses.append(Outfit.cloned_from_outfit_id == filters.cloned_from_outfit_id)
+
+        worn_clause = Outfit.feedback.has(UserFeedback.worn_at.is_not(None))
+        if filters.was_worn is True:
+            clauses.append(worn_clause)
+        elif filters.was_worn is False:
+            clauses.append(~worn_clause)
 
         return clauses
 

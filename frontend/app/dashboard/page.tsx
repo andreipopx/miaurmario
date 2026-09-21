@@ -221,7 +221,7 @@ function WardrobeSection() {
 
 function OutfitsSection() {
   const t = useTranslations('dashboard.editorial');
-  const { data, isLoading } = useOutfits({ user_response: 'accepted' }, 1, 6);
+  const { data, isLoading } = useOutfits({ status: 'accepted' }, 1, 6);
   const outfits = data?.outfits ?? [];
 
   return (

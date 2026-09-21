@@ -530,6 +530,9 @@ async def list_outfits(
     cloned_from_outfit_id: UUID | None = Query(
         None, description="Filter to wear instances of a specific template"
     ),
+    was_worn: bool | None = Query(
+        None, description="true: only outfits marked as worn; false: never worn"
+    ),
 ) -> OutfitListResponse:
     service = OutfitService(db)
 
@@ -551,6 +554,7 @@ async def list_outfits(
         family_member_view=family_member_id is not None,
         search=search,
         cloned_from_outfit_id=cloned_from_outfit_id,
+        was_worn=was_worn,
     )
 
     outfits, total = await service.list_with_filters(filters, page, page_size)

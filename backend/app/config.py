@@ -90,6 +90,18 @@ class Settings(BaseSettings):
     ai_max_retries: int = Field(default=3)
     ai_max_tokens: int = Field(default=8000)
 
+    # "Habla con Stinky" chat
+    stinky_chat_max_tokens: int = Field(default=4000)  # per provider call (reasoning included)
+    stinky_chat_turn_token_budget: int = Field(default=60000)  # all calls of one user message
+    stinky_chat_max_tool_rounds: int = Field(default=4)
+    stinky_chat_max_message_chars: int = Field(default=1000)
+    stinky_chat_max_conversations: int = Field(default=30)
+    stinky_chat_history_messages: int = Field(default=40)
+    stinky_chat_rate_limit_per_minute: int = Field(default=10)
+    stinky_chat_rate_limit_per_day: int = Field(default=200)
+    # Sent only to api.deepseek.com (other providers may reject the field).
+    stinky_chat_reasoning_effort: str | None = Field(default="low")
+
     # Weather
     openmeteo_url: str = Field(default="https://api.open-meteo.com/v1")
     geocoding_user_agent: str | None = Field(default=None)

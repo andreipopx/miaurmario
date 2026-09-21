@@ -139,6 +139,23 @@ def wmo_condition_label_es(code: int | None) -> str:
     return WMO_LABELS_ES.get(code, WMO_LABEL_ES_UNKNOWN)
 
 
+# Manual weather-override values sent by the suggest page that are not WMO_CODES texts.
+_CONDITION_ALIASES = {"rainy": 61}
+
+
+def wmo_code_for_condition(condition: str | None) -> int | None:
+    """Best-effort reverse lookup: English condition text -> representative WMO code."""
+    if not condition:
+        return None
+    normalized = condition.strip().lower()
+    if normalized in _CONDITION_ALIASES:
+        return _CONDITION_ALIASES[normalized]
+    for code, text in WMO_CODES.items():
+        if text == normalized:
+            return code
+    return None
+
+
 CACHE_TTL = 3600  # 1 hour
 CACHE_PREFIX = "weather:"
 

@@ -375,3 +375,19 @@ class TestWeatherDataSerialization:
         assert restored.temperature == original.temperature
         assert restored.condition == original.condition
         assert restored.timestamp == original.timestamp
+
+
+class TestConditionReverseLookup:
+    def test_known_conditions(self):
+        from app.services.weather_service import wmo_code_for_condition
+
+        assert wmo_code_for_condition("sunny") == 0
+        assert wmo_code_for_condition("Cloudy") == 3
+        assert wmo_code_for_condition("rainy") == 61
+        assert wmo_code_for_condition("thunderstorm") == 95
+
+    def test_unknown_condition(self):
+        from app.services.weather_service import wmo_code_for_condition
+
+        assert wmo_code_for_condition("windy") is None
+        assert wmo_code_for_condition(None) is None

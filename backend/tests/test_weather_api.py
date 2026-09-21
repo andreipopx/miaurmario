@@ -5,7 +5,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.api.weather import GEOCODING_FAILURE_DETAIL
-from app.services.weather_service import GeocodingServiceError
+from app.services.weather_service import GeocodingServiceError, WeatherData
 
 
 class TestWeatherApi:
@@ -20,23 +20,19 @@ class TestWeatherApi:
 
         geocode_mock = AsyncMock(return_value=(40.7128, -74.0060, "New York City"))
         weather_mock = AsyncMock(
-            return_value=type(
-                "Weather",
-                (),
-                {
-                    "temperature": 12.5,
-                    "feels_like": 7.3,
-                    "humidity": 50,
-                    "precipitation_chance": 10,
-                    "precipitation_mm": 0.0,
-                    "wind_speed": 23.4,
-                    "condition": "partly cloudy",
-                    "condition_code": 2,
-                    "is_day": True,
-                    "uv_index": 1.8,
-                    "timestamp": datetime(2026, 5, 12, 15, 21, 35),
-                },
-            )()
+            return_value=WeatherData(
+                temperature=12.5,
+                feels_like=7.3,
+                humidity=50,
+                precipitation_chance=10,
+                precipitation_mm=0.0,
+                wind_speed=23.4,
+                condition="partly cloudy",
+                condition_code=2,
+                is_day=True,
+                uv_index=1.8,
+                timestamp=datetime(2026, 5, 12, 15, 21, 35),
+            )
         )
 
         with (
@@ -46,6 +42,10 @@ class TestWeatherApi:
             response = await client.get("/api/v1/weather/current", headers=auth_headers)
 
         assert response.status_code == 200
+        body = response.json()
+        assert body["condition_code"] == 2
+        # Label derived from the WMO code when the service didn't set one.
+        assert body["condition_label"] == "Mayormente despejado"
         geocode_mock.assert_awaited_once_with("New York City")
         weather_mock.assert_awaited_once_with(40.7128, -74.0060)
 

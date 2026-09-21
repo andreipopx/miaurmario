@@ -39,7 +39,11 @@ from app.services.studio_service import (
     StudioService,
 )
 from app.services.suggestion_cache import clear_suggestions
-from app.services.weather_service import WeatherData
+from app.services.weather_service import (
+    WeatherData,
+    wmo_code_for_condition,
+    wmo_condition_label_es,
+)
 from app.utils.auth import get_current_user
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.signed_urls import sign_image_url
@@ -436,6 +440,7 @@ async def suggest_outfit(
     weather_override = None
     if request.weather_override:
         w = request.weather_override
+        override_code = wmo_code_for_condition(w.condition)
         weather_override = WeatherData(
             temperature=w.temperature,
             feels_like=w.feels_like or w.temperature,
@@ -444,10 +449,13 @@ async def suggest_outfit(
             precipitation_mm=0,
             wind_speed=0,
             condition=w.condition,
-            condition_code=0,
+            condition_code=override_code if override_code is not None else 0,
             is_day=True,
             uv_index=0,
             timestamp=datetime.utcnow(),
+            condition_label=(
+                wmo_condition_label_es(override_code) if override_code is not None else None
+            ),
         )
 
     service = RecommendationService(db)

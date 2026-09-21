@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from app.models.user import User
-from app.services.weather_service import GeocodingServiceError, WeatherService, WeatherServiceError
+from app.services.weather_service import (
+    GeocodingServiceError,
+    WeatherService,
+    WeatherServiceError,
+    wmo_condition_label_es,
+)
 from app.utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -104,7 +109,7 @@ async def get_current_weather(
         wind_speed=weather.wind_speed,
         condition=weather.condition,
         condition_code=weather.condition_code,
-        condition_label=weather.condition_label,
+        condition_label=weather.condition_label or wmo_condition_label_es(weather.condition_code),
         is_day=weather.is_day,
         uv_index=weather.uv_index,
         timestamp=weather.timestamp.isoformat(),
@@ -160,7 +165,7 @@ async def get_weather_forecast(
                 precipitation_chance=day.precipitation_chance,
                 condition=day.condition,
                 condition_code=day.condition_code,
-                condition_label=day.condition_label,
+                condition_label=day.condition_label or wmo_condition_label_es(day.condition_code),
             )
             for day in forecast
         ],

@@ -38,6 +38,8 @@ import {
 } from '@/components/ui/select';
 import { useCreateItem, useBulkCreateItems, BulkUploadResponse } from '@/lib/hooks/use-items';
 import { CLOTHING_TYPES, CLOTHING_COLORS } from '@/lib/types';
+import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
+import { useAIStatus } from '@/lib/hooks/use-ai-access';
 
 interface AddItemDialogProps {
   open: boolean;
@@ -72,6 +74,11 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
   const blobUrlsRef = useRef<Set<string>>(new Set());
 
   const createItem = useCreateItem();
+  const { data: aiStatus } = useAIStatus();
+  // Users without AI still upload normally; items are saved untagged.
+  const noVisionAi = Boolean(
+    aiStatus && aiStatus.server_ai_enabled && !aiStatus.capabilities.vision
+  );
   const bulkCreateItems = useBulkCreateItems();
 
   // Cleanup blob URLs on unmount to prevent memory leaks
@@ -244,6 +251,10 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             {t('description')}
           </DialogDescription>
         </DialogHeader>
+
+        {noVisionAi && (
+          <AIUnavailableNotice feature="tagging" reason={aiStatus?.blocked_reason} />
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
@@ -445,6 +456,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                       </div>
                     </ScrollArea>
 
+                    {!noVisionAi && (
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="skip-ai"
@@ -455,7 +467,8 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                         {t('skipAiLabel')}
                       </Label>
                     </div>
-                    {!skipAi && (
+                    )}
+                    {!skipAi && !noVisionAi && (
                       <p className="text-xs text-muted-foreground">
                         {t('aiWillTag')}
                       </p>

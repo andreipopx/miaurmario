@@ -50,6 +50,9 @@ import { useWeather, Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
 import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
 import { cn } from '@/lib/utils';
+import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
+import { getAiAccessErrorCode } from '@/lib/ai-access';
+import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { TempUnit, formatTemp, displayValue, toF, toCelsius } from '@/lib/temperature';
 
 // Map occasion values to icons and colors
@@ -460,6 +463,11 @@ export default function SuggestPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aiBlocked, setAiBlocked] = useState<string | null>(null);
+  const { data: aiStatus } = useAIStatus();
+  const noTextAi = Boolean(
+    aiStatus && aiStatus.server_ai_enabled && !aiStatus.capabilities.text
+  );
 
   // Get time-based greeting
   const getGreeting = () => {
@@ -485,6 +493,7 @@ export default function SuggestPage() {
 
     setIsGenerating(true);
     setError(null);
+    setAiBlocked(null);
 
     try {
       const request: SuggestRequest = {
@@ -509,7 +518,10 @@ export default function SuggestPage() {
       const result = await api.post<Outfit>('/outfits/suggest', request);
       setOutfit(result);
     } catch (err) {
-      if (err instanceof ApiError) {
+      const aiCode = getAiAccessErrorCode(err);
+      if (aiCode) {
+        setAiBlocked(aiCode);
+      } else if (err instanceof ApiError) {
         setError(err.message);
       } else {
         setError(t('generateError'));
@@ -577,6 +589,10 @@ export default function SuggestPage() {
           {t('editorialSubtitle')}
         </p>
       </header>
+
+      {(aiBlocked || noTextAi) && (
+        <AIUnavailableNotice feature="suggest" reason={aiBlocked ?? aiStatus?.blocked_reason} />
+      )}
 
       {error && (
         <Alert variant="destructive">

@@ -3,17 +3,20 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
-// Editorial chip: hairline border, uppercase small tracking, minimal fill.
-// Hover on outline chip fills with primary (used for tag pills).
+// Pill badges. Pop colours always carry ink text.
 const badgeVariants = cva(
-  'inline-flex items-center px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] transition-colors focus:outline-none focus:ring-1 focus:ring-ring',
+  'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
   {
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground',
         secondary: 'bg-secondary text-secondary-foreground',
-        destructive: 'bg-transparent text-primary border border-primary',
-        outline: 'text-foreground border border-border-solid/60 hover:bg-primary hover:text-primary-foreground hover:border-primary cursor-default',
+        signature: 'bg-signature text-signature-foreground',
+        amber: 'bg-pop-amber text-pop-foreground',
+        sky: 'bg-pop-sky text-pop-foreground',
+        mint: 'bg-pop-mint text-pop-foreground',
+        destructive: 'bg-destructive text-destructive-foreground',
+        outline: 'border-[1.5px] border-border text-foreground',
       },
     },
     defaultVariants: {

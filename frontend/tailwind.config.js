@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+// Stinky pop — every colour/radius comes from CSS variables in app/globals.css.
 module.exports = {
   darkMode: ['class'],
   content: [
@@ -10,7 +11,7 @@ module.exports = {
   theme: {
     container: {
       center: true,
-      padding: '2rem',
+      padding: '1rem',
       screens: {
         '2xl': '1400px',
       },
@@ -22,6 +23,7 @@ module.exports = {
         ring: 'var(--ring)',
         background: 'var(--background)',
         foreground: 'var(--foreground)',
+        panel: 'var(--panel)',
         primary: {
           DEFAULT: 'var(--primary)',
           foreground: 'var(--primary-foreground)',
@@ -29,6 +31,18 @@ module.exports = {
         secondary: {
           DEFAULT: 'var(--secondary)',
           foreground: 'var(--secondary-foreground)',
+        },
+        signature: {
+          DEFAULT: 'var(--signature)',
+          foreground: 'var(--signature-foreground)',
+          soft: 'var(--signature-soft)',
+        },
+        pop: {
+          amber: 'var(--pop-amber)',
+          pink: 'var(--pop-pink)',
+          sky: 'var(--pop-sky)',
+          mint: 'var(--pop-mint)',
+          foreground: 'var(--pop-foreground)',
         },
         destructive: {
           DEFAULT: 'var(--destructive)',
@@ -50,10 +64,6 @@ module.exports = {
           DEFAULT: 'var(--card)',
           foreground: 'var(--card-foreground)',
         },
-        // Editorial custom tokens
-        gold: {
-          DEFAULT: 'var(--editorial-gold)',
-        },
         success: {
           DEFAULT: 'var(--success)',
         },
@@ -62,23 +72,21 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['var(--font-display)', 'Playfair Display', 'Georgia', 'serif'],
-        editorial: ['var(--font-editorial)', 'Cormorant Garamond', 'Georgia', 'serif'],
-      },
-      fontSize: {
-        // Editorial display sizes
-        'display-2xl': ['clamp(3rem, 8vw, 6rem)', { lineHeight: '0.95', letterSpacing: '-0.02em' }],
-        'display-xl': ['clamp(2.5rem, 6vw, 4.5rem)', { lineHeight: '1.0', letterSpacing: '-0.02em' }],
-        'display-lg': ['clamp(2rem, 4.5vw, 3.5rem)', { lineHeight: '1.05', letterSpacing: '-0.015em' }],
+        sans: ['var(--font-sans)', 'Figtree', 'system-ui', 'sans-serif'],
+        wordmark: ['var(--font-wordmark)', 'Figtree', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
+        // Cards / panels 24px, garment tiles 18px, quick actions 16px.
+        // Buttons, inputs and chips use rounded-full.
+        '4xl': '2rem',
         lg: 'var(--radius)',
-        md: 'calc(var(--radius) + 2px)',
-        sm: 'calc(var(--radius))',
+        tile: 'var(--radius-tile)',
+        quick: 'var(--radius-quick)',
+        md: '14px',
+        sm: '10px',
       },
       transitionTimingFunction: {
-        editorial: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        pop: 'cubic-bezier(0.34, 1.3, 0.64, 1)',
       },
       keyframes: {
         'accordion-down': {
@@ -89,10 +97,15 @@ module.exports = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: 0 },
         },
+        'progress-indeterminate': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(250%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'progress-indeterminate': 'progress-indeterminate 1.6s ease-in-out infinite',
       },
     },
   },

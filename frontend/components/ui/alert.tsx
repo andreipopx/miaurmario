@@ -3,19 +3,15 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
-// Editorial alert: warm cream card with a burgundy hairline on the left,
-// Playfair title. Reads like a magazine sidebar, not a system error.
+// Rounded tinted panel. `signature` is the soft-pink "Stinky says" tone.
 const alertVariants = cva(
-  'relative w-full p-5 sm:p-6 bg-card [&>svg~*]:pl-8 [&>svg+div]:translate-y-[-2px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-5',
+  'relative w-full rounded-lg p-4 sm:p-5 text-foreground [&>svg~*]:pl-8 [&>svg+div]:translate-y-[-2px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-[18px] sm:[&>svg]:left-5 sm:[&>svg]:top-[22px] [&>svg]:text-foreground',
   {
     variants: {
       variant: {
-        default:
-          'border-l-2 border-l-primary/60 border-y-0 border-r-0 [&>svg]:text-primary',
-        destructive:
-          'border-l-2 border-l-primary border-y-0 border-r-0 [&>svg]:text-primary text-foreground',
-        gold:
-          'border-l-2 border-l-gold border-y-0 border-r-0 [&>svg]:text-gold text-foreground',
+        default: 'bg-panel',
+        destructive: 'bg-destructive/10 [&>svg]:!text-destructive',
+        signature: 'bg-signature-soft',
       },
     },
     defaultVariants: {
@@ -43,7 +39,7 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn('font-display text-lg font-normal leading-tight mb-1.5', className)}
+    className={cn('mb-1 text-[15px] font-bold leading-tight', className)}
     {...props}
   />
 ));

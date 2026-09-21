@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Playfair_Display, Cormorant_Garamond } from 'next/font/google';
+import { Figtree, Bagel_Fat_One } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
@@ -8,26 +8,18 @@ import { ServiceWorkerRegister } from '@/components/sw-register';
 
 export const dynamic = 'force-dynamic';
 
-const inter = Inter({
+const figtree = Figtree({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans',
   display: 'swap',
 });
 
-const playfair = Playfair_Display({
+// Wordmark only ("miaurmario" logo) — never for UI text.
+const bagel = Bagel_Fat_One({
   subsets: ['latin'],
-  weight: ['400', '700', '900'],
-  style: ['normal', 'italic'],
-  variable: '--font-display',
-  display: 'swap',
-});
-
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  style: ['italic'],
-  variable: '--font-editorial',
+  weight: '400',
+  variable: '--font-wordmark',
   display: 'swap',
 });
 
@@ -39,6 +31,7 @@ export const metadata: Metadata = {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
@@ -68,8 +61,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F5EFE6' },
-    { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F0F0F' },
   ],
 };
 
@@ -84,7 +77,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       suppressHydrationWarning
-      className={`${inter.variable} ${playfair.variable} ${cormorant.variable}`}
+      className={`${figtree.variable} ${bagel.variable}`}
     >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>

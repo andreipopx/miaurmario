@@ -3,62 +3,108 @@
 @tailwind utilities;
 
 /*
- * Editorial fashion palette — inspired by Vogue / AnOther Magazine.
- * Values live as raw hex; tailwind config consumes them via var(--token).
+ * Stinky pop — Miaurmario design tokens.
+ *
+ * White canvas, light-gray panels, ink text, and saturated "pop" colours taken
+ * from Stinky himself (pink nose, amber eyes) plus sky and mint. Every colour
+ * the app uses lives here as a CSS variable; tailwind.config.js only maps them.
+ * Swapping the palette = editing this file.
+ *
+ * Rule of thumb: pop colours are backgrounds (tiles, active pills, badges) and
+ * always carry ink (#111) text/icons. Never use them as text colour on white.
  */
 @layer base {
   :root {
-    /* Light (default) — warm magazine cream */
-    --background: #F5EFE6;
-    --card: #FAF6EF;
-    --popover: #FAF6EF;
-    --foreground: #0A0A0A;
-    --muted: #EDE5D5;
-    --muted-foreground: #6B5D4F;
-    --accent: #EFE5D0;
-    --accent-foreground: #0A0A0A;
-    --primary: #7B1E1E;              /* burgundy */
-    --primary-foreground: #F5EFE6;
-    --secondary: #F0E6D2;
-    --secondary-foreground: #0A0A0A;
-    --editorial-gold: #B8860B;
-    --destructive: #7B1E1E;
-    --destructive-foreground: #F5EFE6;
-    --success: #4A5D31;
-    --warning: #A56A00;
-    --border: rgba(212, 201, 184, 0.55);
-    --border-solid: #D4C9B8;
-    --input: rgba(212, 201, 184, 0.55);
-    --ring: #7B1E1E;
-    --card-foreground: #0A0A0A;
-    --popover-foreground: #0A0A0A;
-    --radius: 0px;
+    /* Surfaces */
+    --background: #FFFFFF;
+    --card: #FFFFFF;
+    --popover: #FFFFFF;
+    --panel: #F4F4F2;          /* gray surface behind garments, search, panels */
+    --muted: #F4F4F2;
+    --accent: #F4F4F2;         /* hover surface */
+    --border: #ECECEC;         /* hairlines */
+    --input: #ECECEC;
+
+    /* Text */
+    --foreground: #111111;     /* ink */
+    --card-foreground: #111111;
+    --popover-foreground: #111111;
+    --muted-foreground: #6B6B6B;  /* 5.3:1 on white, 4.9:1 on panel */
+    --accent-foreground: #111111;
+
+    /* Actions */
+    --primary: #111111;              /* primary CTA: ink pill */
+    --primary-foreground: #FFFFFF;
+    --secondary: #F4F4F2;            /* secondary CTA: gray pill */
+    --secondary-foreground: #111111;
+
+    /* Signature — Stinky's nose */
+    --signature: #FF7EB6;
+    --signature-foreground: #111111;
+    --signature-soft: #FFE3EF;
+
+    /* Pop palette (quick actions, categories, badges) — ink on top */
+    --pop-amber: #FFB81C;            /* Stinky's eyes */
+    --pop-pink: #FF7EB6;
+    --pop-sky: #56C2FF;
+    --pop-mint: #3FD99A;
+    --pop-foreground: #111111;
+
+    /* Status */
+    --destructive: #D92D3A;
+    --destructive-foreground: #FFFFFF;
+    --success: #13804F;              /* text-safe mint */
+    --warning: #A35A00;              /* text-safe amber */
+
+    /* Focus */
+    --ring: #111111;
+
+    /* Floating dock */
+    --dock: rgba(255, 255, 255, 0.78);
+    --dock-border: rgba(0, 0, 0, 0.06);
+    --dock-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+    /* Radii */
+    --radius: 24px;            /* cards / panels */
+    --radius-tile: 18px;       /* garment tiles */
+    --radius-quick: 16px;      /* quick-action tiles */
   }
 
   .dark {
-    --background: #0A0A0A;
-    --card: #141210;
-    --popover: #141210;
-    --foreground: #F5EFE6;
-    --muted: #1A1815;
-    --muted-foreground: #A89988;
-    --accent: #1A1815;
-    --accent-foreground: #F5EFE6;
-    --primary: #A02828;              /* burgundy luminous */
-    --primary-foreground: #F5EFE6;
-    --secondary: #1F1C18;
-    --secondary-foreground: #F5EFE6;
-    --editorial-gold: #D4A548;
-    --destructive: #A02828;
-    --destructive-foreground: #F5EFE6;
-    --success: #7D9256;
-    --warning: #D4A548;
-    --border: #3A3530;
-    --border-solid: #3A3530;
-    --input: #3A3530;
-    --ring: #A02828;
-    --card-foreground: #F5EFE6;
-    --popover-foreground: #F5EFE6;
+    --background: #0F0F0F;
+    --card: #161616;
+    --popover: #1C1C1C;
+    --panel: #1C1C1C;
+    --muted: #1C1C1C;
+    --accent: #262626;
+    --border: #2A2A2A;
+    --input: #333333;
+
+    --foreground: #F5F5F5;
+    --card-foreground: #F5F5F5;
+    --popover-foreground: #F5F5F5;
+    --muted-foreground: #A3A3A3;
+    --accent-foreground: #F5F5F5;
+
+    --primary: #F5F5F5;
+    --primary-foreground: #111111;
+    --secondary: #262626;
+    --secondary-foreground: #F5F5F5;
+
+    --signature: #FF7EB6;
+    --signature-foreground: #111111;
+    --signature-soft: #3A1F2C;
+
+    --destructive: #F0525E;
+    --destructive-foreground: #111111;
+    --success: #3FD99A;
+    --warning: #FFB81C;
+
+    --ring: #FF7EB6;
+
+    --dock: rgba(28, 28, 28, 0.78);
+    --dock-border: rgba(255, 255, 255, 0.08);
+    --dock-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -66,107 +112,72 @@
   * {
     border-color: var(--border);
   }
-  html, body {
+  html,
+  body {
     background-color: var(--background);
     color: var(--foreground);
     overflow-x: hidden;
     max-width: 100vw;
-    font-family: var(--font-sans), 'Inter', system-ui, -apple-system, sans-serif;
-    font-feature-settings: 'ss01', 'cv02', 'cv11';
+    font-family: var(--font-sans), 'Figtree', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, .display, .headline {
-    font-family: var(--font-display), 'Playfair Display', Georgia, serif;
-    letter-spacing: -0.01em;
+  h1,
+  h2,
+  h3 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
-  h4, h5, h6 {
-    font-family: var(--font-sans), 'Inter', system-ui, sans-serif;
-    font-weight: 600;
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 
   ::selection {
-    background: var(--primary);
-    color: var(--primary-foreground);
+    background: var(--signature);
+    color: var(--signature-foreground);
   }
 }
 
-/* Editorial utility classes */
 @layer utilities {
-  .font-display { font-family: var(--font-display), 'Playfair Display', Georgia, serif; }
-  .font-editorial { font-family: var(--font-editorial), 'Cormorant Garamond', Georgia, serif; font-style: italic; }
-  .font-body { font-family: var(--font-sans), 'Inter', system-ui, sans-serif; }
+  /* Chunky wordmark — logo only. */
+  .font-wordmark {
+    font-family: var(--font-wordmark), 'Figtree', system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
 
-  /* Uppercase editorial label — for section headers, captions, metadata */
-  .label-editorial {
-    font-family: var(--font-sans), 'Inter', system-ui, sans-serif;
-    font-size: 0.6875rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    font-weight: 500;
+  /* Small section label (sentence case, not uppercase editorial). */
+  .eyebrow {
+    font-size: 0.8125rem;
+    font-weight: 600;
     color: var(--muted-foreground);
   }
 
-  /* Hairline gold divider (horizontal) */
-  .divider-gold {
-    height: 1px;
-    background: var(--editorial-gold);
-    opacity: 0.6;
-    width: 100%;
-  }
-  .divider-hairline {
-    height: 1px;
-    background: var(--border-solid);
-    opacity: 0.45;
-    width: 100%;
+  /* Floating glass dock surface. */
+  .glass-dock {
+    background: var(--dock);
+    border: 1px solid var(--dock-border);
+    box-shadow: var(--dock-shadow);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
   }
 
-  /* Animated underline for editorial links */
-  .link-editorial {
-    position: relative;
-    display: inline-block;
-    color: inherit;
-    text-decoration: none;
-  }
-  .link-editorial::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    height: 1px;
-    width: 100%;
-    background: currentColor;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .link-editorial:hover::after,
-  .link-editorial:focus-visible::after {
-    transform: scaleX(1);
-  }
-
-  /* Card that gently rises on hover */
-  .card-editorial {
-    transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 260ms;
-  }
-  .card-editorial:hover {
-    transform: translateY(-4px);
-  }
-
-  /* Image zoom on hover */
-  .img-zoom {
-    overflow: hidden;
-  }
-  .img-zoom > * {
-    transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .img-zoom:hover > * {
-    transform: scale(1.05);
+  /* Bottom padding so fixed dock never covers content (dock 64 + inset 24 + breathing room). */
+  .pb-dock {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
   }
 }
 
 /* Prevent iOS Safari zoom on input focus (requires 16px minimum) */
 @media screen and (max-width: 768px) {
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px !important;
   }
 }
@@ -175,23 +186,24 @@ html {
   touch-action: manipulation;
 }
 
-/* Sonner toast — editorial reskin */
+/* Sonner toasts — Stinky pop */
 [data-sonner-toaster] {
-  --normal-bg: var(--card);
-  --normal-border: var(--border-solid);
+  --normal-bg: var(--popover);
+  --normal-border: var(--border);
   --normal-text: var(--foreground);
-  --error-bg: var(--card);
-  --error-border: var(--primary);
+  --error-bg: var(--popover);
+  --error-border: var(--destructive);
   --error-text: var(--foreground);
-  --success-bg: var(--card);
-  --success-border: var(--success);
+  --success-bg: var(--popover);
+  --success-border: var(--pop-mint);
   --success-text: var(--foreground);
+  --border-radius: 20px;
 }
 [data-sonner-toast] {
-  border-radius: 0 !important;
-  font-family: var(--font-sans), 'Inter', system-ui, sans-serif !important;
+  border-radius: 20px !important;
+  font-family: var(--font-sans), 'Figtree', system-ui, sans-serif !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
 }
 [data-sonner-toast] [data-title] {
-  font-family: var(--font-display), 'Playfair Display', Georgia, serif !important;
-  letter-spacing: -0.01em;
+  font-weight: 700;
 }

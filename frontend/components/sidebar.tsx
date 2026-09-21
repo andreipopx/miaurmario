@@ -10,6 +10,7 @@ const primaryItems = [
   { key: 'suggest', href: '/dashboard/suggest' },
   { key: 'outfits', href: '/dashboard/outfits' },
   { key: 'pairings', href: '/dashboard/pairings' },
+  { key: 'pins', href: '/dashboard/pins' },
   { key: 'history', href: '/dashboard/history' },
   { key: 'family', href: '/dashboard/family/feed' },
   { key: 'analytics', href: '/dashboard/analytics' },

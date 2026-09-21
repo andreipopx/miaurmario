@@ -115,6 +115,17 @@ class Settings(BaseSettings):
     original_max_size: int = 2400
     image_quality: int = 90
 
+    # Pinterest integration (Sprint 4)
+    pinterest_client_id: str | None = Field(default=None)
+    pinterest_client_secret: str | None = Field(default=None)
+    pinterest_redirect_uri: str = Field(
+        default="https://miaurmario.andreipop.org/api/v1/integrations/pinterest/callback"
+    )
+    pinterest_token_encryption_key: str | None = Field(default=None)
+
+    # Base URL of the frontend, used to build post-OAuth and magic-link redirects.
+    magic_link_base_url: str = Field(default="https://miaurmario.andreipop.org")
+
     @property
     def effective_ai_vision_enabled(self) -> bool:
         """Whether internal vision (auto-tagging) is active.

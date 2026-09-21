@@ -6,7 +6,6 @@ import {
   Loader2,
   Users,
   Star,
-  Shirt,
   ChevronRight,
   Settings,
   Calendar,
@@ -14,7 +13,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,6 +24,9 @@ import { FamilyRatingForm, FamilyRatingsDisplay } from '@/components/family-rati
 import { OutfitPreviewDialog } from '@/components/outfit-preview-dialog';
 import Image from 'next/image';
 import Link from 'next/link';
+import { PageHeader } from '@/components/page-header';
+import { EmptyState } from '@/components/empty-state';
+import { cn } from '@/lib/utils';
 
 function getInitials(name: string) {
   return name
@@ -37,34 +39,21 @@ function getInitials(name: string) {
 
 function SourceBadge({ source }: { source: OutfitSource }) {
   const t = useTranslations('familyFeed');
-  const config: Record<OutfitSource, { icon: typeof Calendar; label: string; className: string }> = {
-    scheduled: {
-      icon: Calendar,
-      label: t('sourceScheduled'),
-      className: 'bg-primary/10 text-primary border-primary/20',
-    },
-    on_demand: {
-      icon: Zap,
-      label: t('sourceOnDemand'),
-      className: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-    },
-    manual: {
-      icon: Edit3,
-      label: t('sourceManual'),
-      className: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-    },
-    pairing: {
-      icon: Zap,
-      label: t('sourcePairing'),
-      className: 'bg-violet-500/10 text-violet-600 border-violet-500/20',
-    },
+  const config: Record<
+    OutfitSource,
+    { icon: typeof Calendar; label: string; variant: 'sky' | 'amber' | 'mint' | 'signature' }
+  > = {
+    scheduled: { icon: Calendar, label: t('sourceScheduled'), variant: 'sky' },
+    on_demand: { icon: Zap, label: t('sourceOnDemand'), variant: 'amber' },
+    manual: { icon: Edit3, label: t('sourceManual'), variant: 'mint' },
+    pairing: { icon: Zap, label: t('sourcePairing'), variant: 'signature' },
   };
 
-  const { icon: Icon, label, className } = config[source];
+  const { icon: Icon, label, variant } = config[source];
 
   return (
-    <Badge variant="outline" className={className}>
-      <Icon className="h-3 w-3 mr-1" />
+    <Badge variant={variant}>
+      <Icon className="h-3 w-3" strokeWidth={2} aria-hidden />
       {label}
     </Badge>
   );
@@ -88,12 +77,12 @@ function FeedOutfitCard({
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="space-y-3 p-4 sm:p-5">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SourceBadge source={outfit.source} />
-            <Badge variant="secondary" className="capitalize text-xs">
+            <Badge variant="secondary" className="capitalize">
               {outfit.occasion}
             </Badge>
           </div>
@@ -102,7 +91,7 @@ function FeedOutfitCard({
               month: 'short',
               day: 'numeric',
               year: 'numeric',
-            }) : 'Lookbook'
+            }) : t('lookbook')
             }
           </span>
         </div>
@@ -111,12 +100,13 @@ function FeedOutfitCard({
         <button
           type="button"
           onClick={onPreview}
-          className="flex gap-2 text-left w-full group"
+          aria-label={t('previewOutfit')}
+          className="group flex w-full gap-2 overflow-x-auto rounded-tile text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           {outfit.items.map((item) => (
             <div
               key={item.id}
-              className="w-20 h-20 rounded-lg bg-muted overflow-hidden relative border shadow-sm group-hover:shadow-md transition-shadow"
+              className="relative h-20 w-20 shrink-0 overflow-hidden rounded-tile bg-panel transition-transform duration-150 group-hover:scale-[1.02]"
             >
               {item.thumbnail_url ? (
                 <Image
@@ -127,7 +117,7 @@ function FeedOutfitCard({
                   sizes="80px"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                <div className="flex h-full w-full items-center justify-center p-1 text-center text-xs text-muted-foreground">
                   {item.type}
                 </div>
               )}
@@ -143,16 +133,22 @@ function FeedOutfitCard({
         {/* Family ratings summary */}
         {outfit.family_rating_count != null && outfit.family_rating_count > 0 && (
           <div className="flex items-center gap-2 text-sm">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <div className="flex gap-0.5">
+            <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} aria-hidden />
+            <div
+              className="flex gap-0.5"
+              role="img"
+              aria-label={t('starsLabel', { count: Math.round(outfit.family_rating_average ?? 0) })}
+            >
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`h-4 w-4 ${
+                  aria-hidden
+                  className={cn(
+                    'h-4 w-4',
                     star <= Math.round(outfit.family_rating_average ?? 0)
-                      ? 'fill-yellow-400 text-yellow-400'
+                      ? 'fill-pop-amber text-pop-amber'
                       : 'text-muted-foreground/30'
-                  }`}
+                  )}
                 />
               ))}
             </div>
@@ -174,7 +170,7 @@ function FeedOutfitCard({
         {/* Rating action */}
         {!myRating ? (
           showRatingForm ? (
-            <div className="pt-2 border-t">
+            <div className="border-t border-border pt-3">
               <FamilyRatingForm
                 outfitId={outfit.id}
                 onSuccess={() => setShowRatingForm(false)}
@@ -182,28 +178,27 @@ function FeedOutfitCard({
             </div>
           ) : (
             <Button
-              size="sm"
-              variant="outline"
+              variant="secondary"
               className="w-full"
               onClick={() => setShowRatingForm(true)}
             >
-              <Star className="h-4 w-4 mr-2" />
+              <Star className="h-4 w-4" strokeWidth={1.75} />
               {t('rateOutfitOf', { name: memberName })}
             </Button>
           )
         ) : (
-          <div className="flex items-center justify-between pt-2 border-t">
-            <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
               <span className="text-muted-foreground">{t('yourRating')}</span>
-              <div className="flex gap-0.5">
+              <div className="flex gap-0.5" role="img" aria-label={t('starsLabel', { count: myRating.rating })}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`h-4 w-4 ${
-                      star <= myRating.rating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-muted-foreground/30'
-                    }`}
+                    aria-hidden
+                    className={cn(
+                      'h-4 w-4',
+                      star <= myRating.rating ? 'fill-pop-amber text-pop-amber' : 'text-muted-foreground/30'
+                    )}
                   />
                 ))}
               </div>
@@ -216,7 +211,7 @@ function FeedOutfitCard({
             <Button
               size="sm"
               variant="ghost"
-              className="text-xs"
+              className="h-11 shrink-0"
               onClick={() => setShowRatingForm(!showRatingForm)}
             >
               {t('edit')}
@@ -226,7 +221,7 @@ function FeedOutfitCard({
 
         {/* Show edit form when editing existing rating */}
         {myRating && showRatingForm && (
-          <div className="pt-2 border-t">
+          <div className="border-t border-border pt-3">
             <FamilyRatingForm
               outfitId={outfit.id}
               existingRating={myRating}
@@ -239,32 +234,37 @@ function FeedOutfitCard({
   );
 }
 
+function ManageFamilyButton() {
+  const t = useTranslations('familyFeed');
+  return (
+    <Button variant="outline" asChild>
+      <Link href="/dashboard/family">
+        <Settings className="h-4 w-4" strokeWidth={1.75} />
+        {t('manageFamily')}
+      </Link>
+    </Button>
+  );
+}
+
 function NoFamilyState() {
   const t = useTranslations('familyFeed');
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="text-muted-foreground">
-          {t('subtitle')}
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-6 py-2 sm:py-4">
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
-      <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-        <div className="rounded-full bg-muted p-6 mb-4">
-          <Users className="h-12 w-12 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-semibold mb-2">{t('joinFirstTitle')}</h3>
-        <p className="text-muted-foreground mb-6 max-w-sm">
-          {t('joinFirstBody')}
-        </p>
-        <Button asChild>
-          <Link href="/dashboard/family">
-            <Users className="mr-2 h-4 w-4" />
-            {t('setUpFamily')}
-          </Link>
-        </Button>
-      </div>
+      <EmptyState
+        state="sleepy"
+        title={t('joinFirstTitle')}
+        description={t('joinFirstBody')}
+        action={
+          <Button asChild>
+            <Link href="/dashboard/family">
+              <Users className="h-4 w-4" strokeWidth={1.75} />
+              {t('setUpFamily')}
+            </Link>
+          </Button>
+        }
+      />
     </div>
   );
 }
@@ -300,78 +300,51 @@ function FeedContent() {
 
   if (otherMembers.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
-            <p className="text-muted-foreground">
-              {t('subtitle')}
-            </p>
-          </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/family">
-              <Settings className="h-4 w-4 mr-2" />
-              {t('manageFamily')}
-            </Link>
-          </Button>
-        </div>
+      <div className="mx-auto max-w-5xl space-y-6 py-2 sm:py-4">
+        <PageHeader title={t('title')} description={t('subtitle')} action={<ManageFamilyButton />} />
 
-        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-          <div className="rounded-full bg-muted p-6 mb-4">
-            <Users className="h-12 w-12 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2">{t('noOtherMembersTitle')}</h3>
-          <p className="text-muted-foreground mb-6 max-w-sm">
-            {t('noOtherMembersBody')}
-          </p>
-          <Button asChild>
-            <Link href="/dashboard/family">
-              {t('inviteMembers')}
-            </Link>
-          </Button>
-        </div>
+        <EmptyState
+          state="sleepy"
+          title={t('noOtherMembersTitle')}
+          description={t('noOtherMembersBody')}
+          action={
+            <Button asChild>
+              <Link href="/dashboard/family">{t('inviteMembers')}</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground">
-            {t('subtitle')}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/dashboard/family">
-            <Settings className="h-4 w-4 mr-2" />
-            {t('manageFamily')}
-          </Link>
-        </Button>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-6 py-2 sm:py-4">
+      <PageHeader title={t('title')} description={t('subtitle')} action={<ManageFamilyButton />} />
 
       {/* Member selector */}
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
         {otherMembers.map((member) => (
           <button
             key={member.id}
             type="button"
             onClick={() => setSelectedMember(member.id)}
-            className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all flex-shrink-0 min-w-[80px] ${
-              activeMemberId === member.id
-                ? 'border-primary bg-primary/5 shadow-sm'
-                : 'border-transparent hover:border-muted-foreground/20 hover:bg-muted/50'
-            }`}
+            aria-pressed={activeMemberId === member.id}
+            className={cn(
+              'flex min-w-[84px] shrink-0 flex-col items-center gap-1.5 rounded-quick p-3 transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              activeMemberId === member.id ? 'bg-signature text-signature-foreground' : 'bg-panel hover:bg-accent'
+            )}
           >
             <Avatar className="h-12 w-12">
               <AvatarImage src={member.avatar_url} />
               <AvatarFallback>{getInitials(member.display_name)}</AvatarFallback>
             </Avatar>
-            <span className={`text-xs font-medium truncate max-w-[72px] ${
-              activeMemberId === member.id ? 'text-primary' : 'text-muted-foreground'
-            }`}>
+            <span
+              className={cn(
+                'max-w-[72px] truncate text-xs',
+                activeMemberId === member.id ? 'font-bold' : 'font-medium text-muted-foreground'
+              )}
+            >
               {member.display_name.split(' ')[0]}
             </span>
           </button>
@@ -385,29 +358,30 @@ function FeedContent() {
             <Card key={i}>
               <CardContent className="p-4 space-y-3">
                 <div className="flex gap-2">
-                  <Skeleton className="h-5 w-20" />
-                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
                 </div>
                 <div className="flex gap-2">
-                  <Skeleton className="h-20 w-20 rounded-lg" />
-                  <Skeleton className="h-20 w-20 rounded-lg" />
-                  <Skeleton className="h-20 w-20 rounded-lg" />
+                  <Skeleton className="h-20 w-20 rounded-tile" />
+                  <Skeleton className="h-20 w-20 rounded-tile" />
+                  <Skeleton className="h-20 w-20 rounded-tile" />
                 </div>
-                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-11 w-full rounded-full" />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : !data || data.outfits.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-          <Shirt className="h-10 w-10 text-muted-foreground mb-3" />
-          <h3 className="text-base font-semibold mb-1">{t('noOutfitsTitle')}</h3>
-          <p className="text-sm text-muted-foreground max-w-xs">
-            {selectedMemberInfo
+        <EmptyState
+          state="sleepy"
+          size="sm"
+          title={t('noOutfitsTitle')}
+          description={
+            selectedMemberInfo
               ? t('noOutfitsBody', { name: selectedMemberInfo.display_name })
-              : t('noOutfitsBodyGeneric')}
-          </p>
-        </div>
+              : t('noOutfitsBodyGeneric')
+          }
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {data.outfits.map((outfit) => (
@@ -415,7 +389,7 @@ function FeedContent() {
               key={outfit.id}
               outfit={outfit}
               currentMemberId={currentMember?.id}
-              memberName={selectedMemberInfo?.display_name.split(' ')[0] ?? 'their'}
+              memberName={selectedMemberInfo?.display_name.split(' ')[0] ?? ''}
               onPreview={() => setPreviewOutfit(outfit)}
             />
           ))}

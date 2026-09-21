@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useJoinFamilyByToken } from '@/lib/hooks/use-family';
 import { ApiError } from '@/lib/api';
+import { Stinky } from '@/components/stinky/stinky';
 
 function useErrorMessage() {
   const t = useTranslations('invite');
@@ -63,25 +64,31 @@ function InviteContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md border-0 bg-panel">
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex h-36 w-36 items-center justify-center rounded-full bg-signature-soft">
+            <Stinky state={joinByToken.isError ? 'sad' : 'wave'} size={120} label="" />
+          </div>
+          <CardTitle className="flex items-center gap-2 text-2xl font-extrabold">
+            <UserPlus className="h-5 w-5" strokeWidth={1.75} aria-hidden />
             {t('title')}
           </CardTitle>
-          <CardDescription>{t('subtitle')}</CardDescription>
+          <CardDescription className="text-[15px]">{t('subtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {joinByToken.isError && (
-            <p className="text-sm text-destructive">{getErrorMessage(joinByToken.error)}</p>
+            <p role="alert" className="rounded-md bg-background px-4 py-3 text-sm font-medium text-destructive">
+              {getErrorMessage(joinByToken.error)}
+            </p>
           )}
           <Button
             onClick={handleAccept}
+            size="lg"
             className="w-full"
             disabled={joinByToken.isPending || joinByToken.isSuccess}
           >
-            {joinByToken.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {joinByToken.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('accept')}
           </Button>
         </CardContent>

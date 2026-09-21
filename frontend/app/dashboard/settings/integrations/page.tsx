@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Music, Pin } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/page-header';
+import { cn } from '@/lib/utils';
 import { usePinterestStatus } from '@/lib/hooks/use-pinterest';
 import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
 
@@ -19,8 +22,8 @@ function StatusBadge({
 }) {
   const t = useTranslations('integrations');
   if (loading) return null;
-  if (connected) return <Badge>{t('status.connected')}</Badge>;
-  if (configured === false) return <Badge variant="outline">{t('status.unavailable')}</Badge>;
+  if (connected) return <Badge variant="mint">{t('status.connected')}</Badge>;
+  if (configured === false) return <Badge variant="outline" className="text-muted-foreground">{t('status.unavailable')}</Badge>;
   return <Badge variant="outline">{t('status.notConnected')}</Badge>;
 }
 
@@ -43,44 +46,53 @@ export default function IntegrationsIndexPage() {
   ] as const;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10 py-10 sm:py-14 space-y-10">
-      <header className="space-y-3">
-        <Link href="/dashboard/settings" className="label-editorial link-editorial">
+    <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
+      <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings">
           {t('backToSettings')}
         </Link>
-        <p className="label-editorial text-gold">{t('eyebrow')}</p>
-        <h1 className="font-display italic font-black text-display-lg leading-none">
-          {t('title')}
-        </h1>
-        <p className="font-editorial italic text-lg text-muted-foreground">{t('subtitle')}</p>
-      </header>
+      </Button>
 
-      <div className="divider-gold" />
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        {entries.map(({ key, href, status }) => (
+      <div className="grid gap-4 sm:grid-cols-2">
+        {entries.map(({ key, href, status }, i) => (
           <Link
             key={key}
             href={href}
-            className="card-editorial group block border border-border-solid/60 bg-card p-6 space-y-4 transition-all duration-200 ease-editorial hover:border-primary"
+            className="group block space-y-3 rounded-lg bg-panel p-5 transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-6"
           >
             <div className="flex items-start justify-between gap-4">
-              <p className="label-editorial">{t(`${key}.eyebrow`)}</p>
+              <span
+                aria-hidden
+                className={cn(
+                  'flex h-12 w-12 items-center justify-center rounded-quick text-pop-foreground',
+                  i === 0 ? 'bg-pop-pink' : 'bg-pop-mint'
+                )}
+              >
+                {key === 'pinterest' ? (
+                  <Pin className="h-5 w-5" strokeWidth={1.75} />
+                ) : (
+                  <Music className="h-5 w-5" strokeWidth={1.75} />
+                )}
+              </span>
               <StatusBadge
                 loading={status.isLoading}
                 connected={status.data?.connected}
                 configured={status.data?.configured}
               />
             </div>
-            <h2 className="font-display text-3xl">{t(`${key}.title`)}</h2>
-            <p className="font-editorial italic text-lg text-muted-foreground">
-              {t(`${key}.description`)}
-            </p>
-            <span className="inline-flex items-center gap-2 label-editorial text-primary">
+            <div className="space-y-1">
+              <p className="eyebrow">{t(`${key}.eyebrow`)}</p>
+              <h2 className="text-lg font-bold">{t(`${key}.title`)}</h2>
+              <p className="text-[15px] leading-snug text-muted-foreground">{t(`${key}.description`)}</p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-foreground">
               {t(`${key}.manage`)}
               <ArrowRight
-                className="h-3.5 w-3.5 transition-transform duration-200 ease-editorial group-hover:translate-x-1"
-                strokeWidth={1.5}
+                className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-1"
+                strokeWidth={1.75}
+                aria-hidden
               />
             </span>
           </Link>

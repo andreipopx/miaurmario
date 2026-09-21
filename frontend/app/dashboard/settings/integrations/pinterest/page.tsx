@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/page-header';
+import { EmptyState } from '@/components/empty-state';
 import {
   usePinterestBoards,
   usePinterestConnect,
@@ -51,19 +53,14 @@ export default function PinterestIntegrationPage() {
   const boards = boardsQuery.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-10 py-10 sm:py-14 space-y-10">
-      <header className="space-y-3">
-        <Link href="/dashboard/settings/integrations" className="label-editorial link-editorial">
+    <div className="mx-auto max-w-5xl space-y-6 py-2 sm:py-4">
+      <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings/integrations">
           {tI('backToIntegrations')}
         </Link>
-        <p className="label-editorial text-gold">{t('eyebrow')}</p>
-        <h1 className="font-display italic font-black text-display-lg leading-none">
-          {t('title')}
-        </h1>
-        <p className="font-editorial italic text-lg text-muted-foreground">{t('tagline')}</p>
-      </header>
+      </Button>
 
-      <div className="divider-gold" />
+      <PageHeader title={t('title')} description={t('tagline')} />
 
       {errorParam && (
         <Alert variant="destructive">
@@ -74,7 +71,7 @@ export default function PinterestIntegrationPage() {
 
       {status.isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> {tI('loading')}
+          <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} /> {tI('loading')}
         </div>
       )}
 
@@ -86,38 +83,38 @@ export default function PinterestIntegrationPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!status.data.configured ? (
-              <p className="font-editorial italic text-muted-foreground">{t('notConfigured')}</p>
+              <p className="text-sm text-muted-foreground">{t('notConfigured')}</p>
             ) : (
               <Button onClick={() => connect.mutate()} disabled={connect.isPending}>
                 {connect.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
+                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                 ) : null}
                 {t('connectButton')}
               </Button>
             )}
-            <p className="label-editorial">{t('scopesNote')}</p>
+            <p className="eyebrow">{t('scopesNote')}</p>
           </CardContent>
         </Card>
       )}
 
       {status.data && connected && (
-        <section className="space-y-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <section className="space-y-6">
+          <div className="flex flex-col gap-4 rounded-lg bg-panel p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div className="space-y-1">
-              <p className="label-editorial">{t('connectedAs')}</p>
-              <p className="font-display text-2xl">
+              <p className="eyebrow">{t('connectedAs')}</p>
+              <p className="text-xl font-extrabold tracking-tight">
                 {status.data.pinterest_user_id ?? '—'}
               </p>
-              <p className="font-editorial italic text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {t('pinsImported', { count: status.data.pin_count })}
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button variant="outline" asChild>
+              <Button asChild>
                 <Link href="/dashboard/pins">{t('viewPins')}</Link>
               </Button>
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={() => {
                   if (!window.confirm(t('disconnectConfirm'))) return;
                   disconnect.mutate(undefined, {
@@ -131,28 +128,23 @@ export default function PinterestIntegrationPage() {
             </div>
           </div>
 
-          <div className="divider-hairline" />
-
           <div className="space-y-4">
-            <h2 className="font-display text-2xl">{t('boardsTitle')}</h2>
+            <h2 className="text-lg font-bold">{t('boardsTitle')}</h2>
             {boardsQuery.isLoading && (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> {t('loadingBoards')}
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} /> {t('loadingBoards')}
               </div>
             )}
             {boardsQuery.isError && (
-              <p className="font-editorial italic text-muted-foreground">{t('boardsError')}</p>
+              <EmptyState state="sad" size="sm" title={t('boardsError')} />
             )}
             {boardsQuery.data && boards.length === 0 && (
-              <p className="font-editorial italic text-muted-foreground">{t('noBoards')}</p>
+              <EmptyState state="sleepy" size="sm" title={t('noBoards')} />
             )}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {boards.map((board) => (
-                <article
-                  key={board.id}
-                  className="card-editorial border border-border-solid/60 bg-card"
-                >
-                  <div className="img-zoom relative aspect-[4/3] bg-muted">
+                <article key={board.id} className="space-y-3">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-tile bg-panel">
                     {board.media?.image_cover_url ? (
                       <Image
                         src={board.media.image_cover_url}
@@ -161,22 +153,22 @@ export default function PinterestIntegrationPage() {
                         className="object-cover"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center font-editorial italic text-muted-foreground">
+                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                         {t('noCover')}
                       </div>
                     )}
                   </div>
-                  <div className="space-y-3 p-4">
+                  <div className="space-y-3 px-1">
                     <div>
-                      <h3 className="font-display text-lg leading-tight">{board.name}</h3>
+                      <h3 className="text-[15px] font-bold leading-tight">{board.name}</h3>
                       {typeof board.pin_count === 'number' && (
-                        <p className="label-editorial mt-1">
+                        <p className="eyebrow mt-0.5">
                           {t('pinCount', { count: board.pin_count })}
                         </p>
                       )}
                     </div>
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       className="w-full"
                       onClick={() =>
                         importBoard.mutate(board.id, {
@@ -187,7 +179,7 @@ export default function PinterestIntegrationPage() {
                       disabled={importBoard.isPending && importBoard.variables === board.id}
                     >
                       {importBoard.isPending && importBoard.variables === board.id ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
+                        <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                       ) : null}
                       {t('importBoard')}
                     </Button>
@@ -198,12 +190,12 @@ export default function PinterestIntegrationPage() {
             {boardsQuery.hasNextPage && (
               <div className="flex justify-center pt-2">
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => boardsQuery.fetchNextPage()}
                   disabled={boardsQuery.isFetchingNextPage}
                 >
                   {boardsQuery.isFetchingNextPage ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                   ) : null}
                   {t('loadMore')}
                 </Button>

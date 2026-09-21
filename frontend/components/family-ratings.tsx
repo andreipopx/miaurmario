@@ -9,26 +9,31 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useSubmitFamilyRating, useDeleteFamilyRating } from '@/lib/hooks/use-outfits';
 import { FamilyRating } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const t = useTranslations('familyRatings');
   const [hovered, setHovered] = useState(0);
 
   return (
-    <div className="flex gap-1" onMouseLeave={() => setHovered(0)}>
+    <div role="group" aria-label={t('yourRating')} className="flex" onMouseLeave={() => setHovered(0)}>
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
           type="button"
           onMouseEnter={() => setHovered(star)}
           onClick={() => onChange(star)}
-          className="focus:outline-none"
+          aria-label={t('starsLabel', { count: star })}
+          aria-pressed={value === star}
+          className="flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-150 hover:bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-90"
         >
           <Star
-            className={`h-6 w-6 transition-colors ${
-              star <= (hovered || value)
-                ? 'fill-yellow-400 text-yellow-400'
-                : 'text-muted-foreground/30 hover:text-muted-foreground/50'
-            }`}
+            aria-hidden
+            strokeWidth={1.75}
+            className={cn(
+              'h-6 w-6 transition-colors',
+              star <= (hovered || value) ? 'fill-pop-amber text-pop-amber' : 'text-muted-foreground/40'
+            )}
           />
         </button>
       ))}
@@ -68,8 +73,8 @@ export function FamilyRatingForm({ outfitId, existingRating, onSuccess }: Family
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-medium">{t('yourRating')}</span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm font-semibold">{t('yourRating')}</span>
         <StarPicker value={rating} onChange={setRating} />
       </div>
       <Textarea
@@ -78,14 +83,13 @@ export function FamilyRatingForm({ outfitId, existingRating, onSuccess }: Family
         onChange={(e) => setComment(e.target.value)}
         rows={2}
         maxLength={500}
-        className="resize-none text-sm"
+        className="resize-none rounded-lg text-sm"
       />
       <Button
-        size="sm"
         onClick={handleSubmit}
         disabled={rating === 0 || submitRating.isPending}
       >
-        {submitRating.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {submitRating.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         {existingRating ? t('update') : t('submit')}
       </Button>
     </div>
@@ -123,9 +127,9 @@ export function FamilyRatingsDisplay({ ratings, outfitId, currentUserId }: Famil
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {ratings.map((r) => (
-        <div key={r.id} className="flex items-start gap-3 p-2 rounded-lg bg-muted/50">
+        <div key={r.id} className="flex items-start gap-3 rounded-md bg-panel p-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={r.user_avatar_url} />
             <AvatarFallback className="text-xs">
@@ -134,16 +138,16 @@ export function FamilyRatingsDisplay({ ratings, outfitId, currentUserId }: Famil
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium truncate">{r.user_display_name}</span>
-              <div className="flex gap-0.5">
+              <span className="truncate text-sm font-bold">{r.user_display_name}</span>
+              <div className="flex gap-0.5" role="img" aria-label={t('starsLabel', { count: r.rating })}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`h-3.5 w-3.5 ${
-                      star <= r.rating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-muted-foreground/30'
-                    }`}
+                    aria-hidden
+                    className={cn(
+                      'h-3.5 w-3.5',
+                      star <= r.rating ? 'fill-pop-amber text-pop-amber' : 'text-muted-foreground/30'
+                    )}
                   />
                 ))}
               </div>
@@ -156,14 +160,15 @@ export function FamilyRatingsDisplay({ ratings, outfitId, currentUserId }: Famil
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              className="-my-1.5 -mr-1.5 shrink-0 text-muted-foreground hover:bg-background hover:text-destructive"
+              aria-label={t('removeRating')}
               onClick={handleDelete}
               disabled={deleteRating.isPending}
             >
               {deleteRating.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4" strokeWidth={1.75} />
               )}
             </Button>
           )}

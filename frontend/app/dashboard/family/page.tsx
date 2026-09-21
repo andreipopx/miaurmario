@@ -57,6 +57,8 @@ import {
   useUpdateFamily,
 } from '@/lib/hooks/use-family';
 import Link from 'next/link';
+import { PageHeader } from '@/components/page-header';
+import { cn } from '@/lib/utils';
 
 function NoFamilyView() {
   const t = useTranslations('family');
@@ -93,19 +95,16 @@ function NoFamilyView() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="text-muted-foreground">
-          {t('noFamilySubtitle')}
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
+      <PageHeader title={t('title')} description={t('noFamilySubtitle')} />
 
-      <div className="grid gap-6 md:grid-cols-2 max-w-2xl">
-        <Card className={mode === 'create' ? 'ring-2 ring-primary' : ''}>
+      <div className="grid max-w-2xl gap-4 md:grid-cols-2">
+        <Card className={cn('border-0 bg-panel', mode === 'create' && 'ring-2 ring-signature')}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+              <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-pop-amber text-pop-foreground">
+                <Users className="h-5 w-5" strokeWidth={1.75} />
+              </span>
               {t('createCardTitle')}
             </CardTitle>
             <CardDescription>{t('createCardDesc')}</CardDescription>
@@ -121,6 +120,7 @@ function NoFamilyView() {
                     value={familyName}
                     onChange={(e) => setFamilyName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                    className="bg-background"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -128,7 +128,7 @@ function NoFamilyView() {
                     onClick={handleCreate}
                     disabled={!familyName.trim() || createFamily.isPending}
                   >
-                    {createFamily.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {createFamily.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                     {t('createButton')}
                   </Button>
                   <Button variant="outline" onClick={() => setMode(null)}>
@@ -144,10 +144,12 @@ function NoFamilyView() {
           </CardContent>
         </Card>
 
-        <Card className={mode === 'join' ? 'ring-2 ring-primary' : ''}>
+        <Card className={cn('border-0 bg-panel', mode === 'join' && 'ring-2 ring-signature')}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
+              <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-pop-sky text-pop-foreground">
+                <UserPlus className="h-5 w-5" strokeWidth={1.75} />
+              </span>
               {t('joinCardTitle')}
             </CardTitle>
             <CardDescription>{t('joinCardDesc')}</CardDescription>
@@ -163,7 +165,7 @@ function NoFamilyView() {
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                     onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-                    className="font-mono uppercase"
+                    className="bg-background font-mono uppercase"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -171,7 +173,7 @@ function NoFamilyView() {
                     onClick={handleJoin}
                     disabled={!inviteCode.trim() || joinFamily.isPending}
                   >
-                    {joinFamily.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {joinFamily.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                     {t('joinButton')}
                   </Button>
                   <Button variant="outline" onClick={() => setMode(null)}>
@@ -281,74 +283,76 @@ function FamilyView() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{family.name}</h1>
-          <p className="text-muted-foreground">
-            {family.members.length === 1
-              ? t('membersCountOne', { count: family.members.length })
-              : t('membersCountOther', { count: family.members.length })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setNewName(family.name);
-                setEditingName(true);
-              }}
-            >
-              {t('editName')}
-            </Button>
-          )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                {t('leaveFamily')}
+    <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
+      <PageHeader
+        title={family.name}
+        description={
+          family.members.length === 1
+            ? t('membersCountOne', { count: family.members.length })
+            : t('membersCountOther', { count: family.members.length })
+        }
+        action={
+          <>
+            {isAdmin && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setNewName(family.name);
+                  setEditingName(true);
+                }}
+              >
+                {t('editName')}
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('leaveFamilyQuestion')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {isAdmin && family.members.length > 1
-                    ? t('leaveAdminWarning')
-                    : t('leaveConfirm')}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => leaveFamily.mutate()}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {leaveFamily.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  {t('leaveAction')}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-destructive hover:text-destructive">
+                  <LogOut className="h-4 w-4" strokeWidth={1.75} />
+                  {t('leaveFamily')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('leaveFamilyQuestion')}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {isAdmin && family.members.length > 1
+                      ? t('leaveAdminWarning')
+                      : t('leaveConfirm')}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => leaveFamily.mutate()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {leaveFamily.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : null}
+                    {t('leaveAction')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        }
+      />
 
       {/* Edit Name Dialog */}
       {editingName && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex gap-2">
+        <Card className="border-0 bg-panel">
+          <CardContent className="pt-5 sm:pt-6">
+            <div className="flex flex-wrap gap-2">
               <Input
+                aria-label={t('namePlaceholder')}
+                className="min-w-[12rem] flex-1 bg-background"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder={t('namePlaceholder')}
                 onKeyDown={(e) => e.key === 'Enter' && handleUpdateName()}
               />
               <Button onClick={handleUpdateName} disabled={updateFamily.isPending}>
-                {updateFamily.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {updateFamily.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 {tCommon('save')}
               </Button>
               <Button variant="outline" onClick={() => setEditingName(false)}>
@@ -366,24 +370,30 @@ function FamilyView() {
           <CardDescription>{t('inviteCodeCardDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
-            <code className="flex-1 rounded-md bg-muted px-4 py-3 font-mono text-lg tracking-wider">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <code className="min-w-0 flex-1 truncate rounded-full bg-panel px-5 py-3 font-mono text-lg font-bold tracking-wider">
               {family.invite_code}
             </code>
-            <Button variant="outline" size="icon" onClick={copyInviteCode}>
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={copyInviteCode}
+              aria-label={copied ? tCommon('copied') : t('copyCode')}
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" strokeWidth={1.75} />}
             </Button>
             {isAdmin && (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="icon"
+                aria-label={t('regenerate')}
                 onClick={handleRegenerateCode}
                 disabled={regenerateCode.isPending}
               >
                 {regenerateCode.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
                 )}
               </Button>
             )}
@@ -399,9 +409,11 @@ function FamilyView() {
             <CardDescription>{t('sendInviteDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 type="email"
+                aria-label={t('sendInviteDesc')}
+                className="sm:flex-1"
                 placeholder={t('emailPlaceholder')}
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
@@ -411,7 +423,7 @@ function FamilyView() {
                 value={inviteRole}
                 onValueChange={(v) => setInviteRole(v as 'member' | 'admin')}
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="sm:w-40" aria-label={t('roleLabel')}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -420,8 +432,8 @@ function FamilyView() {
                 </SelectContent>
               </Select>
               <Button onClick={handleInvite} disabled={!inviteEmail.trim() || inviteMember.isPending}>
-                {inviteMember.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Mail className="mr-2 h-4 w-4" />
+                {inviteMember.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Mail className="h-4 w-4" strokeWidth={1.75} />
                 {t('inviteButton')}
               </Button>
             </div>
@@ -436,33 +448,33 @@ function FamilyView() {
           <CardDescription>{t('membersCardDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {family.members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-4 rounded-lg border"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-panel p-4"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <Avatar>
                     <AvatarImage src={member.avatar_url} />
                     <AvatarFallback>{getInitials(member.display_name)}</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{member.display_name}</span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-bold">{member.display_name}</span>
                       {member.email === currentEmail && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="signature">
                           {t('youBadge')}
                         </Badge>
                       )}
                       {member.role === 'admin' && (
-                        <Badge variant="outline" className="text-xs gap-1">
-                          <Crown className="h-3 w-3" />
+                        <Badge variant="amber">
+                          <Crown className="h-3 w-3" aria-hidden />
                           {t('adminBadge')}
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
+                    <p className="truncate text-sm text-muted-foreground">{member.email}</p>
                   </div>
                 </div>
                 {isAdmin && member.email !== currentEmail && (
@@ -473,7 +485,7 @@ function FamilyView() {
                         updateRole.mutate({ memberId: member.id, role })
                       }
                     >
-                      <SelectTrigger className="w-28">
+                      <SelectTrigger className="w-36 bg-background" aria-label={t('roleLabel')}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -483,8 +495,13 @@ function FamilyView() {
                     </Select>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive">
-                          <Trash2 className="h-4 w-4" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:bg-background hover:text-destructive"
+                          aria-label={t('removeMember')}
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -521,18 +538,18 @@ function FamilyView() {
             <CardDescription>{t('pendingInvitesDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {family.pending_invites.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex items-center justify-between p-4 rounded-lg border"
+                  className="flex items-center justify-between gap-3 rounded-lg bg-panel p-4"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                      <Mail className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pop-mint text-pop-foreground">
+                      <Mail className="h-5 w-5" strokeWidth={1.75} />
                     </div>
-                    <div>
-                      <span className="font-medium">{invite.email}</span>
+                    <div className="min-w-0">
+                      <span className="block truncate font-bold">{invite.email}</span>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         {t('expires', { date: new Date(invite.expires_at).toLocaleDateString(locale) })}
@@ -542,14 +559,15 @@ function FamilyView() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-destructive"
+                    className="text-destructive hover:bg-background hover:text-destructive"
+                    aria-label={t('cancelInvite')}
                     onClick={() => cancelInvite.mutate(invite.id)}
                     disabled={cancelInvite.isPending}
                   >
                     {cancelInvite.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                     )}
                   </Button>
                 </div>
@@ -560,10 +578,12 @@ function FamilyView() {
       )}
 
       {/* Family Outfits Feed */}
-      <Card>
+      <Card className="border-0 bg-signature-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shirt className="h-5 w-5" />
+            <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-signature text-signature-foreground">
+              <Shirt className="h-5 w-5" strokeWidth={1.75} />
+            </span>
             {t('familyOutfitsTitle')}
           </CardTitle>
           <CardDescription>{t('familyOutfitsDesc')}</CardDescription>
@@ -571,7 +591,7 @@ function FamilyView() {
         <CardContent>
           <Button asChild className="w-full">
             <Link href="/dashboard/family/feed">
-              <Star className="mr-2 h-4 w-4" />
+              <Star className="h-4 w-4" strokeWidth={1.75} />
               {t('openFamilyFeed')}
             </Link>
           </Button>

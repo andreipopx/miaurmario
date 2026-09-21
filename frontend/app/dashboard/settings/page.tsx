@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { Loader2, Save, RotateCcw, Check, Plus, Trash2, ChevronUp, ChevronDown, Server, MapPin, Navigation, Ruler } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Loader2, Save, RotateCcw, Check, Plus, Trash2, ChevronUp, ChevronDown, Server, MapPin, Navigation, Ruler, Sun, Moon, Monitor, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,9 @@ import {
 import { CLOTHING_COLORS, OCCASIONS, Preferences, StyleProfile, AIEndpoint } from '@/lib/types';
 import { toF, toCelsius } from '@/lib/temperature';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/page-header';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { cn } from '@/lib/utils';
 
 const CM_TO_IN = 0.393701;
 const IN_TO_CM = 2.54;
@@ -47,19 +51,19 @@ function convertMeasurement(value: number, key: string, from: string, to: string
 }
 
 const BODY_MEASUREMENT_FIELDS = [
-  { key: 'height', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: 'e.g. 178', placeholderImperial: 'e.g. 70' },
-  { key: 'weight', unitMetric: 'kg', unitImperial: 'lbs', placeholderMetric: 'e.g. 75', placeholderImperial: 'e.g. 165' },
-  { key: 'chest', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: 'e.g. 96', placeholderImperial: 'e.g. 38' },
-  { key: 'waist', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: 'e.g. 82', placeholderImperial: 'e.g. 32' },
-  { key: 'hips', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: 'e.g. 98', placeholderImperial: 'e.g. 39' },
-  { key: 'inseam', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: 'e.g. 81', placeholderImperial: 'e.g. 32' },
+  { key: 'height', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '178', placeholderImperial: '70' },
+  { key: 'weight', unitMetric: 'kg', unitImperial: 'lbs', placeholderMetric: '75', placeholderImperial: '165' },
+  { key: 'chest', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '96', placeholderImperial: '38' },
+  { key: 'waist', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '82', placeholderImperial: '32' },
+  { key: 'hips', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '98', placeholderImperial: '39' },
+  { key: 'inseam', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '81', placeholderImperial: '32' },
 ] as const;
 
 const SIZE_FIELDS = [
-  { key: 'shirt_size', labelKey: 'shirtSize', placeholder: 'e.g. M, L, XL' },
-  { key: 'pants_size', labelKey: 'pantsSize', placeholder: 'e.g. 32, 34' },
-  { key: 'dress_size', labelKey: 'dressSize', placeholder: 'e.g. 8, 10' },
-  { key: 'shoe_size', labelKey: 'shoeSize', placeholder: 'e.g. 10, 42' },
+  { key: 'shirt_size', labelKey: 'shirtSize', placeholder: 'M, L, XL' },
+  { key: 'pants_size', labelKey: 'pantsSize', placeholder: '32, 34' },
+  { key: 'dress_size', labelKey: 'dressSize', placeholder: '8, 10' },
+  { key: 'shoe_size', labelKey: 'shoeSize', placeholder: '10, 42' },
 ] as const;
 
 function getErrorMessage(e: unknown, fallback: string): string {
@@ -103,11 +107,14 @@ function ColorPicker({
               key={color.value}
               type="button"
               onClick={() => toggleColor(color.value)}
-              className={`w-8 h-8 rounded-full border-2 transition-all ${
+              aria-pressed={isSelected}
+              aria-label={color.name}
+              className={cn(
+                'h-11 w-11 rounded-full border-2 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 isSelected
-                  ? 'border-primary ring-2 ring-primary/30 scale-110'
-                  : 'border-muted-foreground/20 hover:border-muted-foreground/40'
-              }`}
+                  ? 'border-foreground ring-2 ring-signature ring-offset-2 ring-offset-background'
+                  : 'border-border hover:border-muted-foreground/40'
+              )}
               style={{ backgroundColor: color.hex }}
               title={color.name}
             >
@@ -140,6 +147,46 @@ function ColorPicker({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+const THEME_OPTIONS = [
+  { value: 'light', labelKey: 'themeLight', Icon: Sun },
+  { value: 'dark', labelKey: 'themeDark', Icon: Moon },
+  { value: 'system', labelKey: 'themeSystem', Icon: Monitor },
+] as const;
+
+/** Claro / Oscuro / Sistema as a pill segmented control (next-themes). */
+function ThemeSelector() {
+  const t = useTranslations('settings.appearance');
+  const { theme, setTheme } = useTheme();
+  // next-themes only knows the stored theme on the client; avoid a hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const current = mounted ? theme ?? 'system' : undefined;
+
+  return (
+    <div role="group" aria-label={t('theme')} className="inline-flex flex-wrap items-center gap-1 rounded-full bg-panel p-1">
+      {THEME_OPTIONS.map(({ value, labelKey, Icon }) => {
+        const active = current === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setTheme(value)}
+            aria-pressed={active}
+            className={cn(
+              'inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              active ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground hover:bg-background'
+            )}
+          >
+            <Icon className="h-4 w-4" strokeWidth={active ? 2 : 1.75} aria-hidden />
+            {t(labelKey)}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -192,6 +239,7 @@ export default function SettingsPage() {
   const tRecommendations = useTranslations('settings.recommendations');
   const tAiEndpoints = useTranslations('settings.aiEndpoints');
   const tAccount = useTranslations('settings.account');
+  const tAppearance = useTranslations('settings.appearance');
   const tTz = useTranslations('settings.location.timezones');
 
   const [formData, setFormData] = useState<Partial<Preferences>>({});
@@ -552,36 +600,27 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10 py-10 sm:py-14 space-y-10">
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-3">
-          <p className="label-editorial text-gold">{t('title')}</p>
-          <h1 className="font-display italic font-black text-display-lg leading-none">
-            {t('title')}
-          </h1>
-          <p className="font-editorial italic text-lg text-muted-foreground">
-            {t('header.manageSubtitle')}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button type="button" onClick={handleReset} disabled={resetPreferences.isPending}
-            className="h-11 px-5 border border-primary/70 text-primary uppercase tracking-widest text-xs hover:bg-primary hover:text-primary-foreground transition-all duration-200 ease-editorial disabled:opacity-50 inline-flex items-center gap-2">
-            <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.5} />
-            {t('header.reset')}
-          </button>
-          <button type="button" onClick={handleSave} disabled={!hasChanges || updatePreferences.isPending}
-            className="h-11 px-5 bg-primary text-primary-foreground border border-primary uppercase tracking-widest text-xs hover:bg-transparent hover:text-primary transition-all duration-200 ease-editorial disabled:opacity-50 inline-flex items-center gap-2">
-            {updatePreferences.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />
-            ) : (
-              <Save className="h-3.5 w-3.5" strokeWidth={1.5} />
-            )}
-            {tCommon('save')}
-          </button>
-        </div>
-      </header>
-
-      <div className="divider-gold" />
+    <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
+      <PageHeader
+        title={t('title')}
+        description={t('header.manageSubtitle')}
+        action={
+          <>
+            <Button variant="secondary" onClick={handleReset} disabled={resetPreferences.isPending}>
+              <RotateCcw className="h-4 w-4" strokeWidth={1.75} />
+              {t('header.reset')}
+            </Button>
+            <Button onClick={handleSave} disabled={!hasChanges || updatePreferences.isPending}>
+              {updatePreferences.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+              ) : (
+                <Save className="h-4 w-4" strokeWidth={1.75} />
+              )}
+              {tCommon('save')}
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid gap-6">
         {/* Account Section */}
@@ -604,6 +643,24 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Appearance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              {tAppearance('title')}
+            </CardTitle>
+            <CardDescription>{tAppearance('description')}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <p className="eyebrow">{tAppearance('theme')}</p>
+              <ThemeSelector />
+            </div>
+            <LanguageSwitcher />
+          </CardContent>
+        </Card>
+
         {/* Integrations Section */}
         <Card>
           <CardHeader>
@@ -621,7 +678,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
+              <MapPin className="h-5 w-5" strokeWidth={1.75} aria-hidden />
               {tLocation('title')}
             </CardTitle>
             <CardDescription>
@@ -684,16 +741,16 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 onClick={handleGetCurrentLocation}
                 disabled={isGettingLocation}
               >
                 {isGettingLocation ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Navigation className="h-4 w-4 mr-2" />
+                  <Navigation className="h-4 w-4" />
                 )}
                 {tLocation('useMyLocation')}
               </Button>
@@ -702,15 +759,15 @@ export default function SettingsPage() {
                 disabled={!hasLocationChanges || updateUserProfile.isPending}
               >
                 {updateUserProfile.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4" />
                 )}
                 {tLocation('saveLocation')}
               </Button>
             </div>
             {!locationLat && !locationLon && (
-              <p className="text-sm text-amber-600 dark:text-amber-400">
+              <p className="text-sm font-medium text-warning">
                 {tLocation('required')}
               </p>
             )}
@@ -721,7 +778,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Ruler className="h-5 w-5" />
+              <Ruler className="h-5 w-5" strokeWidth={1.75} aria-hidden />
               {tMeasurements('title')}
             </CardTitle>
             <CardDescription>{tMeasurements('description')}</CardDescription>
@@ -735,7 +792,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <Label className="text-muted-foreground mb-3 block">{tMeasurements('body')}</Label>
+              <Label className="eyebrow mb-3 block">{tMeasurements('body')}</Label>
               <div className="grid gap-3 sm:grid-cols-2">
                 {BODY_MEASUREMENT_FIELDS.map((field) => {
                   const unit = unitSystem === 'metric' ? field.unitMetric : field.unitImperial;
@@ -750,7 +807,7 @@ export default function SettingsPage() {
                           min="0"
                           value={measurements[field.key] ?? ''}
                           onChange={(e) => handleMeasurementChange(field.key, e.target.value)}
-                          placeholder={placeholder}
+                          placeholder={tMeasurements('example', { value: placeholder })}
                           className="flex-1"
                         />
                         <span className="text-sm text-muted-foreground min-w-[2rem] text-center">{unit}</span>
@@ -762,7 +819,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <Label className="text-muted-foreground mb-3 block">{tMeasurements('sizes')}</Label>
+              <Label className="eyebrow mb-3 block">{tMeasurements('sizes')}</Label>
               <div className="grid gap-3 sm:grid-cols-2">
                 {SIZE_FIELDS.map((field) => (
                   <div key={field.key} className="space-y-1">
@@ -770,7 +827,7 @@ export default function SettingsPage() {
                     <Input
                       value={measurements[field.key] ?? ''}
                       onChange={(e) => handleMeasurementChange(field.key, e.target.value)}
-                      placeholder={field.placeholder}
+                      placeholder={tMeasurements('example', { value: field.placeholder })}
                     />
                   </div>
                 ))}
@@ -784,9 +841,9 @@ export default function SettingsPage() {
                 size="sm"
               >
                 {updateUserProfile.isPending ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{tCommon('saving')}</>
+                  <><Loader2 className="h-4 w-4 animate-spin" />{tCommon('saving')}</>
                 ) : (
-                  <><Save className="mr-2 h-4 w-4" />{tMeasurements('save')}</>
+                  <><Save className="h-4 w-4" />{tMeasurements('save')}</>
                 )}
               </Button>
             )}
@@ -1041,7 +1098,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Server className="h-5 w-5" />
+              <Server className="h-5 w-5" strokeWidth={1.75} aria-hidden />
               {tAiEndpoints('title')}
             </CardTitle>
             <CardDescription>
@@ -1058,9 +1115,10 @@ export default function SettingsPage() {
                 {(formData.ai_endpoints || []).map((endpoint, index) => (
                   <div
                     key={index}
-                    className={`border rounded-lg p-4 space-y-3 ${
-                      !endpoint.enabled ? 'opacity-60 bg-muted/50' : ''
-                    }`}
+                    className={cn(
+                      'space-y-3 rounded-lg bg-panel p-4',
+                      !endpoint.enabled && 'opacity-60'
+                    )}
                   >
                     <div className="space-y-2">
                       {/* Header row */}
@@ -1070,7 +1128,8 @@ export default function SettingsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-5 w-5 p-0"
+                              className="h-8 w-8"
+                              aria-label={tAiEndpoints('moveUp')}
                               disabled={index === 0}
                               onClick={() => {
                                 const updated = [...(formData.ai_endpoints || [])];
@@ -1078,12 +1137,13 @@ export default function SettingsPage() {
                                 updateField('ai_endpoints', updated);
                               }}
                             >
-                              <ChevronUp className="h-3 w-3" />
+                              <ChevronUp className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-5 w-5 p-0"
+                              className="h-8 w-8"
+                              aria-label={tAiEndpoints('moveDown')}
                               disabled={index === (formData.ai_endpoints || []).length - 1}
                               onClick={() => {
                                 const updated = [...(formData.ai_endpoints || [])];
@@ -1091,7 +1151,7 @@ export default function SettingsPage() {
                                 updateField('ai_endpoints', updated);
                               }}
                             >
-                              <ChevronDown className="h-3 w-3" />
+                              <ChevronDown className="h-4 w-4" />
                             </Button>
                           </div>
                           <span className="font-medium text-sm truncate">
@@ -1100,6 +1160,7 @@ export default function SettingsPage() {
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Switch
+                            aria-label={endpoint.enabled ? tAiEndpoints('active') : tAiEndpoints('disabled')}
                             checked={endpoint.enabled}
                             onCheckedChange={(checked) => {
                               const updated = [...(formData.ai_endpoints || [])];
@@ -1110,7 +1171,8 @@ export default function SettingsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-destructive"
+                            className="text-destructive"
+                            aria-label={tAiEndpoints('remove')}
                             onClick={() => {
                               const updated = (formData.ai_endpoints || []).filter((_, i) => i !== index);
                               updateField('ai_endpoints', updated);
@@ -1127,28 +1189,28 @@ export default function SettingsPage() {
                       </div>
                       {/* Status badges and test button */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant={endpoint.enabled ? 'default' : 'secondary'} className="text-xs">
+                        <Badge variant={endpoint.enabled ? 'mint' : 'outline'}>
                           {endpoint.enabled ? tAiEndpoints('active') : tAiEndpoints('disabled')}
                         </Badge>
                         {endpointTests[index]?.status === 'connected' && (
-                          <Badge variant="outline" className="text-xs text-green-600 border-green-600">
+                          <Badge variant="mint">
                             {tAiEndpoints('connected')}
                           </Badge>
                         )}
                         {endpointTests[index]?.status === 'error' && (
-                          <Badge variant="outline" className="text-xs text-red-600 border-red-600">
+                          <Badge variant="destructive">
                             {tAiEndpoints('errorBadge')}
                           </Badge>
                         )}
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-6 text-xs ml-auto"
+                          className="ml-auto"
                           onClick={() => handleTestEndpoint(index, endpoint.url)}
                           disabled={endpointTests[index]?.status === 'testing' || !endpoint.url}
                         >
                           {endpointTests[index]?.status === 'testing' ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : null}
                           {tAiEndpoints('testConnection')}
                         </Button>
@@ -1156,18 +1218,18 @@ export default function SettingsPage() {
                     </div>
                     {/* Test Results */}
                     {endpointTests[index]?.status === 'connected' && endpointTests[index]?.models && (
-                      <div className="text-xs space-y-1 p-2 bg-green-50 dark:bg-green-950 rounded overflow-hidden">
-                        <p className="font-medium text-green-700 dark:text-green-300">
+                      <div className="space-y-1 overflow-hidden rounded-md bg-background p-3 text-xs">
+                        <p className="font-bold text-success">
                           {tAiEndpoints('modelsAvailable', { count: endpointTests[index].models?.length ?? 0 })}
                         </p>
                         {endpointTests[index].visionModels && endpointTests[index].visionModels!.length > 0 && (
-                          <p className="text-green-600 dark:text-green-400 truncate" title={endpointTests[index].visionModels?.join(', ')}>
+                          <p className="truncate text-muted-foreground" title={endpointTests[index].visionModels?.join(', ')}>
                             {tAiEndpoints('vision')}: {endpointTests[index].visionModels?.slice(0, 3).join(', ')}
                             {(endpointTests[index].visionModels?.length || 0) > 3 && '...'}
                           </p>
                         )}
                         {endpointTests[index].textModels && endpointTests[index].textModels!.length > 0 && (
-                          <p className="text-green-600 dark:text-green-400 truncate" title={endpointTests[index].textModels?.join(', ')}>
+                          <p className="truncate text-muted-foreground" title={endpointTests[index].textModels?.join(', ')}>
                             {tAiEndpoints('text')}: {endpointTests[index].textModels?.slice(0, 3).join(', ')}
                             {(endpointTests[index].textModels?.length || 0) > 3 && '...'}
                           </p>
@@ -1175,7 +1237,7 @@ export default function SettingsPage() {
                       </div>
                     )}
                     {endpointTests[index]?.status === 'error' && (
-                      <div className="text-xs p-2 bg-red-50 dark:bg-red-950 rounded text-red-600 dark:text-red-400 break-words">
+                      <div className="break-words rounded-md bg-background p-3 text-xs font-medium text-destructive">
                         {endpointTests[index].error}
                       </div>
                     )}
@@ -1189,8 +1251,8 @@ export default function SettingsPage() {
                             updated[index] = { ...updated[index], name: e.target.value };
                             updateField('ai_endpoints', updated);
                           }}
-                          placeholder="e.g., Local Ollama"
-                          className="h-8"
+                          placeholder={tAiEndpoints('namePlaceholder')}
+                          className="bg-background"
                         />
                       </div>
                       <div className="space-y-1">
@@ -1203,7 +1265,7 @@ export default function SettingsPage() {
                             updateField('ai_endpoints', updated);
                           }}
                           placeholder="http://localhost:11434/v1"
-                          className="h-8"
+                          className="bg-background"
                         />
                       </div>
                       <div className="space-y-1">
@@ -1216,7 +1278,7 @@ export default function SettingsPage() {
                             updateField('ai_endpoints', updated);
                           }}
                           placeholder="moondream"
-                          className="h-8"
+                          className="bg-background"
                         />
                       </div>
                       <div className="space-y-1">
@@ -1229,7 +1291,7 @@ export default function SettingsPage() {
                             updateField('ai_endpoints', updated);
                           }}
                           placeholder="phi3:mini"
-                          className="h-8"
+                          className="bg-background"
                         />
                       </div>
                     </div>
@@ -1252,15 +1314,15 @@ export default function SettingsPage() {
                   updateField('ai_endpoints', [...(formData.ai_endpoints || []), newEndpoint]);
                 }}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4" />
                 {tAiEndpoints('addEndpoint')}
               </Button>
               {hasChanges && (
                 <Button onClick={handleSave} disabled={updatePreferences.isPending}>
                   {updatePreferences.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="h-4 w-4" />
                   )}
                   {tCommon('save')}
                 </Button>

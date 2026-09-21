@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/page-header';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -61,19 +62,14 @@ export default function SpotifyIntegrationPage() {
   const fallbackLabel = status.data?.lastfm_configured ? t('source.lastfm') : t('source.musicbrainz');
 
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10 py-10 sm:py-14 space-y-10">
-      <header className="space-y-3">
-        <Link href="/dashboard/settings/integrations" className="label-editorial link-editorial">
+    <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
+      <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings/integrations">
           {tI('backToIntegrations')}
         </Link>
-        <p className="label-editorial text-gold">{t('eyebrow')}</p>
-        <h1 className="font-display italic font-black text-display-lg leading-none">
-          {t('title')}
-        </h1>
-        <p className="font-editorial italic text-lg text-muted-foreground">{t('tagline')}</p>
-      </header>
+      </Button>
 
-      <div className="divider-gold" />
+      <PageHeader title={t('title')} description={t('tagline')} />
 
       {errorParam && (
         <Alert variant="destructive">
@@ -84,7 +80,7 @@ export default function SpotifyIntegrationPage() {
 
       {status.isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> {tI('loading')}
+          <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} /> {tI('loading')}
         </div>
       )}
 
@@ -96,32 +92,32 @@ export default function SpotifyIntegrationPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!status.data.configured ? (
-              <p className="font-editorial italic text-muted-foreground">{t('notConfigured')}</p>
+              <p className="text-sm text-muted-foreground">{t('notConfigured')}</p>
             ) : (
               <Button onClick={() => connect.mutate()} disabled={connect.isPending}>
                 {connect.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
+                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                 ) : null}
                 {t('connectButton')}
               </Button>
             )}
-            <p className="label-editorial">{t('scopesNote')}</p>
+            <p className="eyebrow">{t('scopesNote')}</p>
             <p className="text-sm text-muted-foreground">{t('allowlistNote')}</p>
           </CardContent>
         </Card>
       )}
 
       {status.data && connected && (
-        <section className="space-y-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <section className="space-y-6">
+          <div className="flex flex-col gap-4 rounded-lg bg-panel p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div className="space-y-1">
-              <p className="label-editorial">{t('connectedAs')}</p>
-              <p className="font-display text-2xl">
+              <p className="eyebrow">{t('connectedAs')}</p>
+              <p className="text-xl font-extrabold tracking-tight">
                 {status.data.display_name || status.data.spotify_user_id}
               </p>
             </div>
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() =>
                 disconnect.mutate(undefined, {
                   onSuccess: () => toast.success(t('disconnectSuccess')),
@@ -133,11 +129,9 @@ export default function SpotifyIntegrationPage() {
             </Button>
           </div>
 
-          <div className="divider-hairline" />
-
-          <div className="flex items-start justify-between gap-6">
+          <div className="flex items-start justify-between gap-6 px-1">
             <div className="space-y-1">
-              <Label htmlFor="spotify-mood" className="font-display text-lg">
+              <Label htmlFor="spotify-mood" className="text-[15px] font-bold">
                 {t('useForMood')}
               </Label>
               <p className="text-sm text-muted-foreground">{t('useForMoodHelp')}</p>
@@ -156,9 +150,11 @@ export default function SpotifyIntegrationPage() {
 
           <Card>
             <CardHeader>
-              <p className="label-editorial text-gold">{t('moodEyebrow')}</p>
+              <p className="eyebrow">{t('moodEyebrow')}</p>
               <CardTitle className="flex items-center gap-2">
-                <Music className="h-5 w-5 text-gold" strokeWidth={1.5} />
+                <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-full bg-pop-mint text-pop-foreground">
+                  <Music className="h-4 w-4" strokeWidth={1.75} />
+                </span>
                 {t('moodTitle')}
               </CardTitle>
               <CardDescription>{t('moodDescription')}</CardDescription>
@@ -166,17 +162,17 @@ export default function SpotifyIntegrationPage() {
             <CardContent className="space-y-5">
               {mood.isLoading && (
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> {t('moodLoading')}
+                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} /> {t('moodLoading')}
                 </div>
               )}
               {mood.isError && (
-                <p className="font-editorial italic text-muted-foreground">{t('moodError')}</p>
+                <p className="text-sm font-medium text-destructive">{t('moodError')}</p>
               )}
               {mood.data && (
                 <>
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="label-editorial">{t('currentSource')}</span>
-                    <Badge>
+                    <span className="eyebrow">{t('currentSource')}</span>
+                    <Badge variant="signature">
                       {mood.data.source === 'spotify' ? t('source.spotify') : t('source.manual')}
                     </Badge>
                   </div>
@@ -185,17 +181,17 @@ export default function SpotifyIntegrationPage() {
                     <div className="space-y-4">
                       {mood.data.context.track && mood.data.context.listening && (
                         <div>
-                          <p className="label-editorial">
+                          <p className="eyebrow">
                             {t(`listening.${mood.data.context.listening}`)}
                           </p>
-                          <p className="font-editorial italic text-2xl">
+                          <p className="text-xl font-extrabold tracking-tight">
                             {mood.data.context.label}
                           </p>
                         </div>
                       )}
                       {mood.data.context.genres.length > 0 && (
                         <div className="space-y-2">
-                          <p className="label-editorial">{t('genres')}</p>
+                          <p className="eyebrow">{t('genres')}</p>
                           <div className="flex flex-wrap gap-2">
                             {mood.data.context.genres.map((g) => (
                               <Badge key={g} variant="outline">
@@ -207,7 +203,7 @@ export default function SpotifyIntegrationPage() {
                       )}
                       {mood.data.context.tags.length > 0 && (
                         <div className="space-y-2">
-                          <p className="label-editorial">{t('tags')}</p>
+                          <p className="eyebrow">{t('tags')}</p>
                           <div className="flex flex-wrap gap-2">
                             {mood.data.context.tags.map((tag) => (
                               <Badge key={tag} variant="outline">
@@ -219,19 +215,18 @@ export default function SpotifyIntegrationPage() {
                       )}
                       {mood.data.context.top_artists.length > 0 && (
                         <p className="text-sm text-muted-foreground">
-                          <span className="label-editorial mr-2">{t('topArtists')}</span>
+                          <span className="mr-2 font-semibold text-foreground">{t('topArtists')}</span>
                           {mood.data.context.top_artists.join(' · ')}
                         </p>
                       )}
                     </div>
                   ) : (
-                    <p className="font-editorial italic text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       {t(`reason.${mood.data.reason ?? 'no_data'}`)}
                     </p>
                   )}
 
-                  <div className="divider-hairline" />
-                  <p className="text-sm text-muted-foreground">
+                  <p className="border-t border-border pt-4 text-sm text-muted-foreground">
                     {t('fallbackNote', { fallback: fallbackLabel })}
                   </p>
                   <Button
@@ -244,7 +239,7 @@ export default function SpotifyIntegrationPage() {
                     disabled={refreshMood.isPending}
                   >
                     {refreshMood.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
+                      <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                     ) : null}
                     {t('refresh')}
                   </Button>

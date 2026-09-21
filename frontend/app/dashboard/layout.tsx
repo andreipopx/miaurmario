@@ -9,6 +9,7 @@ import { MobileNav } from '@/components/mobile-nav';
 import { Header } from '@/components/header';
 import { OfflineIndicator } from '@/components/offline-indicator';
 import { ImageLightbox } from '@/components/image-lightbox';
+import { AnnouncementBanner } from '@/components/announcement-banner';
 import { LightboxProvider } from '@/lib/lightbox-context';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTranslations } from 'next-intl';
@@ -63,6 +64,7 @@ export default function DashboardLayout({
           <Header onMenuClick={() => setSidebarOpen(true)} />
           {/* pb-dock reserves room for the floating mobile dock so it never covers content. */}
           <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
+            <AnnouncementBanner />
             {children}
           </main>
         </div>

@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react';
 import { LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Wordmark } from '@/components/brand/wordmark';
+import { ProfileMenuExtras } from '@/components/profile-menu-extras';
 import {
   PRIMARY_ITEMS,
   SECONDARY_ITEMS,
@@ -79,6 +80,9 @@ export function Sidebar() {
                 </li>
               ))}
             </ul>
+            <div className="mt-1">
+              <ProfileMenuExtras />
+            </div>
           </div>
 
           <div className="mt-auto">

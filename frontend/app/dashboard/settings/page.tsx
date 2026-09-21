@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
-import { Loader2, Save, RotateCcw, Check, MapPin, Navigation, Ruler, Sun, Moon, Monitor, Palette } from 'lucide-react';
+import { Loader2, Save, RotateCcw, MapPin, Ruler, Sun, Moon, Monitor, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,18 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { usePreferences, useUpdatePreferences, useResetPreferences } from '@/lib/hooks/use-preferences';
 import { AISettingsCard } from '@/components/ai/ai-settings-card';
 import { useUserProfile, useUpdateUserProfile } from '@/lib/hooks/use-user';
-import {
-  getNetworkLocationUrl,
-  formatReverseGeocodedLocation,
-  getGeolocationFailureMessage,
-  isNetworkLocationFallbackEnabled,
-  resolveNetworkLocation,
-} from '@/lib/location';
-import { CLOTHING_COLORS, OCCASIONS, Preferences, StyleProfile } from '@/lib/types';
+import { OCCASIONS, Preferences, StyleProfile } from '@/lib/types';
+import type { SavedLocation } from '@/lib/geo';
+import { LocationPicker } from '@/components/settings/location-picker';
+import { TimezoneCombobox } from '@/components/settings/timezone-combobox';
+import { ColorPreferences } from '@/components/settings/color-preferences';
 import { toF, toCelsius } from '@/lib/temperature';
 import { toast } from 'sonner';
 import { SecurityCard } from '@/components/settings/security-card';
@@ -71,78 +67,6 @@ const SIZE_FIELDS = [
 function getErrorMessage(e: unknown, fallback: string): string {
   if (e instanceof Error) return e.message;
   return fallback;
-}
-
-function ColorPicker({
-  selected,
-  onChange,
-  label,
-}: {
-  selected: string[];
-  onChange: (colors: string[]) => void;
-  label: string;
-}) {
-  const toggleColor = (color: string) => {
-    if (selected.includes(color)) {
-      onChange(selected.filter((c) => c !== color));
-    } else {
-      onChange([...selected, color]);
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex flex-wrap gap-2">
-        {CLOTHING_COLORS.map((color) => {
-          const isSelected = selected.includes(color.value);
-          return (
-            <button
-              key={color.value}
-              type="button"
-              onClick={() => toggleColor(color.value)}
-              aria-pressed={isSelected}
-              aria-label={color.name}
-              className={cn(
-                'h-11 w-11 rounded-full border-2 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                isSelected
-                  ? 'border-foreground ring-2 ring-signature ring-offset-2 ring-offset-background'
-                  : 'border-border hover:border-muted-foreground/40'
-              )}
-              style={{ backgroundColor: color.hex }}
-              title={color.name}
-            >
-              {isSelected && (
-                <Check
-                  className={`h-4 w-4 mx-auto ${
-                    color.value === 'white' || color.value === 'yellow' || color.value === 'beige'
-                      ? 'text-black'
-                      : 'text-white'
-                  }`}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
-      {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {selected.map((color) => {
-            const colorInfo = CLOTHING_COLORS.find((c) => c.value === color);
-            return (
-              <Badge key={color} variant="secondary" className="gap-1">
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: colorInfo?.hex }}
-                />
-                {colorInfo?.name}
-              </Badge>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 const THEME_OPTIONS = [
@@ -232,17 +156,13 @@ export default function SettingsPage() {
   const tRecommendations = useTranslations('settings.recommendations');
   const tAccount = useTranslations('settings.account');
   const tAppearance = useTranslations('settings.appearance');
-  const tTz = useTranslations('settings.location.timezones');
 
   const [formData, setFormData] = useState<Partial<Preferences>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
   // Location and timezone state
-  const [locationName, setLocationName] = useState('');
-  const [locationLat, setLocationLat] = useState('');
-  const [locationLon, setLocationLon] = useState('');
+  const [location, setLocation] = useState<SavedLocation>({ name: '', lat: null, lon: null });
   const [timezone, setTimezone] = useState('UTC');
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   // Body measurements state
   type UnitSystem = 'metric' | 'imperial';
@@ -262,9 +182,13 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (userProfile) {
-      setLocationName(userProfile.location_name || '');
-      setLocationLat(userProfile.location_lat?.toString() || '');
-      setLocationLon(userProfile.location_lon?.toString() || '');
+      setLocation({
+        name: userProfile.location_name || '',
+        lat: userProfile.location_lat ?? null,
+        lon: userProfile.location_lon ?? null,
+      });
+      // Not auto-switched to the device zone (that would mark the form dirty);
+      // TimezoneCombobox offers it as a one-tap suggestion instead.
       setTimezone(userProfile.timezone || 'UTC');
 
       if (userProfile.body_measurements) {
@@ -284,115 +208,22 @@ export default function SettingsPage() {
     }
   }, [userProfile]);
 
-  const detectLocationFromNetwork = async () => {
-    const response = await fetch(getNetworkLocationUrl(), {
-      headers: { Accept: 'application/json' },
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Network-based location lookup failed (${response.status}${response.statusText ? ` ${response.statusText}` : ''})`
-      );
-    }
-
-    const data = await response.json();
-    const resolved = resolveNetworkLocation(data, timezone);
-    setLocationLat(resolved.lat);
-    setLocationLon(resolved.lon);
-    if (resolved.locationName) {
-      setLocationName(resolved.locationName);
-    }
-    if (resolved.timezone) {
-      setTimezone(resolved.timezone);
-    }
-    return resolved;
-  };
-
-  const handleGetCurrentLocation = () => {
-    setIsGettingLocation(true);
-    const finalizeFromCoordinates = async (lat: string, lon: string) => {
-      // Reverse geocode to get city name
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-          { headers: { 'User-Agent': 'WardrobeAI/1.0' } }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          const nextLocationName = formatReverseGeocodedLocation(data);
-          if (nextLocationName) {
-            setLocationName(nextLocationName);
-            return nextLocationName;
-          }
-        }
-      } catch {
-        // Ignore geocoding errors, we still have coordinates
-      }
-
-      return undefined;
-    };
-
-    const fallbackToNetworkLocation = async (reason?: string) => {
-      if (!isNetworkLocationFallbackEnabled()) {
-        toast.error(reason || tLocation('unableToDetect'));
-        setIsGettingLocation(false);
-        return;
-      }
-      try {
-        await detectLocationFromNetwork();
-        toast.success(
-          reason
-            ? tLocation('approxFilledWithReason', { reason })
-            : tLocation('approxFilled')
-        );
-      } catch (fallbackError) {
-        const fallbackMessage = fallbackError instanceof Error
-          ? fallbackError.message
-          : tLocation('unableToDetect');
-        toast.error(fallbackMessage);
-      } finally {
-        setIsGettingLocation(false);
-      }
-    };
-
-    if (!navigator.geolocation) {
-      void fallbackToNetworkLocation(tLocation('notSupported'));
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude.toFixed(6);
-        const lon = position.coords.longitude.toFixed(6);
-        setLocationLat(lat);
-        setLocationLon(lon);
-        await finalizeFromCoordinates(lat, lon);
-        setIsGettingLocation(false);
-        toast.success(tLocation('detectedToast'));
-      },
-      (error) => {
-        void fallbackToNetworkLocation(
-          getGeolocationFailureMessage(error)
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+  const handleLocationChange = (next: SavedLocation) => {
+    setLocation(next);
+    // Picking a city brings its timezone along; the user can still override it.
+    if (next.timezone) setTimezone(next.timezone);
   };
 
   const handleSaveLocation = async () => {
-    const lat = parseFloat(locationLat);
-    const lon = parseFloat(locationLon);
-
-    if (isNaN(lat) || isNaN(lon)) {
+    const { lat, lon } = location;
+    if (lat === null || lon === null || Number.isNaN(lat) || Number.isNaN(lon)) {
       toast.error(tLocation('invalidLatLon'));
       return;
     }
-
     if (lat < -90 || lat > 90) {
       toast.error(tLocation('latRange'));
       return;
     }
-
     if (lon < -180 || lon > 180) {
       toast.error(tLocation('lonRange'));
       return;
@@ -402,8 +233,8 @@ export default function SettingsPage() {
       await updateUserProfile.mutateAsync({
         location_lat: lat,
         location_lon: lon,
-        location_name: locationName || undefined,
-        timezone: timezone,
+        location_name: location.name || undefined,
+        timezone,
       });
       toast.success(tLocation('savedToast'));
     } catch {
@@ -412,9 +243,9 @@ export default function SettingsPage() {
   };
 
   const hasLocationChanges = userProfile && (
-    locationName !== (userProfile.location_name || '') ||
-    locationLat !== (userProfile.location_lat?.toString() || '') ||
-    locationLon !== (userProfile.location_lon?.toString() || '') ||
+    location.name !== (userProfile.location_name || '') ||
+    location.lat !== (userProfile.location_lat ?? null) ||
+    location.lon !== (userProfile.location_lon ?? null) ||
     timezone !== (userProfile.timezone || 'UTC')
   );
 
@@ -660,75 +491,16 @@ export default function SettingsPage() {
               {tLocation('description')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>{tLocation('cityLabel')}</Label>
-              <Input
-                value={locationName}
-                onChange={(e) => setLocationName(e.target.value)}
-                placeholder={tLocation('cityPlaceholder')}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>{tLocation('latitude')}</Label>
-                <Input
-                  type="number"
-                  step="0.000001"
-                  value={locationLat}
-                  onChange={(e) => setLocationLat(e.target.value)}
-                  placeholder={tLocation('latitudePlaceholder')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{tLocation('longitude')}</Label>
-                <Input
-                  type="number"
-                  step="0.000001"
-                  value={locationLon}
-                  onChange={(e) => setLocationLon(e.target.value)}
-                  placeholder={tLocation('longitudePlaceholder')}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>{tLocation('timezone')}</Label>
-              <Select value={timezone} onValueChange={setTimezone}>
-                <SelectTrigger>
-                  <SelectValue placeholder={tLocation('timezonePlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="UTC">{tTz('utc')}</SelectItem>
-                  <SelectItem value="America/New_York">{tTz('easternUS')}</SelectItem>
-                  <SelectItem value="America/Chicago">{tTz('centralUS')}</SelectItem>
-                  <SelectItem value="America/Denver">{tTz('mountainUS')}</SelectItem>
-                  <SelectItem value="America/Los_Angeles">{tTz('pacificUS')}</SelectItem>
-                  <SelectItem value="Europe/London">{tTz('londonUK')}</SelectItem>
-                  <SelectItem value="Europe/Paris">{tTz('parisEU')}</SelectItem>
-                  <SelectItem value="Europe/Berlin">{tTz('berlinEU')}</SelectItem>
-                  <SelectItem value="Asia/Tokyo">{tTz('tokyoJP')}</SelectItem>
-                  <SelectItem value="Asia/Shanghai">{tTz('shanghaiCN')}</SelectItem>
-                  <SelectItem value="Asia/Kolkata">{tTz('indiaIST')}</SelectItem>
-                  <SelectItem value="Asia/Kathmandu">{tTz('nepalNPT')}</SelectItem>
-                  <SelectItem value="Asia/Dubai">{tTz('dubaiUAE')}</SelectItem>
-                  <SelectItem value="Australia/Sydney">{tTz('sydneyAU')}</SelectItem>
-                  <SelectItem value="Pacific/Auckland">{tTz('aucklandNZ')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                onClick={handleGetCurrentLocation}
-                disabled={isGettingLocation}
-              >
-                {isGettingLocation ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Navigation className="h-4 w-4" />
-                )}
-                {tLocation('useMyLocation')}
-              </Button>
+          <CardContent className="space-y-5">
+            <LocationPicker id="settings-location" value={location} onChange={handleLocationChange} />
+            <TimezoneCombobox
+              id="settings-timezone"
+              value={timezone}
+              onChange={setTimezone}
+              cityTimezone={location.timezone}
+              cityName={location.name.split(',')[0]}
+            />
+            <div className="flex flex-wrap items-center gap-3">
               <Button
                 onClick={handleSaveLocation}
                 disabled={!hasLocationChanges || updateUserProfile.isPending}
@@ -740,12 +512,10 @@ export default function SettingsPage() {
                 )}
                 {tLocation('saveLocation')}
               </Button>
+              {(location.lat === null || location.lon === null) && (
+                <p className="text-sm font-medium text-warning">{tLocation('required')}</p>
+              )}
             </div>
-            {!locationLat && !locationLon && (
-              <p className="text-sm font-medium text-warning">
-                {tLocation('required')}
-              </p>
-            )}
           </CardContent>
         </Card>
 
@@ -833,16 +603,19 @@ export default function SettingsPage() {
               {tColors('description')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <ColorPicker
+          <CardContent className="space-y-8">
+            <ColorPreferences
               label={tColors('favorites')}
               selected={formData.color_favorites || []}
               onChange={(colors) => updateField('color_favorites', colors)}
+              tone="favorite"
             />
-            <ColorPicker
+            <div className="h-px bg-border" aria-hidden />
+            <ColorPreferences
               label={tColors('avoid')}
               selected={formData.color_avoid || []}
               onChange={(colors) => updateField('color_avoid', colors)}
+              tone="avoid"
             />
           </CardContent>
         </Card>

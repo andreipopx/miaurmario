@@ -33,7 +33,13 @@ import { useUpdatePreferences } from '@/lib/hooks/use-preferences';
 import { useCreateItem } from '@/lib/hooks/use-items';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { api, setAccessToken } from '@/lib/api';
-import { CLOTHING_COLORS, CLOTHING_TYPES, StyleProfile } from '@/lib/types';
+import { CLOTHING_TYPES, StyleProfile } from '@/lib/types';
+import type { SavedLocation } from '@/lib/geo';
+import { getBrowserTimezone } from '@/lib/timezones';
+import { LocationPicker } from '@/components/settings/location-picker';
+import { TimezoneCombobox } from '@/components/settings/timezone-combobox';
+import { ColorPreferences } from '@/components/settings/color-preferences';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { Wordmark } from '@/components/brand/wordmark';
@@ -312,72 +318,32 @@ function LocationStep({
   const tCommon = useTranslations('common');
   // Use unified auth hook (token is already set by useAuth)
   const { session } = useAuth();
-  const [locationName, setLocationName] = useState('');
-  const [detecting, setDetecting] = useState(false);
+  const [location, setLocation] = useState<SavedLocation>({ name: '', lat: null, lon: null });
+  // New accounts start on the device's zone; picking a city switches to the city's.
+  const [timezone, setTimezone] = useState(() => getBrowserTimezone() || 'UTC');
   const [saving, setSaving] = useState(false);
-  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
 
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error(t('geolocationUnsupported'));
-      return;
-    }
-
-    setDetecting(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        setCoords({ lat: latitude, lon: longitude });
-
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-            { headers: { 'User-Agent': 'WardrobeAI/1.0' } }
-          );
-          if (response.ok) {
-            const data = await response.json();
-            const city = data.address?.city || data.address?.town || data.address?.village || data.address?.municipality;
-            const state = data.address?.state;
-            const country = data.address?.country;
-            if (city) {
-              setLocationName(state ? `${city}, ${state}` : `${city}, ${country}`);
-            } else if (data.display_name) {
-              setLocationName(data.display_name.split(',').slice(0, 2).join(',').trim());
-            }
-          }
-        } catch {
-          setLocationName(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
-        }
-
-        setDetecting(false);
-      },
-      (error) => {
-        setDetecting(false);
-        toast.error(t('geolocationDenied'));
-      }
-    );
+  const handleLocationChange = (next: SavedLocation) => {
+    setLocation(next);
+    if (next.timezone) setTimezone(next.timezone);
   };
 
+  const ready = !!location.name && location.lat !== null && location.lon !== null;
+
   const handleContinue = async () => {
-    if (!locationName.trim()) return;
+    if (!ready) return;
 
     setSaving(true);
     try {
       if (session?.accessToken) {
         setAccessToken(session.accessToken as string);
       }
-
-      // Save location to user profile
-      const updateData: Record<string, unknown> = {
-        location_name: locationName.trim(),
-      };
-
-      if (coords) {
-        updateData.location_lat = coords.lat;
-        updateData.location_lon = coords.lon;
-      }
-
-      await api.patch('/users/me', updateData);
+      await api.patch('/users/me', {
+        location_name: location.name,
+        location_lat: location.lat,
+        location_lon: location.lon,
+        timezone,
+      });
       toast.success(t('savedToast'));
       onNext();
     } catch (error) {
@@ -391,43 +357,22 @@ function LocationStep({
     <div className="mx-auto max-w-md space-y-6">
       <StepHeader title={t('title')} subtitle={t('subtitle')} />
 
-      <Card className="border-0 bg-panel">
-        <CardContent className="space-y-4 p-5 sm:p-6">
-          <Button
-            variant="signature"
-            className="w-full"
-            onClick={detectLocation}
-            disabled={detecting}
-          >
-            {detecting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <MapPin className="h-4 w-4" strokeWidth={1.75} />
-            )}
-            {t('detectButton')}
-          </Button>
-
-          <div className="flex items-center gap-3" aria-hidden>
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-xs font-semibold text-muted-foreground">{t('orManual')}</span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="location" className="font-bold">{t('cityLabel')}</Label>
-            <Input
-              id="location"
-              placeholder={t('cityPlaceholder')}
-              value={locationName}
-              onChange={(e) => setLocationName(e.target.value)}
-            />
-          </div>
-
-          <Button
-            className="w-full"
-            onClick={handleContinue}
-            disabled={!locationName.trim() || saving}
-          >
+      <Card>
+        <CardContent className="space-y-5 p-5 sm:p-6">
+          <LocationPicker
+            id="onboarding-location"
+            value={location}
+            onChange={handleLocationChange}
+            showAdvanced={false}
+          />
+          <TimezoneCombobox
+            id="onboarding-timezone"
+            value={timezone}
+            onChange={setTimezone}
+            cityTimezone={location.timezone}
+            cityName={location.name.split(',')[0]}
+          />
+          <Button className="w-full" onClick={handleContinue} disabled={!ready || saving}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('continue')}
           </Button>
@@ -458,24 +403,14 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
   const [saving, setSaving] = useState(false);
   const updatePreferences = useUpdatePreferences();
 
-  const toggleColor = (color: string, list: 'favorite' | 'avoid') => {
-    if (list === 'favorite') {
-      if (favoriteColors.includes(color)) {
-        setFavoriteColors(favoriteColors.filter((c) => c !== color));
-      } else {
-        setFavoriteColors([...favoriteColors, color]);
-        // Remove from avoid if present
-        setAvoidColors(avoidColors.filter((c) => c !== color));
-      }
-    } else {
-      if (avoidColors.includes(color)) {
-        setAvoidColors(avoidColors.filter((c) => c !== color));
-      } else {
-        setAvoidColors([...avoidColors, color]);
-        // Remove from favorites if present
-        setFavoriteColors(favoriteColors.filter((c) => c !== color));
-      }
-    }
+  // A colour can't be both a favourite and one to avoid.
+  const setFavorites = (colors: string[]) => {
+    setFavoriteColors(colors);
+    setAvoidColors((prev) => prev.filter((c) => !colors.includes(c)));
+  };
+  const setAvoid = (colors: string[]) => {
+    setAvoidColors(colors);
+    setFavoriteColors((prev) => prev.filter((c) => !colors.includes(c)));
   };
 
   const handleContinue = async () => {
@@ -499,88 +434,27 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
     <div className="mx-auto max-w-2xl space-y-4">
       <StepHeader title={t('title')} subtitle={t('subtitle')} />
 
-      <Card className="border-0 bg-panel">
-        <CardHeader>
-          <CardTitle className="text-lg">{t('favoritesTitle')}</CardTitle>
-          <CardDescription>{t('favoritesDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {CLOTHING_COLORS.map((color) => {
-              const isSelected = favoriteColors.includes(color.value);
-              return (
-                <button
-                  key={color.value}
-                  type="button"
-                  onClick={() => toggleColor(color.value, 'favorite')}
-                  aria-pressed={isSelected}
-                  aria-label={color.name}
-                  className={cn(
-                    'flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-inset ring-black/10 transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:ring-white/15',
-                    isSelected
-                      ? 'scale-105 outline outline-[2.5px] outline-offset-2 outline-signature'
-                      : 'hover:scale-105'
-                  )}
-                  style={{ backgroundColor: color.hex }}
-                  title={color.name}
-                >
-                  {isSelected && (
-                    <Check
-                      strokeWidth={2.5}
-                      className={`mx-auto h-5 w-5 ${
-                        ['white', 'yellow', 'beige'].includes(color.value)
-                          ? 'text-black'
-                          : 'text-white'
-                      }`}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+      <Card>
+        <CardContent className="p-5 sm:p-6">
+          <ColorPreferences
+            label={t('favoritesTitle')}
+            description={t('favoritesDesc')}
+            selected={favoriteColors}
+            onChange={setFavorites}
+            tone="favorite"
+          />
         </CardContent>
       </Card>
 
-      <Card className="border-0 bg-panel">
-        <CardHeader>
-          <CardTitle className="text-lg">{t('avoidTitle')}</CardTitle>
-          <CardDescription>{t('avoidDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {CLOTHING_COLORS.map((color) => {
-              const isSelected = avoidColors.includes(color.value);
-              return (
-                <button
-                  key={color.value}
-                  type="button"
-                  onClick={() => toggleColor(color.value, 'avoid')}
-                  aria-pressed={isSelected}
-                  aria-label={color.name}
-                  className={cn(
-                    'flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-inset ring-black/10 transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:ring-white/15',
-                    isSelected
-                      ? 'scale-105 outline outline-[2.5px] outline-offset-2 outline-destructive'
-                      : 'hover:scale-105'
-                  )}
-                  style={{ backgroundColor: color.hex }}
-                  title={color.name}
-                >
-                  {isSelected && (
-                    <span
-                      className={`text-lg font-bold ${
-                        ['white', 'yellow', 'beige'].includes(color.value)
-                          ? 'text-black'
-                          : 'text-white'
-                      }`}
-                    >
-                      ×
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+      <Card>
+        <CardContent className="p-5 sm:p-6">
+          <ColorPreferences
+            label={t('avoidTitle')}
+            description={t('avoidDesc')}
+            selected={avoidColors}
+            onChange={setAvoid}
+            tone="avoid"
+          />
         </CardContent>
       </Card>
 
@@ -626,6 +500,7 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
 
 function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
   const t = useTranslations('onboarding.upload');
+  const typeLabel = useClothingTypeLabel();
   const tCommon = useTranslations('common');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -730,7 +605,7 @@ function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
                 <SelectContent>
                   {CLOTHING_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                      {typeLabel(type.value)}
                     </SelectItem>
                   ))}
                 </SelectContent>

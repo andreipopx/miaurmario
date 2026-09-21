@@ -116,7 +116,9 @@ export interface Preferences {
   ai_endpoints: AIEndpoint[];
 }
 
-// Color options for the app
+// Color options for the app — the canonical named palette. Values are the tag
+// vocabulary shared with the AI tagger (clothing_analysis.txt) and the scorer;
+// display names come from messages `tagValues.colors` (see lib/tag-labels.ts).
 // Hex values tuned for typical clothing colors, not pure/saturated colors
 export const CLOTHING_COLORS = [
   { name: 'Black', value: 'black', hex: '#1a1a1a' },
@@ -125,7 +127,7 @@ export const CLOTHING_COLORS = [
   { name: 'White', value: 'white', hex: '#FAFAFA' },
   { name: 'Cream', value: 'cream', hex: '#F5F5DC' },
   { name: 'Beige', value: 'beige', hex: '#D4C4A8' },
-  { name: 'Tan', value: 'tan', hex: '#C9B896' },
+  { name: 'Tan', value: 'tan', hex: '#C19A6B' },
   { name: 'Khaki', value: 'khaki', hex: '#A89F6B' },
   { name: 'Olive', value: 'olive', hex: '#707B52' },
   { name: 'Army Green', value: 'army-green', hex: '#5B6340' },
@@ -133,6 +135,7 @@ export const CLOTHING_COLORS = [
   { name: 'Teal', value: 'teal', hex: '#367588' },
   { name: 'Navy', value: 'navy', hex: '#1B2A4A' },
   { name: 'Blue', value: 'blue', hex: '#4A7DB8' },
+  { name: 'Light Blue', value: 'light-blue', hex: '#9CC3E4' },
   { name: 'Brown', value: 'brown', hex: '#8B5A3C' },
   { name: 'Dark Brown', value: 'dark-brown', hex: '#5C4033' },
   { name: 'Burgundy', value: 'burgundy', hex: '#722F37' },
@@ -141,6 +144,8 @@ export const CLOTHING_COLORS = [
   { name: 'Purple', value: 'purple', hex: '#6B5B7A' },
   { name: 'Yellow', value: 'yellow', hex: '#D4A84B' },
   { name: 'Orange', value: 'orange', hex: '#D2691E' },
+  { name: 'Gold', value: 'gold', hex: '#C9A227' },
+  { name: 'Silver', value: 'silver', hex: '#BFC1C2' },
 ] as const;
 
 // Clothing types — must match the TYPE vocabulary in clothing_analysis.txt

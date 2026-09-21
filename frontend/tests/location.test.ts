@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   DEFAULT_NETWORK_LOCATION_URL,
-  formatReverseGeocodedLocation,
   getNetworkLocationUrl,
-  getGeolocationFailureMessage,
   isNetworkLocationFallbackEnabled,
   resolveNetworkLocation,
 } from '@/lib/location'
@@ -105,25 +103,6 @@ describe('location helpers', () => {
   it('throws when network location is incomplete', () => {
     expect(() => resolveNetworkLocation({ success: false }, 'UTC')).toThrow(
       'Unable to determine location from network'
-    )
-  })
-
-  it('formats reverse geocoding responses consistently', () => {
-    expect(formatReverseGeocodedLocation({
-      address: { city: 'London', country: 'United Kingdom' },
-    })).toBe('London, United Kingdom')
-
-    expect(formatReverseGeocodedLocation({
-      display_name: 'Paris, Ile-de-France, France',
-    })).toBe('Paris, Ile-de-France')
-  })
-
-  it('maps geolocation failure reasons to user-facing messages', () => {
-    expect(getGeolocationFailureMessage({ code: 1 })).toBe('Location access was denied.')
-    expect(getGeolocationFailureMessage({ code: 2 })).toBe('Location is currently unavailable.')
-    expect(getGeolocationFailureMessage({ code: 3 })).toBe('Location request timed out.')
-    expect(getGeolocationFailureMessage({ message: 'Permission prompt dismissed' })).toBe(
-      'Failed to get exact location: Permission prompt dismissed'
     )
   })
 })

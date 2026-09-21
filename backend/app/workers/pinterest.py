@@ -44,6 +44,10 @@ async def import_pinterest_board(ctx: dict, user_id: str, board_id: str) -> dict
         client = PinterestClient(connection, db)
         bookmark: str | None = None
         board_name: str | None = None
+        try:
+            board_name = (await client.get_board(board_id)).get("name")
+        except PinterestAPIError as exc:
+            logger.warning("Could not fetch Pinterest board %s name: %s", board_id, exc)
         while True:
             page = await client.list_board_pins(board_id, bookmark=bookmark)
             for pin in page.get("items", []):

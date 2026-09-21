@@ -105,6 +105,9 @@ class PinterestClient:
             params["bookmark"] = bookmark
         return await self._get("/boards", params=params)
 
+    async def get_board(self, board_id: str) -> dict[str, Any]:
+        return await self._get(f"/boards/{board_id}")
+
     async def list_board_pins(
         self, board_id: str, bookmark: str | None = None, page_size: int = 100
     ) -> dict[str, Any]:

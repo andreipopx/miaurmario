@@ -3,16 +3,16 @@
 import logging
 import uuid
 from typing import Annotated, Any
-from urllib.parse import urlencode
 
 from arq import create_pool
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import get_db
+from app.integrations.crypto import encryption_configured
 from app.integrations.pinterest import (
     OAuthStateError,
     PinterestAPIError,
@@ -23,6 +23,7 @@ from app.integrations.pinterest import (
     encrypt_token,
     exchange_code,
 )
+from app.integrations.redirects import frontend_redirect
 from app.models.pinterest import PinterestConnection, PinterestPin
 from app.models.user import User
 from app.utils.auth import get_current_user
@@ -33,23 +34,55 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/integrations/pinterest", tags=["integrations"])
 pins_router = APIRouter(prefix="/pins", tags=["pins"])
 
+SETTINGS_PATH = "/dashboard/settings/integrations/pinterest"
 
-async def _get_connection(
-    user_id: uuid.UUID | str, db: AsyncSession
-) -> PinterestConnection | None:
+
+def _is_configured() -> bool:
+    settings = get_settings()
     return (
-        await db.execute(
-            select(PinterestConnection).where(PinterestConnection.user_id == user_id)
-        )
+        bool(settings.pinterest_client_id and settings.pinterest_client_secret)
+        and encryption_configured()
+    )
+
+
+async def _get_connection(user_id: uuid.UUID | str, db: AsyncSession) -> PinterestConnection | None:
+    return (
+        await db.execute(select(PinterestConnection).where(PinterestConnection.user_id == user_id))
     ).scalar_one_or_none()
+
+
+@router.get("/status")
+async def get_status(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    connection = await _get_connection(current_user.id, db)
+    pin_count = 0
+    if connection:
+        pin_count = (
+            await db.execute(
+                select(func.count())
+                .select_from(PinterestPin)
+                .where(PinterestPin.user_id == current_user.id)
+            )
+        ).scalar_one()
+    return {
+        "configured": _is_configured(),
+        "connected": connection is not None,
+        "pinterest_user_id": connection.pinterest_user_id if connection else None,
+        "connected_at": connection.connected_at.isoformat()
+        if connection and connection.connected_at
+        else None,
+        "scopes": connection.scopes if connection else None,
+        "pin_count": pin_count,
+    }
 
 
 @router.get("/connect")
 async def connect(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict[str, str]:
-    settings = get_settings()
-    if not settings.pinterest_client_id or not settings.pinterest_client_secret:
+    if not _is_configured():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Pinterest not configured")
     state = await create_state(str(current_user.id))
     return {"authorize_url": build_authorize_url(state)}
@@ -57,74 +90,58 @@ async def connect(
 
 @router.get("/callback")
 async def callback(
-    code: Annotated[str, Query()],
-    state: Annotated[str, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
+    code: Annotated[str | None, Query()] = None,
+    state: Annotated[str | None, Query()] = None,
+    error: Annotated[str | None, Query()] = None,
 ) -> RedirectResponse:
-    settings = get_settings()
     try:
-        user_id_str = await consume_state(state)
-        user_id = uuid.UUID(user_id_str)
+        user_id = uuid.UUID(await consume_state(state))
     except (OAuthStateError, ValueError) as exc:
         logger.warning("Pinterest OAuth state rejected: %s", exc)
-        params = urlencode({"error": "invalid_state"})
-        return RedirectResponse(
-            url=f"{settings.magic_link_base_url or ''}/dashboard/settings/integrations/pinterest?{params}",
-            status_code=302,
-        )
+        return frontend_redirect(SETTINGS_PATH, error="invalid_state")
+    if error or not code:
+        logger.info("Pinterest OAuth denied/aborted: %s", error)
+        return frontend_redirect(SETTINGS_PATH, error="access_denied")
     try:
         tokens = await exchange_code(code)
     except OAuthStateError as exc:
         logger.warning("Pinterest OAuth token exchange failed: %s", exc)
-        params = urlencode({"error": "exchange_failed"})
-        return RedirectResponse(
-            url=f"{settings.magic_link_base_url or ''}/dashboard/settings/integrations/pinterest?{params}",
-            status_code=302,
-        )
+        return frontend_redirect(SETTINGS_PATH, error="exchange_failed")
 
-    existing = await _get_connection(user_id, db)
+    access_ct = encrypt_token(tokens["access_token"])
+    refresh_ct = encrypt_token(tokens["refresh_token"])
+    scopes = tokens.get("scope") or "boards:read,pins:read"
+
+    # Best-effort: fetch the account id with a transient (unsaved) connection.
     pinterest_user_id = "unknown"
-    # Try to fetch the account id — best-effort.
     try:
-        placeholder = PinterestConnection(
+        probe = PinterestConnection(
             user_id=user_id,
             pinterest_user_id="pending",
-            access_token_ct=encrypt_token(tokens["access_token"]),
-            refresh_token_ct=encrypt_token(tokens["refresh_token"]),
+            access_token_ct=access_ct,
+            refresh_token_ct=refresh_ct,
             access_token_expires_at=tokens["access_token_expires_at"],
             refresh_token_expires_at=tokens["refresh_token_expires_at"],
-            scopes=tokens.get("scope", "boards:read,pins:read"),
+            scopes=scopes,
         )
-        client = PinterestClient(placeholder, db)
-        account = await client.get_user_account()
+        account = await PinterestClient(probe, db).get_user_account()
         pinterest_user_id = str(account.get("id") or account.get("username") or "unknown")
     except PinterestAPIError as exc:
         logger.warning("Could not fetch Pinterest user_account: %s", exc)
 
-    if existing:
-        existing.access_token_ct = encrypt_token(tokens["access_token"])
-        existing.refresh_token_ct = encrypt_token(tokens["refresh_token"])
-        existing.access_token_expires_at = tokens["access_token_expires_at"]
-        existing.refresh_token_expires_at = tokens["refresh_token_expires_at"]
-        existing.scopes = tokens.get("scope", existing.scopes)
-        existing.pinterest_user_id = pinterest_user_id
-    else:
-        db.add(
-            PinterestConnection(
-                user_id=user_id,
-                pinterest_user_id=pinterest_user_id,
-                access_token_ct=encrypt_token(tokens["access_token"]),
-                refresh_token_ct=encrypt_token(tokens["refresh_token"]),
-                access_token_expires_at=tokens["access_token_expires_at"],
-                refresh_token_expires_at=tokens["refresh_token_expires_at"],
-                scopes=tokens.get("scope", "boards:read,pins:read"),
-            )
-        )
+    connection = await _get_connection(user_id, db)
+    if connection is None:
+        connection = PinterestConnection(user_id=user_id)
+        db.add(connection)
+    connection.pinterest_user_id = pinterest_user_id[:64]
+    connection.access_token_ct = access_ct
+    connection.refresh_token_ct = refresh_ct
+    connection.access_token_expires_at = tokens["access_token_expires_at"]
+    connection.refresh_token_expires_at = tokens["refresh_token_expires_at"]
+    connection.scopes = scopes[:255]
     await db.commit()
-    return RedirectResponse(
-        url=f"{settings.magic_link_base_url or ''}/dashboard/settings/integrations/pinterest?connected=1",
-        status_code=302,
-    )
+    return frontend_redirect(SETTINGS_PATH, connected="1")
 
 
 @router.get("/boards")
@@ -133,13 +150,13 @@ async def list_boards(
     db: Annotated[AsyncSession, Depends(get_db)],
     bookmark: str | None = None,
 ) -> dict[str, Any]:
-    connection = await _get_connection(str(current_user.id), db)
+    connection = await _get_connection(current_user.id, db)
     if not connection:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pinterest not connected")
     try:
         return await PinterestClient(connection, db).list_boards(bookmark=bookmark)
     except PinterestAPIError as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Pinterest API error") from exc
 
 
 @router.post("/boards/{board_id}/import", status_code=status.HTTP_202_ACCEPTED)
@@ -148,7 +165,7 @@ async def import_board(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, str]:
-    connection = await _get_connection(str(current_user.id), db)
+    connection = await _get_connection(current_user.id, db)
     if not connection:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pinterest not connected")
     redis = await create_pool(get_redis_settings())

@@ -1,54 +1,42 @@
 """Pinterest OAuth authorization_code flow.
 
-State is stored in Redis with a 10-minute TTL and bound to the requesting
-user_id, so a leaked authorize URL cannot be replayed against another account.
+State is stored in Redis (shared integrations state store) with a 10-minute
+TTL and bound to the requesting user_id, so a leaked authorize URL cannot be
+replayed against another account.
 """
 
-import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
 
 import httpx
-from arq import create_pool
 
 from app.config import get_settings
-from app.workers.settings import get_redis_settings
+from app.integrations import state as state_store
+from app.integrations.state import OAuthStateError
 
 AUTHORIZE_URL = "https://www.pinterest.com/oauth/"
 TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 DEFAULT_SCOPES = "boards:read,pins:read"
-STATE_TTL_SECONDS = 600
-STATE_KEY_PREFIX = "pinterest:oauth:state:"
+PROVIDER = "pinterest"
 
-
-class OAuthStateError(RuntimeError):
-    pass
+__all__ = [
+    "OAuthStateError",
+    "build_authorize_url",
+    "consume_state",
+    "create_state",
+    "exchange_code",
+]
 
 
 async def create_state(user_id: str) -> str:
     """Generate a fresh CSRF state token and stash it in Redis bound to user_id."""
-    state = secrets.token_urlsafe(32)
-    redis = await create_pool(get_redis_settings())
-    try:
-        await redis.set(f"{STATE_KEY_PREFIX}{state}", user_id, ex=STATE_TTL_SECONDS)
-    finally:
-        await redis.aclose()
-    return state
+    return await state_store.create_state(PROVIDER, user_id)
 
 
-async def consume_state(state: str) -> str:
+async def consume_state(state: str | None) -> str:
     """Validate the state token, return the user_id it was created for, and delete it."""
-    key = f"{STATE_KEY_PREFIX}{state}"
-    redis = await create_pool(get_redis_settings())
-    try:
-        raw = await redis.get(key)
-        if raw is None:
-            raise OAuthStateError("state token is missing, expired, or already consumed")
-        await redis.delete(key)
-    finally:
-        await redis.aclose()
-    return raw.decode() if isinstance(raw, (bytes, bytearray)) else str(raw)
+    return await state_store.consume_state(PROVIDER, state)
 
 
 def build_authorize_url(state: str, scopes: str = DEFAULT_SCOPES) -> str:

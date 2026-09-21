@@ -1,7 +1,7 @@
 """Add Pinterest integration tables.
 
 Revision ID: p1n15intg2601
-Revises: b7f2a1c9d3e5
+Revises: sprint2_magic_link_tokens
 Create Date: 2026-08-15
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
 revision: str = "p1n15intg2601"
-down_revision: str | None = "b7f2a1c9d3e5"
+down_revision: str | None = "sprint2_magic_link_tokens"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

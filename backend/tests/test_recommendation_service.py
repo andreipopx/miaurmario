@@ -89,14 +89,15 @@ class TestPromptTemplate:
         from app.services.recommendation_service import RECOMMENDATION_PROMPT
 
         prompt = RECOMMENDATION_PROMPT
-        assert "Color coordination" in prompt
-        assert "Monochrome" in prompt
-        assert "Neutral base" in prompt
-        assert "Analogous" in prompt
-        assert "Texture and fabric" in prompt
-        assert "Proportion and silhouette" in prompt
-        assert "Time of day" in prompt
-        assert "Full day" in prompt
+        # The prompt is written in Spanish (El Estilista voice).
+        assert "Color:" in prompt
+        assert "monocromo" in prompt
+        assert "base neutra" in prompt
+        assert "análogos" in prompt
+        assert "Textura y tejido" in prompt
+        assert "Proporción y silueta" in prompt
+        assert "Momento del día" in prompt
+        assert "Día completo" in prompt
         assert "{time_of_day}" in prompt
 
     def test_prompt_format_accepts_time_of_day(self):
@@ -337,4 +338,45 @@ class TestPromptPreRanking:
     def test_pre_ranking_hint_present(self):
         from app.services.recommendation_service import RECOMMENDATION_PROMPT
 
-        assert "pre-ranked" in RECOMMENDATION_PROMPT
+        assert "pre-ordenados por afinidad" in RECOMMENDATION_PROMPT
+
+
+class TestSingleOutfitFormat:
+    def _formatted_prompt(self) -> str:
+        from app.services.recommendation_service import RECOMMENDATION_PROMPT
+
+        return RECOMMENDATION_PROMPT.format(
+            occasion="casual",
+            time_of_day="morning",
+            temperature=20,
+            feels_like=19,
+            condition="clear",
+            precipitation_chance=0,
+            preferences_text="",
+            items_text="[1] shirt | blue | cotton",
+            mandatory_items_section="",
+            song_context_text="",
+        )
+
+    def test_single_outfit_replaces_multi_outfit_format(self):
+        from app.services.recommendation_service import (
+            RESPONSE_FORMAT_MARKER,
+            replace_response_format_with_single,
+        )
+
+        multi = self._formatted_prompt()
+        assert RESPONSE_FORMAT_MARKER in multi
+        assert '"outfits"' in multi
+
+        single = replace_response_format_with_single(multi)
+        assert '"outfits"' not in single
+        assert "exactamente 3" not in single
+        assert '{"items": [números]' in single
+        # Everything before the format section is preserved.
+        assert single.startswith(multi[: multi.rfind(RESPONSE_FORMAT_MARKER)])
+
+    def test_single_outfit_requires_marker(self):
+        from app.services.recommendation_service import replace_response_format_with_single
+
+        with pytest.raises(ValueError):
+            replace_response_format_with_single("no format section here")

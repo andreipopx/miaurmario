@@ -42,14 +42,29 @@ from app.utils.timezone import get_user_today
 
 logger = logging.getLogger(__name__)
 
+# Marker that opens the response-format section of prompts/recommendation.txt.
+# In single-outfit mode (notifications) everything from this marker to the end
+# of the prompt is swapped for SINGLE_OUTFIT_FORMAT.
+RESPONSE_FORMAT_MARKER = "FORMATO DE RESPUESTA:"
+
 SINGLE_OUTFIT_FORMAT = (
-    "Respond with valid JSON:\n"
-    '{{"items": [item numbers], "headline": "Short catchy outfit title (max 5 words)", '
-    '"highlights": ["One short sentence each — vary your reasoning across color, texture, '
-    'proportion, occasion, weather, or time of day"], '
-    '"styling_tip": "One specific, actionable styling detail — do not suggest rolling up '
-    'sleeves every time, vary your advice"}}'
+    RESPONSE_FORMAT_MARKER + "\n"
+    "JSON válido con UN solo outfit completo, escrito con el tono descrito arriba.\n"
+    '{"items": [números], "headline": "Título breve, editorial, evocador '
+    '(máx 6 palabras, en español)", '
+    '"highlights": ["Una frase editorial por punto — varía entre color, textura, '
+    'proporción, ocasión, clima, luz"], '
+    '"styling_tip": "Un detalle concreto de styling — nunca \'súbete las mangas\' '
+    'cada vez, varía"}'
 )
+
+
+def replace_response_format_with_single(prompt: str) -> str:
+    """Swap the multi-outfit response format of a *formatted* prompt for the single one."""
+    idx = prompt.rfind(RESPONSE_FORMAT_MARKER)
+    if idx == -1:
+        raise ValueError("Recommendation prompt is missing its response-format section")
+    return prompt[:idx] + SINGLE_OUTFIT_FORMAT
 
 
 def get_time_of_day(user: User) -> str:
@@ -841,12 +856,7 @@ class RecommendationService:
 
         # For single_outfit mode (notifications), replace multi-outfit format
         if single_outfit:
-            prompt = re.sub(
-                r"Respond with valid JSON containing exactly 3.*$",
-                SINGLE_OUTFIT_FORMAT,
-                prompt,
-                flags=re.DOTALL,
-            )
+            prompt = replace_response_format_with_single(prompt)
 
         logger.info(
             f"Generating recommendation for user {user.id}, "

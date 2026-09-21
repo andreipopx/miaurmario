@@ -96,6 +96,9 @@ class Settings(BaseSettings):
 
     # Music enrichment (Stylist mood input)
     lastfm_api_key: str | None = Field(default=None)
+    # Música tab: let users with AI access refine the heuristic daily mood with
+    # one small batched LLM call per day (counts towards their AI usage).
+    music_mood_ai_enabled: bool = Field(default=True)
 
     # Notifications - default ntfy channel (used when user has none configured)
     ntfy_server: str | None = None

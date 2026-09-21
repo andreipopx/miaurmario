@@ -7,8 +7,10 @@
 
 Endpoints used are all still available to Development Mode apps after the
 Nov 2024 and Feb 2026 Web API changes: /me, /me/player/currently-playing,
-/me/player/recently-played, /me/top/artists, /artists/{id} (single fetch;
-the batch /artists endpoint was removed), /tracks/{id} and /search.
+/me/player/recently-played, /me/top/artists, /me/top/tracks, /artists/{id}
+(single fetch; the batch /artists endpoint was removed), /tracks/{id} and
+/search. All of them are covered by the scopes the connect flow already asks
+for (user-read-recently-played, user-read-currently-playing, user-top-read).
 """
 
 import asyncio
@@ -112,13 +114,29 @@ class SpotifyClient:
     async def get_currently_playing(self) -> dict[str, Any] | None:
         return await self._get("/me/player/currently-playing")
 
-    async def get_recently_played(self, limit: int = 10) -> dict[str, Any]:
-        return await self._get("/me/player/recently-played", {"limit": limit}) or {}
+    async def get_recently_played(
+        self, limit: int = 10, after: int | None = None, before: int | None = None
+    ) -> dict[str, Any]:
+        """Recently played tracks (max 50 per call; Spotify only keeps ~the last 50).
+
+        `after` / `before` are Unix epoch milliseconds cursors (mutually exclusive).
+        """
+        params: dict[str, Any] = {"limit": max(1, min(limit, 50))}
+        if after is not None:
+            params["after"] = int(after)
+        elif before is not None:
+            params["before"] = int(before)
+        return await self._get("/me/player/recently-played", params) or {}
 
     async def get_top_artists(
         self, time_range: str = "short_term", limit: int = 10
     ) -> dict[str, Any]:
         return await self._get("/me/top/artists", {"time_range": time_range, "limit": limit}) or {}
+
+    async def get_top_tracks(
+        self, time_range: str = "short_term", limit: int = 10
+    ) -> dict[str, Any]:
+        return await self._get("/me/top/tracks", {"time_range": time_range, "limit": limit}) or {}
 
     async def get_artist(self, artist_id: str) -> dict[str, Any]:
         return await self._get(f"/artists/{artist_id}") or {}
@@ -130,3 +148,13 @@ class SpotifyClient:
         data = await self._get("/search", {"q": query, "type": "track", "limit": 1}) or {}
         items = (data.get("tracks") or {}).get("items") or []
         return items[0] if items else None
+
+    async def search_tracks(self, query: str, limit: int = 8) -> list[dict[str, Any]]:
+        data = (
+            await self._get(
+                "/search", {"q": query, "type": "track", "limit": max(1, min(limit, 10))}
+            )
+            or {}
+        )
+        items = (data.get("tracks") or {}).get("items") or []
+        return [i for i in items if isinstance(i, dict)]

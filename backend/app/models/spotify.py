@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, LargeBinary, String, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, LargeBinary, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,8 +13,9 @@ from app.database import Base
 class SpotifyConnection(Base):
     """OAuth connection to a user's Spotify account. One row per user.
 
-    Used only as a mood input for the Stylist (currently playing / recently
-    played / top-artist genres). Tokens are Fernet-ciphered at rest.
+    Mood input for the Stylist (currently playing / recently played /
+    top-artist genres) and source of the Música tab's listening history.
+    Tokens are Fernet-ciphered at rest.
     """
 
     __tablename__ = "spotify_connections"
@@ -41,3 +42,7 @@ class SpotifyConnection(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     last_refreshed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Listening-history sync: recently-played `after` cursor (epoch ms) and the
+    # time of the last successful sync (used to throttle on-demand syncs).
+    history_cursor_ms: Mapped[int | None] = mapped_column(BigInteger)
+    last_history_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

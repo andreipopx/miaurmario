@@ -7,6 +7,7 @@ from app.models.learning import (
     UserLearningProfile,
 )
 from app.models.magic_link import MagicLinkToken
+from app.models.music import ListeningEvent, ListeningMood
 from app.models.notification import Notification, NotificationSettings
 from app.models.outfit import FamilyOutfitRating, Outfit, OutfitItem, UserFeedback
 from app.models.pinterest import PinterestConnection, PinterestPin
@@ -37,6 +38,8 @@ __all__ = [
     "OutfitItem",
     "UserFeedback",
     "Notification",
+    "ListeningEvent",
+    "ListeningMood",
     "PinterestConnection",
     "PinterestPin",
     "SpotifyConnection",

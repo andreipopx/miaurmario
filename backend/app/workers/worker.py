@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.models.item import ClothingItem, ItemStatus
 from app.services.ai_service import AIService
 from app.workers.db import close_db, get_db_session, init_db
+from app.workers.music import sync_listening_history_job
 from app.workers.notifications import (
     check_scheduled_notifications,
     check_wash_reminders,
@@ -71,6 +72,7 @@ class WorkerSettings:
         update_learning_profiles,
         import_pinterest_board,
         refresh_expiring_tokens,
+        sync_listening_history_job,
     ]
 
     cron_jobs = [
@@ -80,6 +82,7 @@ class WorkerSettings:
         cron(update_learning_profiles, minute=30, hour=None),
         cron(recover_stale_processing_items, minute={0, 15, 30, 45}),
         cron(refresh_expiring_tokens, minute=0, hour={3}),
+        cron(sync_listening_history_job, minute={7, 37}),
     ]
 
     on_startup = startup

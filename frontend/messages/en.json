@@ -1760,5 +1760,10 @@
     "thunderstorm": "Thunderstorm",
     "thunderstormHail": "Thunderstorm with hail",
     "unknown": "Unknown"
+  },
+  "lineageCard": {
+    "replaces": "Replaces {occasion} suggestion",
+    "replacesWithDate": "Replaces {occasion} suggestion from {date}",
+    "fromLookbook": "From your {name} lookbook entry"
   }
 }

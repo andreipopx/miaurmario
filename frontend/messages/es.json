@@ -1760,5 +1760,10 @@
     "thunderstorm": "Tormenta",
     "thunderstormHail": "Tormenta con granizo",
     "unknown": "Sin datos"
+  },
+  "lineageCard": {
+    "replaces": "Sustituye a la sugerencia «{occasion}»",
+    "replacesWithDate": "Sustituye a la sugerencia «{occasion}» del {date}",
+    "fromLookbook": "De tu entrada del lookbook «{name}»"
   }
 }

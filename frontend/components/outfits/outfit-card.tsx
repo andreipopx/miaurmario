@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow, parseISO, type Locale } from 'date-fns';
 import {
   BookmarkCheck,
   Layers,
@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Outfit } from '@/lib/hooks/use-outfits';
+import { useDateFnsLocale } from '@/lib/date-locale';
 
 interface OutfitCardProps {
   outfit: Outfit;
@@ -76,11 +77,12 @@ function getCardTitle(outfit: Outfit): string {
   return `${occasion} outfit`;
 }
 
-function getMetaLabel(outfit: Outfit): string {
+function getMetaLabel(outfit: Outfit, dateFnsLocale: Locale): string {
   if (!outfit.scheduled_for) return 'Lookbook template';
   try {
     return formatDistanceToNow(parseISO(outfit.scheduled_for), {
       addSuffix: true,
+      locale: dateFnsLocale,
     });
   } catch {
     return outfit.scheduled_for;
@@ -88,6 +90,7 @@ function getMetaLabel(outfit: Outfit): string {
 }
 
 export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
+  const dateFnsLocale = useDateFnsLocale();
   const badge = getSourceBadge(outfit);
   const visibleItems = outfit.items.slice(0, 4);
   const overflow = outfit.items.length - visibleItems.length;
@@ -154,7 +157,7 @@ export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
             <Badge variant="outline" className="capitalize">
               {outfit.occasion}
             </Badge>
-            <span>{getMetaLabel(outfit)}</span>
+            <span>{getMetaLabel(outfit, dateFnsLocale)}</span>
           </div>
         </div>
       </CardContent>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   Loader2,
   Users,
@@ -198,6 +198,7 @@ function NoFamilyView() {
 
 function FamilyView() {
   const t = useTranslations('family');
+  const locale = useLocale();
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const { data: family, isLoading } = useFamily();
@@ -534,7 +535,7 @@ function FamilyView() {
                       <span className="font-medium">{invite.email}</span>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {t('expires', { date: new Date(invite.expires_at).toLocaleDateString() })}
+                        {t('expires', { date: new Date(invite.expires_at).toLocaleDateString(locale) })}
                       </div>
                     </div>
                   </div>

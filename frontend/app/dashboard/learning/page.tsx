@@ -32,7 +32,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 function StatCard({
   title,
@@ -323,6 +323,7 @@ function NoLearningData({ onRecompute, isRefreshing }: { onRecompute: () => void
 
 export default function LearningPage() {
   const t = useTranslations('learning');
+  const locale = useLocale();
   const tWeather = useTranslations('learning.weather');
   const { data, isLoading, isError } = useLearning();
   const recompute = useRecomputeLearning();
@@ -680,7 +681,7 @@ export default function LearningPage() {
           {/* Last Updated */}
           {profile.last_computed_at && (
             <p className="text-xs text-muted-foreground text-center">
-              {t('lastUpdated', { date: new Date(profile.last_computed_at).toLocaleString() })}
+              {t('lastUpdated', { date: new Date(profile.last_computed_at).toLocaleString(locale) })}
             </p>
           )}
         </>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
 import {
   BookmarkPlus,
   CalendarPlus,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useDateFnsLocale, useFormatDate } from '@/lib/date-locale';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,8 @@ import { getErrorMessage } from '@/lib/api';
 
 export default function OutfitDetailPage() {
   const t = useTranslations('outfitDetail');
+  const dateFnsLocale = useDateFnsLocale();
+  const formatDate = useFormatDate();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const outfitId = params?.id;
@@ -108,6 +111,7 @@ export default function OutfitDetailPage() {
             {outfit.scheduled_for
               ? formatDistanceToNow(parseISO(outfit.scheduled_for), {
                   addSuffix: true,
+                  locale: dateFnsLocale,
                 })
               : t('lookbookTemplate')}
           </span>
@@ -255,7 +259,7 @@ export default function OutfitDetailPage() {
                 >
                   <span className="text-sm">
                     {wear.scheduled_for
-                      ? format(parseISO(wear.scheduled_for), 'MMM d, yyyy')
+                      ? formatDate(parseISO(wear.scheduled_for), 'medium')
                       : t('undated')}
                   </span>
                   {wear.feedback?.rating && (

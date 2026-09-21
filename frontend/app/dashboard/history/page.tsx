@@ -17,7 +17,8 @@ import { OutfitCalendar } from '@/components/outfit-calendar';
 import { OutfitHistoryCard } from '@/components/outfit-history-card';
 import { FeedbackDialog } from '@/components/feedback-dialog';
 import { OutfitPreviewDialog } from '@/components/outfit-preview-dialog';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { isSameDay, parseISO } from 'date-fns';
+import { capitalizeFirst, useFormatDate } from '@/lib/date-locale';
 import { useTranslations } from 'next-intl';
 
 function EmptyHistory() {
@@ -40,11 +41,12 @@ function EmptyHistory() {
 
 function EmptyDate({ date }: { date: Date }) {
   const t = useTranslations('history');
+  const formatDate = useFormatDate();
   return (
     <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
       <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
       <p className="text-sm text-muted-foreground">
-        {t('noOutfitsForDate', { date: format(date, 'MMMM d, yyyy') })}
+        {t('noOutfitsForDate', { date: formatDate(date, 'long') })}
       </p>
     </div>
   );
@@ -94,6 +96,7 @@ function CalendarSkeleton() {
 
 export default function HistoryPage() {
   const t = useTranslations('history');
+  const formatDate = useFormatDate();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -206,7 +209,7 @@ export default function HistoryPage() {
           {selectedDate && (
             <div className="border-b pb-3">
               <h2 className="text-lg font-semibold">
-                {format(selectedDate, 'EEEE, MMMM d')}
+                {capitalizeFirst(formatDate(selectedDate, 'weekdayLong'))}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {t('outfitCount', { count: selectedDateOutfits.length })}

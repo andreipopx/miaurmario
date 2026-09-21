@@ -14,10 +14,12 @@ import {
   isSameMonth,
   isSameDay,
   isToday,
+  addDays,
   addMonths,
   subMonths,
 } from 'date-fns';
 import type { Outfit, OutfitSource } from '@/lib/hooks/use-outfits';
+import { capitalizeFirst, useDateFnsLocale, useFormatDate } from '@/lib/date-locale';
 
 interface OutfitCalendarProps {
   year: number;
@@ -37,6 +39,8 @@ export function OutfitCalendar({
   onMonthChange,
 }: OutfitCalendarProps) {
   const currentMonth = new Date(year, month - 1, 1);
+  const dateFnsLocale = useDateFnsLocale();
+  const formatDate = useFormatDate();
 
   // Build a map of date -> outfit sources for quick lookup
   const outfitsByDate = useMemo(() => {
@@ -72,7 +76,14 @@ export function OutfitCalendar({
     onMonthChange(next.getFullYear(), next.getMonth() + 1);
   };
 
-  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  // Two-letter weekday headers ("Su".."Sa" / "Do".."Sá"), Sunday first to
+  // match the grid's weekStartsOn: 0.
+  const weekDays = useMemo(() => {
+    const sunday = startOfWeek(new Date(), { weekStartsOn: 0 });
+    return Array.from({ length: 7 }, (_, i) =>
+      capitalizeFirst(format(addDays(sunday, i), 'EEEEEE', { locale: dateFnsLocale }))
+    );
+  }, [dateFnsLocale]);
 
   return (
     <div className="w-full">
@@ -82,7 +93,7 @@ export function OutfitCalendar({
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <h3 className="font-semibold text-lg">
-          {format(currentMonth, 'MMMM yyyy')}
+          {capitalizeFirst(formatDate(currentMonth, 'monthYear'))}
         </h3>
         <Button variant="ghost" size="icon" onClick={handleNextMonth}>
           <ChevronRight className="h-4 w-4" />

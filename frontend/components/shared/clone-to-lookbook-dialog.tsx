@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCloneToLookbook } from '@/lib/hooks/use-studio';
 import { getErrorMessage } from '@/lib/api';
+import { formatDateLocalized } from '@/lib/date-locale';
 
 interface CloneToLookbookDialogProps {
   open: boolean;
@@ -27,9 +27,9 @@ interface CloneToLookbookDialogProps {
   onSuccess?: (newOutfitId: string) => void;
 }
 
-function defaultCloneName(occasion: string): string {
+function defaultCloneName(occasion: string, locale: string): string {
   const occasionTitle = occasion.charAt(0).toUpperCase() + occasion.slice(1);
-  return `${occasionTitle} — ${format(new Date(), 'MMM d')}`;
+  return `${occasionTitle} — ${formatDateLocalized(new Date(), 'short', locale)}`;
 }
 
 export function CloneToLookbookDialog({
@@ -40,7 +40,8 @@ export function CloneToLookbookDialog({
   onSuccess,
 }: CloneToLookbookDialogProps) {
   const t = useTranslations('cloneToLookbook');
-  const [name, setName] = useState(() => defaultCloneName(sourceOccasion));
+  const locale = useLocale();
+  const [name, setName] = useState(() => defaultCloneName(sourceOccasion, locale));
   const clone = useCloneToLookbook(sourceOutfitId);
 
   const handleConfirm = async () => {

@@ -27,6 +27,12 @@ from app.schemas.user import (
     UserSyncRequest,
     UserSyncResponse,
 )
+from app.services.signup import (
+    SignupBlockedError,
+    authorize_signup,
+    check_signup_allowed,
+    normalize_invite_code,
+)
 from app.services.user_service import UserEmailConflictError, UserService
 from app.utils.auth import get_current_user
 from app.utils.email import send_magic_link_email
@@ -216,6 +222,17 @@ async def sync_user(
 
     user_service = UserService(db)
 
+    # Sign-up gate (invite-only mode) before a new account can be created here.
+    if (
+        await user_service.get_by_external_id(sync_data.external_id) is None
+        and await user_service.get_by_email(sync_data.email or "") is None
+    ):
+        try:
+            await authorize_signup(db, sync_data.email or "", sync_data.invite_code)
+        except SignupBlockedError as e:
+            await db.rollback()
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.detail()) from None
+
     try:
         user, is_new = await user_service.sync_from_oidc(sync_data)
     except UserEmailConflictError as e:
@@ -270,6 +287,9 @@ class MagicLinkRequest(BaseModel):
     email: EmailStr
     # UI language of the page that asked for the link; picks the email copy.
     locale: Literal["es", "en"] | None = None
+    # Invite code from /login?invite=CODE; stored on the token and redeemed
+    # when the link creates the account.
+    invite: str | None = Field(default=None, max_length=64)
 
 
 class MagicLinkAcceptedResponse(BaseModel):
@@ -303,6 +323,19 @@ async def request_magic_link(
     user_service = UserService(db)
     user = await user_service.get_by_email(email_l)
 
+    invite_code: str | None = None
+    if user is None:
+        # Unknown email = would create an account: apply the sign-up gate now so
+        # the UI can say "closed beta" instead of emailing a link that fails.
+        try:
+            await check_signup_allowed(db, email_l, payload.invite)
+        except SignupBlockedError as e:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.detail()) from None
+        try:
+            invite_code = normalize_invite_code(payload.invite)
+        except SignupBlockedError:
+            invite_code = None  # open mode: a malformed code is simply ignored
+
     raw_token = secrets.token_urlsafe(32)
     token_hash = _hash_token(raw_token)
     now = datetime.now(UTC)
@@ -315,6 +348,7 @@ async def request_magic_link(
             token_hash=token_hash,
             expires_at=now + timedelta(minutes=MAGIC_LINK_TTL_MINUTES),
             ip_created=_get_client_ip(request),
+            invite_code=invite_code,
         )
     )
     await db.commit()
@@ -375,8 +409,10 @@ def _login_response(user: User, *, is_new: bool) -> LoginResponse:
     )
 
 
-async def _consume_magic_link_token(db: AsyncSession, raw_token: str) -> str | None:
-    """Atomically mark a magic-link token as used and return its email.
+async def _consume_magic_link_token(
+    db: AsyncSession, raw_token: str
+) -> tuple[str, str | None] | None:
+    """Atomically mark a magic-link token as used; return (email, invite_code).
 
     A single conditional UPDATE ... RETURNING guarantees single use even under
     concurrent requests: only one caller can flip used_at from NULL. Returns
@@ -391,10 +427,11 @@ async def _consume_magic_link_token(db: AsyncSession, raw_token: str) -> str | N
             MagicLinkToken.expires_at > now,
         )
         .values(used_at=now)
-        .returning(MagicLinkToken.email)
+        .returning(MagicLinkToken.email, MagicLinkToken.invite_code)
         .execution_options(synchronize_session=False)
     )
-    return result.scalar_one_or_none()
+    row = result.first()
+    return None if row is None else (row[0], row[1])
 
 
 @router.post("/magic-link/verify", response_model=MagicLinkVerifyResponse)
@@ -417,15 +454,24 @@ async def verify_magic_link(
 
     await rate_limit_by_ip(request, "magic_link_verify", 20, 900)
 
-    email = await _consume_magic_link_token(db, payload.token)
-    if email is None:
+    consumed = await _consume_magic_link_token(db, payload.token)
+    if consumed is None:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired link"
         )
+    email, invite_code = consumed
 
     user_service = UserService(db)
     is_new = await user_service.get_by_email(email) is None
+    if is_new:
+        # Re-check at creation time: the mode or the invite may have changed
+        # since the link was requested. The token stays consumed either way.
+        try:
+            await authorize_signup(db, email, invite_code)
+        except SignupBlockedError as e:
+            await db.commit()
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.detail()) from None
     user = await user_service.get_or_create_by_email(email)
     await db.commit()
 

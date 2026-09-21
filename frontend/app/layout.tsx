@@ -25,7 +25,7 @@ const bagel = Bagel_Fat_One({
 
 export const metadata: Metadata = {
   title: 'Miaurmario',
-  description: 'Tu armario, curado por un gato con criterio.',
+  description: 'Tu armario, con criterio felino.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
@@ -46,12 +46,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Miaurmario',
-    description: 'Tu armario, curado por un gato con criterio.',
+    description: 'Tu armario, con criterio felino.',
   },
   twitter: {
     card: 'summary',
     title: 'Miaurmario',
-    description: 'Tu armario, curado por un gato con criterio.',
+    description: 'Tu armario, con criterio felino.',
   },
 };
 

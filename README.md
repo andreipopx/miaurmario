@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./frontend/public/logo.svg" alt="Miaurmario" width="120" height="120">
+  <img src="./frontend/public/icon-512.png" alt="Miaurmario" width="120" height="120">
 </p>
 
 <h1 align="center">Miaurmario</h1>

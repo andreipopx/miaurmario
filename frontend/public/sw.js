@@ -1,5 +1,6 @@
-const CACHE = 'wardrowbe-shell-v1';
-const CORE = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
+// Bump on every visual/asset change so installed PWAs drop stale icons and shell.
+const CACHE = 'miaurmario-shell-v2-stinky-pop';
+const CORE = ['/', '/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -23,7 +24,7 @@ self.addEventListener('fetch', (event) => {
   // Never cache API or Next data — always network for freshness.
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/data/')) return;
   // Cache-first for static assets, network-first for HTML/routes.
-  const isStatic = url.pathname.startsWith('/_next/static/') || /\.(png|jpg|jpeg|svg|ico|webmanifest|woff2?)$/.test(url.pathname);
+  const isStatic = url.pathname.startsWith('/_next/static/') || /\.(png|jpg|jpeg|svg|webp|ico|webmanifest|woff2?)$/.test(url.pathname);
   if (isStatic) {
     event.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {

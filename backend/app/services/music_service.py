@@ -55,7 +55,14 @@ class SongContext(BaseModel):
     year: str | None = None
     genres: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list, description="Mood/emotion tags")
-    source: str = Field(default="raw", description="lastfm | musicbrainz | raw")
+    source: str = Field(default="raw", description="spotify | lastfm | musicbrainz | raw")
+    listening: str | None = Field(
+        default=None,
+        description="Spotify listening context: now_playing | recently_played (None for queries)",
+    )
+    top_artists: list[str] = Field(
+        default_factory=list, description="User's recent top artists (Spotify only)"
+    )
 
     @property
     def display_label(self) -> str:
@@ -250,6 +257,58 @@ async def _resolve_spotify(
     return None, None
 
 
+async def lastfm_tags(artist: str | None, track: str | None) -> list[str]:
+    """Best-effort Last.fm mood tags for a resolved track ([] when unavailable)."""
+    api_key = getattr(get_settings(), "lastfm_api_key", None)
+    if not (api_key and artist and track):
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT, follow_redirects=True) as client:
+            info = await _lastfm_get_info(client, api_key, artist, track)
+    except Exception:
+        logger.debug("Last.fm tag lookup failed", exc_info=True)
+        return []
+    if not info:
+        return []
+    tags_root = info.get("toptags") or {}
+    raw_tags = tags_root.get("tag") if isinstance(tags_root, dict) else None
+    return _clean_tags(raw_tags if isinstance(raw_tags, list) else [])
+
+
+async def resolve_music_context(db: Any, user: Any, song_query: str | None) -> SongContext | None:
+    """Pick the music mood input for a suggestion.
+
+    - Spotify connected + song query: resolve the query through the Spotify Web
+      API (track URL or search) for canonical artist/genres; Last.fm adds tags.
+      Falls back to the Last.fm/MusicBrainz path (`enrich_song`) on any failure.
+    - Spotify connected (mood toggle on) + no query: derive the mood from what
+      the user is playing now / played recently + top-artist genres.
+    - Spotify not connected: identical to the previous behaviour — only a song
+      query produces context, via `enrich_song`.
+
+    Never raises.
+    """
+    # Local import: spotify_mood imports SongContext from this module.
+    from app.services import spotify_mood
+
+    connection = None
+    try:
+        connection = await spotify_mood.get_connection(db, user.id)
+    except Exception:
+        logger.debug("Spotify connection lookup failed", exc_info=True)
+
+    if song_query and song_query.strip():
+        if connection is not None:
+            ctx = await spotify_mood.resolve_query(db, connection, song_query)
+            if ctx is not None:
+                return ctx
+        return await enrich_song(song_query)
+
+    if connection is not None and connection.use_for_mood:
+        return await spotify_mood.listening_mood(db, connection)
+    return None
+
+
 async def enrich_song(query: str) -> SongContext | None:
     """Resolve a free-text or Spotify-URL query to a SongContext.
 
@@ -382,7 +441,13 @@ async def enrich_song(query: str) -> SongContext | None:
 def format_song_context_for_prompt(ctx: SongContext) -> str:
     """Render a SongContext as a short bulleted block for the Stylist prompt."""
     lines = ["\nCONTEXTO MUSICAL (mood/estética a considerar):"]
-    if ctx.artist and ctx.track:
+    if ctx.listening == "now_playing" and ctx.artist and ctx.track:
+        lines.append(f"- Escuchando ahora en Spotify: {ctx.artist} — {ctx.track}")
+    elif ctx.listening == "recently_played" and ctx.artist and ctx.track:
+        lines.append(f"- Escuchado recientemente en Spotify: {ctx.artist} — {ctx.track}")
+    elif ctx.listening and not ctx.track:
+        lines.append("- Hábitos de escucha recientes en Spotify")
+    elif ctx.artist and ctx.track:
         lines.append(f"- Canción: {ctx.artist} — {ctx.track}")
     elif ctx.track:
         lines.append(f"- Canción: {ctx.track}")
@@ -397,6 +462,8 @@ def format_song_context_for_prompt(ctx: SongContext) -> str:
         lines.append(f"- Géneros: {', '.join(ctx.genres)}")
     if ctx.tags:
         lines.append(f"- Etiquetas emocionales / mood: {', '.join(ctx.tags[:6])}")
+    if ctx.top_artists:
+        lines.append(f"- Artistas que más escucha últimamente: {', '.join(ctx.top_artists[:5])}")
     lines.append(
         "- Usa el mood y la estética de la canción como una capa más de "
         "inspiración para el outfit; que se sienta coherente sin ser literal."

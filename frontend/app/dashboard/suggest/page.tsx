@@ -47,6 +47,7 @@ import { api, ApiError, setAccessToken } from '@/lib/api';
 import { OCCASIONS, Outfit, SuggestRequest } from '@/lib/types';
 import { useWeather, Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
+import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
 import { cn } from '@/lib/utils';
 import { TempUnit, formatTemp, displayValue, toF, toCelsius } from '@/lib/temperature';
 
@@ -451,6 +452,7 @@ export default function SuggestPage() {
   const [occasionInitialized, setOccasionInitialized] = useState(false);
   const [weatherOverride, setWeatherOverride] = useState<WeatherOverride | null>(null);
   const [songQuery, setSongQuery] = useState<string>('');
+  const spotifyStatus = useSpotifyStatus();
   const [isGenerating, setIsGenerating] = useState(false);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -624,6 +626,9 @@ export default function SuggestPage() {
                 <p className="text-xs text-muted-foreground/80 font-editorial italic">
                   {t('songHelp')}
                 </p>
+                {spotifyStatus.data?.connected && spotifyStatus.data.use_for_mood && !songQuery.trim() && (
+                  <p className="text-xs text-gold font-editorial italic">{t('songSpotifyHint')}</p>
+                )}
               </div>
 
               {/* Generate button */}

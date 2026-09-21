@@ -26,8 +26,8 @@ from app.services.ai_service import AIService, require_internal_ai
 from app.services.item_scorer import get_season, score_items
 from app.services.music_service import (
     SongContext,
-    enrich_song,
     format_song_context_for_prompt,
+    resolve_music_context,
 )
 from app.services.suggestion_cache import pop_suggestion, push_suggestions
 from app.services.weather_service import (
@@ -661,13 +661,14 @@ class RecommendationService:
 
         # A song input personalizes the outfit — skip the shared suggestion cache
         # so we don't serve stale un-inspired suggestions and don't poison the cache.
+        # Spotify (when connected) is the preferred source; Last.fm is the fallback.
+        # Without Spotify, only an explicit song_query produces music context.
         song_context: SongContext | None = None
-        if song_query:
-            try:
-                song_context = await enrich_song(song_query)
-            except Exception as e:
-                logger.warning(f"Music enrichment failed for query {song_query!r}: {e}")
-                song_context = None
+        try:
+            song_context = await resolve_music_context(self.db, user, song_query)
+        except Exception as e:
+            logger.warning(f"Music enrichment failed for query {song_query!r}: {e}")
+            song_context = None
 
         # Determine cache eligibility before auto-merge
         use_cache = (

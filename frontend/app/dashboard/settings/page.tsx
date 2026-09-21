@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { Loader2, Save, RotateCcw, Check, Plus, Trash2, ChevronUp, ChevronDown, Server, MapPin, Navigation, Ruler } from 'lucide-react';
@@ -600,6 +601,19 @@ export default function SettingsPage() {
                 <Input value={userProfile?.email || ''} disabled />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Integrations Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('integrations.title')}</CardTitle>
+            <CardDescription>{t('integrations.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/settings/integrations">{t('integrations.cta')}</Link>
+            </Button>
           </CardContent>
         </Card>
 

@@ -7,6 +7,9 @@ from app.api.auth import router as auth_router
 from app.api.families import router as families_router
 from app.api.health import router as health_router
 from app.api.images import router as images_router
+from app.api.integrations.pinterest import pins_router as pinterest_pins_router
+from app.api.integrations.pinterest import router as pinterest_router
+from app.api.integrations.spotify import router as spotify_router
 from app.api.items import router as items_router
 from app.api.learning import router as learning_router
 from app.api.notifications import router as notifications_router
@@ -32,3 +35,6 @@ api_router.include_router(pairings_router)
 api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(analytics_router)
 api_router.include_router(learning_router)
+api_router.include_router(pinterest_router)
+api_router.include_router(pinterest_pins_router)
+api_router.include_router(spotify_router)

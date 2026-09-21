@@ -120,6 +120,27 @@ class Settings(BaseSettings):
     original_max_size: int = 2400
     image_quality: int = 90
 
+    # Pinterest integration (Sprint 4)
+    pinterest_client_id: str | None = Field(default=None)
+    pinterest_client_secret: str | None = Field(default=None)
+    pinterest_redirect_uri: str = Field(
+        default="https://miaurmario.andreipop.org/api/v1/integrations/pinterest/callback"
+    )
+    # Legacy name for the integrations Fernet key; still honoured as a fallback.
+    pinterest_token_encryption_key: str | None = Field(default=None)
+
+    # Spotify integration (mood input for the Stylist)
+    spotify_client_id: str | None = Field(default=None)
+    spotify_client_secret: str | None = Field(default=None)
+    spotify_redirect_uri: str = Field(
+        default="https://miaurmario.andreipop.org/api/v1/integrations/spotify/callback"
+    )
+
+    # Fernet key used to cipher third-party OAuth tokens at rest (Pinterest, Spotify).
+    # Generate with:
+    #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    integrations_token_encryption_key: str | None = Field(default=None)
+
     @property
     def effective_ai_vision_enabled(self) -> bool:
         """Whether internal vision (auto-tagging) is active.
@@ -184,6 +205,22 @@ class Settings(BaseSettings):
     @property
     def magic_link_origin(self) -> str:
         return (self.magic_link_base_url or self.app_url).rstrip("/")
+
+    def token_encryption_key(self) -> str | None:
+        """Fernet key for integration tokens (new name first, legacy Pinterest name second)."""
+        return self.integrations_token_encryption_key or self.pinterest_token_encryption_key
+
+    def public_app_url(self) -> str:
+        """Public base URL of the frontend for post-OAuth browser redirects.
+
+        Reuses MAGIC_LINK_BASE_URL when it was explicitly configured. Otherwise returns
+        "" so callers emit a *relative* Location header, which the browser resolves
+        against the public URL it actually used. Never derived from the Host header
+        (the Cloudflare tunnel rewrites Host to the LAN name).
+        """
+        if "magic_link_base_url" in self.model_fields_set and self.magic_link_base_url:
+            return self.magic_link_base_url.rstrip("/")
+        return ""
 
     def admin_email_set(self) -> set[str]:
         return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}

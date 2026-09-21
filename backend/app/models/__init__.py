@@ -1,4 +1,5 @@
 from app.models.family import Family, FamilyInvite
+from app.models.friendship import Friendship, FriendshipStatus
 from app.models.item import ClothingItem, ItemHistory, ItemImage, WashHistory
 from app.models.learning import (
     ItemPairScore,
@@ -8,7 +9,15 @@ from app.models.learning import (
 )
 from app.models.magic_link import MagicLinkToken
 from app.models.notification import Notification, NotificationSettings
-from app.models.outfit import FamilyOutfitRating, Outfit, OutfitItem, UserFeedback
+from app.models.outfit import (
+    FamilyOutfitRating,
+    Outfit,
+    OutfitItem,
+    OutfitRating,
+    OutfitVisibility,
+    RatingScope,
+    UserFeedback,
+)
 from app.models.pinterest import PinterestConnection, PinterestPin
 from app.models.preference import UserPreference
 from app.models.schedule import Schedule
@@ -19,6 +28,8 @@ from app.models.user_ai_settings import UserAISettings
 __all__ = [
     "Family",
     "FamilyInvite",
+    "Friendship",
+    "FriendshipStatus",
     "User",
     "UserPreference",
     "UserLearningProfile",
@@ -33,6 +44,9 @@ __all__ = [
     "ItemImage",
     "WashHistory",
     "FamilyOutfitRating",
+    "OutfitRating",
+    "OutfitVisibility",
+    "RatingScope",
     "Outfit",
     "OutfitItem",
     "UserFeedback",

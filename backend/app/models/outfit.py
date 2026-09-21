@@ -42,6 +42,25 @@ class OutfitSource(enum.StrEnum):
     pairing = "pairing"
 
 
+class OutfitVisibility(enum.StrEnum):
+    """Who besides the owner may see an outfit (social layer).
+
+    Family members keep their existing access paths regardless of this flag.
+    """
+
+    private = "private"
+    friends = "friends"
+    public = "public"
+
+
+class RatingScope(enum.StrEnum):
+    """Why a rating was allowed: shared family, accepted friendship or public outfit."""
+
+    family = "family"
+    friend = "friend"
+    public = "public"
+
+
 class Outfit(Base):
     __tablename__ = "outfits"
 
@@ -79,6 +98,17 @@ class Outfit(Base):
 
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+    # Social layer
+    visibility: Mapped[OutfitVisibility] = mapped_column(
+        Enum(OutfitVisibility, name="outfit_visibility", create_type=False),
+        default=OutfitVisibility.private,
+        server_default=OutfitVisibility.private.value,
+        nullable=False,
+    )
+    # When the outfit was (last) shared; cleared when made private again. A user can share
+    # several outfits on the same day: the feed groups them per author and day.
+    shared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     replaces_outfit_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("outfits.id", ondelete="SET NULL"),
@@ -109,8 +139,10 @@ class Outfit(Base):
     feedback: Mapped[Optional["UserFeedback"]] = relationship(
         "UserFeedback", back_populates="outfit", uselist=False, cascade="all, delete-orphan"
     )
-    family_ratings: Mapped[list["FamilyOutfitRating"]] = relationship(
-        "FamilyOutfitRating", back_populates="outfit", cascade="all, delete-orphan"
+    # Every rating on the outfit, all scopes (family + friend + public). Callers that
+    # expose them to non-owners must filter by `OutfitRating.scope`.
+    family_ratings: Mapped[list["OutfitRating"]] = relationship(
+        "OutfitRating", back_populates="outfit", cascade="all, delete-orphan"
     )
     source_item: Mapped[Optional["ClothingItem"]] = relationship(
         "ClothingItem", foreign_keys=[source_item_id]
@@ -188,7 +220,13 @@ class UserFeedback(Base):
     outfit: Mapped["Outfit"] = relationship("Outfit", back_populates="feedback")
 
 
-class FamilyOutfitRating(Base):
+class OutfitRating(Base):
+    """A rating/reaction on someone else's outfit.
+
+    The table keeps its historical name (`family_outfit_ratings`); `scope` says
+    whether it came from a family member or a friend.
+    """
+
     __tablename__ = "family_outfit_ratings"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -201,6 +239,12 @@ class FamilyOutfitRating(Base):
 
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text)
+    scope: Mapped[RatingScope] = mapped_column(
+        Enum(RatingScope, name="rating_scope", create_type=False),
+        default=RatingScope.family,
+        server_default=RatingScope.family.value,
+        nullable=False,
+    )
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -210,3 +254,7 @@ class FamilyOutfitRating(Base):
     # Relationships
     outfit: Mapped["Outfit"] = relationship("Outfit", back_populates="family_ratings")
     user: Mapped["User"] = relationship("User")
+
+
+# Backwards-compatible alias: the class was renamed when ratings gained a scope.
+FamilyOutfitRating = OutfitRating

@@ -116,5 +116,9 @@ Lucide line icons, stroke 1.75 (2 when active), `currentColor`. Motion is quick 
 
 - `public/brand/stinky/head/` — mascot (animated WebP per state, poster SVG/PNG, static head SVG).
 - `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`,
-  `icon-maskable-512.png` — Stinky head. Regenerate with `scripts/generate-icons.mjs`.
+  `icon-maskable-512.png`, `favicon-32.png` — Stinky head, **generated**: run `npm run icons`
+  (`scripts/generate-icons.mjs`, uses sharp) whenever `public/brand/stinky/head/stinky-head.svg` changes.
+  The script measures the head's bounding box itself, so new art needs no tweaks. Then bump `CACHE` in
+  `public/sw.js` so installed PWAs refresh.
+- Never hardcode the cat's colours in CSS/TSX; UI chrome uses the system tokens (ink, pink, panel).
 - `public/manifest.webmanifest` — `theme_color #FF7EB6`, `background_color #FFFFFF`.

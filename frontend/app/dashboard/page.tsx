@@ -215,10 +215,14 @@ function TodayLook() {
             {t('lookTitle')}
           </h2>
           {musicLabel && (
-            <span className="inline-flex h-[26px] max-w-[60%] items-center gap-1.5 rounded-full bg-background px-2.5 text-xs font-semibold">
+            <Link
+              href="/dashboard/music"
+              aria-label={`${musicLabel} · ${t('openMusic')}`}
+              className="inline-flex h-[26px] max-w-[60%] items-center gap-1.5 rounded-full bg-background px-2.5 text-xs font-semibold transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
               <Music className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
               <span className="truncate">{musicLabel}</span>
-            </span>
+            </Link>
           )}
         </div>
 

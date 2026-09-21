@@ -249,7 +249,8 @@
     "primary": "Principal",
     "profileMenu": "Tu perfil y menú",
     "familySettings": "Gestionar familia",
-    "viewProfile": "Tu perfil y ajustes"
+    "viewProfile": "Tu perfil y ajustes",
+    "music": "Música"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -362,7 +363,8 @@
       "askStinky": "Pídeselo a Stinky",
       "noLookTitle": "Aún no hay look para hoy",
       "noLookBody": "Stinky te propone uno en segundos con tu armario y el tiempo.",
-      "defaultTip": "si dudas, un básico bien planchado nunca falla. Confía en mí, soy un gato."
+      "defaultTip": "si dudas, un básico bien planchado nunca falla. Confía en mí, soy un gato.",
+      "openMusic": "Ver tu música"
     }
   },
   "wardrobe": {
@@ -688,7 +690,12 @@
     "anotherLook": "Otro look",
     "seeLooks": "Ver mis looks",
     "errorTitle": "Uy, algo se ha torcido",
-    "tryAgain": "Volver a intentarlo"
+    "tryAgain": "Volver a intentarlo",
+    "songClear": "Borrar canción",
+    "songSuggestions": "Canciones sugeridas",
+    "songSearching": "Buscando canciones…",
+    "songSource": "Resultados de {source}",
+    "songNowPlaying": "Lo que suena ahora"
   },
   "settings": {
     "title": "Ajustes",
@@ -1875,6 +1882,109 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "openPin": "Abrir pin"
+  },
+  "music": {
+    "title": "Música",
+    "subtitle": "Lo que escuchas, tu mood y qué llevabas puesto.",
+    "manage": "Gestionar Spotify",
+    "loading": "Cargando tu música…",
+    "errorTitle": "No he podido cargar tu música",
+    "errorBody": "Inténtalo de nuevo en un momento.",
+    "emptyTitle": "Stinky aún no ha oído nada",
+    "emptyBody": "Conecta Spotify y guardaré tu historial de escuchas para leer tu mood y relacionarlo con tus looks.",
+    "notConfigured": "Spotify no está configurado en este servidor todavía.",
+    "connectCta": "Conectar Spotify",
+    "nowPlaying": "Suena ahora",
+    "lastPlayed": "Lo último que sonó",
+    "playing": "Sonando",
+    "paused": "En pausa",
+    "syncing": "Sincronizando…",
+    "nothingPlaying": "Ahora mismo no suena nada.",
+    "openInSpotify": "Abrir en Spotify",
+    "rangeLabel": "Periodo",
+    "ranges": {
+      "7d": "7 días",
+      "30d": "30 días",
+      "6m": "6 meses"
+    },
+    "moodTitle": "Tu mood",
+    "moodEmpty": "Aún no hay escuchas en este periodo.",
+    "statPlays": "Escuchas",
+    "statMinutes": "Minutos",
+    "statArtists": "Artistas",
+    "chartSummary": "Mood diario de {days} días con escuchas; el más frecuente: {mood}.",
+    "dayLabel": "{date}: {mood}",
+    "legend": "Moods del periodo",
+    "valenceLegend": "Positividad",
+    "energy": "Energía",
+    "valence": "Positividad",
+    "plays": "Escuchas",
+    "genresTitle": "Géneros",
+    "topArtists": "Top artistas",
+    "topTracks": "Top canciones",
+    "sourceSpotify": "Según Spotify",
+    "sourceHistory": "Según tu historial",
+    "topsEmpty": "Nada por aquí todavía.",
+    "playsCount": "{count, plural, one {# escucha} other {# escuchas}}",
+    "recentTitle": "Últimas escuchas",
+    "recentEmpty": "Todavía no hay escuchas guardadas.",
+    "showAll": "Ver las {count}",
+    "showLess": "Ver menos",
+    "looksTitle": "Tu música y tus looks",
+    "looksSubtitle": "Qué llevabas con qué música.",
+    "looksEmpty": "Cuando aceptes o marques looks como puestos, aquí verás qué sonaba ese día.",
+    "looksNoMusic": "Ese día no hubo escuchas.",
+    "viewLook": "Ver look",
+    "justNow": "ahora mismo",
+    "moods": {
+      "euphoric": "Eufórico",
+      "electric": "Eléctrico",
+      "intense": "Intenso",
+      "romantic": "Romántico",
+      "calm": "Calmado",
+      "dreamy": "Soñador",
+      "nostalgic": "Nostálgico",
+      "melancholic": "Melancólico",
+      "eclectic": "Ecléctico"
+    },
+    "oneLiner": {
+      "euphoric": {
+        "withArtist": "¡Día de subidón! Stinky ha movido la cola al ritmo de {artist}.",
+        "plain": "¡Día de subidón! Esto pide color y algo que brille."
+      },
+      "electric": {
+        "withArtist": "Voltaje alto con {artist}: Stinky tiene los bigotes de punta.",
+        "plain": "Día eléctrico: contraste, actitud y bigotes de punta."
+      },
+      "intense": {
+        "withArtist": "Mucha intensidad con {artist}. Stinky sugiere negro y botas.",
+        "plain": "Día intenso: capas oscuras y paso firme."
+      },
+      "romantic": {
+        "withArtist": "Modo romántico con {artist}. Stinky ronronea bajito.",
+        "plain": "Día tierno: tejidos suaves y tonos cálidos."
+      },
+      "calm": {
+        "withArtist": "Calma total con {artist}: Stinky ya está hecho un ovillo.",
+        "plain": "Día tranquilo: comodidad y tonos neutros."
+      },
+      "dreamy": {
+        "withArtist": "Soñando despierto con {artist}. Stinky mira la luna.",
+        "plain": "Día soñador: texturas ligeras y colores pastel."
+      },
+      "nostalgic": {
+        "withArtist": "Nostalgia con {artist}: Stinky rebusca en el armario de siempre.",
+        "plain": "Día de recuerdos: un básico vintage nunca falla."
+      },
+      "melancholic": {
+        "withArtist": "Día gris con {artist}. Stinky se te sienta en el regazo.",
+        "plain": "Día melancólico: capas suaves y un jersey que abrace."
+      },
+      "eclectic": {
+        "withArtist": "Un poco de todo con {artist}: Stinky no sabe si bailar o dormir.",
+        "plain": "Día ecléctico: combina sin miedo."
+      }
+    }
   },
   "weatherConditions": {
     "clear": "Despejado",

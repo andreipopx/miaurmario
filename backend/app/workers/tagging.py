@@ -8,6 +8,8 @@ from sqlalchemy import select, update
 
 from app.config import get_settings
 from app.models.item import ClothingItem, ItemStatus, TaggedBy, TaggingStatus
+from app.models.user import User
+from app.services.ai_access import AINotEnabledError, get_ai_access, make_usage_sink
 from app.services.ai_service import AIService, ClothingTags
 from app.workers.db import get_db_session
 
@@ -119,31 +121,35 @@ async def tag_item_image(ctx: dict, item_id: str, image_path: str) -> dict[str, 
             await update_item_status_to_error(ctx, item_id, error_msg)
             return {"status": "error", "error": "Image not found"}
 
-        # Get user's AI endpoints from preferences
-        ai_endpoints = None
+        # Resolve the item owner's AI access (none / platform / byok).
+        skip_reason: str | None = None
         db = get_db_session(ctx)
         try:
-            # Get the item to find user_id
             result = await db.execute(select(ClothingItem).where(ClothingItem.id == UUID(item_id)))
             item = result.scalar_one_or_none()
-            if item:
-                # Get user's preferences for AI endpoints
-                from app.models.preference import UserPreference
-
-                pref_result = await db.execute(
-                    select(UserPreference).where(UserPreference.user_id == item.user_id)
+            if item is None:
+                logger.error(f"Item not found: {item_id}")
+                return {"status": "error", "error": "Item not found"}
+            owner = await db.get(User, item.user_id)
+            access = await get_ai_access(db, owner) if owner is not None else None
+            capability_error = (
+                access.capability_error("vision") if access is not None else AINotEnabledError()
+            )
+            if capability_error is not None or access is None or access.config is None:
+                skip_reason = getattr(capability_error, "code", "vision disabled")
+            else:
+                ai_service = AIService(
+                    config=access.config, usage_sink=make_usage_sink(db, item.user_id)
                 )
-                prefs = pref_result.scalar_one_or_none()
-                if prefs and prefs.ai_endpoints:
-                    ai_endpoints = prefs.ai_endpoints
-                    logger.info(
-                        f"Using {len(ai_endpoints)} custom AI endpoints for user {item.user_id}"
-                    )
         finally:
             await db.close()
 
-        # Analyze with AI (uses custom endpoints if available)
-        ai_service = AIService(endpoints=ai_endpoints)
+        if skip_reason is not None:
+            # Free plan / quota / broken BYOK: the item stays usable, untagged.
+            logger.info(f"No AI vision for item {item_id} ({skip_reason}); leaving it untagged")
+            await mark_item_tagging_skipped(ctx, item_id)
+            return {"status": "skipped", "reason": skip_reason, "item_id": item_id}
+
         tags = await ai_service.analyze_image(path)
 
         logger.info(

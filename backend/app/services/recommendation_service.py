@@ -22,7 +22,8 @@ from app.models.outfit import (
 )
 from app.models.preference import UserPreference
 from app.models.user import User
-from app.services.ai_service import AIService, require_internal_ai
+from app.services.ai_access import require_ai_client
+from app.services.ai_service import AIResponseError
 from app.services.item_scorer import get_season, score_items
 from app.services.music_service import (
     SongContext,
@@ -666,7 +667,9 @@ class RecommendationService:
         song_query: str | None = None,
     ) -> Outfit:
         # Guard first so deferral is unconditional, before any location/weather work.
-        require_internal_ai("text")
+        # Resolves the user's AI access (none / platform / byok); raises
+        # AIDisabledError (kill switch) or AIAccessError (no access / quota).
+        ai_service = await require_ai_client(self.db, user, "text")
 
         exclude_items = exclude_items or []
         include_items = include_items or []
@@ -724,11 +727,6 @@ class RecommendationService:
                 ) from e
 
         preferences = user.preferences
-
-        ai_endpoints = None
-        if preferences and preferences.ai_endpoints:
-            ai_endpoints = preferences.ai_endpoints
-        ai_service = AIService(endpoints=ai_endpoints)
 
         # Get candidate items (hard exclusions only)
         candidates = await self.get_candidate_items(
@@ -931,6 +929,9 @@ class RecommendationService:
 
         except AIRecommendationError:
             raise
+        except AIResponseError as e:
+            logger.error(f"AI recommendation failed: {e}")
+            raise AIRecommendationError(str(e)) from e
         except Exception as e:
             logger.error(f"AI recommendation failed: {e}")
             raise AIRecommendationError(

@@ -35,6 +35,7 @@ from app.schemas.item import (
     ReorderImagesRequest,
     WashHistoryResponse,
 )
+from app.services.ai_access import get_ai_access
 from app.services.image_service import ImageService
 from app.services.item_service import ItemService
 from app.utils.auth import get_current_user
@@ -47,6 +48,18 @@ router = APIRouter(prefix="/items", tags=["Items"])
 
 TAG_WRITEBACK_FIELDS = {"type", "subtype", "colors", "primary_color", "tags"}
 _EMPTY_TAG_VALUES = (None, "", [], {})
+
+
+async def _can_auto_tag(db: AsyncSession, user: User) -> bool:
+    """Whether uploads should be queued for AI tagging for this user.
+
+    Users without AI (free plan, exhausted cap, no vision model) still upload
+    normally; the item is saved untagged and tagged manually.
+    """
+    if not settings.effective_ai_vision_enabled:
+        return False
+    access = await get_ai_access(db, user, check_network=False)
+    return access.supports("vision")
 
 
 def _has_tag_content(field: str, value: Any) -> bool:
@@ -183,7 +196,7 @@ async def create_item(
         image_paths=image_paths,
     )
 
-    do_auto_tag = settings.effective_ai_vision_enabled and not skip_ai
+    do_auto_tag = not skip_ai and await _can_auto_tag(db, current_user)
 
     if do_auto_tag:
         try:
@@ -235,7 +248,7 @@ async def bulk_create_items(
     successful = 0
     failed = 0
 
-    do_auto_tag = settings.effective_ai_vision_enabled and not skip_ai
+    do_auto_tag = not skip_ai and await _can_auto_tag(db, current_user)
 
     redis = None
     if do_auto_tag:
@@ -448,7 +461,7 @@ async def bulk_analyze_items(
             continue
         items_to_process.append(item)
 
-    if not settings.effective_ai_vision_enabled:
+    if not await _can_auto_tag(db, current_user):
         for item in items_to_process:
             item.status = ItemStatus.ready
             item.tagging_status = TaggingStatus.pending
@@ -832,10 +845,10 @@ async def trigger_ai_analysis(
             detail="Item not found",
         )
 
-    if not settings.effective_ai_vision_enabled:
+    if not await _can_auto_tag(db, current_user):
         await item_service.mark_pending(item, set_ready=True)
         await db.commit()
-        return {"status": "deferred", "reason": "vision disabled"}
+        return {"status": "deferred", "reason": "ai_not_enabled"}
 
     try:
         item.status = ItemStatus.processing

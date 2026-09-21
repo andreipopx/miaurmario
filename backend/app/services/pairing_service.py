@@ -10,7 +10,8 @@ from sqlalchemy.orm import selectinload
 from app.models.item import ClothingItem, ItemStatus
 from app.models.outfit import FamilyOutfitRating, Outfit, OutfitItem, OutfitSource, OutfitStatus
 from app.models.user import User
-from app.services.ai_service import AIService, require_internal_ai
+from app.services.ai_access import require_ai_client
+from app.services.ai_service import AIResponseError
 from app.utils.clothing import deduplicate_by_body_slot
 from app.utils.prompts import load_prompt
 from app.utils.timezone import get_user_today
@@ -167,7 +168,7 @@ class PairingService:
         num_pairings: int = 3,
     ) -> list[Outfit]:
         # Guard first so deferral is unconditional, before any item lookup.
-        require_internal_ai("text")
+        ai_service = await require_ai_client(self.db, user, "text")
 
         num_pairings = max(1, min(5, num_pairings))
 
@@ -182,13 +183,6 @@ class PairingService:
             raise InsufficientItemsError(
                 "Not enough items in wardrobe for pairing. Add more items."
             )
-
-        # Get user preferences for AI endpoints
-        preferences = user.preferences
-        ai_endpoints = None
-        if preferences and preferences.ai_endpoints:
-            ai_endpoints = preferences.ai_endpoints
-        ai_service = AIService(endpoints=ai_endpoints)
 
         # Format items for prompt
         source_desc, items_text, source_num, number_map = self._format_items_for_prompt(
@@ -214,6 +208,9 @@ class PairingService:
             logger.info(f"AI pairings generated (model: {result.model})")
             logger.debug(f"AI raw response: {result.content[:500]}")
             pairings_data = self._parse_ai_response(result.content)
+        except AIResponseError as e:
+            logger.error(f"AI pairing generation failed: {e}")
+            raise AIGenerationError(str(e)) from e
         except Exception as e:
             logger.error(f"AI pairing generation failed: {e}")
             raise AIGenerationError(

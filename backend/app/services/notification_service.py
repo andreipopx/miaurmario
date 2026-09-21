@@ -1,4 +1,3 @@
-import html as html_mod
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, time
@@ -25,6 +24,7 @@ from app.services.notification_providers import (
     NtfyNotification,
     NtfyProvider,
 )
+from app.utils.email_templates import render_outfit_email
 
 logger = logging.getLogger(__name__)
 
@@ -552,127 +552,28 @@ class NotificationDispatcher:
     def _build_email_message(
         self, outfit: Outfit, user: User, to: str, for_tomorrow: bool = False
     ) -> EmailMessage:
-        weather_html = ""
-        if outfit.weather_data:
-            weather = outfit.weather_data
-            forecast_note = " (forecast)" if for_tomorrow else ""
-            condition = html_mod.escape(str(weather.get("condition", "Unknown")))
-            weather_html = f"""
-            <p style="color: #6B7280; margin: 0;">
-                {weather.get("temperature", "?")}C, {condition}{forecast_note}
-            </p>
-            """
-
-        day_label = "Tomorrow" if for_tomorrow else "Today"
-        occasion_escaped = html_mod.escape(outfit.occasion.title())
-
-        # Build highlights HTML
-        highlights_html = ""
-        highlights = []
+        weather = outfit.weather_data or {}
+        highlights: list[str] = []
         if outfit.ai_raw_response and isinstance(outfit.ai_raw_response, dict):
-            highlights = outfit.ai_raw_response.get("highlights", [])
+            raw = outfit.ai_raw_response.get("highlights", [])
+            if isinstance(raw, list):
+                highlights = [str(h) for h in raw]
 
-        if highlights and isinstance(highlights, list):
-            items_html = "".join(
-                f'<li style="color: #4B5563; margin: 5px 0;">{html_mod.escape(str(h))}</li>'
-                for h in highlights[:3]
-            )
-            highlights_html = f"""
-            <ul style="margin: 15px 0; padding-left: 20px;">
-                {items_html}
-            </ul>
-            """
-
-        # Build styling tip HTML
-        styling_tip_html = ""
-        if outfit.style_notes:
-            styling_tip_html = f"""
-            <div style="background: #F3F4F6; border-radius: 8px; padding: 12px; margin: 15px 0; border: 1px solid #E5E7EB;">
-                <p style="color: #4B5563; margin: 0;">
-                    <strong style="color: #1F2937;">Tip:</strong> {html_mod.escape(outfit.style_notes)}
-                </p>
-            </div>
-            """
-
-        reasoning_escaped = (
-            html_mod.escape(outfit.reasoning) if outfit.reasoning else "Your outfit is ready!"
+        rendered = render_outfit_email(
+            occasion=outfit.occasion,
+            reasoning=outfit.reasoning,
+            highlights=highlights,
+            style_notes=outfit.style_notes,
+            temperature=weather.get("temperature") if weather else None,
+            condition=str(weather["condition"]) if weather.get("condition") else None,
+            for_tomorrow=for_tomorrow,
+            cta_url=f"{self.app_url}/dashboard/history",
         )
-
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #1F2937; margin: 0;">Wardrowbe</h1>
-            </div>
-
-            <div style="background: #F9FAFB; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <h2 style="color: #1F2937; margin: 0 0 10px 0;">
-                    {day_label}'s Outfit: {occasion_escaped}
-                </h2>
-                {weather_html}
-            </div>
-
-            <div style="background: #F3F4F6; border-radius: 8px; padding: 15px; margin: 20px 0;">
-                <p style="color: #1F2937; font-weight: 600; margin: 0 0 10px 0;">
-                    {reasoning_escaped}
-                </p>
-                {highlights_html}
-            </div>
-
-            {styling_tip_html}
-
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="{self.app_url}/dashboard/history"
-                   style="background: #111827; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; margin: 5px;">
-                    View Outfit
-                </a>
-            </div>
-
-            <div style="text-align: center; color: #9CA3AF; font-size: 12px; margin-top: 40px;">
-                <p>Sent by Wardrowbe</p>
-                <p>
-                    <a href="{self.app_url}/dashboard/notifications" style="color: #6B7280;">
-                        Manage notification settings
-                    </a>
-                </p>
-            </div>
-        </body>
-        </html>
-        """
-
-        # Build text body with highlights
-        text_parts = [
-            f"Wardrowbe - {day_label}'s Outfit",
-            "",
-            f"Occasion: {outfit.occasion.title()}",
-            "",
-            outfit.reasoning or "Your outfit is ready!",
-        ]
-
-        if highlights:
-            text_parts.append("")
-            for h in highlights[:3]:
-                text_parts.append(f"- {h}")
-
-        if outfit.style_notes:
-            text_parts.append("")
-            text_parts.append(f"Tip: {outfit.style_notes}")
-
-        text_parts.append("")
-        text_parts.append(f"View outfit: {self.app_url}/dashboard/history")
-
-        text_body = "\n".join(text_parts)
-
         return EmailMessage(
             to=to,
-            subject=f"{day_label}'s Outfit: {occasion_escaped}",
-            html_body=html_body,
-            text_body=text_body,
+            subject=rendered.subject,
+            html_body=rendered.html,
+            text_body=rendered.text,
         )
 
     def _build_expo_push_message(

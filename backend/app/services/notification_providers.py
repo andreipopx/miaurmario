@@ -5,6 +5,11 @@ from dataclasses import dataclass, field
 import httpx
 
 from app.schemas.notification import EmailConfig, ExpoPushConfig, MattermostConfig, NtfyConfig
+from app.utils.email_templates import (
+    render_family_invite_email,
+    render_notification_email,
+    render_test_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +80,8 @@ class NtfyProvider:
             result = await self.send(
                 NtfyNotification(
                     topic=self.topic,
-                    title="Wardrowbe Test",
-                    message="This is a test notification from Wardrowbe.",
+                    title="Miaurmario: prueba",
+                    message="Notificación de prueba de Miaurmario. Stinky dice hola.",
                     tags=["white_check_mark", "shirt"],
                     priority=2,
                 )
@@ -103,7 +108,7 @@ class MattermostAttachment:
 @dataclass
 class MattermostMessage:
     text: str
-    username: str = "Wardrowbe"
+    username: str = "Miaurmario"
     icon_emoji: str = ":shirt:"
     attachments: list[MattermostAttachment] = field(default_factory=list)
 
@@ -150,7 +155,7 @@ class MattermostProvider:
     async def test_connection(self) -> tuple[bool, str]:
         try:
             result = await self.send(
-                MattermostMessage(text="This is a test message from Wardrowbe.")
+                MattermostMessage(text="Mensaje de prueba de Miaurmario. Stinky dice hola.")
             )
             if result.get("success"):
                 return True, "Test notification sent successfully"
@@ -176,7 +181,7 @@ class EmailProvider:
         self.smtp_user = os.getenv("SMTP_USER")
         self.smtp_password = os.getenv("SMTP_PASSWORD")
         self.smtp_use_tls = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
-        self.from_name = os.getenv("SMTP_FROM_NAME", "Wardrowbe")
+        self.from_name = os.getenv("SMTP_FROM_NAME", "Miaurmario")
         self.from_email = os.getenv("SMTP_FROM_EMAIL", self.smtp_user)
 
     def is_configured(self) -> bool:
@@ -222,12 +227,13 @@ class EmailProvider:
             return False, "SMTP not configured"
 
         try:
+            rendered = render_test_email()
             result = await self.send(
                 EmailMessage(
                     to=self.to_address,
-                    subject="Wardrowbe - Test Notification",
-                    html_body="<p>This is a test email from Wardrowbe.</p>",
-                    text_body="This is a test email from Wardrowbe.",
+                    subject=rendered.subject,
+                    html_body=rendered.html,
+                    text_body=rendered.text,
                 )
             )
             if result.get("success"):
@@ -301,8 +307,8 @@ class ExpoPushProvider:
             result = await self.send(
                 ExpoPushMessage(
                     to=self.push_token,
-                    title="Wardrowbe Test",
-                    body="Push notifications are working!",
+                    title="Miaurmario: prueba",
+                    body="¡Las notificaciones push funcionan! Stinky dice hola.",
                 )
             )
             if result.get("success"):
@@ -319,22 +325,20 @@ def build_notification_email(
     body: str,
     cta_text: str,
     cta_url: str,
-    app_url: str,
+    app_url: str | None = None,
+    locale: str | None = None,
 ) -> EmailMessage:
-    html_body = f"""\
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <h2 style="color: #111827;">{heading}</h2>
-    <p style="color: #374151; line-height: 1.6;">{body}</p>
-    <div style="text-align: center; margin: 30px 0;">
-        <a href="{cta_url}"
-           style="background: #111827; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
-            {cta_text}
-        </a>
-    </div>
-    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 20px 0;">
-    <p style="color: #9CA3AF; font-size: 12px;">Sent by <a href="{app_url}" style="color: #9CA3AF;">Wardrowbe</a></p>
-</div>"""
-    return EmailMessage(to=to, subject=subject, html_body=html_body, text_body=body)
+    rendered = render_notification_email(
+        subject=subject,
+        heading=heading,
+        body=body,
+        cta_text=cta_text,
+        cta_url=cta_url,
+        locale=locale,
+    )
+    return EmailMessage(
+        to=to, subject=rendered.subject, html_body=rendered.html, text_body=rendered.text
+    )
 
 
 def build_family_invite_email(
@@ -343,30 +347,15 @@ def build_family_invite_email(
     inviter_name: str,
     invite_token: str,
     app_url: str,
+    locale: str | None = None,
 ) -> EmailMessage:
-    invite_url = f"{app_url}/invite?token={invite_token}"
-    subject = f"{inviter_name} invited you to join {family_name} on Wardrowbe"
-    body_text = (
-        f'{inviter_name} invited you to join the family "{family_name}" on Wardrowbe. '
-        f"Click here to accept: {invite_url}"
+    invite_url = f"{app_url.rstrip('/')}/invite?token={invite_token}"
+    rendered = render_family_invite_email(
+        inviter_name=inviter_name,
+        family_name=family_name,
+        invite_url=invite_url,
+        locale=locale,
     )
-    html_body = f"""\
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <h2 style="color: #111827;">You&rsquo;re invited!</h2>
-    <p style="color: #374151; line-height: 1.6;">
-        <strong>{inviter_name}</strong> invited you to join the family
-        <strong>{family_name}</strong> on Wardrowbe.
-    </p>
-    <div style="text-align: center; margin: 30px 0;">
-        <a href="{invite_url}"
-           style="background: #111827; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
-            Accept Invitation
-        </a>
-    </div>
-    <p style="color: #9CA3AF; font-size: 13px;">
-        If you don&rsquo;t have a Wardrowbe account yet, you&rsquo;ll be asked to create one first.
-    </p>
-    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 20px 0;">
-    <p style="color: #9CA3AF; font-size: 12px;">Sent by <a href="{app_url}" style="color: #9CA3AF;">Wardrowbe</a></p>
-</div>"""
-    return EmailMessage(to=to, subject=subject, html_body=html_body, text_body=body_text)
+    return EmailMessage(
+        to=to, subject=rendered.subject, html_body=rendered.html, text_body=rendered.text
+    )

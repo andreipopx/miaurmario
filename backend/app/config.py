@@ -50,6 +50,15 @@ class Settings(BaseSettings):
     oidc_mobile_client_id: str | None = None
     oidc_ca_bundle: str | None = Field(default=None)
 
+    # Authentication - API access tokens (HS256 JWT signed with SECRET_KEY).
+    # Clients slide the session with POST /auth/refresh, so an active user is
+    # never logged out; a token unused for this many days expires.
+    access_token_days: int = Field(default=30, ge=1, le=365)
+
+    # Authentication - optional password login (argon2id). Magic link always
+    # stays available; this only toggles POST /auth/password/login.
+    password_login_enabled: bool = Field(default=True)
+
     # Authentication - Magic link (Sprint 2)
     resend_api_key: str | None = Field(default=None)
     resend_from_email: str = Field(default="Miaurmario <hola@miaurmario.andreipop.org>")
@@ -210,6 +219,12 @@ class Settings(BaseSettings):
     def token_encryption_key(self) -> str | None:
         """Fernet key for integration tokens (new name first, legacy Pinterest name second)."""
         return self.integrations_token_encryption_key or self.pinterest_token_encryption_key
+
+    @property
+    def email_asset_origin(self) -> str:
+        """Public origin for images embedded in emails (must be reachable from the
+        recipient's mail client, so the public magic-link origin wins over APP_URL)."""
+        return self.magic_link_origin
 
     def public_app_url(self) -> str:
         """Public base URL of the frontend for post-OAuth browser redirects.

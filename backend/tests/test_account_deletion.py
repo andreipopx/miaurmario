@@ -13,10 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import admin as admin_api
 from app.config import get_settings
 from app.models.admin import AccountDeletion, AdminAuditLog, FeedbackReport
+from app.models.chat import ChatConversation, ChatMessage
 from app.models.family import Family, FamilyInvite
+from app.models.friendship import Friendship, FriendshipStatus
 from app.models.item import ClothingItem, WashHistory
 from app.models.magic_link import MagicLinkToken
-from app.models.outfit import Outfit
+from app.models.music import ListeningEvent, ListeningMood
+from app.models.outfit import Outfit, OutfitRating, OutfitSource, OutfitVisibility, RatingScope
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
 from app.models.user_ai_settings import UserAISettings
@@ -300,3 +303,126 @@ class TestJob:
         # A missing user (already gone) completes the tombstone.
         done = await run_account_deletion(db_session, deletion.id, storage_path=str(tmp_path))
         assert done.status == "done"
+
+    async def test_job_covers_music_chat_and_social_tables(self, db_session, admin_user, tmp_path):
+        """Tables added by the music, Stinky chat and social branches go too, while
+        other users keep their own rows (their outfit, their rating on nobody's)."""
+        target = await make_user(db_session, username=f"t{uuid.uuid4().hex[:8]}")
+        friend = await make_user(db_session, username=f"f{uuid.uuid4().hex[:8]}")
+        fan = await make_user(db_session, username=f"n{uuid.uuid4().hex[:8]}")
+        now = datetime.now(UTC)
+
+        # Música
+        db_session.add(
+            ListeningEvent(
+                user_id=target.id, played_at=now, track_id="t1", track_name="Song", artists=["A"]
+            )
+        )
+        db_session.add(ListeningMood(user_id=target.id, day=date.today(), moods=["tranquilo"]))
+        # Habla con Stinky
+        conv = ChatConversation(user_id=target.id, title="Hola")
+        db_session.add(conv)
+        await db_session.flush()
+        db_session.add(ChatMessage(conversation_id=conv.id, seq=1, role="user", content="hola"))
+        db_session.add(
+            ChatMessage(conversation_id=conv.id, seq=2, role="assistant", content="miau")
+        )
+        # Social: friendships in both directions, shared outfits, ratings both ways
+        db_session.add(
+            Friendship(
+                requester_id=target.id, addressee_id=friend.id, status=FriendshipStatus.accepted
+            )
+        )
+        db_session.add(Friendship(requester_id=fan.id, addressee_id=target.id))
+        shared = Outfit(
+            user_id=target.id,
+            occasion="dinner",
+            source=OutfitSource.stinky_chat,
+            visibility=OutfitVisibility.friends,
+            shared_at=now,
+        )
+        friends_outfit = Outfit(
+            user_id=friend.id,
+            occasion="casual",
+            visibility=OutfitVisibility.public,
+            shared_at=now,
+        )
+        db_session.add_all([shared, friends_outfit])
+        await db_session.flush()
+        db_session.add(
+            OutfitRating(outfit_id=shared.id, user_id=friend.id, rating=5, scope=RatingScope.friend)
+        )
+        db_session.add(
+            OutfitRating(
+                outfit_id=friends_outfit.id, user_id=target.id, rating=4, scope=RatingScope.public
+            )
+        )
+        deletion = AccountDeletion(
+            user_id=target.id, email_sha256=email_sha256(target.email), requested_by=admin_user.id
+        )
+        db_session.add(deletion)
+        await db_session.commit()
+        target_id, conv_id, shared_id = target.id, conv.id, shared.id
+        friend_id, friends_outfit_id = friend.id, friends_outfit.id
+        deletion_id = deletion.id
+        db_session.expunge_all()
+
+        result = await run_account_deletion(db_session, deletion_id, storage_path=str(tmp_path))
+        assert result.status == "done", result.error
+        tables = result.summary["tables"]
+        for key in (
+            "listening_events.user_id",
+            "listening_moods.user_id",
+            "chat_conversations.user_id",
+            "friendships.requester_id",
+            "friendships.addressee_id",
+            "family_outfit_ratings.user_id",
+            "outfits.user_id",
+        ):
+            assert tables.get(key), key
+
+        async def count(sql: str, **params) -> int:
+            return (await db_session.execute(text(sql), params)).scalar_one()
+
+        assert (
+            await count("SELECT count(*) FROM listening_events WHERE user_id = :u", u=target_id)
+            == 0
+        )
+        assert (
+            await count("SELECT count(*) FROM listening_moods WHERE user_id = :u", u=target_id) == 0
+        )
+        assert (
+            await count("SELECT count(*) FROM chat_conversations WHERE user_id = :u", u=target_id)
+            == 0
+        )
+        assert (
+            await count("SELECT count(*) FROM chat_messages WHERE conversation_id = :c", c=conv_id)
+            == 0
+        )
+        assert (
+            await count(
+                "SELECT count(*) FROM friendships WHERE requester_id = :u OR addressee_id = :u",
+                u=target_id,
+            )
+            == 0
+        )
+        assert await count("SELECT count(*) FROM outfits WHERE id = :o", o=shared_id) == 0
+        # The friend's rating on the deleted outfit goes with the outfit...
+        assert (
+            await count(
+                "SELECT count(*) FROM family_outfit_ratings WHERE outfit_id = :o", o=shared_id
+            )
+            == 0
+        )
+        # ...and the target's rating on the friend's outfit goes with the target,
+        # but the friend and their outfit stay.
+        assert (
+            await count(
+                "SELECT count(*) FROM family_outfit_ratings WHERE outfit_id = :o",
+                o=friends_outfit_id,
+            )
+            == 0
+        )
+        assert await db_session.get(User, friend_id) is not None
+        assert await count("SELECT count(*) FROM outfits WHERE id = :o", o=friends_outfit_id) == 1
+        assert await db_session.get(User, target_id) is None

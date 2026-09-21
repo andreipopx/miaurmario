@@ -19,6 +19,8 @@ export interface UserProfile {
   role: string;
   onboarding_completed: boolean;
   body_measurements?: Record<string, number | string> | null;
+  has_password?: boolean;
+  password_updated_at?: string | null;
 }
 
 export interface UserProfileUpdate {

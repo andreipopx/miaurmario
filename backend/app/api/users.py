@@ -1,4 +1,5 @@
 import re
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
 
@@ -11,6 +12,14 @@ from app.database import get_db
 from app.models.user import User
 from app.services.user_service import UserService
 from app.utils.auth import get_current_user
+from app.utils.passwords import (
+    PASSWORD_MAX_LENGTH,
+    PasswordPolicyError,
+    hash_password_async,
+    validate_new_password,
+    verify_password_async,
+)
+from app.utils.rate_limit import rate_limit_by_user
 
 USERNAME_REGEX = re.compile(r"^[a-z0-9_]{3,20}$")
 
@@ -36,6 +45,8 @@ class UserProfileResponse(BaseModel):
     role: str
     onboarding_completed: bool
     body_measurements: dict | None = None
+    has_password: bool = False
+    password_updated_at: datetime | None = None
 
 
 class UserProfileUpdate(BaseModel):
@@ -134,7 +145,78 @@ def _user_response(user: User) -> UserProfileResponse:
         role=user.role,
         onboarding_completed=user.onboarding_completed,
         body_measurements=user.body_measurements,
+        has_password=bool(user.password_hash),
+        password_updated_at=user.password_updated_at,
     )
+
+
+class PasswordSetRequest(BaseModel):
+    # Required when the account already has a password.
+    current_password: str | None = Field(default=None, max_length=PASSWORD_MAX_LENGTH)
+    # Length is validated by the policy so the client gets a stable error code.
+    new_password: str = Field(..., max_length=PASSWORD_MAX_LENGTH * 4)
+
+
+class PasswordStatusResponse(BaseModel):
+    has_password: bool
+    password_updated_at: datetime | None = None
+
+
+@router.put("/password", response_model=PasswordStatusResponse)
+async def set_password(
+    data: PasswordSetRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> PasswordStatusResponse:
+    """Set, or change, the optional login password.
+
+    Changing an existing password requires the current one (a stolen session
+    alone cannot take over the password). Forgotten passwords are recovered
+    by logging in with a magic link and removing/setting it here.
+    Error details are stable codes: current_password_required,
+    current_password_invalid, password_too_short, password_too_long,
+    password_too_common, password_matches_identity.
+    """
+    await rate_limit_by_user(current_user.id, "password_set", 10, 900)
+
+    if current_user.password_hash:
+        if not data.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="current_password_required"
+            )
+        if not await verify_password_async(current_user.password_hash, data.current_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="current_password_invalid"
+            )
+
+    try:
+        validate_new_password(
+            data.new_password,
+            identities=(current_user.email, current_user.username, current_user.display_name),
+        )
+    except PasswordPolicyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.code
+        ) from None
+
+    current_user.password_hash = await hash_password_async(data.new_password)
+    current_user.password_updated_at = datetime.now(UTC)
+    await db.commit()
+    return PasswordStatusResponse(
+        has_password=True, password_updated_at=current_user.password_updated_at
+    )
+
+
+@router.delete("/password", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_password(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    """Remove the password: back to magic-link-only login (idempotent)."""
+    if current_user.password_hash is not None:
+        current_user.password_hash = None
+        current_user.password_updated_at = datetime.now(UTC)
+        await db.commit()
 
 
 @router.post("/onboarding/complete", response_model=OnboardingCompleteResponse)

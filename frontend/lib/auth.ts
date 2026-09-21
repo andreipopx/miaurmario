@@ -1,6 +1,12 @@
 import { NextAuthOptions } from 'next-auth';
 import type { OAuthConfig } from 'next-auth/providers/oauth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import {
+  SESSION_MAX_AGE_SECONDS,
+  SESSION_UPDATE_AGE_SECONDS,
+  backendTokenFields,
+  refreshBackendTokenIfDue,
+} from '@/lib/session-refresh';
 
 interface OIDCProfile {
   sub: string;
@@ -90,6 +96,7 @@ function backendUrl(): string {
   );
 }
 
+// Same payload for magic-link verify and password login (backend LoginResponse).
 interface MagicLinkVerifyResponse {
   id: string;
   external_id: string;
@@ -101,6 +108,31 @@ interface MagicLinkVerifyResponse {
   onboarding_completed: boolean;
   needs_username: boolean;
   access_token: string;
+}
+
+function forwardedHeaders(req: { headers?: Record<string, unknown> } | undefined) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  // Preserve the end-user IP so the backend's per-IP rate limit is not
+  // applied to the frontend container as a whole.
+  const xff = req?.headers?.['x-forwarded-for'];
+  if (typeof xff === 'string' && xff) {
+    headers['X-Forwarded-For'] = xff;
+  }
+  return headers;
+}
+
+function loginResponseToUser(data: MagicLinkVerifyResponse) {
+  return {
+    id: data.external_id,
+    email: data.email,
+    name: data.display_name,
+    image: data.avatar_url ?? null,
+    backendAccessToken: data.access_token,
+    backendUserId: data.id,
+    isNewUser: data.is_new_user,
+    onboardingCompleted: data.onboarding_completed,
+    needsUsername: data.needs_username,
+  };
 }
 
 // Magic link provider: the emailed link lands on /auth/callback, which calls
@@ -120,19 +152,11 @@ export const MagicLinkProvider = CredentialsProvider({
       return null;
     }
 
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    // Preserve the end-user IP so the backend's per-IP rate limit is not
-    // applied to the frontend container as a whole.
-    const xff = req?.headers?.['x-forwarded-for'];
-    if (typeof xff === 'string' && xff) {
-      headers['X-Forwarded-For'] = xff;
-    }
-
     let response: Response;
     try {
       response = await fetch(`${backendUrl()}/api/v1/auth/magic-link/verify`, {
         method: 'POST',
-        headers,
+        headers: forwardedHeaders(req),
         body: JSON.stringify({ token }),
         cache: 'no-store',
       });
@@ -145,18 +169,50 @@ export const MagicLinkProvider = CredentialsProvider({
       return null;
     }
 
-    const data = (await response.json()) as MagicLinkVerifyResponse;
-    return {
-      id: data.external_id,
-      email: data.email,
-      name: data.display_name,
-      image: data.avatar_url ?? null,
-      backendAccessToken: data.access_token,
-      backendUserId: data.id,
-      isNewUser: data.is_new_user,
-      onboardingCompleted: data.onboarding_completed,
-      needsUsername: data.needs_username,
-    };
+    return loginResponseToUser((await response.json()) as MagicLinkVerifyResponse);
+  },
+});
+
+// Error codes surfaced to the login form (signIn(..., { redirect: false }).error).
+// A null return becomes next-auth's generic 'CredentialsSignin'.
+export const PASSWORD_ERROR_RATE_LIMITED = 'PasswordRateLimited';
+export const PASSWORD_ERROR_UNAVAILABLE = 'PasswordUnavailable';
+
+// Optional password login (email or username + password). Same backend
+// payload and session shape as the magic link; the backend rate-limits per IP
+// (hence the forwarded X-Forwarded-For) and per identifier.
+export const PasswordProvider = CredentialsProvider({
+  id: 'password',
+  name: 'Password',
+  credentials: {
+    identifier: { label: 'Email or username', type: 'text' },
+    password: { label: 'Password', type: 'password' },
+  },
+  async authorize(credentials, req) {
+    const identifier = credentials?.identifier?.trim();
+    const password = credentials?.password;
+    if (!identifier || identifier.length > 255 || !password || password.length > 128) {
+      return null;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${backendUrl()}/api/v1/auth/password/login`, {
+        method: 'POST',
+        headers: forwardedHeaders(req),
+        body: JSON.stringify({ identifier, password }),
+        cache: 'no-store',
+      });
+    } catch (error) {
+      console.error('Password login: backend unreachable', error);
+      throw new Error(PASSWORD_ERROR_UNAVAILABLE);
+    }
+
+    if (response.status === 429) throw new Error(PASSWORD_ERROR_RATE_LIMITED);
+    if (response.status >= 500) throw new Error(PASSWORD_ERROR_UNAVAILABLE);
+    if (!response.ok) return null;
+
+    return loginResponseToUser((await response.json()) as MagicLinkVerifyResponse);
   },
 });
 
@@ -172,6 +228,12 @@ function getProviders() {
   // /api/v1/auth/config. Must NOT depend on DEV_MODE.
   if (process.env.MAGIC_LINK_ENABLED !== 'false') {
     providers.push(MagicLinkProvider);
+  }
+
+  // Availability decided by the backend (PASSWORD_LOGIN_ENABLED, advertised in
+  // /api/v1/auth/config); users only have a password if they set one.
+  if (process.env.PASSWORD_LOGIN_ENABLED !== 'false') {
+    providers.push(PasswordProvider);
   }
 
   // Dev credentials accept ANY email without verification. Never enable in a
@@ -211,12 +273,13 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
-      // Magic link sign in - the backend already verified the token and issued
-      // an API access token in authorize(); no /auth/sync round-trip.
-      if (user && account?.provider === 'magic-link') {
+      // Magic link / password sign in - the backend already verified the
+      // credentials and issued an API access token in authorize(); no
+      // /auth/sync round-trip.
+      if (user && (account?.provider === 'magic-link' || account?.provider === 'password')) {
         return {
           ...token,
-          accessToken: user.backendAccessToken,
+          ...backendTokenFields(user.backendAccessToken),
           sub: user.id,
           backendUserId: user.backendUserId,
           isNewUser: user.isNewUser,
@@ -247,7 +310,7 @@ export const authOptions: NextAuthOptions = {
             const syncData = await response.json();
             return {
               ...token,
-              accessToken: syncData.access_token,
+              ...backendTokenFields(syncData.access_token),
               sub: user.id,
               backendUserId: syncData.id,
               isNewUser: syncData.is_new_user,
@@ -273,7 +336,9 @@ export const authOptions: NextAuthOptions = {
           syncError: 'Unable to connect to backend server',
         };
       }
-      return token;
+
+      // Every other session read: slide the backend token (about once a day).
+      return refreshBackendTokenIfDue(token, apiUrl);
     },
     async session({ session, token }) {
       return {
@@ -296,6 +361,10 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
+    // Sliding: the cookie is re-issued on session reads and the backend token
+    // is refreshed in the jwt callback. Idle longer than this -> log in again.
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    updateAge: SESSION_UPDATE_AGE_SECONDS,
   },
   secret: process.env.NEXTAUTH_SECRET,
   // Origin handling (next-auth v4): callback/redirect URLs and the Secure flag

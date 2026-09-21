@@ -35,5 +35,9 @@ declare module 'next-auth/jwt' {
     onboardingCompleted?: boolean;
     needsUsername?: boolean;
     syncError?: string;
+    // Backend API token lifetime (ms since epoch), for the sliding refresh.
+    accessTokenIssuedAt?: number;
+    accessTokenExpiresAt?: number;
+    refreshFailedAt?: number;
   }
 }

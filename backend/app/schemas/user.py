@@ -89,7 +89,12 @@ class AuthConfigMagicLink(BaseModel):
     enabled: bool
 
 
+class AuthConfigPassword(BaseModel):
+    enabled: bool
+
+
 class AuthConfigResponse(BaseModel):
     oidc: AuthConfigOIDC
     magic_link: AuthConfigMagicLink = AuthConfigMagicLink(enabled=False)
+    password: AuthConfigPassword = AuthConfigPassword(enabled=False)
     dev_mode: bool = False

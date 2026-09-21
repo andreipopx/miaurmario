@@ -444,10 +444,15 @@ async def _check_wash_reminders_inner(ctx: dict):
                             send_result = await email_provider.send(
                                 build_notification_email(
                                     to=email_provider.to_address,
-                                    subject=title,
-                                    heading=title,
-                                    body=body,
-                                    cta_text="View Wardrobe",
+                                    subject="Stinky huele colada pendiente",
+                                    heading="Hora de hacer la colada",
+                                    body=(
+                                        f"{count} "
+                                        f"{'prenda necesita' if count == 1 else 'prendas necesitan'}"
+                                        f" un lavado: {', '.join(item_names)}"
+                                        + (f" y {count - 5} más." if count > 5 else ".")
+                                    ),
+                                    cta_text="Ver mi armario",
                                     cta_url=f"{app_url}/dashboard/wardrobe",
                                     app_url=app_url,
                                 )

@@ -33,6 +33,7 @@ import {
 import { CLOTHING_COLORS, OCCASIONS, Preferences, StyleProfile } from '@/lib/types';
 import { toF, toCelsius } from '@/lib/temperature';
 import { toast } from 'sonner';
+import { SecurityCard } from '@/components/settings/security-card';
 import { PageHeader } from '@/components/page-header';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { cn } from '@/lib/utils';
@@ -644,6 +645,9 @@ export default function SettingsPage() {
 
         {/* AI access (free plan / admin grant / own key) */}
         <AISettingsCard />
+
+        {/* Security: optional password on top of the magic link */}
+        <SecurityCard user={userProfile} />
 
         {/* Location Section */}
         <Card>

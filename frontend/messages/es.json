@@ -108,8 +108,22 @@
       "genericError": "No hemos podido enviar el enlace. Inténtalo de nuevo en un momento.",
       "verifying": "Iniciando sesión…"
     },
-    "noPasswords": "Sin contraseñas: te mandamos un enlace mágico.",
-    "termsRich": "Al entrar aceptas la <link>privacidad y los términos</link>."
+    "noPasswords": "Sin contraseñas obligatorias: te mandamos un enlace mágico.",
+    "termsRich": "Al entrar aceptas la <link>privacidad y los términos</link>.",
+    "password": {
+      "toggle": "Entrar con contraseña",
+      "backToMagicLink": "Prefiero que me envíes un enlace",
+      "identifierLabel": "Email o usuario",
+      "identifierPlaceholder": "tu@correo.com o tu_usuario",
+      "passwordLabel": "Contraseña",
+      "show": "Mostrar contraseña",
+      "hide": "Ocultar contraseña",
+      "cta": "Entrar",
+      "invalid": "Email/usuario o contraseña incorrectos.",
+      "rateLimited": "Demasiados intentos. Espera unos minutos o entra con un enlace por email.",
+      "unavailable": "No podemos iniciar sesión ahora mismo. Inténtalo de nuevo en un momento.",
+      "forgotHint": "¿Olvidaste la contraseña? Pide un enlace por email y cámbiala en Ajustes → Seguridad."
+    }
   },
   "onboarding": {
     "username": {
@@ -880,6 +894,42 @@
       "title": "Integraciones",
       "description": "Pinterest para inspiración y Spotify como mood musical del Estilista.",
       "cta": "Gestionar integraciones"
+    },
+    "security": {
+      "title": "Seguridad",
+      "description": "Cómo entras en Miaurmario.",
+      "magicLinkNote": "El enlace por email funciona siempre, tengas contraseña o no.",
+      "statusNone": "No tienes contraseña: entras solo con enlace por email.",
+      "statusSet": "Tienes contraseña. Puedes entrar con tu email o usuario y la contraseña.",
+      "lastChanged": "Última actualización: {date}",
+      "setTitle": "Añadir contraseña",
+      "changeTitle": "Cambiar contraseña",
+      "currentLabel": "Contraseña actual",
+      "newLabel": "Nueva contraseña",
+      "confirmLabel": "Repite la nueva contraseña",
+      "requirements": "Mínimo 10 caracteres. Evita contraseñas comunes o tu nombre de usuario.",
+      "show": "Mostrar contraseñas",
+      "hide": "Ocultar contraseñas",
+      "save": "Guardar contraseña",
+      "remove": "Quitar contraseña",
+      "removeConfirmTitle": "¿Quitar la contraseña?",
+      "removeConfirmBody": "Volverás a entrar solo con enlace por email.",
+      "removeConfirm": "Quitar",
+      "cancel": "Cancelar",
+      "saved": "Contraseña guardada",
+      "removed": "Contraseña eliminada: ahora entras con enlace por email",
+      "forgotHint": "¿Olvidaste la actual? Quítala y crea una nueva: para quitarla no hace falta la contraseña.",
+      "errors": {
+        "mismatch": "Las contraseñas no coinciden.",
+        "current_password_required": "Escribe tu contraseña actual.",
+        "current_password_invalid": "La contraseña actual no es correcta.",
+        "password_too_short": "Demasiado corta: mínimo 10 caracteres.",
+        "password_too_long": "Demasiado larga: máximo 128 caracteres.",
+        "password_too_common": "Es demasiado común o fácil de adivinar. Prueba una frase con varias palabras.",
+        "password_matches_identity": "No uses tu email ni tu nombre de usuario como contraseña.",
+        "rateLimited": "Demasiados intentos. Espera unos minutos.",
+        "generic": "No hemos podido guardar la contraseña. Inténtalo de nuevo."
+      }
     }
   },
   "invite": {

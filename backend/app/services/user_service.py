@@ -126,7 +126,7 @@ class UserService:
         """Idempotent lookup by email for passwordless flows (magic link).
 
         Uses `magic:<email>` as external_id when creating a fresh account.
-        Applies admin promotion/demotion based on ADMIN_EMAILS on every call.
+        Applies ADMIN_EMAILS promotion on every call (see record_login).
         """
         from app.config import get_settings
 
@@ -148,13 +148,39 @@ class UserService:
             await self.db.refresh(user)
             return user
 
-        desired_role = "admin" if email_l in admin_set else "member"
-        if user.role != desired_role and user.role in ("admin", "member"):
-            user.role = desired_role
+        await self.record_login(user)
+        return user
+
+    async def record_login(self, user: User) -> None:
+        """Bookkeeping shared by every first-party login (magic link, password).
+
+        Site admin is decided by ADMIN_EMAILS alone (``is_site_admin``, same
+        rule as the AI-access/admin panel). ``users.role`` doubles as the
+        *family* role (creating a family sets "admin"), so a login only
+        promotes ADMIN_EMAILS users to role="admin" for legacy role checks and
+        never demotes: demoting would strip family admins of their family.
+        """
+        from app.services.ai_access import is_site_admin
+
+        if is_site_admin(user) and user.role != "admin":
+            user.role = "admin"
         user.last_login_at = datetime.now(UTC)
         await self.db.flush()
         await self.db.refresh(user)
-        return user
+
+    async def get_by_login_identifier(self, identifier: str) -> User | None:
+        """Look up a user by email or username, case-insensitively.
+
+        Every write path stores emails and usernames lower-cased, so a plain
+        (indexed) equality on the normalized input is case-insensitive. Anything
+        containing "@" is treated as an email (usernames cannot contain "@").
+        """
+        ident = identifier.strip().lower()
+        if not ident:
+            return None
+        column = User.email if "@" in ident else User.username
+        result = await self.db.execute(select(User).where(column == ident))
+        return result.scalar_one_or_none()
 
     async def username_taken(self, username: str, exclude_user_id: UUID | None = None) -> bool:
         query = select(User.id).where(User.username == username.lower())

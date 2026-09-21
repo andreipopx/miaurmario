@@ -108,8 +108,22 @@
       "genericError": "We couldn't send the link. Try again in a moment.",
       "verifying": "Signing you in…"
     },
-    "noPasswords": "No passwords: we email you a magic link.",
-    "termsRich": "By signing in you accept the <link>privacy policy and terms</link>."
+    "noPasswords": "No password required: we email you a magic link.",
+    "termsRich": "By signing in you accept the <link>privacy policy and terms</link>.",
+    "password": {
+      "toggle": "Sign in with password",
+      "backToMagicLink": "Email me a link instead",
+      "identifierLabel": "Email or username",
+      "identifierPlaceholder": "you@email.com or your_username",
+      "passwordLabel": "Password",
+      "show": "Show password",
+      "hide": "Hide password",
+      "cta": "Sign in",
+      "invalid": "Wrong email/username or password.",
+      "rateLimited": "Too many attempts. Wait a few minutes or sign in with an email link.",
+      "unavailable": "We can't sign you in right now. Please try again in a moment.",
+      "forgotHint": "Forgot your password? Ask for an email link and change it in Settings → Security."
+    }
   },
   "onboarding": {
     "username": {
@@ -880,6 +894,42 @@
       "title": "Integrations",
       "description": "Pinterest for inspiration and Spotify as the Stylist's musical mood.",
       "cta": "Manage integrations"
+    },
+    "security": {
+      "title": "Security",
+      "description": "How you sign in to Miaurmario.",
+      "magicLinkNote": "The email link always works, whether you have a password or not.",
+      "statusNone": "No password set: you sign in with an email link only.",
+      "statusSet": "Password set. You can sign in with your email or username and password.",
+      "lastChanged": "Last updated: {date}",
+      "setTitle": "Add a password",
+      "changeTitle": "Change password",
+      "currentLabel": "Current password",
+      "newLabel": "New password",
+      "confirmLabel": "Repeat new password",
+      "requirements": "At least 10 characters. Avoid common passwords or your username.",
+      "show": "Show passwords",
+      "hide": "Hide passwords",
+      "save": "Save password",
+      "remove": "Remove password",
+      "removeConfirmTitle": "Remove your password?",
+      "removeConfirmBody": "You'll go back to signing in with an email link only.",
+      "removeConfirm": "Remove",
+      "cancel": "Cancel",
+      "saved": "Password saved",
+      "removed": "Password removed: you now sign in with an email link",
+      "forgotHint": "Forgot the current one? Remove it and set a new one: removing doesn't need the password.",
+      "errors": {
+        "mismatch": "Passwords don't match.",
+        "current_password_required": "Enter your current password.",
+        "current_password_invalid": "Your current password is not correct.",
+        "password_too_short": "Too short: at least 10 characters.",
+        "password_too_long": "Too long: at most 128 characters.",
+        "password_too_common": "Too common or easy to guess. Try a phrase with several words.",
+        "password_matches_identity": "Don't use your email or username as your password.",
+        "rateLimited": "Too many attempts. Wait a few minutes.",
+        "generic": "We couldn't save your password. Please try again."
+      }
     }
   },
   "invite": {

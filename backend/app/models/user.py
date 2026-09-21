@@ -45,6 +45,11 @@ class User(Base):
     location_name: Mapped[str | None] = mapped_column(String(100))
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Optional password (argon2id). NULL = magic-link only.
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    password_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     body_measurements: Mapped[dict | None] = mapped_column(JSONB)

@@ -56,6 +56,14 @@ class UserAISettings(Base):
     tokens_this_month: Mapped[int] = mapped_column(
         BigInteger, nullable=False, default=0, server_default="0"
     )
+    # Split of tokens_this_month when the provider reports it (prompt = input,
+    # completion = output); tokens without a split stay only in the total.
+    prompt_tokens_this_month: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, default=0, server_default="0"
+    )
+    completion_tokens_this_month: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, default=0, server_default="0"
+    )
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     created_at: Mapped[datetime] = mapped_column(

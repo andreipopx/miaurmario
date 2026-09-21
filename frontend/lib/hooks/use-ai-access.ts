@@ -86,6 +86,8 @@ export function useUpdateAdminUser() {
     }) => api.patch<AdminUser>(`/admin/users/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin'] });
     },
+    meta: { silentErrors: true },
   });
 }

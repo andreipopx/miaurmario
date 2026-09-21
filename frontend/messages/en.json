@@ -106,7 +106,11 @@
       "sentBody": "If the email exists, we sent a link to sign in. It expires in 15 minutes.",
       "rateLimited": "Too many requests. Please wait a bit before trying again.",
       "genericError": "We couldn't send the link. Try again in a moment.",
-      "verifying": "Signing you in…"
+      "verifying": "Signing you in…",
+      "invited": "You've been invited to Miaurmario. Enter your email to create your account.",
+      "inviteInvalid": "This invite is no longer valid. Ask whoever sent it for a new one.",
+      "closedBetaTitle": "Miaurmario is in closed beta",
+      "closedBetaBody": "Ask for an invite to create your account. If you already have one, check it's the same email."
     },
     "noPasswords": "No password required: we email you a magic link.",
     "termsRich": "By signing in you accept the <link>privacy policy and terms</link>.",
@@ -250,6 +254,9 @@
     "profileMenu": "Your profile and menu",
     "familySettings": "Manage family",
     "viewProfile": "Your profile and settings",
+    "sendFeedback": "Send a suggestion or bug",
+    "admin": "Admin",
+    "adminBadge": "{count, plural, one {# new suggestion} other {# new suggestions}}",
     "friends": "Friends",
     "newActivity": "{count, plural, one {# new} other {# new}}",
     "stinky": "Chat with Stinky",
@@ -2281,8 +2288,281 @@
     "errors": {
       "cannot_deactivate_admin": "You can't deactivate an admin from here.",
       "user_uses_own_key": "This user uses their own key; there's no gift to remove.",
-      "user_not_found": "User not found."
+      "user_not_found": "User not found.",
+      "cannot_delete_self": "You cannot delete your own account.",
+      "cannot_delete_admin": "Admins cannot be deleted.",
+      "confirm_mismatch": "The text does not match.",
+      "not_failed": "Only failed deletions can be retried."
+    },
+    "panelTitle": "Admin",
+    "panelSubtitle": "How Miaurmario is doing: users, sign-ups, inbox and system.",
+    "tabs": {
+      "label": "Admin sections",
+      "summary": "Overview",
+      "users": "Users",
+      "signup": "Sign-ups",
+      "inbox": "Inbox",
+      "system": "System"
+    },
+    "summary": {
+      "loadError": "Could not load the overview.",
+      "users": "Users",
+      "newThisWeek": "{count, plural, =0 {no sign-ups this week} other {+# this week}}",
+      "active": "Active 7 d · 30 d",
+      "activeHint": "Logged in, used AI or added something",
+      "onboarding": "Onboarding done",
+      "onboardingHint": "{count, plural, one {# user} other {# users}}",
+      "content": "Items",
+      "contentHint": "{outfits, plural, one {# outfit} other {# outfits}}",
+      "signupsTitle": "Sign-ups per day",
+      "signupsBody": "Last 14 days · {count, plural, one {# sign-up} other {# sign-ups}} in 7 days",
+      "signupsChart": "Sign-ups per day, last 14 days",
+      "aiTitle": "AI this month",
+      "aiMonth": "Month {month} (UTC). Cost estimated from provider-reported tokens.",
+      "requests": "Requests",
+      "tokensIn": "Input tokens",
+      "tokensOut": "Output tokens",
+      "unsplit": "+{count} without split (output price)",
+      "cost": "Estimated cost",
+      "approx": "approx., not an invoice",
+      "budgetLabel": "Monthly budget",
+      "noBudgetSet": "No monthly budget. Set one below to get warnings at 80% and 100%.",
+      "topUsers": "Top AI users",
+      "noUsage": "Nobody used AI this month.",
+      "topUserUsage": "{requests} req. · {tokens} tokens",
+      "budgetWarningTitle": "Over 80% of the AI budget",
+      "budgetExceededTitle": "AI budget exceeded",
+      "budgetBody": "Spent approx. {cost} of {budget} ({pct}%) this month.",
+      "pricing": {
+        "title": "Prices and budget",
+        "description": "Price per million tokens in USD (default DeepSeek off-peak) and the EUR rate.",
+        "input": "Input (USD / 1M)",
+        "output": "Output (USD / 1M)",
+        "rate": "USD → EUR rate",
+        "budget": "Budget (€ / month)",
+        "noBudget": "No limit",
+        "hint": "Only affects the estimate and warnings; AI is never cut off.",
+        "save": "Save prices"
+      }
+    },
+    "users": {
+      "privacy": "For privacy, this panel never shows anyone's wardrobe, outfits or photos: counts only.",
+      "rowSummary": "{items, plural, one {# item} other {# items}} · {requests} AI req. this month",
+      "deletionPending": "Deletion in progress",
+      "onboarding": "Onboarding",
+      "password": "Password",
+      "outfits": "Outfits",
+      "friends": "Friends",
+      "integrations": "Integrations",
+      "none": "None",
+      "yes": "Yes",
+      "no": "No",
+      "aiTitle": "AI",
+      "aiUsage": "{requests} requests · {tokensIn} in · {tokensOut} out · ≈ {cost} this month",
+      "accountTitle": "Account",
+      "removePassword": "Remove password",
+      "removePasswordTitle": "Remove the password?",
+      "removePasswordBody": "They will only be able to sign in with the email magic link until they set a new one.",
+      "passwordRemoved": "Password removed.",
+      "deleteAccount": "Delete account",
+      "delete": {
+        "title": "Delete {name}'s account",
+        "body": "Their items, outfits, photos, integrations and settings are deleted forever. This cannot be undone. Deletion runs in the background and is logged.",
+        "typeToConfirm": "Type <target></target> to confirm",
+        "cancel": "Cancel",
+        "confirm": "Delete forever",
+        "queued": "Deletion started. The account is already locked."
+      },
+      "deletions": {
+        "title": "Deleted accounts",
+        "description": "Deletion log (no personal data).",
+        "noUsername": "no username",
+        "retry": "Retry",
+        "status": {
+          "pending": "Queued",
+          "running": "Deleting",
+          "done": "Deleted",
+          "failed": "Failed"
+        }
+      }
+    },
+    "signup": {
+      "modeTitle": "Sign-up mode",
+      "modeBody": "Who can create a new account. Existing users can always sign in.",
+      "open": "Open",
+      "inviteOnly": "Invite only",
+      "openHint": "Anyone with an email can sign up.",
+      "inviteOnlyHint": "Closed beta: new accounts need an invite link.",
+      "modeOpenSaved": "Sign-ups are open.",
+      "modeInviteSaved": "Sign-ups are now invite-only.",
+      "create": {
+        "title": "New invite",
+        "description": "Creates a link like /login?invite=CODE.",
+        "note": "Note (only for you)",
+        "notePlaceholder": "Who it is for",
+        "maxUses": "Max uses",
+        "unlimited": "Unlimited",
+        "expires": "Expires",
+        "submit": "Create invite",
+        "created": "Invite created.",
+        "createdCopied": "Invite created and link copied."
+      },
+      "listTitle": "Invites",
+      "empty": "No invites yet.",
+      "status": {
+        "active": "Active",
+        "revoked": "Revoked",
+        "expired": "Expired",
+        "used_up": "Used up"
+      },
+      "usesOf": "{uses} / {max} uses",
+      "uses": "{uses, plural, one {# use} other {# uses}}",
+      "expiresOn": "Expires on {date}",
+      "noExpiry": "Never expires",
+      "copyLink": "Copy link",
+      "copyCode": "Copy code",
+      "linkCopied": "Link copied.",
+      "codeCopied": "Code copied.",
+      "copyFailed": "Could not copy.",
+      "revoke": "Revoke",
+      "revoked": "Invite revoked."
+    },
+    "inbox": {
+      "openScreenshot": "Open screenshot",
+      "screenshot": "Screenshot",
+      "kind": {
+        "suggestion": "Suggestion",
+        "bug": "Bug",
+        "other": "Other"
+      },
+      "status": {
+        "new": "New",
+        "seen": "Seen",
+        "done": "Done"
+      },
+      "statusLabel": "Status",
+      "context": "Context",
+      "page": "Page",
+      "build": "Build",
+      "userAgent": "Browser",
+      "note": "Internal note",
+      "notePlaceholder": "Only admins see this",
+      "saveNote": "Save note",
+      "noteSaved": "Note saved.",
+      "filters": {
+        "new": "New",
+        "seen": "Seen",
+        "done": "Done",
+        "all": "All"
+      },
+      "loadError": "Could not load the inbox.",
+      "emptyTitle": "Inbox zero",
+      "emptyBody": "Suggestions and bug reports from users land here."
+    },
+    "system": {
+      "loadError": "Could not load the system status.",
+      "statusTitle": "Status",
+      "backup": "Last backup",
+      "notConfigured": "Not configured",
+      "backupError": "Could not read the status ({error})",
+      "backupOk": "OK",
+      "uploads": "Uploaded photos",
+      "uploadsValue": "{size} · {files, plural, one {# file} other {# files}} (computed at {at})",
+      "uploadsMissing": "The uploads folder does not exist",
+      "database": "Database",
+      "version": "Version",
+      "worker": "Worker (background jobs)",
+      "redisDown": "Redis is not responding",
+      "workerAlive": "Alive · {queued, plural, =0 {queue empty} one {# job queued} other {# jobs queued}}",
+      "workerDown": "No recent heartbeat · {queued, plural, =0 {queue empty} one {# job queued} other {# jobs queued}}",
+      "spotify": "Spotify (development mode)",
+      "spotifySlots": "{used} / {total} slots used",
+      "pinterest": "Pinterest",
+      "configured": "Configured",
+      "announcement": {
+        "title": "Global announcement",
+        "description": "A banner for every user; each can dismiss it.",
+        "placeholder": "E.g. maintenance tonight from 23:00 to 23:30.",
+        "text": "Announcement text",
+        "level": "Announcement type",
+        "info": "Info",
+        "warning": "Important",
+        "expires": "Expires (optional)",
+        "publish": "Publish",
+        "update": "Update",
+        "clear": "Remove",
+        "saved": "Announcement published.",
+        "cleared": "Announcement removed.",
+        "live": "An announcement is live. Updating it shows it again to people who dismissed it.",
+        "none": "No announcement right now."
+      },
+      "audit": {
+        "title": "Admin actions",
+        "description": "Every change made from this panel is logged.",
+        "empty": "No actions yet.",
+        "actions": {
+          "user": {
+            "update": "User edited",
+            "password_removed": "Password removed",
+            "delete_requested": "Account deletion",
+            "delete_retried": "Deletion retried"
+          },
+          "settings": {
+            "ai_pricing": "AI prices",
+            "signup_mode": "Sign-up mode"
+          },
+          "invite": {
+            "create": "Invite created",
+            "revoke": "Invite revoked"
+          },
+          "feedback": {
+            "update": "Inbox updated"
+          },
+          "announcement": {
+            "set": "Announcement published",
+            "clear": "Announcement removed"
+          }
+        }
+      }
     }
+  },
+  "appFeedback": {
+    "title": "Send a suggestion or bug",
+    "description": "Read directly by whoever builds Miaurmario. Thank you!",
+    "kindLabel": "Type",
+    "kinds": {
+      "suggestion": "Suggestion",
+      "bug": "Bug",
+      "other": "Other"
+    },
+    "textLabel": {
+      "suggestion": "What would you like?",
+      "bug": "What happened?",
+      "other": "Tell us"
+    },
+    "placeholder": {
+      "suggestion": "I would love to…",
+      "bug": "I was on… I tapped… and…",
+      "other": "Write here"
+    },
+    "addScreenshot": "Add screenshot",
+    "removeScreenshot": "Remove",
+    "screenshotPreview": "Screenshot preview",
+    "fileType": "PNG, JPEG or WebP images only.",
+    "fileTooLarge": "The screenshot is larger than {mb} MB.",
+    "contextNote": "The current page, app version and your browser are attached.",
+    "send": "Send",
+    "sent": "Got it! Thanks for helping.",
+    "error": "Could not send. Please try again.",
+    "errors": {
+      "screenshot_too_large": "The screenshot is too large.",
+      "screenshot_invalid": "The screenshot is not a valid image.",
+      "text_required": "Write something before sending.",
+      "text_too_long": "The text is too long."
+    }
+  },
+  "announcement": {
+    "dismiss": "Dismiss announcement"
   },
   "social": {
     "title": "Friends",

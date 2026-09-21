@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { NavRow } from '@/components/sidebar';
+import { ProfileMenuExtras } from '@/components/profile-menu-extras';
 import { PRIMARY_ITEMS, SECONDARY_ITEMS, isActivePath, isSecondaryActive } from '@/components/nav-items';
 
 interface MobileSidebarProps {
@@ -109,6 +110,9 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                   </li>
                 ))}
               </ul>
+              <div className="mt-1">
+                <ProfileMenuExtras onNavigate={onClose} />
+              </div>
             </div>
             <button
               type="button"

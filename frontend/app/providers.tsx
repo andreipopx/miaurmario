@@ -31,7 +31,14 @@ function handleQueryError(error: unknown, query: Query<unknown, unknown, unknown
   }
 }
 
-function handleMutationError(error: unknown) {
+function handleMutationError(
+  error: unknown,
+  _variables?: unknown,
+  _context?: unknown,
+  mutation?: { meta?: Record<string, unknown> }
+) {
+  // Mutations that render their own (translated) error opt out with meta.silentErrors.
+  if (mutation?.meta?.silentErrors) return;
   // "No AI for this account" is shown as a friendly inline notice where the
   // feature lives, never as a red toast.
   if (getAiAccessErrorCode(error)) return;

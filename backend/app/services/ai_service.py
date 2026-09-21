@@ -283,7 +283,12 @@ class AIProviderConfig:
         )
 
 
-UsageSink = Callable[[int, int], Awaitable[None]]
+# sink(requests, total_tokens, prompt_tokens=0, completion_tokens=0)
+UsageSink = Callable[..., Awaitable[None]]
+
+
+def _as_token_count(value: object) -> int:
+    return value if isinstance(value, int) and value > 0 else 0
 
 
 class AIService:
@@ -342,18 +347,17 @@ class AIService:
         """Report one successful completion (+ tokens when the provider sends them)."""
         if self._usage_sink is None:
             return
-        tokens = 0
+        tokens = prompt = completion = 0
         usage = data.get("usage") if isinstance(data, dict) else None
         if isinstance(usage, dict):
+            prompt = _as_token_count(usage.get("prompt_tokens"))
+            completion = _as_token_count(usage.get("completion_tokens"))
             total = usage.get("total_tokens")
-            if isinstance(total, int):
-                tokens = total
-            else:
-                tokens = int(usage.get("prompt_tokens") or 0) + int(
-                    usage.get("completion_tokens") or 0
-                )
+            tokens = total if isinstance(total, int) else prompt + completion
         try:
-            await self._usage_sink(1, max(tokens, 0))
+            await self._usage_sink(
+                1, max(tokens, 0), prompt_tokens=prompt, completion_tokens=completion
+            )
         except Exception as e:  # accounting must never break the AI call
             logger.warning(f"Failed to record AI usage: {type(e).__name__}")
 

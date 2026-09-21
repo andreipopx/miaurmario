@@ -1,3 +1,10 @@
+from app.models.admin import (
+    AccountDeletion,
+    AdminAuditLog,
+    AppSetting,
+    FeedbackReport,
+    InviteCode,
+)
 from app.models.chat import ChatConversation, ChatMessage
 from app.models.family import Family, FamilyInvite
 from app.models.friendship import Friendship, FriendshipStatus
@@ -28,6 +35,11 @@ from app.models.user import User
 from app.models.user_ai_settings import UserAISettings
 
 __all__ = [
+    "AccountDeletion",
+    "AdminAuditLog",
+    "AppSetting",
+    "FeedbackReport",
+    "InviteCode",
     "ChatConversation",
     "ChatMessage",
     "Family",

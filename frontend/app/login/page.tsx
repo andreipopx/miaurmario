@@ -8,6 +8,7 @@ import { Loader2, Mail } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { LanguageSwitcher, SHOW_LANGUAGE_SWITCHER } from '@/components/language-switcher';
 import { safeCallbackPath } from '@/lib/magic-link';
+import { inviteFromSearch } from '@/lib/admin';
 import { LoginMethods } from '@/components/auth/login-methods';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,7 +83,7 @@ function DevLogin({ callbackUrl }: { callbackUrl: string }) {
   );
 }
 
-function MagicLinkForm() {
+function MagicLinkForm({ invite }: { invite: string | null }) {
   const t = useTranslations('login.magicLink');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -90,19 +91,27 @@ function MagicLinkForm() {
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [closedBeta, setClosedBeta] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setClosedBeta(false);
     setIsLoading(true);
     try {
       const res = await fetch('/api/v1/auth/magic-link/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, locale }),
+        body: JSON.stringify(invite ? { email, locale, invite } : { email, locale }),
       });
       if (res.status === 202 || res.status === 200) {
         setSent(true);
+      } else if (res.status === 403) {
+        const data = await res.json().catch(() => ({}));
+        const code = data?.detail?.code;
+        if (code === 'invite_invalid') setErrorMsg(t('inviteInvalid'));
+        else if (code === 'invite_required') setClosedBeta(true);
+        else setErrorMsg(t('genericError'));
       } else if (res.status === 429) {
         setErrorMsg(t('rateLimited'));
       } else {
@@ -126,6 +135,11 @@ function MagicLinkForm() {
 
   return (
     <form onSubmit={submit} className="space-y-3">
+      {invite && (
+        <Alert variant="signature" role="status">
+          <AlertDescription className="font-semibold text-foreground">{t('invited')}</AlertDescription>
+        </Alert>
+      )}
       <div className="space-y-3">
         <label htmlFor="ml-email" className="block px-1 text-sm font-bold">
           {t('emailLabel')}
@@ -140,6 +154,12 @@ function MagicLinkForm() {
           className="h-[54px] px-[22px] text-base"
         />
       </div>
+      {closedBeta && (
+        <Alert role="alert">
+          <AlertTitle>{t('closedBetaTitle')}</AlertTitle>
+          <AlertDescription className="text-muted-foreground">{t('closedBetaBody')}</AlertDescription>
+        </Alert>
+      )}
       {errorMsg && (
         <p role="alert" className="px-1 text-sm font-medium text-destructive">
           {errorMsg}
@@ -181,6 +201,7 @@ function LoginContent() {
   // Relative path only: an absolute callbackUrl may point at the other hostname
   // (LAN vs public) and router.push would send the user there.
   const callbackUrl = safeCallbackPath(searchParams.get('callbackUrl'));
+  const invite = inviteFromSearch(searchParams.get('invite'));
   const [backendError, setBackendError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -257,7 +278,7 @@ function LoginContent() {
 
       <div className="space-y-4">
         <LoginMethods
-          magicLink={magicLinkEnabled ? <MagicLinkForm /> : null}
+          magicLink={magicLinkEnabled ? <MagicLinkForm invite={invite} /> : null}
           passwordEnabled={passwordEnabled}
           callbackUrl={callbackUrl}
         />

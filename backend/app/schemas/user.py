@@ -51,6 +51,11 @@ class UserSyncRequest(BaseModel):
         None, description="OIDC ID token for verification (required when OIDC is configured)"
     )
     provider: str | None = Field(None, description="Auth provider (e.g. 'oidc'), omit for default")
+    invite_code: str | None = Field(
+        None,
+        max_length=64,
+        description="Invite code, required for new accounts in invite-only mode",
+    )
 
 
 class UserSyncResponse(BaseModel):

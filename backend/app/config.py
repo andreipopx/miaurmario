@@ -168,6 +168,27 @@ class Settings(BaseSettings):
     #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     integrations_token_encryption_key: str | None = Field(default=None)
 
+    # Admin panel: AI cost estimate defaults (editable at runtime from the admin
+    # panel; these are only the fallbacks). Prices are USD per 1M tokens
+    # (default: DeepSeek off-peak), converted with USD_EUR_RATE.
+    ai_price_input_usd_per_m: float = Field(default=0.15, ge=0)
+    ai_price_output_usd_per_m: float = Field(default=0.60, ge=0)
+    usd_eur_rate: float = Field(default=0.92, gt=0)
+    ai_monthly_budget_eur: float | None = Field(default=None, ge=0)
+
+    # Admin panel: system status. BACKUP_STATUS_PATH points at the host's
+    # last-backup.json mounted read-only into the backend container, e.g.
+    #   /var/lib/backup-pop/last-backup.json:/run/backup-status.json:ro
+    backup_status_path: str | None = Field(default=None)
+    # Build identification shown in the admin panel (injected at deploy time).
+    app_version: str | None = Field(default=None)
+    git_sha: str | None = Field(default=None)
+    # Spotify apps in development mode allow at most this many users.
+    spotify_dev_mode_slots: int = Field(default=5, ge=0)
+
+    # Feedback inbox: screenshot upload limit.
+    feedback_max_upload_mb: int = Field(default=5, ge=1, le=20)
+
     @property
     def effective_ai_vision_enabled(self) -> bool:
         """Whether internal vision (auto-tagging) is active.

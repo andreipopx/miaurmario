@@ -40,6 +40,7 @@ class OutfitSource(enum.StrEnum):
     on_demand = "on_demand"
     manual = "manual"
     pairing = "pairing"
+    stinky_chat = "stinky_chat"
 
 
 class Outfit(Base):

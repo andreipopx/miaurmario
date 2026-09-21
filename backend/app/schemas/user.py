@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -103,3 +104,5 @@ class AuthConfigResponse(BaseModel):
     magic_link: AuthConfigMagicLink = AuthConfigMagicLink(enabled=False)
     password: AuthConfigPassword = AuthConfigPassword(enabled=False)
     dev_mode: bool = False
+    # "invite_only" = closed beta: the login page offers the waitlist.
+    signup_mode: Literal["open", "invite_only"] = "open"

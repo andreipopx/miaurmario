@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PillGroup, SectionCard, useAdminErrorMessage } from '@/components/admin/shared';
+import { WaitlistSection } from '@/components/admin/waitlist-section';
 import type { Invite, SignupMode } from '@/lib/admin';
 import { useCreateInvite, useInvites, useRevokeInvite, useSetSignupMode, useSignupMode } from '@/lib/hooks/use-admin';
 
@@ -137,6 +138,8 @@ export function SignupSection() {
         </p>
       </SectionCard>
 
+      <WaitlistSection />
+
       <SectionCard title={t('create.title')} description={t('create.description')}>
         <CreateInviteForm />
       </SectionCard>
@@ -162,6 +165,9 @@ export function SignupSection() {
                   </span>
                 </div>
                 {inv.note && <p className="mt-1 text-sm">{inv.note}</p>}
+                {inv.email && (
+                  <p className="mt-1 truncate text-sm text-muted-foreground">{t('boundTo', { email: inv.email })}</p>
+                )}
                 <p className="mt-1 text-xs text-muted-foreground">
                   {inv.expires_at
                     ? t('expiresOn', { date: format.dateTime(new Date(inv.expires_at), { dateStyle: 'medium' }) })

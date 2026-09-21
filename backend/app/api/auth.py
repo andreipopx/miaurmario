@@ -27,6 +27,7 @@ from app.schemas.user import (
     UserSyncRequest,
     UserSyncResponse,
 )
+from app.services.app_settings import get_signup_mode
 from app.services.signup import (
     SignupBlockedError,
     authorize_signup,
@@ -109,7 +110,7 @@ async def mobile_oidc_callback(request: Request) -> RedirectResponse:
 
 
 @router.get("/config", response_model=AuthConfigResponse)
-async def get_auth_config() -> AuthConfigResponse:
+async def get_auth_config(db: Annotated[AsyncSession, Depends(get_db)]) -> AuthConfigResponse:
     oidc_enabled = _oidc_configured()
     return AuthConfigResponse(
         oidc=AuthConfigOIDC(
@@ -122,6 +123,7 @@ async def get_auth_config() -> AuthConfigResponse:
         magic_link=AuthConfigMagicLink(enabled=_magic_link_configured()),
         password=AuthConfigPassword(enabled=settings.password_login_enabled),
         dev_mode=_is_dev_mode(),
+        signup_mode=await get_signup_mode(db),
     )
 
 
@@ -325,12 +327,15 @@ async def request_magic_link(
 
     invite_code: str | None = None
     if user is None:
-        # Unknown email = would create an account: apply the sign-up gate now so
-        # the UI can say "closed beta" instead of emailing a link that fails.
+        # Unknown email = would create an account: apply the sign-up gate now.
+        # When it refuses, answer exactly like a sent link (202, nothing sent) so
+        # the endpoint never tells whether an email has an account; the login
+        # page always offers the waitlist while sign-up is invite-only.
         try:
             await check_signup_allowed(db, email_l, payload.invite)
         except SignupBlockedError as e:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.detail()) from None
+            logger.info("Magic link not sent: sign-up gate refused (%s)", e.code)
+            return MagicLinkAcceptedResponse()
         try:
             invite_code = normalize_invite_code(payload.invite)
         except SignupBlockedError:

@@ -12,7 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import admin as admin_api
 from app.config import get_settings
-from app.models.admin import AccountDeletion, AdminAuditLog, FeedbackReport
+from app.models.admin import (
+    AccountDeletion,
+    AdminAuditLog,
+    FeedbackReport,
+    InviteCode,
+    WaitlistRequest,
+)
 from app.models.chat import ChatConversation, ChatMessage
 from app.models.family import Family, FamilyInvite
 from app.models.friendship import Friendship, FriendshipStatus
@@ -357,11 +363,25 @@ class TestJob:
                 outfit_id=friends_outfit.id, user_id=target.id, rating=4, scope=RatingScope.public
             )
         )
+        # Closed beta: their approved waitlist request and the invite bound to them.
+        bound = InviteCode(
+            id=uuid.uuid4(),
+            code=f"WL{uuid.uuid4().hex[:8].upper()}",
+            max_uses=1,
+            uses=1,
+            email=target.email.lower(),
+        )
+        db_session.add(bound)
+        await db_session.flush()
+        db_session.add(
+            WaitlistRequest(email=target.email.lower(), status="approved", invite_id=bound.id)
+        )
         deletion = AccountDeletion(
             user_id=target.id, email_sha256=email_sha256(target.email), requested_by=admin_user.id
         )
         db_session.add(deletion)
         await db_session.commit()
+        bound_id, target_email = bound.id, target.email.lower()
         target_id, conv_id, shared_id = target.id, conv.id, shared.id
         friend_id, friends_outfit_id = friend.id, friends_outfit.id
         deletion_id = deletion.id
@@ -426,3 +446,10 @@ class TestJob:
         assert await db_session.get(User, friend_id) is not None
         assert await count("SELECT count(*) FROM outfits WHERE id = :o", o=friends_outfit_id) == 1
         assert await db_session.get(User, target_id) is None
+        assert (
+            await count("SELECT count(*) FROM waitlist_requests WHERE email = :e", e=target_email)
+            == 0
+        )
+        invite = await db_session.get(InviteCode, bound_id, populate_existing=True)
+        assert invite.email is None
+        assert invite.revoked_at is not None

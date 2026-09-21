@@ -1,11 +1,12 @@
-"""Site-admin panel: overview, AI cost settings, sign-up mode and invites,
+"""Site-admin panel: overview, AI cost settings, sign-up mode, invites and waitlist,
 feedback inbox, system status, global announcement and the audit log.
 
 Every endpoint requires a site admin (ADMIN_EMAILS); every mutation writes an
 ``admin_audit_log`` row in the same transaction.
 """
 
-from datetime import UTC, datetime
+import logging
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
@@ -19,11 +20,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.admin import require_site_admin
 from app.config import get_settings
 from app.database import get_db
-from app.models.admin import AdminAuditLog, FeedbackReport, InviteCode
+from app.models.admin import AdminAuditLog, FeedbackReport, InviteCode, WaitlistRequest
 from app.models.user import User
 from app.services import app_settings as app_cfg
 from app.services.admin_stats import audit, overview, system_status, uploads_usage
 from app.services.signup import generate_invite_code
+from app.utils.email import send_waitlist_approved_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -114,6 +118,7 @@ class InviteResponse(BaseModel):
     created_at: datetime
     status: Literal["active", "revoked", "expired", "used_up"]
     link: str
+    email: str | None = None
 
 
 def _invite_response(invite: InviteCode) -> InviteResponse:
@@ -138,6 +143,7 @@ def _invite_response(invite: InviteCode) -> InviteResponse:
         created_at=invite.created_at,
         status=state,  # type: ignore[arg-type]
         link=f"{origin}/login?invite={invite.code}",
+        email=invite.email,
     )
 
 
@@ -198,6 +204,169 @@ async def revoke_invite(invite_id: UUID, db: DB, admin: AdminUser) -> InviteResp
         await db.commit()
         await db.refresh(invite)
     return _invite_response(invite)
+
+
+# --- Waitlist -----------------------------------------------------------------------------
+
+WAITLIST_INVITE_DAYS = 14
+
+
+class WaitlistItem(BaseModel):
+    id: UUID
+    email: str
+    name: str | None
+    message: str | None
+    locale: str
+    status: Literal["pending", "approved", "rejected"]
+    created_at: datetime
+    decided_at: datetime | None
+    invite_code: str | None = None
+
+
+class WaitlistListResponse(BaseModel):
+    items: list[WaitlistItem]
+    pending_count: int
+
+
+class WaitlistDecision(BaseModel):
+    ids: list[UUID] = Field(..., min_length=1, max_length=100)
+    action: Literal["approve", "reject"]
+
+
+class WaitlistDecisionResult(BaseModel):
+    approved: int = 0
+    rejected: int = 0
+    skipped: int = 0
+    emails_failed: int = 0
+
+
+async def _pending_waitlist_count(db: AsyncSession) -> int:
+    return int(
+        (
+            await db.execute(
+                select(func.count(WaitlistRequest.id)).where(WaitlistRequest.status == "pending")
+            )
+        ).scalar_one()
+    )
+
+
+async def _unique_invite_code(db: AsyncSession) -> str:
+    for _ in range(5):
+        code = generate_invite_code()
+        exists = (
+            await db.execute(select(InviteCode.id).where(InviteCode.code == code))
+        ).scalar_one_or_none()
+        if exists is None:
+            return code
+    raise HTTPException(
+        status_code=500, detail="Could not generate a unique code"
+    )  # pragma: no cover
+
+
+@router.get("/waitlist", response_model=WaitlistListResponse)
+async def list_waitlist(
+    db: DB,
+    _admin: AdminUser,
+    status_filter: Literal["pending", "approved", "rejected"] | None = Query(
+        "pending", alias="status"
+    ),
+    limit: int = Query(100, ge=1, le=500),
+) -> WaitlistListResponse:
+    query = select(WaitlistRequest, InviteCode.code).outerjoin(
+        InviteCode, InviteCode.id == WaitlistRequest.invite_id
+    )
+    if status_filter:
+        query = query.where(WaitlistRequest.status == status_filter)
+    order = (
+        WaitlistRequest.created_at.asc()
+        if status_filter == "pending"
+        else WaitlistRequest.created_at.desc()
+    )
+    rows = (
+        await db.execute(
+            query.order_by(order).limit(limit).execution_options(populate_existing=True)
+        )
+    ).all()
+    return WaitlistListResponse(
+        items=[
+            WaitlistItem(
+                id=w.id,
+                email=w.email,
+                name=w.name,
+                message=w.message,
+                locale=w.locale,
+                status=w.status,  # type: ignore[arg-type]
+                created_at=w.created_at,
+                decided_at=w.decided_at,
+                invite_code=code,
+            )
+            for w, code in rows
+        ],
+        pending_count=await _pending_waitlist_count(db),
+    )
+
+
+@router.post("/waitlist/decide", response_model=WaitlistDecisionResult)
+async def decide_waitlist(
+    data: WaitlistDecision, db: DB, admin: AdminUser
+) -> WaitlistDecisionResult:
+    """Approve (single-use invite bound to the email, 14 days, emailed) or reject
+    (no email) pending requests, in bulk. Already-decided rows are skipped."""
+    rows = (
+        (
+            await db.execute(
+                select(WaitlistRequest)
+                .where(WaitlistRequest.id.in_(data.ids))
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    result = WaitlistDecisionResult(skipped=len(set(data.ids)) - len(rows))
+    now = datetime.now(UTC)
+    to_email: list[tuple[str, str, str | None, str]] = []
+    origin = get_settings().magic_link_origin
+    for req in rows:
+        if req.status != "pending":
+            result.skipped += 1
+            continue
+        req.decided_at = now
+        req.decided_by = admin.id
+        if data.action == "reject":
+            req.status = "rejected"
+            result.rejected += 1
+            audit(db, admin, "waitlist.reject", request_id=str(req.id))
+            continue
+        code = await _unique_invite_code(db)
+        invite = InviteCode(
+            id=uuid4(),
+            code=code,
+            note="Lista de espera",
+            max_uses=1,
+            expires_at=now + timedelta(days=WAITLIST_INVITE_DAYS),
+            created_by=admin.id,
+            email=req.email,
+        )
+        db.add(invite)
+        await db.flush()
+        req.status = "approved"
+        req.invite_id = invite.id
+        result.approved += 1
+        audit(db, admin, "waitlist.approve", request_id=str(req.id), code=code)
+        to_email.append((req.email, f"{origin}/login?invite={code}", req.name, req.locale))
+    await db.commit()
+
+    # After the commit: a failed email never undoes the approval (the admin can
+    # still copy the invite link from Registro).
+    for email, url, name, locale in to_email:
+        try:
+            await send_waitlist_approved_email(email, url, name=name, locale=locale)
+        except Exception:
+            result.emails_failed += 1
+            logger.exception("Waitlist approval email failed")
+    return result
 
 
 # --- Feedback inbox ---------------------------------------------------------------------------
@@ -326,7 +495,10 @@ async def get_feedback_screenshot(feedback_id: UUID, db: DB, _admin: AdminUser) 
 @router.get("/badge")
 async def get_badge(db: DB, _admin: AdminUser) -> dict[str, int]:
     """Counters for the admin entry in the profile menu."""
-    return {"feedback_new": await _new_feedback_count(db)}
+    return {
+        "feedback_new": await _new_feedback_count(db),
+        "waitlist_pending": await _pending_waitlist_count(db),
+    }
 
 
 # --- System ------------------------------------------------------------------------------

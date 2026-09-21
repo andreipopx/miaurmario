@@ -5,7 +5,11 @@ import logging
 import httpx
 
 from app.config import get_settings
-from app.utils.email_templates import render_magic_link_email
+from app.utils.email_templates import (
+    RenderedEmail,
+    render_magic_link_email,
+    render_waitlist_approved_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +21,20 @@ class EmailNotConfiguredError(RuntimeError):
 
 
 async def send_magic_link_email(to: str, url: str, *, locale: str | None = None) -> None:
+    await _send(to, render_magic_link_email(url, locale=locale))
+
+
+async def send_waitlist_approved_email(
+    to: str, invite_url: str, *, name: str | None = None, locale: str | None = None
+) -> None:
+    await _send(to, render_waitlist_approved_email(invite_url=invite_url, name=name, locale=locale))
+
+
+async def _send(to: str, email: RenderedEmail) -> None:
     settings = get_settings()
     if not settings.resend_api_key:
         raise EmailNotConfiguredError("RESEND_API_KEY not set")
 
-    email = render_magic_link_email(url, locale=locale)
     payload = {
         "from": settings.resend_from_email,
         "to": [to],

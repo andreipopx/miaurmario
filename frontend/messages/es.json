@@ -110,7 +110,8 @@
       "invited": "Te han invitado a Miaurmario. Escribe tu email para crear tu cuenta.",
       "inviteInvalid": "Esta invitación ya no es válida. Pide otra a quien te la envió.",
       "closedBetaTitle": "Miaurmario está en beta cerrada",
-      "closedBetaBody": "Pide una invitación para crear tu cuenta. Si ya tienes cuenta, revisa que el email sea el mismo."
+      "closedBetaBody": "Pide una invitación para crear tu cuenta. Si ya tienes cuenta, revisa que el email sea el mismo.",
+      "sentBodyInviteOnly": "Si tienes cuenta (o una invitación válida para este correo), te llegará un enlace para entrar. Caduca en 15 minutos."
     },
     "noPasswords": "Sin contraseñas obligatorias: te mandamos un enlace mágico.",
     "termsRich": "Al entrar aceptas la <link>privacidad y los términos</link>.",
@@ -127,6 +128,24 @@
       "rateLimited": "Demasiados intentos. Espera unos minutos o entra con un enlace por email.",
       "unavailable": "No podemos iniciar sesión ahora mismo. Inténtalo de nuevo en un momento.",
       "forgotHint": "¿Olvidaste la contraseña? Pide un enlace por email y cámbiala en Ajustes → Seguridad."
+    },
+    "waitlist": {
+      "title": "Miaurmario está en beta cerrada",
+      "body": "Abrimos la puerta poco a poco. Apúntate a la lista de espera y Stinky te avisará cuando haya sitio.",
+      "link": "¿No tienes cuenta? Apúntate a la lista de espera",
+      "formTitle": "Apúntate a la lista de espera",
+      "emailLabel": "Tu correo",
+      "nameLabel": "Tu nombre (opcional)",
+      "namePlaceholder": "Cómo te llamamos",
+      "messageLabel": "¿Por qué quieres entrar? (opcional)",
+      "messagePlaceholder": "Cuéntanoslo en una frase…",
+      "counter": "{count}/{max}",
+      "submit": "Apuntarme",
+      "cancel": "Ahora no",
+      "doneTitle": "¡Apuntado!",
+      "doneBody": "Te avisaremos por correo en cuanto haya sitio para ti.",
+      "error": "No hemos podido apuntarte. Inténtalo de nuevo en un momento.",
+      "rateLimited": "Demasiados intentos. Espera un rato antes de volver a probar."
     }
   },
   "onboarding": {
@@ -256,7 +275,7 @@
     "viewProfile": "Tu perfil y ajustes",
     "sendFeedback": "Enviar sugerencia o fallo",
     "admin": "Admin",
-    "adminBadge": "{count, plural, one {# sugerencia nueva} other {# sugerencias nuevas}}",
+    "adminBadge": "{count, plural, one {# aviso pendiente} other {# avisos pendientes}}",
     "friends": "Amigos",
     "newActivity": "{count, plural, one {# novedad} other {# novedades}}",
     "stinky": "Habla con Stinky",
@@ -2425,7 +2444,25 @@
       "codeCopied": "Código copiado.",
       "copyFailed": "No se pudo copiar.",
       "revoke": "Revocar",
-      "revoked": "Invitación revocada."
+      "revoked": "Invitación revocada.",
+      "boundTo": "Solo para {email}",
+      "waitlist": {
+        "title": "Lista de espera",
+        "description": "Gente que quiere entrar en la beta. Al aprobar creamos una invitación de un solo uso para su correo (caduca en 14 días) y se la enviamos. Rechazar no envía nada.",
+        "pending": "Pendientes",
+        "approved": "Aprobadas",
+        "rejected": "Rechazadas",
+        "empty": "Nadie esperando. Stinky se echa una siesta.",
+        "emptyDecided": "Nada por aquí todavía.",
+        "selectAll": "Seleccionar todo",
+        "select": "Seleccionar {email}",
+        "approveSelected": "Aprobar ({count})",
+        "rejectSelected": "Rechazar ({count})",
+        "approvedToast": "{count, plural, one {# solicitud aprobada} other {# solicitudes aprobadas}}. Les hemos enviado su invitación.",
+        "emailsFailed": "{count, plural, one {# correo no se pudo enviar} other {# correos no se pudieron enviar}}: copia el enlace desde Invitaciones.",
+        "rejectedToast": "{count, plural, one {# solicitud rechazada} other {# solicitudes rechazadas}}.",
+        "requestedOn": "Lo pidió el {date}"
+      }
     },
     "inbox": {
       "openScreenshot": "Ver captura",

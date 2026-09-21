@@ -526,3 +526,74 @@ def render_test_email(*, locale: str | None = None, origin: str | None = None) -
         html=html,
         text=_text(c["heading"], c["body"], _text_footer(loc, origin)),
     )
+
+
+# --------------------------------------------------------------------------- #
+# Waitlist approved (closed beta)
+# --------------------------------------------------------------------------- #
+
+_WAITLIST_APPROVED = {
+    "es": {
+        "subject": "¡Estás dentro de Miaurmario!",
+        "preheader": "Stinky te abre la puerta: tu invitación te espera.",
+        "heading": "¡Estás dentro! Stinky te abre la puerta",
+        "intro": "Miau{name}. Te apuntaste a la lista de espera de Miaurmario y ya tienes sitio "
+        "en la beta. Pulsa el botón, escribe este mismo correo y te mandamos tu enlace "
+        "para entrar.",
+        "cta": "Entrar en Miaurmario",
+        "validity": "La invitación es solo para este correo, sirve una vez y caduca en "
+        "{days} días.",
+        "ignore": "¿No te suena haberte apuntado? Ignora este correo y no pasará nada.",
+    },
+    "en": {
+        "subject": "You're in: welcome to Miaurmario!",
+        "preheader": "Stinky is holding the door: your invitation is waiting.",
+        "heading": "You're in! Stinky is holding the door",
+        "intro": "Meow{name}. You joined the Miaurmario waitlist and there's a spot for you in "
+        "the beta now. Tap the button, enter this same email and we'll send your sign-in "
+        "link.",
+        "cta": "Join Miaurmario",
+        "validity": "The invitation only works for this email, once, and expires in {days} days.",
+        "ignore": "Don't remember signing up? Ignore this email and nothing will happen.",
+    },
+}
+
+
+def render_waitlist_approved_email(
+    *,
+    invite_url: str,
+    name: str | None = None,
+    locale: str | None = None,
+    valid_days: int = 14,
+    origin: str | None = None,
+) -> RenderedEmail:
+    loc = normalize_locale(locale)
+    c = _WAITLIST_APPROVED[loc]
+    name_part = f", {name.strip()}" if name and name.strip() else ""
+    intro = c["intro"].format(name=name_part)
+    validity = c["validity"].format(days=valid_days)
+    body = _p(escape(intro)) + _p(
+        f"<strong>{escape(validity)}</strong>",
+        style=f"font-size:14px; color:{INK}; background:{PINK_SOFT}; padding:10px 14px; "
+        "border-radius:14px;",
+    )
+    html = _layout(
+        locale=loc,
+        title=c["subject"],
+        preheader=c["preheader"],
+        heading=c["heading"],
+        body_html=body,
+        cta_label=c["cta"],
+        cta_url=invite_url,
+        after_cta_html=_p(escape(c["ignore"]), style="margin:0;"),
+        origin=origin,
+    )
+    text = _text(
+        c["heading"],
+        intro,
+        f"{c['cta']}: {invite_url}",
+        validity,
+        c["ignore"],
+        _text_footer(loc, origin),
+    )
+    return RenderedEmail(subject=c["subject"], html=html, text=text)

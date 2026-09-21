@@ -48,6 +48,11 @@ function TabPills({ active, onSelect }: { active: AdminTab; onSelect: (tab: Admi
                   {badge.feedback_new}
                 </span>
               ) : null}
+              {tab === 'signup' && badge?.waitlist_pending ? (
+                <span className="rounded-full bg-foreground px-1.5 text-[11px] font-bold leading-5 text-background">
+                  {badge.waitlist_pending}
+                </span>
+              ) : null}
             </button>
           );
         })}

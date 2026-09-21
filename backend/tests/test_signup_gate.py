@@ -83,13 +83,22 @@ class TestMagicLinkRequest:
         send.assert_awaited_once()
 
     async def test_invite_only_unknown_email_without_invite(
-        self, client, magic_link_enabled, invite_only
+        self, client, db_session, magic_link_enabled, invite_only, test_user
     ):
+        """Same answer as for an existing account (no enumeration), but no link."""
+        email = _email()
         with patch.object(auth_module, "send_magic_link_email", new=AsyncMock()) as send:
-            r = await client.post(REQUEST_URL, json={"email": _email()})
-        assert r.status_code == 403
-        assert r.json()["detail"]["code"] == "invite_required"
-        send.assert_not_awaited()
+            r = await client.post(REQUEST_URL, json={"email": email})
+            known = await client.post(REQUEST_URL, json={"email": test_user.email})
+        assert r.status_code == known.status_code == 202
+        assert r.json() == known.json()
+        send.assert_awaited_once()  # only the existing account got a link
+        rows = (
+            await db_session.execute(
+                select(func.count(MagicLinkToken.id)).where(MagicLinkToken.email == email)
+            )
+        ).scalar_one()
+        assert rows == 0
 
     async def test_invite_only_existing_user_can_log_in(
         self, client, magic_link_enabled, invite_only, test_user
@@ -114,7 +123,9 @@ class TestMagicLinkRequest:
         # Requesting does not consume the invite
         assert await _uses(db_session, invite) == 0
 
-    @pytest.mark.parametrize("state", ["revoked", "expired", "used_up", "unknown", "malformed"])
+    @pytest.mark.parametrize(
+        "state", ["revoked", "expired", "used_up", "unknown", "malformed", "other_email"]
+    )
     async def test_unusable_invites_rejected(
         self, client, db_session, magic_link_enabled, invite_only, state
     ):
@@ -126,9 +137,12 @@ class TestMagicLinkRequest:
             code = (await _invite(db_session, expires_at=now - timedelta(hours=1))).code
         elif state == "used_up":
             code = (await _invite(db_session, max_uses=1, uses=1)).code
-        r = await client.post(REQUEST_URL, json={"email": _email(), "invite": code})
-        assert r.status_code == 403
-        assert r.json()["detail"]["code"] == "invite_invalid"
+        elif state == "other_email":
+            code = (await _invite(db_session, max_uses=1, email="someone@example.com")).code
+        with patch.object(auth_module, "send_magic_link_email", new=AsyncMock()) as send:
+            r = await client.post(REQUEST_URL, json={"email": _email(), "invite": code})
+        assert r.status_code == 202
+        send.assert_not_awaited()
 
     async def test_admin_email_bypasses_gate(
         self, client, magic_link_enabled, invite_only, monkeypatch
@@ -159,6 +173,32 @@ class TestMagicLinkVerify:
         assert r.status_code == 403
         assert r.json()["detail"]["code"] == "invite_invalid"
         assert not await _user_exists(db_session, other)
+
+    async def test_email_bound_invite_only_works_for_that_email(
+        self, client, db_session, magic_link_enabled, invite_only
+    ):
+        owner = _email()
+        invite = await _invite(db_session, max_uses=1, email=owner)
+        intruder = _email()
+        r = await client.post(
+            VERIFY_URL, json={"token": await _token(db_session, intruder, invite.code)}
+        )
+        assert r.status_code == 403
+        assert r.json()["detail"]["code"] == "invite_invalid"
+        assert not await _user_exists(db_session, intruder)
+        assert await _uses(db_session, invite) == 0
+
+        # The owner's email (any casing on the request side) still gets in.
+        with patch.object(auth_module, "send_magic_link_email", new=AsyncMock()) as send:
+            r = await client.post(REQUEST_URL, json={"email": owner.upper(), "invite": invite.code})
+        assert r.status_code == 202
+        send.assert_awaited_once()
+        r = await client.post(
+            VERIFY_URL, json={"token": await _token(db_session, owner, invite.code)}
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["is_new_user"] is True
+        assert await _uses(db_session, invite) == 1
 
     async def test_mode_switched_after_request_blocks_creation(
         self, client, db_session, magic_link_enabled, invite_only

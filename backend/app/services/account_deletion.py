@@ -9,7 +9,8 @@ then removes, in one transaction:
   action (families.created_by, family_invites.invited_by, and anything a future
   feature adds) are discovered from ``pg_constraint`` at run time, so new
   tables (friends, listening history, chat ...) are covered without code changes;
-* magic-link tokens requested for the user's email before the account existed;
+* magic-link tokens requested for the user's email before the account existed,
+  their waitlist request and the address on email-bound invites;
 * the ``users`` row itself;
 
 and afterwards the upload directory ``STORAGE_PATH/<user_id>`` (item photos,
@@ -31,7 +32,7 @@ from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.models.admin import AccountDeletion
+from app.models.admin import AccountDeletion, InviteCode, WaitlistRequest
 from app.models.family import Family
 from app.models.magic_link import MagicLinkToken
 from app.models.user import User
@@ -144,6 +145,18 @@ async def delete_user_rows(db: AsyncSession, user: User) -> dict[str, Any]:
     # Pre-signup magic-link tokens are keyed by email only (user_id NULL).
     result = await db.execute(delete(MagicLinkToken).where(MagicLinkToken.email == user.email))
     summary["magic_link_tokens_by_email"] = result.rowcount or 0
+
+    # Waitlist request and email-bound invites are keyed by email too. The invite
+    # row stays for the admin's history, revoked and without the address.
+    email_l = (user.email or "").strip().lower()
+    result = await db.execute(delete(WaitlistRequest).where(WaitlistRequest.email == email_l))
+    summary["waitlist_requests_by_email"] = result.rowcount or 0
+    result = await db.execute(
+        update(InviteCode)
+        .where(InviteCode.email == email_l)
+        .values(email=None, revoked_at=func.coalesce(InviteCode.revoked_at, func.now()))
+    )
+    summary["invites_unbound"] = result.rowcount or 0
 
     await db.execute(delete(User).where(User.id == user.id))
     await db.flush()

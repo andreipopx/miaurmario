@@ -51,28 +51,34 @@ def normalize_invite_code(code: str | None) -> str | None:
     return code.upper()
 
 
-def _usable_clause(now: datetime):
+def _usable_clause(now: datetime, email: str | None):
+    # Invites bound to an email (waitlist approvals) only work for that email.
+    email_l = (email or "").strip().lower()
     return (
         InviteCode.revoked_at.is_(None),
         or_(InviteCode.expires_at.is_(None), InviteCode.expires_at > now),
         or_(InviteCode.max_uses.is_(None), InviteCode.uses < InviteCode.max_uses),
+        or_(InviteCode.email.is_(None), InviteCode.email == email_l),
     )
 
 
-async def find_usable_invite(db: AsyncSession, code: str) -> InviteCode | None:
+async def find_usable_invite(
+    db: AsyncSession, code: str, email: str | None = None
+) -> InviteCode | None:
     now = datetime.now(UTC)
     result = await db.execute(
-        select(InviteCode).where(InviteCode.code == code, *_usable_clause(now))
+        select(InviteCode).where(InviteCode.code == code, *_usable_clause(now, email))
     )
     return result.scalar_one_or_none()
 
 
-async def redeem_invite(db: AsyncSession, code: str) -> bool:
-    """Atomically consume one use. False when the code is unknown/used up/expired/revoked."""
+async def redeem_invite(db: AsyncSession, code: str, email: str | None = None) -> bool:
+    """Atomically consume one use. False when the code is unknown/used up/expired/revoked
+    or bound to a different email."""
     now = datetime.now(UTC)
     result = await db.execute(
         update(InviteCode)
-        .where(InviteCode.code == code, *_usable_clause(now))
+        .where(InviteCode.code == code, *_usable_clause(now, email))
         .values(uses=InviteCode.uses + 1)
         .returning(InviteCode.id)
         .execution_options(synchronize_session=False)
@@ -96,7 +102,7 @@ async def check_signup_allowed(db: AsyncSession, email: str, invite_code: str | 
         raise SignupBlockedError(
             "invite_required", "Miaurmario is in closed beta: an invitation is required."
         )
-    if await find_usable_invite(db, code) is None:
+    if await find_usable_invite(db, code, email) is None:
         raise SignupBlockedError("invite_invalid", "This invitation is not valid anymore.")
 
 
@@ -115,7 +121,7 @@ async def authorize_signup(db: AsyncSession, email: str, invite_code: str | None
             return
         raise
     if code is not None:
-        redeemed = await redeem_invite(db, code)
+        redeemed = await redeem_invite(db, code, email)
         if redeemed or admin or mode == "open":
             return
         raise SignupBlockedError("invite_invalid", "This invitation is not valid anymore.")

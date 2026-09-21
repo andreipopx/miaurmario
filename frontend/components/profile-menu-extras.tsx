@@ -8,13 +8,14 @@ import { MessageSquareHeart, ShieldCheck } from 'lucide-react';
 
 import { AppFeedbackDialog } from '@/components/app-feedback-dialog';
 import { isActivePath } from '@/components/nav-items';
+import { adminBadgeTotal } from '@/lib/admin';
 import { useAdminBadge, useIsSiteAdmin } from '@/lib/hooks/use-admin';
 import { cn } from '@/lib/utils';
 
 const row =
   'flex min-h-[44px] w-full items-center gap-3 rounded-full px-4 text-[15px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
-/** "Enviar sugerencia o fallo" for everyone + "Admin" (with new-feedback badge) for site admins. */
+/** "Enviar sugerencia o fallo" for everyone + "Admin" (badge: new feedback + pending waitlist) for site admins. */
 export function ProfileMenuExtras({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations('nav');
   const pathname = usePathname();
@@ -22,7 +23,7 @@ export function ProfileMenuExtras({ onNavigate }: { onNavigate?: () => void }) {
   const { data: badge } = useAdminBadge();
   const [open, setOpen] = useState(false);
   const adminActive = isActivePath(pathname, '/dashboard/admin');
-  const newCount = badge?.feedback_new ?? 0;
+  const newCount = adminBadgeTotal(badge);
 
   return (
     <>

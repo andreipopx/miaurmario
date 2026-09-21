@@ -4,6 +4,7 @@ from app.models.admin import (
     AppSetting,
     FeedbackReport,
     InviteCode,
+    WaitlistRequest,
 )
 from app.models.chat import ChatConversation, ChatMessage
 from app.models.family import Family, FamilyInvite
@@ -40,6 +41,7 @@ __all__ = [
     "AppSetting",
     "FeedbackReport",
     "InviteCode",
+    "WaitlistRequest",
     "ChatConversation",
     "ChatMessage",
     "Family",

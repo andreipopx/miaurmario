@@ -1,4 +1,4 @@
-"""Site-admin tables: audit log, runtime settings, invites, feedback, deletions."""
+"""Site-admin tables: audit log, runtime settings, invites, waitlist, feedback, deletions."""
 
 import uuid
 from datetime import datetime
@@ -63,6 +63,42 @@ class InviteCode(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    # When set (lower-case), the invite only works for this email (waitlist approvals).
+    email: Mapped[str | None] = mapped_column(String(255))
+
+
+WAITLIST_STATUSES = ("pending", "approved", "rejected")
+
+
+class WaitlistRequest(Base):
+    """Someone asking to join while sign-up is invite-only.
+
+    Public, unauthenticated input: the email is normalised (strip + lower) and
+    unique, so asking twice never creates a second row.
+    """
+
+    __tablename__ = "waitlist_requests"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    name: Mapped[str | None] = mapped_column(String(100))
+    message: Mapped[str | None] = mapped_column(String(280))
+    locale: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="es", server_default="es"
+    )
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending", server_default="pending", index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    invite_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("invite_codes.id", ondelete="SET NULL"), nullable=True
     )
 
 

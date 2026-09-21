@@ -110,7 +110,8 @@
       "invited": "You've been invited to Miaurmario. Enter your email to create your account.",
       "inviteInvalid": "This invite is no longer valid. Ask whoever sent it for a new one.",
       "closedBetaTitle": "Miaurmario is in closed beta",
-      "closedBetaBody": "Ask for an invite to create your account. If you already have one, check it's the same email."
+      "closedBetaBody": "Ask for an invite to create your account. If you already have one, check it's the same email.",
+      "sentBodyInviteOnly": "If you have an account (or a valid invitation for this email), a sign-in link is on its way. It expires in 15 minutes."
     },
     "noPasswords": "No password required: we email you a magic link.",
     "termsRich": "By signing in you accept the <link>privacy policy and terms</link>.",
@@ -127,6 +128,24 @@
       "rateLimited": "Too many attempts. Wait a few minutes or sign in with an email link.",
       "unavailable": "We can't sign you in right now. Please try again in a moment.",
       "forgotHint": "Forgot your password? Ask for an email link and change it in Settings → Security."
+    },
+    "waitlist": {
+      "title": "Miaurmario is in closed beta",
+      "body": "We're opening the door a little at a time. Join the waitlist and Stinky will let you know when there's a spot.",
+      "link": "No account? Join the waitlist",
+      "formTitle": "Join the waitlist",
+      "emailLabel": "Your email",
+      "nameLabel": "Your name (optional)",
+      "namePlaceholder": "What should we call you",
+      "messageLabel": "Why do you want in? (optional)",
+      "messagePlaceholder": "Tell us in one sentence…",
+      "counter": "{count}/{max}",
+      "submit": "Join the waitlist",
+      "cancel": "Not now",
+      "doneTitle": "You're on the list!",
+      "doneBody": "We'll email you as soon as there's a spot for you.",
+      "error": "We couldn't add you. Please try again in a moment.",
+      "rateLimited": "Too many attempts. Wait a bit before trying again."
     }
   },
   "onboarding": {
@@ -256,7 +275,7 @@
     "viewProfile": "Your profile and settings",
     "sendFeedback": "Send a suggestion or bug",
     "admin": "Admin",
-    "adminBadge": "{count, plural, one {# new suggestion} other {# new suggestions}}",
+    "adminBadge": "{count, plural, one {# pending item} other {# pending items}}",
     "friends": "Friends",
     "newActivity": "{count, plural, one {# new} other {# new}}",
     "stinky": "Chat with Stinky",
@@ -2425,7 +2444,25 @@
       "codeCopied": "Code copied.",
       "copyFailed": "Could not copy.",
       "revoke": "Revoke",
-      "revoked": "Invite revoked."
+      "revoked": "Invite revoked.",
+      "boundTo": "Only for {email}",
+      "waitlist": {
+        "title": "Waitlist",
+        "description": "People who want to join the beta. Approving creates a single-use invitation for their email (expires in 14 days) and emails it. Rejecting sends nothing.",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "empty": "Nobody waiting. Stinky is taking a nap.",
+        "emptyDecided": "Nothing here yet.",
+        "selectAll": "Select all",
+        "select": "Select {email}",
+        "approveSelected": "Approve ({count})",
+        "rejectSelected": "Reject ({count})",
+        "approvedToast": "{count, plural, one {# request approved} other {# requests approved}}. Their invitations are on the way.",
+        "emailsFailed": "{count, plural, one {# email could not be sent} other {# emails could not be sent}}: copy the link from Invitations.",
+        "rejectedToast": "{count, plural, one {# request rejected} other {# requests rejected}}.",
+        "requestedOn": "Asked on {date}"
+      }
     },
     "inbox": {
       "openScreenshot": "Open screenshot",

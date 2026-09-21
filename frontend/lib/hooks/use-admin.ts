@@ -15,9 +15,13 @@ import type {
   FeedbackItem,
   FeedbackKind,
   FeedbackStatus,
+  AdminBadge,
   Invite,
   SignupMode,
   SystemStatus,
+  WaitlistDecisionResult,
+  WaitlistItem,
+  WaitlistStatus,
 } from '@/lib/admin';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 
@@ -54,6 +58,7 @@ export const adminKeys = {
   deletions: ['admin', 'deletions'] as const,
   signup: ['admin', 'signup'] as const,
   invites: ['admin', 'invites'] as const,
+  waitlist: (status: string) => ['admin', 'waitlist', status] as const,
   feedback: (status: string) => ['admin', 'feedback', status] as const,
   badge: ['admin', 'badge'] as const,
   system: ['admin', 'system'] as const,
@@ -76,6 +81,19 @@ export const useSignupMode = (enabled: boolean) =>
 
 export const useInvites = (enabled: boolean) =>
   useAdminQuery<Invite[]>(adminKeys.invites, '/admin/invites', enabled);
+
+export const useWaitlist = (status: WaitlistStatus, enabled: boolean) =>
+  useAdminQuery<{ items: WaitlistItem[]; pending_count: number }>(
+    adminKeys.waitlist(status),
+    '/admin/waitlist',
+    enabled,
+    { status }
+  );
+
+export const useDecideWaitlist = () =>
+  useAdminMutation((data: { ids: string[]; action: 'approve' | 'reject' }) =>
+    api.post<WaitlistDecisionResult>('/admin/waitlist/decide', data)
+  );
 
 export const useAdminFeedback = (status: FeedbackStatus | 'all', enabled: boolean) =>
   useAdminQuery<{ items: FeedbackItem[]; total: number; new_count: number }>(
@@ -107,7 +125,7 @@ export function useAdminBadge() {
   const status = useToken();
   return useQuery({
     queryKey: adminKeys.badge,
-    queryFn: () => api.get<{ feedback_new: number }>('/admin/badge'),
+    queryFn: () => api.get<AdminBadge>('/admin/badge'),
     enabled: isAdmin && status === 'authenticated',
     staleTime: 60 * 1000,
     refetchInterval: 5 * 60 * 1000,

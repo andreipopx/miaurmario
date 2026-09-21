@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { LanguageSwitcher, SHOW_LANGUAGE_SWITCHER } from '@/components/language-switcher';
 import { safeCallbackPath } from '@/lib/magic-link';
 import { inviteFromSearch } from '@/lib/admin';
+import { WaitlistCard } from '@/components/waitlist-card';
 import { LoginMethods } from '@/components/auth/login-methods';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,7 +84,15 @@ function DevLogin({ callbackUrl }: { callbackUrl: string }) {
   );
 }
 
-function MagicLinkForm({ invite }: { invite: string | null }) {
+function MagicLinkForm({
+  invite,
+  inviteOnly,
+  onEmailChange,
+}: {
+  invite: string | null;
+  inviteOnly: boolean;
+  onEmailChange?: (email: string) => void;
+}) {
   const t = useTranslations('login.magicLink');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -91,12 +100,10 @@ function MagicLinkForm({ invite }: { invite: string | null }) {
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [closedBeta, setClosedBeta] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-    setClosedBeta(false);
     setIsLoading(true);
     try {
       const res = await fetch('/api/v1/auth/magic-link/request', {
@@ -104,14 +111,11 @@ function MagicLinkForm({ invite }: { invite: string | null }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(invite ? { email, locale, invite } : { email, locale }),
       });
+      // The backend answers 202 whether or not a link was sent (no account
+      // enumeration); in invite-only mode the copy says so and the waitlist
+      // card stays visible below.
       if (res.status === 202 || res.status === 200) {
         setSent(true);
-      } else if (res.status === 403) {
-        const data = await res.json().catch(() => ({}));
-        const code = data?.detail?.code;
-        if (code === 'invite_invalid') setErrorMsg(t('inviteInvalid'));
-        else if (code === 'invite_required') setClosedBeta(true);
-        else setErrorMsg(t('genericError'));
       } else if (res.status === 429) {
         setErrorMsg(t('rateLimited'));
       } else {
@@ -128,7 +132,9 @@ function MagicLinkForm({ invite }: { invite: string | null }) {
     return (
       <Alert variant="signature" role="status">
         <AlertTitle>{t('sentTitle')}</AlertTitle>
-        <AlertDescription className="text-foreground/80">{t('sentBody')}</AlertDescription>
+        <AlertDescription className="text-foreground/80">
+          {inviteOnly ? t('sentBodyInviteOnly') : t('sentBody')}
+        </AlertDescription>
       </Alert>
     );
   }
@@ -149,17 +155,14 @@ function MagicLinkForm({ invite }: { invite: string | null }) {
           type="email"
           required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            onEmailChange?.(e.target.value);
+          }}
           placeholder={t('emailPlaceholder')}
           className="h-[54px] px-[22px] text-base"
         />
       </div>
-      {closedBeta && (
-        <Alert role="alert">
-          <AlertTitle>{t('closedBetaTitle')}</AlertTitle>
-          <AlertDescription className="text-muted-foreground">{t('closedBetaBody')}</AlertDescription>
-        </Alert>
-      )}
       {errorMsg && (
         <p role="alert" className="px-1 text-sm font-medium text-destructive">
           {errorMsg}
@@ -227,6 +230,9 @@ function LoginContent() {
   const [authMode, setAuthMode] = useState<'loading' | 'oidc' | 'dev' | 'unconfigured'>('loading');
   const [magicLinkEnabled, setMagicLinkEnabled] = useState(false);
   const [passwordEnabled, setPasswordEnabled] = useState(false);
+  const [inviteOnly, setInviteOnly] = useState(false);
+  const [typedEmail, setTypedEmail] = useState<string | undefined>(undefined);
+  const waitlistOpen = searchParams.get('waitlist') === '1';
 
   useEffect(() => {
     getProviders().then((providers) => {
@@ -239,6 +245,7 @@ function LoginContent() {
       .then((data) => {
         setMagicLinkEnabled(!!data?.magic_link?.enabled);
         setPasswordEnabled(!!data?.password?.enabled);
+        setInviteOnly(data?.signup_mode === 'invite_only');
       })
       .catch(() => {});
   }, []);
@@ -278,12 +285,17 @@ function LoginContent() {
 
       <div className="space-y-4">
         <LoginMethods
-          magicLink={magicLinkEnabled ? <MagicLinkForm invite={invite} /> : null}
+          magicLink={
+            magicLinkEnabled ? (
+              <MagicLinkForm invite={invite} inviteOnly={inviteOnly} onEmailChange={setTypedEmail} />
+            ) : null
+          }
           passwordEnabled={passwordEnabled}
           callbackUrl={callbackUrl}
         />
         {authMode === 'oidc' && <OIDCLoginButton callbackUrl={callbackUrl} />}
         {authMode === 'dev' && <DevLogin callbackUrl={callbackUrl} />}
+        {inviteOnly && !invite && <WaitlistCard email={typedEmail} defaultOpen={waitlistOpen} />}
         {authMode === 'unconfigured' && !magicLinkEnabled && (
           <Alert>
             <AlertTitle>{t('notConfiguredTitle')}</AlertTitle>

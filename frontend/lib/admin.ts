@@ -91,7 +91,42 @@ export interface Invite {
   created_at: string;
   status: 'active' | 'revoked' | 'expired' | 'used_up';
   link: string;
+  /** Set on waitlist invites: only this email can use it. */
+  email?: string | null;
 }
+
+export type WaitlistStatus = 'pending' | 'approved' | 'rejected';
+
+export interface WaitlistItem {
+  id: string;
+  email: string;
+  name: string | null;
+  message: string | null;
+  locale: string;
+  status: WaitlistStatus;
+  created_at: string;
+  decided_at: string | null;
+  invite_code: string | null;
+}
+
+export interface WaitlistDecisionResult {
+  approved: number;
+  rejected: number;
+  skipped: number;
+  emails_failed: number;
+}
+
+export interface AdminBadge {
+  feedback_new: number;
+  waitlist_pending?: number;
+}
+
+/** Total shown on the Admin entry of the profile menu. */
+export function adminBadgeTotal(badge: AdminBadge | undefined | null): number {
+  return (badge?.feedback_new ?? 0) + (badge?.waitlist_pending ?? 0);
+}
+
+export const WAITLIST_MESSAGE_MAX = 280;
 
 export type FeedbackKind = 'suggestion' | 'bug' | 'other';
 export type FeedbackStatus = 'new' | 'seen' | 'done';

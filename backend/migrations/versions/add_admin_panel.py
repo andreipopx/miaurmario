@@ -7,8 +7,7 @@ Revision ID: admpanel2609
 Revises: social2609
 Create Date: 2026-09-21
 
-NOTE: chained after ``usrpwd2609`` (origin/main head when written). Other
-feature branches may also chain there; re-chain at integration.
+Chain (release/v3): usrpwd2609 -> music2609 -> stinkychat2609 -> social2609 -> admpanel2609.
 """
 
 from collections.abc import Sequence

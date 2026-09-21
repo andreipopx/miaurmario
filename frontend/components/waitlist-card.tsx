@@ -77,7 +77,7 @@ export function WaitlistCard({ email: typedEmail, defaultOpen = false }: { email
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-3 inline-flex min-h-[44px] items-center gap-2 text-[15px] font-bold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-3 inline-flex min-h-[44px] items-center gap-2 text-left text-[15px] font-bold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Sparkles className="h-4 w-4" aria-hidden />
           {t('link')}

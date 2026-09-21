@@ -11,6 +11,7 @@ import { useDeletePairing } from '@/lib/hooks/use-pairings';
 import { Pairing } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useTagLabel } from '@/lib/tag-labels';
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -37,6 +38,7 @@ interface PairingCardProps {
 export function PairingCard({ pairing, onFeedback, onPreview }: PairingCardProps) {
   const t = useTranslations('pairingCard');
   const tn = useTranslations('nav');
+  const tagLabel = useTagLabel();
   const deletePairing = useDeletePairing();
 
   const handleDelete = async () => {
@@ -95,11 +97,11 @@ export function PairingCard({ pairing, onFeedback, onPreview }: PairingCardProps
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">
-                  {pairing.source_item.name || pairing.source_item.type}
+                  {pairing.source_item.name || tagLabel('types', pairing.source_item.type)}
                 </p>
                 {pairing.source_item.primary_color && (
-                  <p className="text-xs capitalize text-muted-foreground">
-                    {pairing.source_item.primary_color}
+                  <p className="text-xs text-muted-foreground">
+                    {tagLabel('colors', pairing.source_item.primary_color)}
                   </p>
                 )}
               </div>

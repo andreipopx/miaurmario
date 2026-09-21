@@ -42,6 +42,8 @@ import { Stinky } from '@/components/stinky/stinky';
 import { cn } from '@/lib/utils';
 import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
+import { useColorLabel } from '@/lib/tag-labels';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 
 interface AddItemDialogProps {
   open: boolean;
@@ -56,6 +58,8 @@ interface FileWithPreview {
 
 export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
   const t = useTranslations('wardrobe.add');
+  const colorLabel = useColorLabel();
+  const typeLabel = useClothingTypeLabel();
   // Single upload state
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -318,7 +322,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                     <SelectContent>
                       {CLOTHING_TYPES.map((ty) => (
                         <SelectItem key={ty.value} value={ty.value}>
-                          {ty.label}
+                          {typeLabel(ty.value)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -360,7 +364,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                                 className="h-3.5 w-3.5 rounded-full ring-1 ring-inset ring-black/10"
                                 style={{ backgroundColor: c.hex }}
                               />
-                              {c.name}
+                              {colorLabel(c.value)}
                             </div>
                           </SelectItem>
                         ))}

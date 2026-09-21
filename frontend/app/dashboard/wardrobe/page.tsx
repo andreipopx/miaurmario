@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { cn, getDaysSinceDateInTimezone } from '@/lib/utils';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useTranslations } from 'next-intl';
+import { useColorLabel } from '@/lib/tag-labels';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -62,6 +63,7 @@ function ItemCard({
   const t = useTranslations('wardrobe');
   const tCommon = useTranslations('common');
   const typeLabel = useClothingTypeLabel();
+  const colorLabel = useColorLabel();
   const colorInfo = CLOTHING_COLORS.find((c) => c.value === item.primary_color);
   const isProcessing = item.status === 'processing';
   const isError = item.status === 'error';
@@ -182,7 +184,7 @@ function ItemCard({
             <span
               className="h-3 w-3 shrink-0 rounded-full ring-1 ring-border"
               style={{ backgroundColor: colorInfo.hex }}
-              title={colorInfo.name}
+              title={colorLabel(colorInfo.value)}
             />
           )}
         </div>

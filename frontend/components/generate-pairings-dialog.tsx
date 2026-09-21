@@ -23,6 +23,7 @@ import { useGeneratePairings } from '@/lib/hooks/use-pairings';
 import { Item, Pairing } from '@/lib/types';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useTagLabel } from '@/lib/tag-labels';
 
 interface GeneratePairingsDialogProps {
   item: Item | null;
@@ -38,6 +39,7 @@ export function GeneratePairingsDialog({
   onOpenChange,
 }: GeneratePairingsDialogProps) {
   const t = useTranslations('generatePairings');
+  const tagLabel = useTagLabel();
   const [numPairings, setNumPairings] = useState(3);
   const [generatedPairings, setGeneratedPairings] = useState<Pairing[] | null>(null);
   const generatePairings = useGeneratePairings();
@@ -115,10 +117,13 @@ export function GeneratePairingsDialog({
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-bold">{item.name || item.type}</p>
+                <p className="truncate font-bold">{item.name || tagLabel('types', item.type)}</p>
                 {item.primary_color && (
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {t('colorTypeSubtitle', { color: item.primary_color, type: item.type })}
+                  <p className="text-sm text-muted-foreground">
+                    {t('colorTypeSubtitle', {
+                      color: tagLabel('colors', item.primary_color).toLowerCase(),
+                      type: tagLabel('types', item.type),
+                    })}
                   </p>
                 )}
               </div>

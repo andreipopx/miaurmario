@@ -1,171 +1,293 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useSession } from 'next-auth/react';
-import { useFormatter, useTranslations } from 'next-intl';
-import { useWeatherConditionLabel } from '@/lib/weather-condition';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Sparkles, ArrowRight, Cloud, Droplets, HeartHandshake, ChevronRight } from 'lucide-react';
-import { useWeather } from '@/lib/hooks/use-weather';
+import { useFormatter, useTranslations } from 'next-intl';
+import { addDays, isSameDay, startOfWeek } from 'date-fns';
+import { toast } from 'sonner';
+import {
+  BarChart3,
+  CalendarDays,
+  Camera,
+  Check,
+  ChevronRight,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  HeartHandshake,
+  Loader2,
+  MapPin,
+  Music,
+  RefreshCw,
+  Shirt,
+  Sparkles,
+  Sun,
+  type LucideIcon,
+} from 'lucide-react';
+import { useWeatherConditionLabel } from '@/lib/weather-condition';
+import { useWeather, type Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
 import { useItems } from '@/lib/hooks/use-items';
-import { useOutfits, usePendingOutfits } from '@/lib/hooks/use-outfits';
+import { useAcceptOutfit, useOutfits, usePendingOutfits } from '@/lib/hooks/use-outfits';
 import { useFamily } from '@/lib/hooks/use-family';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { displayValue, tempSymbol, TempUnit } from '@/lib/temperature';
+import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { POP_BG, type PopColor } from '@/components/chip';
+import { StinkyTip } from '@/components/stinky-tip';
+import { Stinky } from '@/components/stinky/stinky';
 
-// -- Small editorial primitives ------------------------------------------------
+// -- Section header -------------------------------------------------------------
 
-function SectionHeader({
-  eyebrow,
-  title,
-  href,
-  cta,
-}: {
-  eyebrow?: string;
-  title: string;
-  href?: string;
-  cta?: string;
-}) {
+function SectionHeader({ title, href, cta }: { title: string; href?: string; cta?: string }) {
   return (
-    <div className="flex items-end justify-between gap-4 mb-6">
-      <div>
-        {eyebrow && <p className="label-editorial mb-2">{eyebrow}</p>}
-        <h2 className="font-display text-2xl sm:text-3xl leading-tight">{title}</h2>
-      </div>
+    <div className="mb-3 flex items-center justify-between gap-4 px-1">
+      <h2 className="text-lg font-bold tracking-tight">{title}</h2>
       {href && cta && (
         <Link
           href={href}
-          className="label-editorial link-editorial text-primary hover:text-primary"
+          className="-mr-2 inline-flex min-h-[44px] items-center gap-1 rounded-full px-3 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {cta}
+          <ChevronRight className="h-4 w-4" strokeWidth={2} aria-hidden />
         </Link>
       )}
     </div>
   );
 }
 
-function GoldRule() {
-  return <div className="divider-gold my-14 sm:my-20" />;
-}
+// -- Quick actions ----------------------------------------------------------------
 
-// -- Hero: outfit del día / el estilista ---------------------------------------
+const QUICK_ACTIONS: { key: string; href: string; icon: LucideIcon; color: PopColor }[] = [
+  { key: 'quickUpload', href: '/dashboard/wardrobe?add=1', icon: Camera, color: 'amber' },
+  { key: 'quickCreate', href: '/dashboard/outfits/new', icon: Shirt, color: 'pink' },
+  { key: 'quickPlan', href: '/dashboard/history', icon: CalendarDays, color: 'sky' },
+  { key: 'quickStats', href: '/dashboard/analytics', icon: BarChart3, color: 'mint' },
+];
 
-function EditorialGreeting() {
-  const t = useTranslations('dashboard.editorial.editorialGreeting');
-  const format = useFormatter();
-  const now = new Date();
-  const hour = now.getHours();
-  const greeting = hour < 12 ? t('morning') : hour < 20 ? t('afternoon') : t('evening');
-  const formatted = format.dateTime(now, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
+function QuickActions() {
+  const t = useTranslations('dashboard.today');
   return (
-    <div className="space-y-2">
-      <p className="label-editorial text-gold">{greeting}</p>
-      <h1 className="font-display italic font-black text-display-xl leading-none">
-        {formatted[0].toUpperCase() + formatted.slice(1)}
-      </h1>
-    </div>
+    <nav aria-label={t('quickActions')} className="grid grid-cols-4 gap-2 sm:gap-3">
+      {QUICK_ACTIONS.map(({ key, href, icon: Icon, color }) => (
+        <Link
+          key={key}
+          href={href}
+          className={cn(
+            POP_BG[color],
+            'flex h-[84px] flex-col items-center justify-center gap-1.5 rounded-quick px-1 text-center text-pop-foreground transition-transform duration-150 hover:-translate-y-0.5 active:scale-[0.97] sm:h-24',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+          )}
+        >
+          <Icon className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
+          <span className="text-[11.5px] font-semibold leading-tight sm:text-[13px]">{t(key)}</span>
+        </Link>
+      ))}
+    </nav>
   );
 }
 
-function OutfitOfTheDayHero() {
-  const t = useTranslations('dashboard.editorial');
-  const tSuggest = useTranslations('suggest');
+// -- Week strip + weather -----------------------------------------------------------
+
+function weatherIcon(weather: Weather): LucideIcon {
+  const c = weather.condition.toLowerCase();
+  if (c.includes('snow')) return CloudSnow;
+  if (c.includes('rain') || c.includes('drizzle') || c.includes('shower') || c.includes('thunder')) return CloudRain;
+  if (c.includes('sun') || c.includes('clear')) return Sun;
+  return Cloud;
+}
+
+function WeatherBadge() {
+  const t = useTranslations('dashboard.weather');
   const conditionLabel = useWeatherConditionLabel();
-  const { data: pending, isLoading } = usePendingOutfits(1);
-  const featured = pending?.outfits?.[0];
-  const { data: weather } = useWeather();
+  const { data: weather, isLoading } = useWeather();
   const { data: prefs } = usePreferences();
+  const { user } = useAuth();
   const unit: TempUnit = prefs?.temperature_unit === 'fahrenheit' ? 'fahrenheit' : 'celsius';
 
+  if (isLoading) return <Skeleton className="h-5 w-24 rounded-full" />;
+  if (!weather) {
+    return (
+      <Link
+        href="/dashboard/settings"
+        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-2 text-sm font-semibold hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <MapPin className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+        {t('setLocationCta')}
+      </Link>
+    );
+  }
+  const Icon = weatherIcon(weather);
+  const place = user?.location_name?.split(',')[0];
   return (
-    <section className="grid gap-8 lg:grid-cols-[3fr_2fr] lg:gap-14 items-start">
-      {/* Left: image or placeholder */}
-      <div className="aspect-[3/4] bg-card border border-border-solid/40 relative overflow-hidden img-zoom">
-        {featured?.items?.length ? (
-          <div className="grid grid-cols-2 grid-rows-2 gap-px w-full h-full">
-            {featured.items.slice(0, 4).map((item) => (
-              <div key={item.id} className="relative bg-muted">
-                {item.thumbnail_url ? (
-                  <Image
-                    src={item.thumbnail_url}
-                    alt={item.name || item.type}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 60vw"
-                  />
-                ) : (
-                  <div className="w-full h-full" />
-                )}
-              </div>
-            ))}
-          </div>
+    <p className="flex items-center gap-1.5 text-sm font-semibold" title={conditionLabel(weather)}>
+      <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+      <span className="sr-only">{conditionLabel(weather)}, </span>
+      {displayValue(weather.temperature, unit)}
+      {tempSymbol(unit)}
+      {place && <span className="max-w-[9rem] truncate">· {place}</span>}
+    </p>
+  );
+}
+
+function WeekStrip() {
+  const t = useTranslations('dashboard.today');
+  const format = useFormatter();
+  const days = useMemo(() => {
+    const today = new Date();
+    const monday = startOfWeek(today, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(monday, i);
+      return { date: d, isToday: isSameDay(d, today) };
+    });
+  }, []);
+
+  return (
+    <section aria-labelledby="week-title">
+      <div className="flex items-center justify-between gap-3 px-1">
+        <h2 id="week-title" className="text-[15px] font-bold">
+          {t('thisWeek')}
+        </h2>
+        <WeatherBadge />
+      </div>
+      <ol className="mt-2 flex justify-between">
+        {days.map(({ date, isToday }) => {
+          const short = format.dateTime(date, { weekday: 'short' }).replace('.', '');
+          return (
+            <li key={date.toISOString()}>
+              <Link
+                href="/dashboard/history"
+                aria-current={isToday ? 'date' : undefined}
+                aria-label={format.dateTime(date, { weekday: 'long', day: 'numeric', month: 'long' })}
+                className="flex w-11 flex-col items-center gap-1.5 rounded-full py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="text-xs font-medium capitalize text-muted-foreground" aria-hidden>
+                  {short}
+                </span>
+                <span
+                  aria-hidden
+                  className={cn(
+                    'flex h-9 w-9 items-center justify-center rounded-full text-[15px] font-bold',
+                    isToday ? 'bg-signature text-signature-foreground' : 'text-foreground'
+                  )}
+                >
+                  {date.getDate()}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+// -- Today's look -------------------------------------------------------------------
+
+function TodayLook() {
+  const t = useTranslations('dashboard.today');
+  const tPending = useTranslations('dashboard.pending');
+  const { data: pending, isLoading } = usePendingOutfits(1);
+  const accept = useAcceptOutfit();
+  const featured = pending?.outfits?.[0];
+
+  const onAccept = () => {
+    if (!featured) return;
+    accept.mutate(featured.id, {
+      onSuccess: () => toast.success(tPending('acceptedToast')),
+      onError: () => toast.error(tPending('acceptError')),
+    });
+  };
+
+  const tip = featured?.style_notes || featured?.reasoning;
+  const music = featured?.music_inspiration;
+  const musicLabel = music ? music.track || music.artist || music.label : null;
+  const items = featured?.items.slice(0, 4) ?? [];
+
+  return (
+    <section aria-labelledby="today-look-title" className="space-y-3">
+      <div className="rounded-lg bg-panel p-3.5 sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="today-look-title" className="text-[15px] font-bold sm:text-lg">
+            {t('lookTitle')}
+          </h2>
+          {musicLabel && (
+            <span className="inline-flex h-[26px] max-w-[60%] items-center gap-1.5 rounded-full bg-background px-2.5 text-xs font-semibold">
+              <Music className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+              <span className="truncate">{musicLabel}</span>
+            </span>
+          )}
+        </div>
+
+        {isLoading ? (
+          <Skeleton className="mt-3 h-[220px] w-full bg-background/60" />
+        ) : featured ? (
+          <>
+            <Link
+              href={`/dashboard/outfits/${featured.id}`}
+              aria-label={t('viewLook')}
+              className={cn(
+                'mt-2 grid gap-2 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                items.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
+              )}
+            >
+              {items.map((item) => (
+                <div key={item.id} className={cn('relative', items.length > 2 ? 'aspect-square' : 'aspect-[4/5]')}>
+                  {item.thumbnail_url ? (
+                    <Image
+                      src={item.thumbnail_url}
+                      alt={item.name || item.type}
+                      fill
+                      className="object-contain p-1 mix-blend-multiply dark:mix-blend-normal"
+                      sizes="(max-width: 1024px) 45vw, 25vw"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center rounded-tile bg-background/60">
+                      <Shirt className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </Link>
+            <StinkyTip className="mt-3">{tip ? <span className="line-clamp-3">{tip}</span> : t('defaultTip')}</StinkyTip>
+          </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-8 py-12">
-            {isLoading ? (
-              <Skeleton className="h-full w-full" />
-            ) : (
-              <>
-                <p className="label-editorial text-gold mb-6">{t('outfitOfTheDay')}</p>
-                <p className="font-display italic text-2xl sm:text-3xl leading-tight mb-4 max-w-sm">
-                  {t('stylistWorking')}
-                </p>
-                <p className="font-editorial italic text-base text-muted-foreground max-w-md">
-                  {t('stylistWorkingBody')}
-                </p>
-              </>
-            )}
+          <div className="flex flex-col items-center px-4 pb-4 pt-6 text-center">
+            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-signature-soft">
+              <Stinky state="idle" size={112} label="" />
+            </div>
+            <p className="mt-4 text-lg font-extrabold tracking-tight">{t('noLookTitle')}</p>
+            <p className="mt-1 max-w-xs text-sm text-muted-foreground">{t('noLookBody')}</p>
           </div>
         )}
       </div>
 
-      {/* Right: metadata + CTA */}
-      <div className="flex flex-col gap-6 lg:pt-8">
-        <p className="font-editorial italic text-2xl text-muted-foreground leading-snug">
-          {t('outfitOfTheDay')}
-        </p>
-
-        {weather && (
-          <div className="space-y-2">
-            <p className="label-editorial">{tSuggest('locationNotSetShortBody') !== 'suggest.locationNotSetShortBody' ? 'Clima' : 'Clima'}</p>
-            <div className="flex items-baseline gap-3">
-              <Cloud className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-              <span className="font-display text-3xl">
-                {displayValue(weather.temperature, unit)}{tempSymbol(unit)}
-              </span>
-              <span className="text-sm text-muted-foreground capitalize">{conditionLabel(weather)}</span>
-            </div>
-            {weather.precipitation_chance > 0 && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                <Droplets className="h-3 w-3" strokeWidth={1.5} />
-                {weather.precipitation_chance}% ·
-              </p>
-            )}
-          </div>
-        )}
-
-        <div className="pt-4">
-          <Link
-            href="/dashboard/suggest"
-            className="inline-flex items-center gap-3 group text-primary"
-          >
-            <span className="label-editorial link-editorial text-primary">
-              {tSuggest('generate') !== 'suggest.generate' ? 'El estilista' : 'The stylist'}
-            </span>
-            <ArrowRight className="h-4 w-4 transition-transform duration-200 ease-editorial group-hover:translate-x-1" strokeWidth={1.5} />
+      <div className="flex gap-2.5">
+        <Button asChild variant="secondary" size="lg" className="flex-1">
+          <Link href="/dashboard/suggest">
+            {featured ? <RefreshCw className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden /> : <Sparkles className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />}
+            {featured ? t('anotherIdea') : t('askStinky')}
           </Link>
-        </div>
+        </Button>
+        {featured && (
+          <Button size="lg" className="flex-1" onClick={onAccept} disabled={accept.isPending}>
+            {accept.isPending ? (
+              <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
+            ) : (
+              <Check className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+            )}
+            {t('wearIt')}
+          </Button>
+        )}
       </div>
     </section>
   );
 }
 
-// -- Editorial section cards ---------------------------------------------------
+// -- Secondary sections ---------------------------------------------------------------
 
 function WardrobeSection() {
   const t = useTranslations('dashboard.editorial');
@@ -176,43 +298,42 @@ function WardrobeSection() {
   return (
     <section>
       <SectionHeader
-        eyebrow={t('sectionWardrobe')}
-        title={isLoading ? '…' : t('wardrobeCount', { count: total })}
+        title={isLoading ? t('sectionWardrobe') : t('wardrobeCount', { count: total })}
         href="/dashboard/wardrobe"
         cta={t('browseWardrobe')}
       />
-
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="aspect-[3/4] w-full" />
+            <Skeleton key={i} className="aspect-square w-full rounded-tile" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="border border-dashed border-border-solid/60 p-10 text-center">
-          <p className="font-editorial italic text-xl text-muted-foreground mb-4">{t('wardrobeEmpty')}</p>
-          <Link href="/dashboard/wardrobe" className="link-editorial label-editorial text-primary">
-            {t('wardrobeEmptyCta')}
-          </Link>
+        <div className="flex items-center justify-between gap-4 rounded-lg bg-panel p-4">
+          <p className="text-sm font-medium text-muted-foreground">{t('wardrobeEmpty')}</p>
+          <Button asChild variant="signature" size="sm">
+            <Link href="/dashboard/wardrobe?add=1">{t('wardrobeEmptyCta')}</Link>
+          </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
           {items.slice(0, 4).map((item) => (
-            <Link key={item.id} href={`/dashboard/wardrobe/${item.id}`} className="group block">
-              <div className="aspect-[3/4] bg-muted relative overflow-hidden img-zoom">
-                {item.thumbnail_url ? (
-                  <Image
-                    src={item.thumbnail_url}
-                    alt={item.name || item.type}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 50vw, 25vw"
-                  />
-                ) : null}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground truncate group-hover:text-primary transition-colors">
-                {item.name || item.type}
-              </p>
+            <Link
+              key={item.id}
+              href={`/dashboard/wardrobe?item=${item.id}`}
+              className="group relative block aspect-square overflow-hidden rounded-tile bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {item.thumbnail_url ? (
+                <Image
+                  src={item.thumbnail_url}
+                  alt={item.name || item.type}
+                  fill
+                  className="object-contain p-1.5 mix-blend-multiply transition-transform duration-300 group-hover:scale-105 dark:mix-blend-normal"
+                  sizes="(max-width: 640px) 25vw, 15vw"
+                />
+              ) : (
+                <span className="sr-only">{item.name || item.type}</span>
+              )}
             </Link>
           ))}
         </div>
@@ -228,48 +349,44 @@ function OutfitsSection() {
 
   return (
     <section>
-      <SectionHeader
-        eyebrow={t('sectionOutfits')}
-        title={t('sectionOutfits')}
-        href="/dashboard/outfits"
-        cta={t('browseOutfits')}
-      />
-
+      <SectionHeader title={t('sectionOutfits')} href="/dashboard/outfits" cta={t('browseOutfits')} />
       {isLoading ? (
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-40 w-32 flex-shrink-0" />)}
+        <div className="flex gap-3 overflow-hidden">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-40 w-32 flex-shrink-0 rounded-tile" />
+          ))}
         </div>
       ) : outfits.length === 0 ? (
-        <div className="border border-dashed border-border-solid/60 p-10 text-center">
-          <p className="font-editorial italic text-xl text-muted-foreground mb-4">{t('outfitsEmpty')}</p>
-          <Link href="/dashboard/suggest" className="link-editorial label-editorial text-primary">
-            {t('outfitsEmptyCta')}
-          </Link>
+        <div className="flex items-center justify-between gap-4 rounded-lg bg-panel p-4">
+          <p className="text-sm font-medium text-muted-foreground">{t('outfitsEmpty')}</p>
+          <Button asChild variant="signature" size="sm">
+            <Link href="/dashboard/suggest">{t('outfitsEmptyCta')}</Link>
+          </Button>
         </div>
       ) : (
-        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
           {outfits.map((o) => (
-            <Link key={o.id} href={`/dashboard/outfits/${o.id}`} className="flex-shrink-0 w-32 sm:w-40 group">
-              <div className="aspect-[3/4] bg-muted relative overflow-hidden img-zoom">
-                <div className="grid grid-cols-2 grid-rows-2 gap-px w-full h-full">
-                  {o.items.slice(0, 4).map((item) => (
-                    <div key={item.id} className="relative bg-background">
-                      {item.thumbnail_url ? (
-                        <Image
-                          src={item.thumbnail_url}
-                          alt={item.name || item.type}
-                          fill
-                          className="object-cover"
-                          sizes="160px"
-                        />
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
+            <Link
+              key={o.id}
+              href={`/dashboard/outfits/${o.id}`}
+              className="group w-32 flex-shrink-0 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
+            >
+              <div className="grid aspect-[4/5] grid-cols-2 grid-rows-2 gap-1 overflow-hidden rounded-tile bg-panel p-1.5">
+                {o.items.slice(0, 4).map((item) => (
+                  <div key={item.id} className="relative">
+                    {item.thumbnail_url ? (
+                      <Image
+                        src={item.thumbnail_url}
+                        alt={item.name || item.type}
+                        fill
+                        className="object-contain mix-blend-multiply dark:mix-blend-normal"
+                        sizes="80px"
+                      />
+                    ) : null}
+                  </div>
+                ))}
               </div>
-              <p className="mt-2 text-xs text-muted-foreground capitalize group-hover:text-primary transition-colors">
-                {o.occasion}
-              </p>
+              <p className="mt-1.5 px-1 text-sm font-semibold capitalize">{o.occasion}</p>
             </Link>
           ))}
         </div>
@@ -286,38 +403,37 @@ function LibrarySection() {
 
   return (
     <section>
-      <SectionHeader
-        eyebrow={t('sectionLibrary')}
-        title={t('sectionLibrary')}
-        href="/dashboard/history"
-        cta={t('browseLibrary')}
-      />
-
+      <SectionHeader title={t('sectionLibrary')} href="/dashboard/history" cta={t('browseLibrary')} />
       {isLoading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full" />
+          ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="border border-dashed border-border-solid/60 p-10 text-center">
-          <p className="font-editorial italic text-xl text-muted-foreground mb-4">{t('libraryEmpty')}</p>
-          <Link href="/dashboard/history" className="link-editorial label-editorial text-primary">
-            {t('libraryEmptyCta')}
-          </Link>
+        <div className="flex items-center justify-between gap-4 rounded-lg bg-panel p-4">
+          <p className="text-sm font-medium text-muted-foreground">{t('libraryEmpty')}</p>
+          <Button asChild variant="secondary" size="sm" className="bg-background">
+            <Link href="/dashboard/history">{t('libraryEmptyCta')}</Link>
+          </Button>
         </div>
       ) : (
-        <ul className="divide-y divide-border-solid/40">
+        <ul className="space-y-2">
           {items.map((o) => (
             <li key={o.id}>
-              <Link href={`/dashboard/outfits/${o.id}`} className="flex items-center justify-between py-4 hover:text-primary transition-colors group">
+              <Link
+                href={`/dashboard/outfits/${o.id}`}
+                className="flex min-h-[56px] items-center justify-between rounded-2xl bg-panel px-4 py-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <div>
-                  <p className="font-display text-lg capitalize">{o.occasion}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {o.scheduled_for
-                      ? format.dateTime(new Date(o.scheduled_for + 'T00:00:00'), { day: 'numeric', month: 'long' })
-                      : ''}
-                  </p>
+                  <p className="text-[15px] font-bold capitalize">{o.occasion}</p>
+                  {o.scheduled_for && (
+                    <p className="text-xs text-muted-foreground">
+                      {format.dateTime(new Date(o.scheduled_for + 'T00:00:00'), { day: 'numeric', month: 'long' })}
+                    </p>
+                  )}
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" strokeWidth={1.5} />
+                <ChevronRight className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} aria-hidden />
               </Link>
             </li>
           ))}
@@ -332,34 +448,30 @@ function FamilyAside() {
   const { data: family, isLoading, isError } = useFamily();
   if (isLoading) return null;
 
-  if (isError || !family) {
-    return (
-      <aside className="border border-border-solid/60 p-6 sm:p-8">
-        <p className="label-editorial text-gold mb-3">{tFam('title')}</p>
-        <p className="font-display text-xl leading-tight mb-3">{tFam('noFamilyTitle')}</p>
-        <p className="text-sm text-muted-foreground mb-6">{tFam('noFamilyBody')}</p>
-        <Link href="/dashboard/family" className="link-editorial label-editorial text-primary">
-          {tFam('noFamilyCta')}
-        </Link>
-      </aside>
-    );
-  }
-
-  const memberCount = family.members.length;
-  const memberText = memberCount === 1
-    ? tFam('membersOne', { count: memberCount, name: family.name })
-    : tFam('membersOther', { count: memberCount, name: family.name });
+  const noFamily = isError || !family;
+  const memberCount = family?.members.length ?? 0;
 
   return (
-    <aside className="border border-border-solid/60 p-6 sm:p-8">
-      <p className="label-editorial text-gold mb-3">{tFam('title')}</p>
-      <p className="font-display text-xl leading-tight mb-2">{family.name}</p>
-      <p className="text-sm text-muted-foreground mb-6 flex items-center gap-2">
-        <HeartHandshake className="h-4 w-4" strokeWidth={1.5} /> {memberText}
+    <aside className="rounded-lg bg-signature-soft p-5">
+      <p className="text-sm font-bold">{tFam('title')}</p>
+      <p className="mt-2 text-xl font-extrabold tracking-tight">{noFamily ? tFam('noFamilyTitle') : family.name}</p>
+      <p className="mt-1 flex items-center gap-2 text-sm text-foreground/75">
+        {noFamily ? (
+          tFam('noFamilyBody')
+        ) : (
+          <>
+            <HeartHandshake className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            {memberCount === 1
+              ? tFam('membersOne', { count: memberCount, name: family.name })
+              : tFam('membersOther', { count: memberCount, name: family.name })}
+          </>
+        )}
       </p>
-      <Link href="/dashboard/family/feed" className="link-editorial label-editorial text-primary">
-        {tFam('browse')}
-      </Link>
+      <Button asChild size="sm" className="mt-4">
+        <Link href={noFamily ? '/dashboard/family' : '/dashboard/family/feed'}>
+          {noFamily ? tFam('noFamilyCta') : tFam('browse')}
+        </Link>
+      </Button>
     </aside>
   );
 }
@@ -367,35 +479,21 @@ function FamilyAside() {
 // -- Page ---------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
-  const t = useTranslations('dashboard');
-  const tCommon = useTranslations('common');
-  const firstName = session?.user?.name?.split(' ')[0] || tCommon('user');
-
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-10 sm:py-16">
-      <div className="mb-14 sm:mb-20">
-        <EditorialGreeting />
-        <p className="font-editorial italic text-2xl text-muted-foreground mt-6">
-          {t('welcome', { name: firstName })}
-        </p>
+    <div className="space-y-6 lg:space-y-8">
+      <QuickActions />
+      <div className="grid gap-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
+        <div className="space-y-5">
+          <WeekStrip />
+          <TodayLook />
+        </div>
+        <div className="space-y-6 lg:space-y-8">
+          <WardrobeSection />
+          <FamilyAside />
+        </div>
       </div>
-
-      <OutfitOfTheDayHero />
-
-      <GoldRule />
-      <WardrobeSection />
-
-      <GoldRule />
       <OutfitsSection />
-
-      <GoldRule />
-      <div className="grid gap-14 lg:grid-cols-[3fr_2fr]">
-        <LibrarySection />
-        <FamilyAside />
-      </div>
-
-      <div className="h-24" />
+      <LibrarySection />
     </div>
   );
 }

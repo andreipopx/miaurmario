@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/empty-state';
 
 export default function DashboardError({
   error,
@@ -20,27 +20,23 @@ export default function DashboardError({
   }, [error]);
 
   return (
-    <div className="space-y-6">
-      <Card className="border-destructive/50">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center text-center py-8">
-            <div className="rounded-full bg-destructive/10 p-4 mb-4">
-              <AlertTriangle className="w-8 h-8 text-destructive" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">{t('pageErrorTitle')}</h2>
-            <p className="text-muted-foreground mb-6 max-w-sm">{t('pageErrorBody')}</p>
-            <Button onClick={reset}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              {t('tryAgain')}
-            </Button>
-            {process.env.NODE_ENV === 'development' && (
-              <pre className="mt-6 p-4 bg-muted rounded-lg text-left text-xs overflow-auto max-h-48 w-full">
-                {error.message}
-              </pre>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+    <div className="rounded-lg bg-panel">
+      <EmptyState
+        state="sad"
+        title={t('pageErrorTitle')}
+        description={t('pageErrorBody')}
+        action={
+          <Button size="lg" onClick={reset}>
+            <RefreshCw className="h-[18px] w-[18px]" aria-hidden />
+            {t('tryAgain')}
+          </Button>
+        }
+      />
+      {process.env.NODE_ENV === 'development' && (
+        <pre className="mx-4 mb-4 max-h-48 overflow-auto rounded-2xl bg-background p-4 text-left text-xs">
+          {error.message}
+        </pre>
+      )}
     </div>
   );
 }

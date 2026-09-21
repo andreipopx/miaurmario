@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Plus, Search, Heart, Grid3X3, Loader2, AlertCircle, RefreshCw, Droplets, ArrowUpDown, SlidersHorizontal, X } from 'lucide-react';
+import { Plus, Search, Heart, Loader2, AlertCircle, RefreshCw, Droplets, ArrowUpDown, SlidersHorizontal, X, Shirt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -17,20 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { AddItemDialog } from '@/components/add-item-dialog';
 import { ItemDetailDialog } from '@/components/item-detail-dialog';
 import { BulkActionToolbar, BulkSelection } from '@/components/bulk-action-toolbar';
+import { PageHeader } from '@/components/page-header';
+import { EmptyState } from '@/components/empty-state';
+import { Chip, popColorAt } from '@/components/chip';
 import { useItems, useItem, useItemTypes, useReanalyzeItem, useCancelAnalysis, useBulkDeleteItems, useBulkReanalyzeItems, BulkOperationParams } from '@/lib/hooks/use-items';
 import { useUserProfile } from '@/lib/hooks/use-user';
-import { CLOTHING_TYPES, CLOTHING_COLORS, Item } from '@/lib/types';
+import { CLOTHING_COLORS, Item } from '@/lib/types';
 import { toast } from 'sonner';
-import { formatWornAgo, getWornAgoColorClass } from '@/lib/utils';
+import { cn, getDaysSinceDateInTimezone } from '@/lib/utils';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useTranslations } from 'next-intl';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
@@ -65,149 +61,144 @@ function ItemCard({
 }) {
   const t = useTranslations('wardrobe');
   const tCommon = useTranslations('common');
+  const typeLabel = useClothingTypeLabel();
   const colorInfo = CLOTHING_COLORS.find((c) => c.value === item.primary_color);
   const isProcessing = item.status === 'processing';
   const isError = item.status === 'error';
+  const name = item.name || typeLabel(item.type);
 
-  const handleCheckboxClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
+  const usage = item.last_worn_at
+    ? t('item.wornAgo', { days: getDaysSinceDateInTimezone(item.last_worn_at, userTimezone) })
+    : item.wear_count > 0
+      ? t('item.wornCount', { count: item.wear_count })
+      : t('item.neverWorn');
 
   return (
-    <div
-      className={`group cursor-pointer card-editorial ${
-        selected ? 'ring-1 ring-primary' : ''
-      }`}
-      onClick={onClick}
-    >
-      <div className="relative aspect-[3/4] bg-muted overflow-hidden img-zoom">
-        {item.thumbnail_url ? (
-          <Image
-            src={item.thumbnail_url}
-            alt={item.name || item.type}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-            {item.type}
-          </div>
+    <article className="group">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label={name}
+          className={cn(
+            'relative block aspect-square w-full overflow-hidden rounded-tile bg-panel transition-shadow',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            selected && 'ring-[3px] ring-signature'
+          )}
+        >
+          {item.thumbnail_url ? (
+            <Image
+              src={item.thumbnail_url}
+              alt=""
+              fill
+              className="object-contain p-3 mix-blend-multiply transition-transform duration-300 group-hover:scale-[1.04] dark:mix-blend-normal"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-muted-foreground">
+              <Shirt className="h-10 w-10" strokeWidth={1.5} aria-hidden />
+            </span>
+          )}
+        </button>
+
+        {item.needs_wash && (
+          <span
+            className="pointer-events-none absolute left-2.5 top-2.5 z-10 inline-flex h-6 items-center gap-1 rounded-full bg-pop-sky px-2.5 text-xs font-bold text-pop-foreground"
+            title={t('needsWashingTooltip')}
+          >
+            <Droplets className="h-3 w-3" strokeWidth={2.25} aria-hidden />
+            {t('washBadge')}
+          </span>
         )}
-        {/* Checkbox in top-left */}
+        {item.favorite && (
+          <span
+            className="pointer-events-none absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background"
+            title={t('favorite')}
+          >
+            <Heart className="h-4 w-4 fill-signature text-foreground" strokeWidth={1.75} aria-hidden />
+            <span className="sr-only">{t('favorite')}</span>
+          </span>
+        )}
+        {/* Selection checkbox — visible on hover/focus or when selected */}
         <div
-          className={`absolute top-2 left-2 z-10 transition-opacity ${
-            selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          }`}
-          onClick={handleCheckboxClick}
+          className={cn(
+            'absolute bottom-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 transition-opacity',
+            selected ? 'opacity-100' : 'opacity-0 focus-within:opacity-100 group-hover:opacity-100'
+          )}
         >
           <Checkbox
             checked={selected}
             onCheckedChange={(checked) => onSelect(item.id, checked === true)}
-            className="bg-background/80 backdrop-blur-sm"
+            aria-label={t('select', { name })}
           />
         </div>
-        {item.favorite && (
-          <div className="absolute top-2 right-2 z-10">
-            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
-          </div>
-        )}
-        {item.needs_wash && (
-          <div className="absolute bottom-2 right-2 z-10">
-            <div className="bg-amber-500/90 text-white rounded-full p-1" title={t('needsWashingTooltip')}>
-              <Droplets className="h-3.5 w-3.5" />
-            </div>
-          </div>
-        )}
+
         {isProcessing && (
-          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="h-6 w-6 text-white animate-spin" />
-            <span className="text-white text-xs font-medium">{t('aiAnalyzing')}</span>
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-tile bg-black/55">
+            <Loader2 className="h-6 w-6 animate-spin text-white" aria-hidden />
+            <span className="text-xs font-semibold text-white">{t('aiAnalyzing')}</span>
             {onCancelAnalysis && (
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 text-xs"
+                className="h-8"
                 onClick={(e) => {
                   e.stopPropagation();
                   onCancelAnalysis(item.id);
                 }}
               >
-                <X className="h-3 w-3 mr-1" />
+                <X className="h-3.5 w-3.5" aria-hidden />
                 {tCommon('cancel')}
               </Button>
             )}
           </div>
         )}
         {isError && (
-          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 p-2">
-            <AlertCircle className="h-6 w-6 text-red-400" />
-            <span className="text-white text-xs font-medium text-center">{t('analysisFailed')}</span>
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-tile bg-black/55 p-2">
+            <AlertCircle className="h-6 w-6 text-white" aria-hidden />
+            <span className="text-center text-xs font-semibold text-white">{t('analysisFailed')}</span>
             {onRetry && (
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 text-xs"
+                className="h-8"
                 onClick={(e) => {
                   e.stopPropagation();
                   onRetry(item.id);
                 }}
               >
-                <RefreshCw className="h-3 w-3 mr-1" />
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden />
                 {tCommon('retry')}
               </Button>
             )}
           </div>
         )}
       </div>
-      <div className="pt-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-base leading-tight truncate group-hover:text-primary transition-colors">
-              {item.name || item.type}
-            </p>
-            <p className="label-editorial mt-1 capitalize">
-              {item.type}
-              {item.subtype && ` · ${item.subtype}`}
-            </p>
-          </div>
+
+      <div className="cursor-pointer px-1 pt-1.5" onClick={onClick} aria-hidden>
+        <div className="flex items-center gap-2">
+          <p className="min-w-0 flex-1 truncate text-[14.5px] font-semibold leading-tight">{name}</p>
           {colorInfo && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    className="w-3.5 h-3.5 border border-border-solid/60 shrink-0"
-                    style={{ backgroundColor: colorInfo.hex }}
-                  />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{colorInfo.name}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <span
+              className="h-3 w-3 shrink-0 rounded-full ring-1 ring-border"
+              style={{ backgroundColor: colorInfo.hex }}
+              title={colorInfo.name}
+            />
           )}
         </div>
-        {item.last_worn_at ? (
-          <p className="label-editorial mt-2 text-muted-foreground">
-            {formatWornAgo(item.last_worn_at, userTimezone)}
-          </p>
-        ) : item.wear_count > 0 ? (
-          <p className="label-editorial mt-2 text-muted-foreground">
-            {t('item.wornCount', { count: item.wear_count })}
-          </p>
-        ) : null}
+        <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">{usage}</p>
       </div>
-    </div>
+    </article>
   );
 }
 
 function ItemCardSkeleton() {
   return (
     <div>
-      <Skeleton className="aspect-[3/4] w-full" />
-      <div className="pt-3">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/2 mt-1" />
+      <Skeleton className="aspect-square w-full rounded-tile" />
+      <div className="px-1 pt-2">
+        <Skeleton className="h-4 w-3/4 rounded-full" />
+        <Skeleton className="mt-1.5 h-3 w-1/2 rounded-full" />
       </div>
     </div>
   );
@@ -216,23 +207,25 @@ function ItemCardSkeleton() {
 function EmptyWardrobe({ onAddClick }: { onAddClick: () => void }) {
   const t = useTranslations('wardrobe');
   return (
-    <div className="flex flex-col items-center justify-center py-24 px-4 text-center border border-dashed border-border-solid/60">
-      <p className="label-editorial text-gold mb-4">{t('title')}</p>
-      <h3 className="font-display italic text-2xl mb-3">{t('emptyTitle')}</h3>
-      <p className="font-editorial italic text-lg text-muted-foreground mb-8 max-w-sm">
-        {t('emptyBody')}
-      </p>
-      <Button onClick={onAddClick}>
-        <Plus className="mr-2 h-4 w-4" />
-        {t('addFirstItem')}
-      </Button>
-    </div>
+    <EmptyState
+      state="sleepy"
+      size="lg"
+      title={t('emptyTitle')}
+      description={t('emptyBody')}
+      action={
+        <Button variant="signature" size="lg" onClick={onAddClick}>
+          <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+          {t('addFirstItem')}
+        </Button>
+      }
+    />
   );
 }
 
 export default function WardrobePage() {
   const t = useTranslations('wardrobe');
   const tCommon = useTranslations('common');
+  const typeLabel = useClothingTypeLabel();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: userProfile } = useUserProfile();
@@ -260,6 +253,14 @@ export default function WardrobePage() {
       setDetailItemId(itemParam);
     }
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Open the add dialog from a quick action (?add=1), then clean the URL
+  useEffect(() => {
+    if (searchParams.get('add')) {
+      setAddDialogOpen(true);
+      router.replace('/dashboard/wardrobe', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const sortOption = SORT_OPTIONS[sortIndex];
 
@@ -413,227 +414,229 @@ export default function WardrobePage() {
     setPage(newPage);
   };
 
+  const typeChips = (itemTypes ?? []).slice().sort((a, b) => b.count - a.count);
+  const hasFilters = search || typeFilter !== 'all' || needsWash !== undefined || favoriteFilter !== undefined;
+  const extraFilterCount = [needsWash !== undefined, favoriteFilter !== undefined, sortIndex !== 0].filter(Boolean).length;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-10 sm:py-14 space-y-10">
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 space-y-3">
-          <p className="label-editorial text-gold">{t('title')}</p>
-          <h1 className="font-display italic font-black text-display-lg leading-none">
-            {t('myTitle')}
-          </h1>
-          <p className="label-editorial">{t('itemCount', { count: total })}</p>
-          {(processingCount > 0 || errorCount > 0) && (
-            <div className="flex items-center gap-3 pt-1">
-              {processingCount > 0 && (
-                <span className="label-editorial flex items-center gap-2">
-                  <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
-                  {t('processingBadge', { count: processingCount })}
-                </span>
-              )}
-              {errorCount > 0 && (
-                <span className="label-editorial text-primary flex items-center gap-2">
-                  <AlertCircle className="h-3 w-3" strokeWidth={1.5} />
-                  {t('errorBadge', { count: errorCount })}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setAddDialogOpen(true)}
-            className="h-11 px-6 bg-primary text-primary-foreground border border-primary uppercase tracking-widest text-xs hover:bg-transparent hover:text-primary transition-all duration-200 ease-editorial inline-flex items-center gap-2"
-          >
-            <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
-            {t('addItem')}
-          </button>
-        </div>
-      </header>
-
-      <div className="divider-hairline" />
-
-      <div className="space-y-3">
-        {/* Main row: search + sort + filter toggle */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t('searchItemsPlaceholder')}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="pl-9"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Select
-              value={String(sortIndex)}
-              onValueChange={(v) => {
-                setSortIndex(Number(v));
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SORT_OPTIONS.map((opt, i) => (
-                  <SelectItem key={i} value={String(i)}>
-                    {t(`sort.${opt.labelKey}` as `sort.${typeof opt.labelKey}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant={showFilters || activeFilterCount > 0 ? 'default' : 'outline'}
-              size="icon"
-              className="shrink-0 relative"
-              onClick={() => setShowFilters((v) => !v)}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Expandable filter row */}
-        {showFilters && (
-          <div className="flex flex-wrap gap-2 items-center p-3 rounded-lg border bg-muted/30">
-            <Select
-              value={typeFilter}
-              onValueChange={(value) => {
-                setTypeFilter(value);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[150px] h-8 text-xs">
-                <SelectValue placeholder={t('filter.allTypes')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('filter.allTypes')}</SelectItem>
-                {CLOTHING_TYPES.map((ct) => (
-                  <SelectItem key={ct.value} value={ct.value}>
-                    {ct.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={String(pageSize)}
-              onValueChange={(value) => {
-                setPageSize(Number(value));
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[130px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <SelectItem key={size} value={String(size)}>
-                    {t('perPage', { size })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant={needsWash === true ? 'default' : 'outline'}
-              size="sm"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => {
-                setNeedsWash(needsWash === true ? undefined : true);
-                setPage(1);
-              }}
-            >
-              <Droplets className="h-3.5 w-3.5" />
-              {t('needsWashFilter')}
-            </Button>
-
-            <Button
-              variant={favoriteFilter === true ? 'default' : 'outline'}
-              size="sm"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => {
-                setFavoriteFilter(favoriteFilter === true ? undefined : true);
-                setPage(1);
-              }}
-            >
-              <Heart className="h-3.5 w-3.5" />
-              {t('favoritesFilter')}
-            </Button>
-
-            {activeFilterCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs gap-1 ml-auto"
-                onClick={() => {
-                  setTypeFilter('all');
-                  setNeedsWash(undefined);
-                  setFavoriteFilter(undefined);
-                  setPage(1);
-                }}
-              >
-                <X className="h-3 w-3" />
-                {t('clearFilters')}
-              </Button>
+    <div className="space-y-4">
+      <PageHeader
+        title={t('title')}
+        description={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>{t('itemCount', { count: total })}</span>
+            {processingCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                {t('processingBadge', { count: processingCount })}
+              </span>
             )}
-          </div>
-        )}
+            {errorCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 font-semibold text-destructive">
+                <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+                {t('errorBadge', { count: errorCount })}
+              </span>
+            )}
+          </span>
+        }
+        action={
+          <Button variant="signature" onClick={() => setAddDialogOpen(true)}>
+            <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+            {tCommon('add')}
+          </Button>
+        }
+      />
+
+      {/* Search (gray pill) with filter toggle inside */}
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" aria-hidden />
+        <Input
+          type="search"
+          aria-label={tCommon('search')}
+          placeholder={total > 0 ? t('searchCountPlaceholder', { count: total }) : t('searchItemsPlaceholder')}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="h-12 border-transparent bg-panel pl-11 pr-14"
+        />
+        <button
+          type="button"
+          onClick={() => setShowFilters((v) => !v)}
+          aria-expanded={showFilters}
+          aria-controls="wardrobe-filters"
+          aria-label={t('moreFilters')}
+          className={cn(
+            'absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            showFilters ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'
+          )}
+        >
+          <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+          {extraFilterCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-signature px-1 text-[10px] font-bold text-signature-foreground">
+              {extraFilterCount}
+            </span>
+          )}
+        </button>
       </div>
 
-      {error ? (
-        <div className="text-center py-8">
-          <p className="text-destructive">
-            {t('loadError')}
-          </p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => window.location.reload()}
+      {/* Category chips */}
+      {typeChips.length > 0 && (
+        <div role="group" aria-label={t('categories')} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+          <Chip
+            active={typeFilter === 'all'}
+            onClick={() => {
+              setTypeFilter('all');
+              setPage(1);
+            }}
           >
-            {tCommon('retry')}
-          </Button>
+            {t('filter.all')}
+          </Chip>
+          {typeChips.map((ct, i) => (
+            <Chip
+              key={ct.type}
+              active={typeFilter === ct.type}
+              dot={popColorAt(i)}
+              onClick={() => {
+                setTypeFilter(typeFilter === ct.type ? 'all' : ct.type);
+                setPage(1);
+              }}
+            >
+              {typeLabel(ct.type)}
+            </Chip>
+          ))}
         </div>
+      )}
+
+      {/* Expandable filter panel */}
+      {showFilters && (
+        <div id="wardrobe-filters" className="flex flex-wrap items-center gap-2 rounded-lg bg-panel p-3">
+          <Select
+            value={String(sortIndex)}
+            onValueChange={(v) => {
+              setSortIndex(Number(v));
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-auto min-w-[180px] border-transparent bg-background" aria-label={t('sort.label')}>
+              <ArrowUpDown className="mr-2 h-3.5 w-3.5 shrink-0" aria-hidden />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((opt, i) => (
+                <SelectItem key={i} value={String(i)}>
+                  {t(`sort.${opt.labelKey}` as `sort.${typeof opt.labelKey}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={String(pageSize)}
+            onValueChange={(value) => {
+              setPageSize(Number(value));
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-auto min-w-[130px] border-transparent bg-background" aria-label={t('perPageLabel')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {t('perPage', { size })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Chip
+            active={needsWash === true}
+            dot="sky"
+            activeStyle="pop"
+            onClick={() => {
+              setNeedsWash(needsWash === true ? undefined : true);
+              setPage(1);
+            }}
+          >
+            {t('needsWashFilter')}
+          </Chip>
+
+          <Chip
+            active={favoriteFilter === true}
+            dot="pink"
+            activeStyle="pop"
+            onClick={() => {
+              setFavoriteFilter(favoriteFilter === true ? undefined : true);
+              setPage(1);
+            }}
+          >
+            {t('favoritesFilter')}
+          </Chip>
+
+          {activeFilterCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              onClick={() => {
+                setTypeFilter('all');
+                setNeedsWash(undefined);
+                setFavoriteFilter(undefined);
+                setPage(1);
+              }}
+            >
+              <X className="h-3.5 w-3.5" aria-hidden />
+              {t('clearFilters')}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {error ? (
+        <EmptyState
+          state="sad"
+          title={t('loadError')}
+          action={
+            <Button variant="secondary" onClick={() => window.location.reload()}>
+              <RefreshCw className="h-4 w-4" aria-hidden />
+              {tCommon('retry')}
+            </Button>
+          }
+        />
       ) : isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
-          {Array.from({ length: 10 }).map((_, i) => (
+        <div className="grid grid-cols-2 gap-x-2.5 gap-y-4 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
             <ItemCardSkeleton key={i} />
           ))}
         </div>
       ) : items.length === 0 ? (
-        search || typeFilter !== 'all' || needsWash !== undefined || favoriteFilter !== undefined ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              {t('noResults')}
-            </p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => {
-                setSearch('');
-                setTypeFilter('all');
-                setNeedsWash(undefined);
-                setFavoriteFilter(undefined);
-              }}
-            >
-              {t('clearFiltersButton')}
-            </Button>
-          </div>
+        hasFilters ? (
+          <EmptyState
+            state="sleepy"
+            size="sm"
+            title={t('noResults')}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setSearch('');
+                  setTypeFilter('all');
+                  setNeedsWash(undefined);
+                  setFavoriteFilter(undefined);
+                }}
+              >
+                {t('clearFiltersButton')}
+              </Button>
+            }
+          />
         ) : (
           <EmptyWardrobe onAddClick={() => setAddDialogOpen(true)} />
         )
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6 pb-20">
+        <div className="grid grid-cols-2 gap-x-2.5 gap-y-4 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
           {items.map((item) => {
             // Determine if item is selected based on selection mode
             const isSelected = selection.mode === 'all'

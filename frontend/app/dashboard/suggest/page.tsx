@@ -7,11 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useWeatherConditionLabel } from '@/lib/weather-condition';
 import {
-  Briefcase,
   Shirt,
-  Heart,
-  Dumbbell,
-  TreePine,
   Sparkles,
   RefreshCw,
   ThumbsUp,
@@ -26,18 +22,16 @@ import {
   ChevronDown,
   MapPin,
   Wind,
-  GlassWater,
   Cloudy,
   CloudSun,
   Snowflake,
   CalendarDays,
   CloudLightning,
   Music,
+  LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Collapsible,
@@ -51,26 +45,23 @@ import { usePreferences } from '@/lib/hooks/use-preferences';
 import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
 import { cn } from '@/lib/utils';
 import { TempUnit, formatTemp, displayValue, toF, toCelsius } from '@/lib/temperature';
-
-// Map occasion values to icons and colors
-const OCCASION_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = {
-  casual: { icon: <Shirt className="h-4 w-4" />, color: 'hover:border-blue-400 hover:bg-blue-50 data-[selected=true]:border-blue-500 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700' },
-  office: { icon: <Briefcase className="h-4 w-4" />, color: 'hover:border-slate-400 hover:bg-slate-50 data-[selected=true]:border-slate-500 data-[selected=true]:bg-slate-50 data-[selected=true]:text-slate-700' },
-  formal: { icon: <GlassWater className="h-4 w-4" />, color: 'hover:border-purple-400 hover:bg-purple-50 data-[selected=true]:border-purple-500 data-[selected=true]:bg-purple-50 data-[selected=true]:text-purple-700' },
-  date: { icon: <Heart className="h-4 w-4" />, color: 'hover:border-rose-400 hover:bg-rose-50 data-[selected=true]:border-rose-500 data-[selected=true]:bg-rose-50 data-[selected=true]:text-rose-700' },
-  sporty: { icon: <Dumbbell className="h-4 w-4" />, color: 'hover:border-orange-400 hover:bg-orange-50 data-[selected=true]:border-orange-500 data-[selected=true]:bg-orange-50 data-[selected=true]:text-orange-700' },
-  outdoor: { icon: <TreePine className="h-4 w-4" />, color: 'hover:border-green-400 hover:bg-green-50 data-[selected=true]:border-green-500 data-[selected=true]:bg-green-50 data-[selected=true]:text-green-700' },
-};
+import { Input } from '@/components/ui/input';
+import { Chip } from '@/components/chip';
+import { OccasionChips } from '@/components/shared/occasion-chips';
+import { PageHeader } from '@/components/page-header';
+import { StinkyTip } from '@/components/stinky-tip';
+import { Stinky } from '@/components/stinky/stinky';
+import type { StinkyState } from '@/components/stinky/stinky-states';
 
 // Weather condition to icon mapping
 function getWeatherIcon(condition: string, isDay: boolean) {
   const c = condition.toLowerCase();
-  if (c.includes('rain') || c.includes('drizzle')) return <CloudRain className="h-8 w-8" />;
-  if (c.includes('snow')) return <Snowflake className="h-8 w-8" />;
-  if (c.includes('thunder') || c.includes('storm')) return <CloudLightning className="h-8 w-8" />;
-  if (c.includes('cloud') && c.includes('part')) return <CloudSun className="h-8 w-8" />;
-  if (c.includes('cloud') || c.includes('overcast')) return <Cloudy className="h-8 w-8" />;
-  return isDay ? <Sun className="h-8 w-8" /> : <Cloud className="h-8 w-8" />;
+  if (c.includes('rain') || c.includes('drizzle')) return <CloudRain className="h-7 w-7" strokeWidth={1.75} aria-hidden />;
+  if (c.includes('snow')) return <Snowflake className="h-7 w-7" strokeWidth={1.75} aria-hidden />;
+  if (c.includes('thunder') || c.includes('storm')) return <CloudLightning className="h-7 w-7" strokeWidth={1.75} aria-hidden />;
+  if (c.includes('cloud') && c.includes('part')) return <CloudSun className="h-7 w-7" strokeWidth={1.75} aria-hidden />;
+  if (c.includes('cloud') || c.includes('overcast')) return <Cloudy className="h-7 w-7" strokeWidth={1.75} aria-hidden />;
+  return isDay ? <Sun className="h-7 w-7" strokeWidth={1.75} aria-hidden /> : <Cloud className="h-7 w-7" strokeWidth={1.75} aria-hidden />;
 }
 
 interface WeatherOverride {
@@ -96,111 +87,57 @@ function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weathe
   };
 
   if (isLoading) {
-    return (
-      <Card className="border-muted">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-16 w-16 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-4 w-32" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <Skeleton className="h-[88px] w-full rounded-lg" />;
   }
 
   if (!weather) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
-              <MapPin className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="font-medium">{t('locationNotSetTitle')}</p>
-              <p className="text-sm text-muted-foreground">
-                {t('locationNotSetShortBody')}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Link
+        href="/dashboard/settings"
+        className="flex items-center gap-4 rounded-lg bg-panel p-4 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pop-sky text-pop-foreground">
+          <MapPin className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+        </span>
+        <span>
+          <span className="block text-[15px] font-bold">{t('locationNotSetTitle')}</span>
+          <span className="block text-sm text-muted-foreground">{t('locationNotSetShortBody')}</span>
+        </span>
+      </Link>
     );
   }
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center text-foreground">
-              {getWeatherIcon(weather.condition, weather.is_day)}
-            </div>
-            <div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-semibold tracking-tight">{displayValue(weather.temperature, temperatureUnit)}</span>
-                <span className="text-lg text-muted-foreground">{temperatureUnit === 'fahrenheit' ? '°F' : '°C'}</span>
-              </div>
-              <p className="text-sm text-muted-foreground capitalize">{conditionLabel(weather)}</p>
-            </div>
-          </div>
-          <div className="text-right text-sm text-muted-foreground space-y-1">
-            <div className="flex items-center gap-1.5 justify-end">
-              <Thermometer className="h-3.5 w-3.5" />
-              <span>{t('feelsShort', { temp: displayValue(weather.feels_like, temperatureUnit) })}</span>
-            </div>
-            <div className="flex items-center gap-1.5 justify-end">
-              <Droplets className="h-3.5 w-3.5" />
-              <span>{t('rainChanceShort', { pct: weather.precipitation_chance })}</span>
-            </div>
-            <div className="flex items-center gap-1.5 justify-end">
-              <Wind className="h-3.5 w-3.5" />
-              <span>{t('windSpeed', { value: Math.round(weather.wind_speed) })}</span>
-            </div>
+    <div className="rounded-lg bg-panel p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pop-amber text-pop-foreground">
+            {getWeatherIcon(weather.condition, weather.is_day)}
+          </span>
+          <div>
+            <p className="text-2xl font-extrabold leading-none tracking-tight">
+              {displayValue(weather.temperature, temperatureUnit)}
+              <span className="text-base font-semibold text-muted-foreground">{temperatureUnit === 'fahrenheit' ? '°F' : '°C'}</span>
+            </p>
+            <p className="mt-1 text-sm font-medium capitalize text-muted-foreground">{conditionLabel(weather)}</p>
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-sm text-muted-foreground">
-            {getWeatherHint(weather)}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function OccasionChips({
-  selected,
-  onSelect,
-}: {
-  selected: string | null;
-  onSelect: (occasion: string) => void;
-}) {
-  const t = useTranslations('suggest');
-  return (
-    <div className="flex flex-wrap gap-2">
-      {OCCASIONS.map((occasion) => {
-        const config = OCCASION_CONFIG[occasion.value];
-        return (
-          <button
-            key={occasion.value}
-            onClick={() => onSelect(occasion.value)}
-            data-selected={selected === occasion.value}
-            className={cn(
-              'inline-flex items-center gap-2 px-4 py-2.5 rounded-full border-2 transition-all',
-              'border-muted bg-background',
-              config?.color || 'hover:border-primary hover:bg-primary/5',
-              'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50'
-            )}
-          >
-            {config?.icon}
-            <span className="text-sm font-medium">{t(`occasions.${occasion.value}` as any)}</span>
-          </button>
-        );
-      })}
+        <ul className="space-y-1 text-right text-[13px] font-medium text-muted-foreground">
+          <li className="flex items-center justify-end gap-1.5">
+            <Thermometer className="h-3.5 w-3.5" aria-hidden />
+            {t('feelsShort', { temp: displayValue(weather.feels_like, temperatureUnit) })}
+          </li>
+          <li className="flex items-center justify-end gap-1.5">
+            <Droplets className="h-3.5 w-3.5" aria-hidden />
+            {t('rainChanceShort', { pct: weather.precipitation_chance })}
+          </li>
+          <li className="flex items-center justify-end gap-1.5">
+            <Wind className="h-3.5 w-3.5" aria-hidden />
+            {t('windSpeed', { value: Math.round(weather.wind_speed) })}
+          </li>
+        </ul>
+      </div>
+      <p className="mt-3 border-t border-border pt-3 text-sm font-medium">{getWeatherHint(weather)}</p>
     </div>
   );
 }
@@ -225,8 +162,12 @@ function WeatherOverrideSection({
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
-        <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          className="-ml-2 flex min-h-[44px] items-center gap-2 rounded-full px-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} aria-hidden />
           <span>{weather ? t('overrideActive') : t('overrideCta')}</span>
           {weather && (
             <Badge variant="secondary" className="text-xs">
@@ -236,36 +177,31 @@ function WeatherOverrideSection({
           )}
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="pt-4">
-        <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+      <CollapsibleContent className="pt-2">
+        <div className="space-y-4 rounded-lg bg-panel p-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">{t('overrideCondition')}</span>
+            <span className="text-sm font-bold">{t('overrideCondition')}</span>
             {weather && (
               <Button variant="ghost" size="sm" onClick={() => onChange(null)}>
                 {t('overrideReset')}
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {conditions.map((c) => (
-              <button
+              <Chip
                 key={c.value}
+                active={weather?.condition === c.value}
                 onClick={() =>
                   onChange({
                     temperature: weather?.temperature ?? 20,
                     condition: c.value,
                   })
                 }
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg border transition-all',
-                  weather?.condition === c.value
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-muted bg-background hover:border-primary/50'
-                )}
               >
                 {c.icon}
-                <span className="text-sm">{c.label}</span>
-              </button>
+                {c.label}
+              </Chip>
             ))}
           </div>
           {weather && (
@@ -280,9 +216,10 @@ function WeatherOverrideSection({
                   const raw = parseInt(e.target.value);
                   onChange({ ...weather, temperature: temperatureUnit === 'fahrenheit' ? Math.round(toCelsius(raw)) : raw });
                 }}
-                className="flex-1 accent-primary"
+                aria-label={t('overrideTemperature')}
+                className="flex-1 accent-[var(--signature)]"
               />
-              <span className="text-sm font-medium w-14 text-right">{formatTemp(weather.temperature, temperatureUnit)}</span>
+              <span className="w-14 text-right text-sm font-bold">{formatTemp(weather.temperature, temperatureUnit)}</span>
             </div>
           )}
         </div>
@@ -299,6 +236,7 @@ function OutfitResult({
   onReject,
   onTryAnother,
   onNewRequest,
+  isAccepting,
 }: {
   outfit: Outfit;
   occasion: string;
@@ -307,21 +245,22 @@ function OutfitResult({
   onReject: () => void;
   onTryAnother: () => void;
   onNewRequest: () => void;
+  isAccepting: boolean;
 }) {
   const t = useTranslations('suggest');
   const format = useFormatter();
   const conditionLabel = useWeatherConditionLabel();
   return (
-    <div className="space-y-6">
-      {/* Header with occasion and new request */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="capitalize text-sm px-3 py-1">
+    <div className="space-y-4">
+      {/* Occasion, date, start over */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="signature" className="px-3 py-1 text-sm capitalize">
             {t(`occasions.${occasion}` as any)}
           </Badge>
           {outfit.scheduled_for && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <CalendarDays className="h-3 w-3" />
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              <CalendarDays className="h-3.5 w-3.5" aria-hidden />
               {format.dateTime(new Date(outfit.scheduled_for + 'T00:00:00'), { weekday: 'short', month: 'short', day: 'numeric' })}
             </span>
           )}
@@ -331,123 +270,136 @@ function OutfitResult({
         </Button>
       </div>
 
-      {/* Weather info */}
+      {/* Weather used */}
       {outfit.weather && (
-        <div className="flex items-center gap-4 text-sm text-muted-foreground p-3 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-1.5">
-            <Thermometer className="h-4 w-4" />
-            <span>{formatTemp(outfit.weather.temperature, temperatureUnit)}</span>
-            <span className="text-xs opacity-70">{t('feelsInline', { temp: displayValue(outfit.weather.feels_like, temperatureUnit) })}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Droplets className="h-4 w-4" />
-            <span>{t('rainChanceShort', { pct: outfit.weather.precipitation_chance })}</span>
-          </div>
-          <Badge variant="outline" className="capitalize">
-            {conditionLabel(outfit.weather)}
-          </Badge>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-full bg-panel px-4 py-2 text-sm font-medium">
+          <span className="flex items-center gap-1.5">
+            <Thermometer className="h-4 w-4" aria-hidden />
+            {formatTemp(outfit.weather.temperature, temperatureUnit)}
+            <span className="text-xs text-muted-foreground">
+              {t('feelsInline', { temp: displayValue(outfit.weather.feels_like, temperatureUnit) })}
+            </span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Droplets className="h-4 w-4" aria-hidden />
+            {t('rainChanceShort', { pct: outfit.weather.precipitation_chance })}
+          </span>
+          <span className="capitalize text-muted-foreground">{conditionLabel(outfit.weather)}</span>
         </div>
       )}
 
-      {/* Outfit Card */}
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">{t('yourOutfit')}</h3>
-          </div>
+      {/* The look */}
+      <section aria-labelledby="your-outfit-title" className="rounded-lg bg-panel p-3.5 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="your-outfit-title" className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+            <Sparkles className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+            {t('yourOutfit')}
+          </h2>
           {outfit.music_inspiration && (
-            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-background/60 px-3 py-1 text-xs text-foreground">
-              <Music className="h-3.5 w-3.5 text-gold" />
-              <span className="label-editorial text-[10px] tracking-widest text-gold">
-                {t('inspiredBy')}
-              </span>
-              <span className="font-editorial italic">
-                {outfit.music_inspiration.label}
-              </span>
-            </div>
-          )}
-          {outfit.reasoning && (
-            <p className="mt-2 text-base font-medium text-foreground">{outfit.reasoning}</p>
-          )}
-          {outfit.highlights && outfit.highlights.length > 0 && (
-            <ul className="mt-3 space-y-1.5">
-              {outfit.highlights.map((highlight, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>{highlight}</span>
-                </li>
-              ))}
-            </ul>
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-background px-3 py-1 text-xs font-semibold">
+              <Music className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="text-muted-foreground">{t('inspiredBy')}</span>
+              <span className="truncate">{outfit.music_inspiration.label}</span>
+            </span>
           )}
         </div>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {outfit.items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/dashboard/wardrobe?item=${item.id}`}
-                className="group relative rounded-xl border overflow-hidden bg-muted/30 hover:shadow-md transition-shadow"
-              >
-                <div className="aspect-square relative">
-                  {item.thumbnail_url ? (
-                    <Image
-                      src={item.thumbnail_url}
-                      alt={item.name || item.type}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform"
-                      sizes="(max-width: 640px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <Shirt className="h-10 w-10 text-muted-foreground/50" />
-                    </div>
-                  )}
-                </div>
-                <div className="p-2.5">
-                  <p className="text-sm font-medium truncate">
-                    {item.name || item.type}
-                  </p>
-                  {item.layer_type && (
-                    <Badge variant="secondary" className="text-xs capitalize mt-1">
-                      {item.layer_type}
-                    </Badge>
-                  )}
-                </div>
-              </Link>
+
+        {outfit.reasoning && <p className="mt-2 text-[15px] font-medium leading-snug">{outfit.reasoning}</p>}
+        {outfit.highlights && outfit.highlights.length > 0 && (
+          <ul className="mt-3 space-y-1.5">
+            {outfit.highlights.map((highlight, index) => (
+              <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-signature" />
+                <span>{highlight}</span>
+              </li>
             ))}
-          </div>
+          </ul>
+        )}
 
-          {outfit.style_notes && (
-            <div className="mt-4 p-3 bg-muted rounded-lg border">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{t('tipLabel')}</span> {outfit.style_notes}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          {outfit.items.map((item) => (
+            <Link
+              key={item.id}
+              href={`/dashboard/wardrobe?item=${item.id}`}
+              className="group block rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="relative aspect-square overflow-hidden rounded-tile bg-background">
+                {item.thumbnail_url ? (
+                  <Image
+                    src={item.thumbnail_url}
+                    alt={item.name || item.type}
+                    fill
+                    className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                    sizes="(max-width: 640px) 50vw, 33vw"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Shirt className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+                  </div>
+                )}
+                {item.layer_type && (
+                  <Badge variant="secondary" className="absolute left-2 top-2 bg-panel capitalize">
+                    {item.layer_type}
+                  </Badge>
+                )}
+              </div>
+              <p className="mt-1.5 truncate px-1 text-sm font-semibold">{item.name || item.type}</p>
+            </Link>
+          ))}
+        </div>
 
-      {/* Action buttons */}
-      <div className="flex gap-3 justify-center">
-        <Button variant="outline" size="lg" onClick={onTryAnother} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
+        {outfit.style_notes && <StinkyTip className="mt-4">{outfit.style_notes}</StinkyTip>}
+      </section>
+
+      {/* Actions */}
+      <div className="flex gap-2.5">
+        <Button variant="secondary" size="lg" onClick={onTryAnother} className="flex-1">
+          <RefreshCw className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
           {t('tryAnother')}
         </Button>
-        <Button size="lg" onClick={onAccept} className="gap-2">
-          <ThumbsUp className="h-4 w-4" />
+        <Button size="lg" onClick={onAccept} disabled={isAccepting} className="flex-1">
+          {isAccepting ? (
+            <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
+          ) : (
+            <ThumbsUp className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+          )}
           {t('loveIt')}
         </Button>
-        <Button variant="ghost" size="lg" onClick={onReject} className="px-3">
-          <ThumbsDown className="h-4 w-4" />
+        <Button variant="outline" size="icon" className="h-[52px] w-[52px]" onClick={onReject} aria-label={t('rejectOutfit')}>
+          <ThumbsDown className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
         </Button>
       </div>
     </div>
   );
 }
 
+/** Big Stinky in a soft-pink circle — the page's hero. */
+function StinkyHero({
+  state,
+  title,
+  body,
+  children,
+}: {
+  state: StinkyState;
+  title: string;
+  body?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col items-center px-2 text-center" aria-live="polite">
+      <div className="flex h-44 w-44 items-center justify-center rounded-full bg-signature-soft">
+        <Stinky state={state} size={150} label="" />
+      </div>
+      <h2 className="mt-4 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">{title}</h2>
+      {body && <p className="mt-2 max-w-md text-[15px] leading-snug text-muted-foreground">{body}</p>}
+      {children}
+    </section>
+  );
+}
+
 export default function SuggestPage() {
   const t = useTranslations('suggest');
+  const tOcc = useTranslations('suggest.occasions');
   const { data: session } = useSession();
   const { data: weather, isLoading: weatherLoading } = useWeather();
   const { data: prefs } = usePreferences();
@@ -460,14 +412,8 @@ export default function SuggestPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Get time-based greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('greetingMorning');
-    if (hour < 17) return t('greetingAfternoon');
-    return t('greetingEvening');
-  };
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
     if (prefs?.default_occasion && !occasionInitialized && !selectedOccasion) {
@@ -485,6 +431,7 @@ export default function SuggestPage() {
 
     setIsGenerating(true);
     setError(null);
+    setAccepted(false);
 
     try {
       const request: SuggestRequest = {
@@ -527,12 +474,16 @@ export default function SuggestPage() {
       setAccessToken(session.accessToken as string);
     }
 
+    setIsAccepting(true);
     try {
       await api.post(`/outfits/${outfit.id}/accept`);
       setOutfit(null);
       setSelectedOccasion(null);
+      setAccepted(true);
     } catch (err) {
       console.error('Accept error:', err);
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -562,104 +513,16 @@ export default function SuggestPage() {
     setOutfit(null);
     setSelectedOccasion(null);
     setError(null);
+    setAccepted(false);
   };
 
+  const trimmedSong = songQuery.trim();
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10 py-10 sm:py-16 space-y-10">
-      {/* Editorial header */}
-      <header className="text-center max-w-2xl mx-auto">
-        <p className="label-editorial text-gold">{getGreeting()}</p>
-        <h1 className="font-display italic font-black text-display-xl leading-none mt-3">
-          {t('title')}
-        </h1>
-        <div className="h-px w-16 bg-gold mx-auto mt-8" />
-        <p className="font-editorial italic text-xl text-muted-foreground mt-8">
-          {t('editorialSubtitle')}
-        </p>
-      </header>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <PageHeader title={t('title')} />
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {!outfit ? (
-        <div className="space-y-6">
-          {/* Weather context */}
-          <WeatherCard weather={weather} isLoading={weatherLoading} temperatureUnit={temperatureUnit} />
-
-          {/* Main selection card */}
-          <Card>
-            <CardContent className="p-6 space-y-6">
-              {/* Occasion selection */}
-              <div className="space-y-3">
-                <h2 className="font-semibold">{t('occasionsQuestion')}</h2>
-                <OccasionChips
-                  selected={selectedOccasion}
-                  onSelect={setSelectedOccasion}
-                />
-              </div>
-
-              {/* Weather override (collapsible) */}
-              <WeatherOverrideSection
-                weather={weatherOverride}
-                onChange={setWeatherOverride}
-                temperatureUnit={temperatureUnit}
-              />
-
-              {/* Song input — optional mood/aesthetic reference */}
-              <div className="space-y-2">
-                <label
-                  htmlFor="song-query"
-                  className="font-display text-sm flex items-center gap-2 text-foreground"
-                >
-                  <Music className="h-4 w-4 text-gold" />
-                  {t('songLabel')}
-                </label>
-                <input
-                  id="song-query"
-                  type="text"
-                  value={songQuery}
-                  onChange={(e) => setSongQuery(e.target.value)}
-                  placeholder={t('songPlaceholder')}
-                  maxLength={280}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:font-editorial placeholder:italic placeholder:text-muted-foreground/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                />
-                <p className="text-xs text-muted-foreground/80 font-editorial italic">
-                  {t('songHelp')}
-                </p>
-                {spotifyStatus.data?.connected && spotifyStatus.data.use_for_mood && !songQuery.trim() && (
-                  <p className="text-xs text-gold font-editorial italic">{t('songSpotifyHint')}</p>
-                )}
-              </div>
-
-              {/* Generate button */}
-              <div className="pt-2">
-                <Button
-                  size="lg"
-                  className="w-full gap-2"
-                  onClick={handleGenerate}
-                  disabled={!selectedOccasion || isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      {t('creatingLook')}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5" />
-                      {t('getSuggestion')}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
+      {outfit ? (
         <OutfitResult
           outfit={outfit}
           occasion={selectedOccasion || 'casual'}
@@ -668,7 +531,100 @@ export default function SuggestPage() {
           onReject={handleReject}
           onTryAnother={handleTryAnother}
           onNewRequest={handleNewRequest}
+          isAccepting={isAccepting}
         />
+      ) : isGenerating ? (
+        <div className="space-y-6">
+          <StinkyHero
+            state="thinking"
+            title={t('thinkingTitle')}
+            body={
+              trimmedSong
+                ? t.rich('thinkingBodySong', { song: trimmedSong, b: (c) => <strong className="text-foreground">{c}</strong> })
+                : t('thinkingBody')
+            }
+          />
+          <section>
+            <p className="mb-2.5 px-1 text-sm font-bold">{t('occasionsQuestion')}</p>
+            <OccasionChips selected={selectedOccasion} onSelect={() => {}} disabled scroll />
+          </section>
+          <div className="space-y-2">
+            <div
+              role="progressbar"
+              aria-label={t('creatingLook')}
+              aria-busy="true"
+              className="relative h-3 overflow-hidden rounded-full bg-panel"
+            >
+              <div className="absolute inset-y-0 left-0 w-2/5 animate-progress-indeterminate rounded-full bg-signature" />
+            </div>
+            <p className="px-1 text-[13px] text-muted-foreground">{t('thinkingCaption')}</p>
+          </div>
+        </div>
+      ) : accepted ? (
+        <StinkyHero state="happy" title={t('acceptedTitle')} body={t('acceptedBody')}>
+          <div className="mt-6 flex w-full max-w-md gap-2.5">
+            <Button variant="secondary" size="lg" className="flex-1" onClick={handleNewRequest}>
+              <RefreshCw className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+              {t('anotherLook')}
+            </Button>
+            <Button asChild size="lg" className="flex-1">
+              <Link href="/dashboard/outfits">
+                <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+                {t('seeLooks')}
+              </Link>
+            </Button>
+          </div>
+        </StinkyHero>
+      ) : (
+        <div className="space-y-6">
+          {error ? (
+            <StinkyHero state="sad" title={t('errorTitle')} body={error} />
+          ) : (
+            <StinkyHero
+              state="idle"
+              title={t('introTitle')}
+              body={selectedOccasion ? t('introBodyOccasion', { occasion: tOcc(selectedOccasion as any) }) : t('introBody')}
+            />
+          )}
+
+          <WeatherCard weather={weather} isLoading={weatherLoading} temperatureUnit={temperatureUnit} />
+
+          <section className="space-y-2.5">
+            <h2 className="px-1 text-sm font-bold">{t('occasionsQuestion')}</h2>
+            <OccasionChips selected={selectedOccasion} onSelect={setSelectedOccasion} scroll />
+          </section>
+
+          <WeatherOverrideSection weather={weatherOverride} onChange={setWeatherOverride} temperatureUnit={temperatureUnit} />
+
+          {/* Song — optional mood/aesthetic reference */}
+          <div className="space-y-2">
+            <label htmlFor="song-query" className="flex items-center gap-2 px-1 text-sm font-bold">
+              <Music className="h-4 w-4" aria-hidden />
+              {t('songLabel')}
+            </label>
+            <Input
+              id="song-query"
+              type="text"
+              value={songQuery}
+              onChange={(e) => setSongQuery(e.target.value)}
+              placeholder={t('songPlaceholder')}
+              maxLength={280}
+              className="border-transparent bg-panel"
+              aria-describedby="song-help"
+            />
+            <p id="song-help" className="px-1 text-xs text-muted-foreground">
+              {t('songHelp')}
+            </p>
+            {spotifyStatus.data?.connected && spotifyStatus.data.use_for_mood && !songQuery.trim() && (
+              <p className="px-1 text-xs font-semibold text-success">{t('songSpotifyHint')}</p>
+            )}
+          </div>
+
+          <Button size="lg" className="w-full" onClick={handleGenerate} disabled={!selectedOccasion}>
+            <Sparkles className="h-5 w-5" strokeWidth={2} aria-hidden />
+            {error ? t('tryAgain') : t('getSuggestion')}
+          </Button>
+        </div>
       )}
     </div>
   );

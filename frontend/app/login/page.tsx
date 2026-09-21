@@ -3,36 +3,23 @@
 import { Suspense, useEffect, useState } from 'react';
 import { signIn, getProviders, useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, Mail } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useTheme } from 'next-themes';
 import { LanguageSwitcher, SHOW_LANGUAGE_SWITCHER } from '@/components/language-switcher';
 import { safeCallbackPath } from '@/lib/magic-link';
-
-function ThemeButton() {
-  const { theme, setTheme } = useTheme();
-  const tCommon = useTranslations('common');
-  return (
-    <button
-      type="button"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      aria-label={tCommon('toggleTheme')}
-      className="h-9 min-w-[36px] px-2 label-editorial hover:text-primary transition-colors duration-200 ease-editorial"
-    >
-      {theme === 'dark' ? tCommon('lightMode') : tCommon('darkMode')}
-    </button>
-  );
-}
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Stinky } from '@/components/stinky/stinky';
+import { Wordmark } from '@/components/brand/wordmark';
 
 function OIDCLoginButton({ callbackUrl }: { callbackUrl: string }) {
   const t = useTranslations('common');
   return (
-    <button
-      onClick={() => signIn('oidc', { callbackUrl })}
-      className="w-full h-12 bg-primary text-primary-foreground border border-primary uppercase tracking-widest text-xs hover:bg-transparent hover:text-primary transition-all duration-200 ease-editorial"
-    >
+    <Button size="lg" className="w-full" onClick={() => signIn('oidc', { callbackUrl })}>
       {t('signIn')}
-    </button>
+    </Button>
   );
 }
 
@@ -50,51 +37,46 @@ function DevLogin({ callbackUrl }: { callbackUrl: string }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="border-l-2 border-l-gold px-4 py-3 bg-card">
-        <p className="label-editorial text-gold">Preview</p>
-        <p className="font-editorial italic text-sm text-foreground mt-1">{t('devBanner')}</p>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Alert variant="signature">
+        <AlertDescription className="font-semibold text-foreground">{t('devBanner')}</AlertDescription>
+      </Alert>
 
       <div className="space-y-2">
-        <label htmlFor="email" className="label-editorial block">{t('emailLabel')}</label>
-        <input
+        <label htmlFor="email" className="block px-1 text-sm font-bold">{t('emailLabel')}</label>
+        <Input
           id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           placeholder={t('emailPlaceholder')}
-          className="w-full h-11 border-0 border-b border-border-solid/60 bg-transparent px-1 py-2 text-base text-foreground font-body placeholder:font-editorial placeholder:italic placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary transition-colors duration-200 ease-editorial"
+          className="h-[54px] px-[22px] text-base"
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="name" className="label-editorial block">{t('nameLabel')}</label>
-        <input
+        <label htmlFor="name" className="block px-1 text-sm font-bold">{t('nameLabel')}</label>
+        <Input
           id="name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t('namePlaceholder')}
-          className="w-full h-11 border-0 border-b border-border-solid/60 bg-transparent px-1 py-2 text-base text-foreground font-body placeholder:font-editorial placeholder:italic placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary transition-colors duration-200 ease-editorial"
+          className="h-[54px] px-[22px] text-base"
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full h-12 bg-primary text-primary-foreground border border-primary uppercase tracking-widest text-xs hover:bg-transparent hover:text-primary transition-all duration-200 ease-editorial disabled:opacity-50 flex items-center justify-center gap-2"
-      >
+      <Button type="submit" size="lg" disabled={isLoading} className="h-[54px] w-full">
         {isLoading ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             {tCommon('signingIn')}
           </>
         ) : (
           tCommon('signIn')
         )}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -133,54 +115,57 @@ function MagicLinkForm() {
 
   if (sent) {
     return (
-      <div className="border-l-2 border-l-gold px-4 py-4 bg-card">
-        <p className="font-display text-base leading-tight mb-1">{t('sentTitle')}</p>
-        <p className="text-sm text-muted-foreground">{t('sentBody')}</p>
-      </div>
+      <Alert variant="signature" role="status">
+        <AlertTitle>{t('sentTitle')}</AlertTitle>
+        <AlertDescription className="text-foreground/80">{t('sentBody')}</AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-6">
-      <div className="space-y-2">
-        <label htmlFor="ml-email" className="label-editorial block">
+    <form onSubmit={submit} className="space-y-3">
+      <div className="space-y-3">
+        <label htmlFor="ml-email" className="block px-1 text-sm font-bold">
           {t('emailLabel')}
         </label>
-        <input
+        <Input
           id="ml-email"
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder={t('emailPlaceholder')}
-          className="w-full h-11 border-0 border-b border-border-solid/60 bg-transparent px-1 py-2 text-base text-foreground font-body placeholder:font-editorial placeholder:italic placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary transition-colors duration-200 ease-editorial"
+          className="h-[54px] px-[22px] text-base"
         />
       </div>
-      {errorMsg && <p className="text-sm text-destructive">{errorMsg}</p>}
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full h-12 bg-primary text-primary-foreground border border-primary uppercase tracking-widest text-xs hover:bg-transparent hover:text-primary transition-all duration-200 ease-editorial disabled:opacity-50 flex items-center justify-center gap-2"
-      >
+      {errorMsg && (
+        <p role="alert" className="px-1 text-sm font-medium text-destructive">
+          {errorMsg}
+        </p>
+      )}
+      <Button type="submit" size="lg" disabled={isLoading} className="h-[54px] w-full">
         {isLoading ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             {tCommon('signingIn')}
           </>
         ) : (
-          t('cta')
+          <>
+            <Mail className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+            {t('cta')}
+          </>
         )}
-      </button>
+      </Button>
     </form>
   );
 }
 
-function EditorialAlert({ title, body }: { title: string; body: string }) {
+function LoginAlert({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-l-2 border-l-primary px-4 py-3 bg-card">
-      <p className="font-display text-base leading-tight mb-1">{title}</p>
-      <p className="text-sm text-muted-foreground">{body}</p>
-    </div>
+    <Alert variant="destructive">
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription className="text-foreground/80">{body}</AlertDescription>
+    </Alert>
   );
 }
 
@@ -233,19 +218,21 @@ function LoginContent() {
 
   if (status === 'loading' || authMode === 'loading') {
     return (
-      <div className="space-y-4 animate-pulse">
-        <div className="h-12 bg-muted" />
+      <div className="space-y-3 animate-pulse" aria-busy="true">
+        <div className="h-5 w-40 rounded-full bg-panel" />
+        <div className="h-[54px] rounded-full bg-panel" />
+        <div className="h-[54px] rounded-full bg-panel" />
       </div>
     );
   }
 
   return (
     <>
-      {backendError && <EditorialAlert title={t('backendErrorTitle')} body={backendError} />}
-      {!backendError && syncError && <EditorialAlert title={t('backendErrorTitle')} body={syncError} />}
+      {backendError && <LoginAlert title={t('backendErrorTitle')} body={backendError} />}
+      {!backendError && syncError && <LoginAlert title={t('backendErrorTitle')} body={syncError} />}
 
       {error && !backendError && !syncError && (
-        <EditorialAlert
+        <LoginAlert
           title={error.startsWith('MagicLink') ? t('errorMagicLinkTitle') : t('backendErrorTitle')}
           body={
             (error === 'OAuthSignin' && t('errorOAuthSignin')) ||
@@ -267,8 +254,8 @@ function LoginContent() {
         {authMode === 'oidc' && <OIDCLoginButton callbackUrl={callbackUrl} />}
         {authMode === 'dev' && <DevLogin callbackUrl={callbackUrl} />}
         {authMode === 'unconfigured' && !magicLinkEnabled && (
-          <div className="border-l-2 border-l-primary px-4 py-4 bg-card">
-            <p className="font-display text-lg leading-tight mb-2">{t('notConfiguredTitle')}</p>
+          <Alert>
+            <AlertTitle>{t('notConfiguredTitle')}</AlertTitle>
             <p className="text-sm text-muted-foreground">
               {t.rich('notConfiguredHint', {
                 oidc: () => <code className="font-mono text-xs">OIDC_ISSUER_URL</code>,
@@ -276,7 +263,7 @@ function LoginContent() {
                 devMode: () => <code className="font-mono text-xs">DEV_MODE=true</code>,
               })}
             </p>
-          </div>
+          </Alert>
         )}
       </div>
     </>
@@ -286,39 +273,45 @@ function LoginContent() {
 export default function LoginPage() {
   const t = useTranslations('login');
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      {/* Top-right utility strip */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-3 z-10">
+    <main className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-2 lg:gap-4 lg:p-4">
+      {/* Pink hero: Stinky waving + wordmark */}
+      <section
+        className="relative flex min-h-[440px] flex-col items-center justify-center gap-2 rounded-b-[40px] bg-signature px-6 pb-10 pt-[calc(2.5rem+env(safe-area-inset-top))] text-signature-foreground sm:min-h-[52vh] lg:min-h-0 lg:rounded-[40px]"
+      >
         {SHOW_LANGUAGE_SWITCHER && (
-          <>
+          <div className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))]">
             <LanguageSwitcher variant="compact" />
-            <div className="h-4 w-px bg-border-solid/60" />
-          </>
-        )}
-        <ThemeButton />
-      </div>
-
-      <div className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
-        <div className="w-full max-w-md">
-          {/* Wordmark */}
-          <header className="text-center mb-4">
-            <h1 className="font-display italic font-black text-display-2xl leading-none">
-              miaurmario
-            </h1>
-            <div className="h-px w-16 bg-gold mx-auto mt-6" />
-            <p className="font-editorial italic text-xl text-muted-foreground mt-6">
-              {t('tagline')}
-            </p>
-          </header>
-
-          <div className="mt-14 space-y-6">
-            <Suspense fallback={<div className="animate-pulse h-12 bg-muted" />}>
-              <LoginContent />
-            </Suspense>
           </div>
+        )}
+        <div className="flex h-[200px] w-[200px] items-center justify-center rounded-full bg-white lg:h-[260px] lg:w-[260px]">
+          <Stinky state="wave" size={176} variant="light" label="" className="lg:!h-[228px] lg:!w-[228px]" />
+        </div>
+        <h1 className="mt-4">
+          <Wordmark className="text-[44px] text-signature-foreground lg:text-6xl" />
+        </h1>
+        <p className="text-base font-semibold opacity-85 lg:text-lg">{t('tagline')}</p>
+      </section>
 
-          <footer className="mt-16 text-center">
-            <p className="label-editorial">{t('terms')}</p>
+      <div className="flex flex-col justify-center px-6 pb-10 pt-8 lg:px-12">
+        <div className="mx-auto w-full max-w-md space-y-4">
+          <Suspense fallback={<div className="h-[54px] animate-pulse rounded-full bg-panel" />}>
+            <LoginContent />
+          </Suspense>
+
+          <footer className="pt-2 text-center text-[13px] leading-relaxed text-muted-foreground">
+            <p>{t('noPasswords')}</p>
+            <p>
+              {t.rich('termsRich', {
+                link: (chunks) => (
+                  <Link
+                    href="/legal"
+                    className="font-semibold text-foreground underline underline-offset-2 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
           </footer>
         </div>
       </div>

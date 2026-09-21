@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, setAccessToken } from '@/lib/api';
-import { FamilyRating } from '@/lib/types';
+import { FamilyRating, MusicInspiration } from '@/lib/types';
 
 // Helper to set token if available (for NextAuth mode)
 function useSetTokenIfAvailable() {
@@ -69,6 +69,7 @@ export interface Outfit {
   family_rating_average: number | null;
   family_rating_count: number | null;
   is_starter_suggestion?: boolean;
+  music_inspiration?: MusicInspiration | null;
   created_at: string;
 }
 

@@ -53,7 +53,8 @@
     },
     "greeting": "¡Hola, {name}!",
     "greetingAnon": "¡Hola!",
-    "loadingWardrobe": "Cargando tu armario…"
+    "loadingWardrobe": "Cargando tu armario…",
+    "stinkySays": "Stinky:"
   },
   "errors": {
     "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -75,7 +76,7 @@
   },
   "login": {
     "brand": "miaurmario",
-    "tagline": "Tu armario, curado por un gato con criterio.",
+    "tagline": "Tu armario, con criterio felino.",
     "backendErrorTitle": "Error de configuración del backend",
     "backendErrorDefault": "No se puede conectar con el servidor. Verifica que el backend esté funcionando.",
     "notConfiguredTitle": "No hay método de autenticación configurado",
@@ -106,7 +107,9 @@
       "rateLimited": "Has pedido demasiados enlaces. Espera un rato antes de volver a intentarlo.",
       "genericError": "No hemos podido enviar el enlace. Inténtalo de nuevo en un momento.",
       "verifying": "Iniciando sesión…"
-    }
+    },
+    "noPasswords": "Sin contraseñas: te mandamos un enlace mágico.",
+    "termsRich": "Al entrar aceptas la <link>privacidad y los términos</link>."
   },
   "onboarding": {
     "username": {
@@ -327,6 +330,22 @@
       "thursday": "Jueves",
       "friday": "Viernes",
       "saturday": "Sábado"
+    },
+    "today": {
+      "quickActions": "Accesos rápidos",
+      "quickUpload": "Subir prenda",
+      "quickCreate": "Crear look",
+      "quickPlan": "Planificar",
+      "quickStats": "Estadísticas",
+      "thisWeek": "Esta semana",
+      "lookTitle": "Tu look de hoy",
+      "viewLook": "Ver el look de hoy",
+      "anotherIdea": "Otra idea",
+      "wearIt": "Me lo pongo",
+      "askStinky": "Pídeselo a Stinky",
+      "noLookTitle": "Aún no hay look para hoy",
+      "noLookBody": "Stinky te propone uno en segundos con tu armario y el tiempo.",
+      "defaultTip": "si dudas, un básico bien planchado nunca falla. Confía en mí, soy un gato."
     }
   },
   "wardrobe": {
@@ -364,7 +383,7 @@
       "allTypes": "Todos los tipos"
     },
     "sort": {
-      "label": "Ordenar por",
+      "label": "Ordenar",
       "newest": "Más recientes",
       "oldest": "Más antiguas",
       "mostWorn": "Más usadas",
@@ -394,7 +413,7 @@
       "wornTimes": "Usada {count} veces",
       "wornCount": "{count, plural, one {Usada # vez} other {Usada # veces}}",
       "lastWorn": "Última vez usada: {date}",
-      "neverWorn": "Aún no usada",
+      "neverWorn": "Sin estrenar",
       "deleteConfirmTitle": "¿Eliminar esta prenda?",
       "deleteConfirmBody": "Se quitará de tu armario permanentemente.",
       "deleted": "Prenda eliminada",
@@ -488,7 +507,8 @@
         "originalRestoreFailed": "No se pudo restaurar la original",
         "imageReplaced": "Imagen reemplazada",
         "imageReplaceFailed": "No se pudo reemplazar la imagen"
-      }
+      },
+      "wornAgo": "{days, plural, =0 {Usada hoy} =1 {Usada ayer} other {Usada hace # días}}"
     },
     "bulk": {
       "deleted": "{count, plural, one {# prenda eliminada} other {# prendas eliminadas}}",
@@ -555,7 +575,14 @@
       "keepEditing": "Seguir editando",
       "discard": "Descartar",
       "previewAlt": "Vista previa"
-    }
+    },
+    "searchCountPlaceholder": "Busca en tus {count, plural, one {# prenda} other {# prendas}}",
+    "moreFilters": "Más filtros",
+    "categories": "Categorías",
+    "washBadge": "Lavar",
+    "favorite": "Favorita",
+    "select": "Seleccionar {name}",
+    "perPageLabel": "Prendas por página"
   },
   "suggest": {
     "title": "El Estilista",
@@ -625,7 +652,20 @@
     "songPlaceholder": "Ej: Mitski — My Love Mine All Mine, o pega un link de Spotify",
     "songHelp": "Opcional. El Estilista usará el mood de la canción como capa de inspiración.",
     "inspiredBy": "Inspirado en",
-    "songSpotifyHint": "Spotify conectado: si lo dejas vacío, usaremos lo que estás escuchando."
+    "songSpotifyHint": "Spotify conectado: si lo dejas vacío, usaremos lo que estás escuchando.",
+    "thinkingTitle": "Stinky está pensando tu look…",
+    "thinkingBody": "Mirando tu armario, el tiempo y la ocasión.",
+    "thinkingBodySong": "Mirando tu armario, el tiempo y lo que suena: <b>{song}</b>.",
+    "thinkingCaption": "Combinando tus prendas · unos segundos",
+    "introTitle": "¿Qué te pongo hoy?",
+    "introBody": "Elige la ocasión y Stinky te arma un look con tu armario.",
+    "introBodyOccasion": "Plan: {occasion}. Cuando quieras, Stinky se pone a ello.",
+    "acceptedTitle": "¡Buena elección!",
+    "acceptedBody": "Guardado en tus looks. Stinky aprueba.",
+    "anotherLook": "Otro look",
+    "seeLooks": "Ver mis looks",
+    "errorTitle": "Uy, algo se ha torcido",
+    "tryAgain": "Volver a intentarlo"
   },
   "settings": {
     "title": "Ajustes",
@@ -666,7 +706,8 @@
       "themeLight": "Claro",
       "themeDark": "Oscuro",
       "themeSystem": "Sistema",
-      "language": "Idioma"
+      "language": "Idioma",
+      "description": "Elige el tema y el idioma de la app."
     },
     "family": {
       "title": "Familia",
@@ -780,7 +821,8 @@
         "pantsSize": "Talla de pantalón",
         "dressSize": "Talla de vestido",
         "shoeSize": "Talla de calzado"
-      }
+      },
+      "example": "p. ej. {value}"
     },
     "colors": {
       "title": "Preferencias de color",
@@ -843,7 +885,11 @@
       "visionModel": "Modelo de visión",
       "textModel": "Modelo de texto",
       "addEndpoint": "Añadir endpoint",
-      "testFailed": "No se pudo probar el endpoint"
+      "testFailed": "No se pudo probar el endpoint",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "remove": "Eliminar endpoint",
+      "namePlaceholder": "p. ej., Ollama local"
     },
     "integrations": {
       "title": "Integraciones",
@@ -946,7 +992,9 @@
       "setUp": "Configurar familia",
       "manage": "Gestionar familia",
       "yourRating": "Tu valoración:"
-    }
+    },
+    "roleLabel": "Rol",
+    "cancelInvite": "Cancelar invitación"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -1420,7 +1468,9 @@
     "yourRating": "Tu valoración:",
     "commentPlaceholder": "Añade una nota (opcional)",
     "update": "Actualizar valoración",
-    "submit": "Enviar valoración"
+    "submit": "Enviar valoración",
+    "starsLabel": "{count, plural, one {# estrella} other {# estrellas}}",
+    "removeRating": "Retirar mi valoración"
   },
   "detailsPanel": {
     "aiFallbackOccasion": "Brunch de viernes",
@@ -1537,7 +1587,10 @@
     "inviteMembers": "Invitar miembros",
     "noOutfitsTitle": "Aún no hay outfits",
     "noOutfitsBody": "{name} todavía no ha recibido ninguna sugerencia de outfit. Vuelve pronto.",
-    "noOutfitsBodyGeneric": "Este miembro aún no ha recibido sugerencias de outfit. Vuelve pronto."
+    "noOutfitsBodyGeneric": "Este miembro aún no ha recibido sugerencias de outfit. Vuelve pronto.",
+    "starsLabel": "{count, plural, one {# estrella} other {# estrellas}}",
+    "lookbook": "Lookbook",
+    "previewOutfit": "Ver el outfit"
   },
   "pairingCard": {
     "toast": {
@@ -1741,7 +1794,8 @@
     "connectCta": "Conectar Pinterest",
     "manageConnection": "Gestionar conexión",
     "previous": "Anterior",
-    "next": "Siguiente"
+    "next": "Siguiente",
+    "openPin": "Abrir pin"
   },
   "weatherConditions": {
     "clear": "Despejado",
@@ -1774,5 +1828,38 @@
     "replaces": "Sustituye a la sugerencia «{occasion}»",
     "replacesWithDate": "Sustituye a la sugerencia «{occasion}» del {date}",
     "fromLookbook": "De tu entrada del lookbook «{name}»"
+  },
+  "clothingTypes": {
+    "shirt": "Camisa",
+    "t-shirt": "Camiseta",
+    "top": "Top",
+    "polo": "Polo",
+    "blouse": "Blusa",
+    "tank-top": "Camiseta de tirantes",
+    "sweater": "Jersey",
+    "hoodie": "Sudadera",
+    "cardigan": "Chaqueta de punto",
+    "vest": "Chaleco",
+    "pants": "Pantalón",
+    "jeans": "Vaqueros",
+    "shorts": "Pantalón corto",
+    "skirt": "Falda",
+    "dress": "Vestido",
+    "jumpsuit": "Mono",
+    "jacket": "Chaqueta",
+    "blazer": "Americana",
+    "coat": "Abrigo",
+    "suit": "Traje",
+    "shoes": "Zapatos",
+    "sneakers": "Zapatillas",
+    "boots": "Botas",
+    "sandals": "Sandalias",
+    "socks": "Calcetines",
+    "tie": "Corbata",
+    "hat": "Sombrero",
+    "scarf": "Bufanda",
+    "belt": "Cinturón",
+    "bag": "Bolso",
+    "accessories": "Accesorios"
   }
 }

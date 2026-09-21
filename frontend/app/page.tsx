@@ -1,24 +1,27 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+import { Button } from '@/components/ui/button';
+import { Stinky } from '@/components/stinky/stinky';
+import { Wordmark } from '@/components/brand/wordmark';
 
-export default function Home() {
+export default async function Home() {
+  const t = await getTranslations('login');
+  const tCommon = await getTranslations('common');
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <div className="flex justify-center mb-6">
-          <img src="/logo.svg" alt="Miaurmario" className="h-20 w-20" />
+    <main className="flex min-h-screen flex-col bg-background">
+      <section className="flex flex-1 flex-col items-center justify-center gap-2 rounded-b-[40px] bg-signature px-6 py-12 text-signature-foreground">
+        <div className="flex h-[200px] w-[200px] items-center justify-center rounded-full bg-white">
+          <Stinky state="wave" size={176} variant="light" label="" />
         </div>
-        <h1 className="text-4xl font-bold tracking-tight mb-4">
-          miaurmario
+        <h1 className="mt-4">
+          <Wordmark className="text-[44px] text-signature-foreground" />
         </h1>
-        <p className="text-muted-foreground mb-8">
-          Tu armario, curado por un gato con criterio.
-        </p>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-        >
-          Entrar
-        </Link>
+        <p className="text-base font-semibold opacity-85">{t('tagline')}</p>
+      </section>
+      <div className="mx-auto w-full max-w-md px-6 py-10">
+        <Button asChild size="lg" className="h-[54px] w-full">
+          <Link href="/dashboard">{tCommon('signIn')}</Link>
+        </Button>
       </div>
     </main>
   );

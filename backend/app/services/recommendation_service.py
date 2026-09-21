@@ -39,6 +39,11 @@ from app.services.weather_service import (
 )
 from app.utils.clothing import deduplicate_by_body_slot
 from app.utils.prompts import load_prompt
+from app.utils.style_profile import (
+    VARIETY_ES,
+    color_label_es,
+    format_style_profile_for_prompt,
+)
 from app.utils.timezone import get_user_today
 
 logger = logging.getLogger(__name__)
@@ -308,87 +313,43 @@ class RecommendationService:
         worn_combinations: set[frozenset[UUID]] | None = None,
         number_map: dict[int, UUID] | None = None,
         occasion: str | None = None,
-        body_measurements: dict | None = None,
     ) -> str:
+        """Operational context for today's pick (variety, comfort, repeats).
+
+        Taste (colours, styles, body notes) lives in the separate
+        ``{style_profile_text}`` block (see ``app.utils.style_profile``).
+        """
         lines = []
 
-        if body_measurements:
-            m = body_measurements
-            body_parts = []
-            if m.get("height"):
-                body_parts.append(f"height {m['height']}cm")
-            if m.get("weight"):
-                body_parts.append(f"weight {m['weight']}kg")
-            if m.get("chest"):
-                body_parts.append(f"chest {m['chest']}cm")
-            if m.get("waist"):
-                body_parts.append(f"waist {m['waist']}cm")
-            if m.get("hips"):
-                body_parts.append(f"hips {m['hips']}cm")
-            if m.get("inseam"):
-                body_parts.append(f"inseam {m['inseam']}cm")
-            if m.get("shirt_size"):
-                body_parts.append(f"shirt size {m['shirt_size']}")
-            if m.get("pants_size"):
-                body_parts.append(f"pants size {m['pants_size']}")
-            if m.get("shoe_size"):
-                body_parts.append(f"shoe size {m['shoe_size']}")
-            if body_parts:
-                lines.append(f"- Body: {', '.join(body_parts)}")
-
         if preferences:
-            if preferences.color_favorites:
-                lines.append(f"- Favorite colors: {', '.join(preferences.color_favorites)}")
-            if preferences.color_avoid:
-                lines.append(f"- Colors to avoid: {', '.join(preferences.color_avoid)}")
-            if preferences.style_profile:
-                profile = preferences.style_profile
-                strong = sorted(
-                    [(k, v) for k, v in profile.items() if isinstance(v, (int, float)) and v > 60],
-                    key=lambda x: x[1],
-                    reverse=True,
-                )
-                weak = [k for k, v in profile.items() if isinstance(v, (int, float)) and v < 30]
-                if strong:
-                    desc = ", ".join(f"{k} ({v}%)" for k, v in strong)
-                    lines.append(f"- Preferred styles: {desc}")
-                if weak:
-                    lines.append(f"- Less preferred styles: {', '.join(weak)}")
-            if preferences.variety_level:
-                lines.append(f"- Variety preference: {preferences.variety_level}")
-            if preferences.layering_preference and preferences.layering_preference != "moderate":
-                lines.append(f"- Layering preference: {preferences.layering_preference}")
+            if preferences.variety_level and preferences.variety_level != "moderate":
+                variety = VARIETY_ES.get(preferences.variety_level, preferences.variety_level)
+                lines.append(f"- Variedad: {variety}")
             if (
                 preferences.temperature_sensitivity
                 and preferences.temperature_sensitivity != "normal"
             ):
-                lines.append(
-                    f"- Temperature sensitivity: {preferences.temperature_sensitivity} "
-                    f"(user {'feels cold/hot easily' if preferences.temperature_sensitivity == 'high' else 'tolerates temperature extremes well'})"
-                )
+                if preferences.temperature_sensitivity == "high":
+                    lines.append(
+                        "- Sensibilidad a la temperatura: alta (pasa frío/calor con facilidad)"
+                    )
+                else:
+                    lines.append(
+                        "- Sensibilidad a la temperatura: baja (tolera bien el frío y el calor)"
+                    )
 
-        if learned_prefs:
-            if learned_prefs.get("learned_favorite_colors"):
-                colors = learned_prefs["learned_favorite_colors"]
-                lines.append(f"- Learned favorite colors (from feedback): {', '.join(colors)}")
-            if learned_prefs.get("learned_avoid_colors"):
-                colors = learned_prefs["learned_avoid_colors"]
-                lines.append(f"- Learned colors to avoid (from feedback): {', '.join(colors)}")
-            if learned_prefs.get("learned_preferred_styles"):
-                styles = learned_prefs["learned_preferred_styles"]
-                lines.append(f"- Learned preferred styles: {', '.join(styles)}")
-
-            if occasion and learned_prefs.get("occasion_insights"):
-                occ_data = learned_prefs["occasion_insights"].get(occasion)
-                if occ_data:
-                    pref_colors = occ_data.get("preferred_colors", [])
-                    if pref_colors:
-                        lines.append(f"- For {occasion}, user prefers: {', '.join(pref_colors)}")
-                    success_rate = occ_data.get("success_rate")
-                    if success_rate is not None and success_rate < 0.5:
-                        lines.append(
-                            f"- Low success rate for {occasion} outfits — try different approaches"
-                        )
+        if learned_prefs and occasion and learned_prefs.get("occasion_insights"):
+            occ_data = learned_prefs["occasion_insights"].get(occasion)
+            if occ_data:
+                pref_colors = occ_data.get("preferred_colors", [])
+                if pref_colors:
+                    colors = ", ".join(color_label_es(c) for c in pref_colors)
+                    lines.append(f"- Para {occasion} suele elegir: {colors}")
+                success_rate = occ_data.get("success_rate")
+                if success_rate is not None and success_rate < 0.5:
+                    lines.append(
+                        f"- Los looks de {occasion} le han convencido poco: prueba otro enfoque"
+                    )
 
         if worn_combinations and number_map:
             uuid_to_number = {uuid: num for num, uuid in number_map.items()}
@@ -399,11 +360,12 @@ class RecommendationService:
                     worn_sets.append("[" + ", ".join(map(str, numbers)) + "]")
             if worn_sets:
                 lines.append(
-                    f"- Recently worn outfits (prefer variety, only repeat if necessary): {', '.join(worn_sets)}"
+                    "- Looks llevados hace poco (varía; repite solo si no hay alternativa): "
+                    f"{', '.join(worn_sets)}"
                 )
 
         if lines:
-            return "\nUSER PREFERENCES:\n" + "\n".join(lines)
+            return "\nPARA HOY TEN EN CUENTA:\n" + "\n".join(lines)
         return ""
 
     async def _get_learned_preferences(self, user_id: UUID, occasion: str | None = None) -> dict:
@@ -829,6 +791,10 @@ class RecommendationService:
             worn_combinations,
             number_map,
             occasion=occasion,
+        )
+        style_profile_text = format_style_profile_for_prompt(
+            preferences,
+            learned_prefs,
             body_measurements=getattr(user, "body_measurements", None),
         )
 
@@ -842,6 +808,7 @@ class RecommendationService:
             condition=weather.condition,
             precipitation_chance=weather.precipitation_chance,
             preferences_text=preferences_text,
+            style_profile_text=style_profile_text,
             items_text=items_text,
             mandatory_items_section=mandatory_items_section,
             song_context_text=song_context_text,

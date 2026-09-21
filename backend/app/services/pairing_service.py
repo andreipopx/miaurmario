@@ -9,11 +9,13 @@ from sqlalchemy.orm import selectinload
 
 from app.models.item import ClothingItem, ItemStatus
 from app.models.outfit import FamilyOutfitRating, Outfit, OutfitItem, OutfitSource, OutfitStatus
+from app.models.preference import UserPreference
 from app.models.user import User
 from app.services.ai_access import require_ai_client
 from app.services.ai_service import AIResponseError
 from app.utils.clothing import deduplicate_by_body_slot
 from app.utils.prompts import load_prompt
+from app.utils.style_profile import format_style_profile_for_prompt
 from app.utils.timezone import get_user_today
 
 logger = logging.getLogger(__name__)
@@ -49,6 +51,15 @@ class PairingService:
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def _style_profile_text(self, user: User) -> str:
+        result = await self.db.execute(
+            select(UserPreference).where(UserPreference.user_id == user.id)
+        )
+        preferences = result.scalar_one_or_none()
+        return format_style_profile_for_prompt(
+            preferences, body_measurements=getattr(user, "body_measurements", None)
+        )
 
     def _format_item_description(self, item: ClothingItem) -> str:
         parts = []
@@ -189,8 +200,10 @@ class PairingService:
             source_item, available_items
         )
 
-        # Build prompt
+        # Build prompt, personalised with the user's own taste
+        style_profile_text = await self._style_profile_text(user)
         prompt = PAIRING_PROMPT_TEMPLATE.format(
+            style_profile_text=style_profile_text,
             source_number=source_num,
             source_description=source_desc,
             items_text=items_text,

@@ -101,6 +101,20 @@ class TestUserUpdate:
         assert response.json()["timezone"] == tz
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("sent", "stored"),
+        [("Asia/Calcutta", "Asia/Kolkata"), ("Europe/Kiev", "Europe/Kyiv")],
+    )
+    async def test_legacy_browser_timezone_is_canonicalised(
+        self, client: AsyncClient, test_user, auth_headers, sent, stored
+    ):
+        response = await client.patch(
+            "/api/v1/users/me", json={"timezone": sent}, headers=auth_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["timezone"] == stored
+
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("tz", ["Mars/Olympus", "Europe/Madrid ", "../etc/passwd", "", "GMT+2"])
     async def test_rejects_invalid_timezone(self, client: AsyncClient, test_user, auth_headers, tz):
         response = await client.patch(

@@ -20,7 +20,7 @@ from app.utils.passwords import (
     verify_password_async,
 )
 from app.utils.rate_limit import rate_limit_by_user
-from app.utils.timezone import is_valid_timezone
+from app.utils.timezone import canonical_timezone, is_valid_timezone
 
 USERNAME_REGEX = re.compile(r"^[a-z0-9_]{3,20}$")
 
@@ -65,7 +65,7 @@ class UserProfileUpdate(BaseModel):
     def _valid_timezone(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        value = value.strip()
+        value = canonical_timezone(value.strip())
         if not is_valid_timezone(value):
             raise ValueError("invalid_timezone")
         return value

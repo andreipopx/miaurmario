@@ -4,7 +4,7 @@
 
 <h1 align="center">Miaurmario</h1>
 
-<p align="center"><em>Rebrand del fork <a href="https://github.com/andreipopx/wardrowbe">andreipopx/wardrowbe</a>. El repositorio conserva el nombre "wardrowbe" para no romper el remote — la marca visible es Miaurmario, curada por Stinky.</em></p>
+<p align="center"><em>Rebrand del fork <a href="https://github.com/andreipopx/miaurmario">andreipopx/miaurmario</a>. El repositorio conserva el nombre "wardrowbe" para no romper el remote — la marca visible es Miaurmario, curada por Stinky.</em></p>
 
 <p align="center">
   Put your wardrobe in rows. Snap. Organize. Wear.

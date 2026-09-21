@@ -202,7 +202,7 @@ async def _musicbrainz_search(
         resp = await client.get(
             f"{MUSICBRAINZ_BASE}/recording",
             params={"query": query, "fmt": "json", "limit": 1},
-            headers={"User-Agent": "Miaurmario/1.0 ( https://github.com/andreipopx/wardrowbe )"},
+            headers={"User-Agent": "Miaurmario/1.0 ( https://github.com/andreipopx/miaurmario )"},
         )
         resp.raise_for_status()
         data = resp.json()

@@ -3,101 +3,93 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { signOut } from 'next-auth/react';
+import { LogOut } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Wordmark } from '@/components/brand/wordmark';
+import {
+  PRIMARY_ITEMS,
+  SECONDARY_ITEMS,
+  isActivePath,
+  isSecondaryActive,
+  type NavItem,
+} from '@/components/nav-items';
 
-const primaryItems = [
-  { key: 'dashboard', href: '/dashboard' },
-  { key: 'wardrobe', href: '/dashboard/wardrobe' },
-  { key: 'suggest', href: '/dashboard/suggest' },
-  { key: 'outfits', href: '/dashboard/outfits' },
-  { key: 'pairings', href: '/dashboard/pairings' },
-  { key: 'pins', href: '/dashboard/pins' },
-  { key: 'history', href: '/dashboard/history' },
-  { key: 'family', href: '/dashboard/family/feed' },
-  { key: 'analytics', href: '/dashboard/analytics' },
-  { key: 'learning', href: '/dashboard/learning' },
-] as const;
-
-const secondaryItems = [
-  { key: 'family', href: '/dashboard/family' },
-  { key: 'notifications', href: '/dashboard/notifications' },
-  { key: 'settings', href: '/dashboard/settings' },
-] as const;
-
-function NavLink({
-  href,
+export function NavRow({
+  item,
   active,
-  children,
+  label,
+  onClick,
 }: {
-  href: string;
+  item: NavItem;
   active: boolean;
-  children: React.ReactNode;
+  label: string;
+  onClick?: () => void;
 }) {
+  const Icon = item.icon;
   return (
     <Link
-      href={href}
-      className={`group flex items-baseline gap-3 py-2 transition-colors duration-200 ease-editorial ${
+      href={item.href}
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'flex min-h-[44px] items-center gap-3 rounded-full px-4 text-[15px] transition-colors duration-150',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
-          ? 'text-primary'
-          : 'text-foreground hover:text-primary'
-      }`}
+          ? 'bg-signature font-bold text-signature-foreground'
+          : 'font-medium text-foreground hover:bg-accent'
+      )}
     >
-      <span
-        aria-hidden
-        className={`h-px w-4 transition-all duration-200 ease-editorial ${
-          active ? 'w-8 bg-primary' : 'bg-border-solid/60 group-hover:w-8 group-hover:bg-primary'
-        }`}
-      />
-      <span className={active ? 'font-medium' : ''}>{children}</span>
+      <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2 : 1.75} aria-hidden />
+      <span className="truncate">{label}</span>
     </Link>
   );
 }
 
+/** Desktop sidebar (lg+). */
 export function Sidebar() {
   const pathname = usePathname();
   const tNav = useTranslations('nav');
   const tCommon = useTranslations('common');
 
   return (
-    <aside className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col border-r border-border-solid/40 bg-card">
-      <div className="flex grow flex-col gap-y-8 overflow-y-auto px-8 pb-8">
-        <div className="flex h-16 shrink-0 items-center">
-          <Link href="/dashboard" className="font-display italic font-black text-2xl text-foreground">
-            miaurmario
+    <aside className="hidden border-r border-border bg-background lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
+      <div className="flex grow flex-col gap-y-6 overflow-y-auto px-4 pb-6">
+        <div className="flex h-20 shrink-0 items-center px-4">
+          <Link href="/dashboard" className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Wordmark className="text-[28px]" />
           </Link>
         </div>
 
-        <div className="divider-gold" />
-
-        <nav className="flex flex-1 flex-col gap-y-10">
-          <ul className="space-y-1 text-sm">
-            {primaryItems.map((item) => {
-              const isActive = item.href === '/dashboard'
-                ? pathname === '/dashboard'
-                : pathname === item.href || pathname.startsWith(item.href + '/');
-              return (
-                <li key={item.href}>
-                  <NavLink href={item.href} active={isActive}>{tNav(item.key)}</NavLink>
-                </li>
-              );
-            })}
+        <nav aria-label={tNav('primary')} className="flex flex-1 flex-col gap-y-6">
+          <ul className="space-y-1">
+            {PRIMARY_ITEMS.map((item) => (
+              <li key={item.href}>
+                <NavRow item={item} active={isActivePath(pathname, item.href)} label={tNav(item.key)} />
+              </li>
+            ))}
           </ul>
 
           <div>
-            <p className="label-editorial mb-3">{tCommon('settings')}</p>
-            <ul className="space-y-1 text-sm">
-              {secondaryItems.map((item) => {
-                const matchesPath = pathname === item.href || pathname.startsWith(item.href + '/');
-                const claimedByPrimary = primaryItems.some(
-                  (primary) => pathname === primary.href || pathname.startsWith(primary.href + '/')
-                );
-                const isActive = matchesPath && !claimedByPrimary;
-                return (
-                  <li key={item.href}>
-                    <NavLink href={item.href} active={isActive}>{tNav(item.key)}</NavLink>
-                  </li>
-                );
-              })}
+            <p className="eyebrow mb-2 px-4">{tCommon('settings')}</p>
+            <ul className="space-y-1">
+              {SECONDARY_ITEMS.map((item) => (
+                <li key={item.href}>
+                  <NavRow item={item} active={isSecondaryActive(pathname, item.href)} label={tNav(item.key)} />
+                </li>
+              ))}
             </ul>
+          </div>
+
+          <div className="mt-auto">
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="flex min-h-[44px] w-full items-center gap-3 rounded-full px-4 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <LogOut className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              {tCommon('signOut')}
+            </button>
           </div>
         </nav>
       </div>

@@ -50,7 +50,10 @@
       "closeDialog": "Close dialog",
       "previousImage": "Previous image",
       "nextImage": "Next image"
-    }
+    },
+    "greeting": "Hi, {name}!",
+    "greetingAnon": "Hi!",
+    "loadingWardrobe": "Loading your wardrobe…"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -220,7 +223,13 @@
     "notifications": "Notifications",
     "analytics": "Analytics",
     "learning": "Learning",
-    "settings": "Settings"
+    "settings": "Settings",
+    "today": "Today",
+    "stylist": "Stylist",
+    "looks": "Looks",
+    "primary": "Main",
+    "profileMenu": "Your profile and menu",
+    "familySettings": "Manage family"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",

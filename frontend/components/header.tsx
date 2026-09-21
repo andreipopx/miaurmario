@@ -1,88 +1,74 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, LogOut } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { signOut } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
+import { Bell } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { LanguageSwitcher, SHOW_LANGUAGE_SWITCHER } from '@/components/language-switcher';
+import { cn } from '@/lib/utils';
+import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { Wordmark } from '@/components/brand/wordmark';
 
 interface HeaderProps {
+  /** Opens the profile/menu sheet (mobile). */
   onMenuClick?: () => void;
 }
 
+const iconButton =
+  'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
+/**
+ * Mobile: Stinky avatar (opens the profile menu) · greeting or wordmark · bell.
+ * Desktop: the sidebar carries the logo; the header keeps greeting + bell + avatar (→ Ajustes).
+ */
 export function Header({ onMenuClick }: HeaderProps) {
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const pathname = usePathname();
   const t = useTranslations('common');
+  const tNav = useTranslations('nav');
 
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
-  const handleLogout = () => signOut({ callbackUrl: '/login' });
-
-  const getInitials = (name?: string | null) => {
-    if (!name) return '·';
-    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
-  };
+  const firstName = user?.display_name?.trim().split(/\s+/)[0];
+  const greeting = firstName ? t('greeting', { name: firstName }) : t('greetingAnon');
+  const isHome = pathname === '/dashboard';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border-solid/40 bg-background/85 backdrop-blur-sm">
-      <div className="flex h-16 items-center gap-x-3 px-4 sm:gap-x-5 sm:px-6 lg:px-10">
-        {/* Mobile menu */}
+    <header
+      className="sticky top-0 z-40 bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/75"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:h-20 lg:px-10">
+        {/* Mobile: avatar opens the profile menu */}
         <button
           type="button"
-          className="-m-2.5 p-2.5 text-muted-foreground hover:text-primary transition-colors lg:hidden"
           onClick={onMenuClick}
-          aria-label={t('openSidebar')}
+          aria-label={tNav('profileMenu')}
+          className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:hidden"
         >
-          <Menu className="h-5 w-5" aria-hidden="true" strokeWidth={1.5} />
+          <StinkyAvatar size={44} />
         </button>
 
-        {/* Wordmark — visible on mobile only (sidebar carries it on desktop) */}
-        <Link href="/dashboard" className="lg:hidden font-display italic font-black text-xl text-foreground">
-          miaurmario
+        <div className={cn('flex min-w-0 flex-1 items-center justify-center lg:justify-start')}>
+          {isHome ? (
+            <p className="truncate text-xl font-bold tracking-tight lg:text-2xl lg:font-extrabold">{greeting}</p>
+          ) : (
+            <Link href="/dashboard" className="rounded-full px-2 lg:hidden" aria-label={tNav('today')}>
+              <Wordmark className="text-[22px]" />
+            </Link>
+          )}
+        </div>
+
+        <Link href="/dashboard/notifications" aria-label={tNav('notifications')} className={iconButton}>
+          <Bell className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
         </Link>
 
-        <div className="flex flex-1 items-center justify-end gap-x-3 sm:gap-x-5">
-          {SHOW_LANGUAGE_SWITCHER && (
-            <>
-              <LanguageSwitcher variant="compact" />
-              <div className="h-4 w-px bg-border-solid/60" aria-hidden="true" />
-            </>
-          )}
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={t('toggleTheme')}
-            className="label-editorial hover:text-primary transition-colors duration-200 ease-editorial h-9 px-2"
-          >
-            {theme === 'dark' ? t('lightMode') : t('darkMode')}
-          </button>
-
-          <div className="hidden lg:block h-4 w-px bg-border-solid/60" aria-hidden="true" />
-
-          <div className="flex items-center gap-x-3">
-            <Avatar className="h-8 w-8 rounded-none border border-border-solid/60">
-              <AvatarImage src={user?.avatar_url || ''} alt={user?.display_name || ''} className="rounded-none" />
-              <AvatarFallback className="rounded-none bg-transparent font-display text-sm">
-                {getInitials(user?.display_name)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="hidden lg:inline label-editorial">
-              {user?.display_name || t('user')}
-            </span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              aria-label={t('signOut')}
-              className="text-muted-foreground hover:text-primary transition-colors duration-200 ease-editorial"
-            >
-              <LogOut className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </div>
-        </div>
+        {/* Desktop: avatar goes straight to settings */}
+        <Link
+          href="/dashboard/settings"
+          aria-label={tNav('settings')}
+          className="hidden shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:block"
+        >
+          <StinkyAvatar size={44} />
+        </Link>
       </div>
     </header>
   );

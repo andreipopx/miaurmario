@@ -50,7 +50,10 @@
       "closeDialog": "Cerrar el diálogo",
       "previousImage": "Imagen anterior",
       "nextImage": "Imagen siguiente"
-    }
+    },
+    "greeting": "¡Hola, {name}!",
+    "greetingAnon": "¡Hola!",
+    "loadingWardrobe": "Cargando tu armario…"
   },
   "errors": {
     "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -220,7 +223,13 @@
     "notifications": "Notificaciones",
     "analytics": "Estadísticas",
     "learning": "Aprendizaje",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "today": "Hoy",
+    "stylist": "Estilista",
+    "looks": "Looks",
+    "primary": "Principal",
+    "profileMenu": "Tu perfil y menú",
+    "familySettings": "Gestionar familia"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",

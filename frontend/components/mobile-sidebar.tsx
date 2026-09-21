@@ -1,39 +1,31 @@
 'use client';
 
-import { useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { X } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+import { LogOut, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const primaryItems = [
-  { key: 'dashboard', href: '/dashboard' },
-  { key: 'wardrobe', href: '/dashboard/wardrobe' },
-  { key: 'suggest', href: '/dashboard/suggest' },
-  { key: 'outfits', href: '/dashboard/outfits' },
-  { key: 'pairings', href: '/dashboard/pairings' },
-  { key: 'history', href: '/dashboard/history' },
-  { key: 'family', href: '/dashboard/family/feed' },
-  { key: 'analytics', href: '/dashboard/analytics' },
-  { key: 'learning', href: '/dashboard/learning' },
-] as const;
-
-const secondaryItems = [
-  { key: 'family', href: '/dashboard/family' },
-  { key: 'notifications', href: '/dashboard/notifications' },
-  { key: 'settings', href: '/dashboard/settings' },
-] as const;
+import { useAuth } from '@/lib/hooks/use-auth';
+import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { NavRow } from '@/components/sidebar';
+import { PRIMARY_ITEMS, SECONDARY_ITEMS, isActivePath, isSecondaryActive } from '@/components/nav-items';
 
 interface MobileSidebarProps {
   open: boolean;
   onClose: () => void;
 }
 
+/**
+ * Mobile profile menu, opened from the Stinky avatar in the header.
+ * Holds every section that doesn't fit in the 4-tab dock, plus Ajustes and sign out.
+ */
 export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const tNav = useTranslations('nav');
   const tCommon = useTranslations('common');
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -42,6 +34,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
     if (open) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
+      closeRef.current?.focus();
     }
     return () => {
       document.removeEventListener('keydown', handleEscape);
@@ -49,82 +42,75 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
     };
   }, [open, onClose]);
 
-  const renderLink = (href: string, active: boolean, label: string) => (
-    <Link
-      href={href}
-      onClick={onClose}
-      className={cn(
-        'group flex items-baseline gap-3 py-2 transition-colors duration-200 ease-editorial',
-        active ? 'text-primary' : 'text-foreground hover:text-primary'
-      )}
-    >
-      <span
-        aria-hidden
-        className={cn(
-          'h-px transition-all duration-200 ease-editorial',
-          active ? 'w-8 bg-primary' : 'w-4 bg-border-solid/60 group-hover:w-8 group-hover:bg-primary'
-        )}
-      />
-      <span className={cn('text-sm', active && 'font-medium')}>{label}</span>
-    </Link>
-  );
-
   return (
     <div className={cn('lg:hidden', !open && 'pointer-events-none')}>
       <div
         className={cn(
-          'fixed inset-0 z-50 bg-[#0A0A0A]/70 transition-opacity duration-300',
+          'fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300',
           open ? 'opacity-100' : 'opacity-0'
         )}
         onClick={onClose}
       />
 
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={tNav('profileMenu')}
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] bg-card border-r border-border-solid/40 transition-transform duration-300 ease-in-out',
-          open ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-2 left-2 z-50 w-80 max-w-[calc(100vw-1rem)] rounded-lg bg-popover shadow-[0_20px_60px_rgba(0,0,0,0.25)] transition-[transform,visibility] duration-300 ease-out',
+          open ? 'visible translate-x-0' : 'invisible -translate-x-[110%]'
         )}
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <button
-          type="button"
-          className="absolute right-4 top-4 p-2 text-muted-foreground hover:text-primary transition-colors"
-          onClick={onClose}
-        >
-          <span className="sr-only">{tCommon('close')}</span>
-          <X className="h-5 w-5" strokeWidth={1.5} />
-        </button>
-
-        <div className="flex h-full flex-col gap-y-8 overflow-y-auto px-8 pb-8">
-          <div className="flex h-16 shrink-0 items-center">
-            <Link href="/dashboard" onClick={onClose} className="font-display italic font-black text-2xl text-foreground">
-              miaurmario
-            </Link>
+        <div className="flex h-full flex-col overflow-y-auto p-4">
+          <div className="flex items-center gap-3 rounded-lg bg-panel p-3">
+            <StinkyAvatar size={52} className="bg-background" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-base font-bold">{user?.display_name || tCommon('user')}</p>
+              {user?.email && <p className="truncate text-sm text-muted-foreground">{user.email}</p>}
+            </div>
+            <button
+              ref={closeRef}
+              type="button"
+              onClick={onClose}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-background text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="sr-only">{tCommon('close')}</span>
+              <X className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+            </button>
           </div>
 
-          <div className="divider-gold" />
-
-          <nav className="flex flex-1 flex-col gap-y-10">
+          <nav aria-label={tNav('primary')} className="mt-4 flex flex-1 flex-col gap-y-5">
             <ul className="space-y-1">
-              {primaryItems.map((item) => {
-                const isActive = item.href === '/dashboard'
-                  ? pathname === '/dashboard'
-                  : pathname === item.href || pathname.startsWith(item.href + '/');
-                return <li key={item.href}>{renderLink(item.href, isActive, tNav(item.key))}</li>;
-              })}
+              {PRIMARY_ITEMS.map((item) => (
+                <li key={item.href}>
+                  <NavRow item={item} active={isActivePath(pathname, item.href)} label={tNav(item.key)} onClick={onClose} />
+                </li>
+              ))}
             </ul>
             <div>
-              <p className="label-editorial mb-3">{tCommon('settings')}</p>
+              <p className="eyebrow mb-2 px-4">{tCommon('settings')}</p>
               <ul className="space-y-1">
-                {secondaryItems.map((item) => {
-                  const matchesPath = pathname === item.href || pathname.startsWith(item.href + '/');
-                  const claimedByPrimary = primaryItems.some(
-                    (primary) => pathname === primary.href || pathname.startsWith(primary.href + '/')
-                  );
-                  const isActive = matchesPath && !claimedByPrimary;
-                  return <li key={item.href}>{renderLink(item.href, isActive, tNav(item.key))}</li>;
-                })}
+                {SECONDARY_ITEMS.map((item) => (
+                  <li key={item.href}>
+                    <NavRow
+                      item={item}
+                      active={isSecondaryActive(pathname, item.href)}
+                      label={tNav(item.key)}
+                      onClick={onClose}
+                    />
+                  </li>
+                ))}
               </ul>
             </div>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="mt-auto flex min-h-[44px] w-full items-center gap-3 rounded-full px-4 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <LogOut className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              {tCommon('signOut')}
+            </button>
           </nav>
         </div>
       </div>

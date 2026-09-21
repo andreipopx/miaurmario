@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Sidebar } from '@/components/sidebar';
@@ -11,6 +11,7 @@ import { OfflineIndicator } from '@/components/offline-indicator';
 import { ImageLightbox } from '@/components/image-lightbox';
 import { LightboxProvider } from '@/lib/lightbox-context';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useTranslations } from 'next-intl';
 
 export default function DashboardLayout({
   children,
@@ -19,6 +20,8 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const t = useTranslations('common');
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
   const { user, isAuthenticated, isLoading, error } = useAuth();
 
@@ -40,8 +43,8 @@ export default function DashboardLayout({
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading your wardrobe...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-foreground" aria-hidden />
+          <p className="text-sm font-medium text-muted-foreground">{t('loadingWardrobe')}</p>
         </div>
       </div>
     );
@@ -55,10 +58,11 @@ export default function DashboardLayout({
     <LightboxProvider>
       <div className="min-h-screen bg-background">
         <Sidebar />
-        <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="lg:pl-72">
+        <MobileSidebar open={sidebarOpen} onClose={closeSidebar} />
+        <div className="lg:pl-64">
           <Header onMenuClick={() => setSidebarOpen(true)} />
-          <main className="py-6 px-4 sm:px-6 lg:px-8 pb-20 lg:pb-6 overflow-x-hidden">
+          {/* pb-dock reserves room for the floating mobile dock so it never covers content. */}
+          <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
             {children}
           </main>
         </div>

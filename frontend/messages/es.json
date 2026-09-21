@@ -634,7 +634,8 @@
       "sporty": "Deportivo",
       "outdoor": "Aire libre",
       "party": "Fiesta",
-      "travel": "Viaje"
+      "travel": "Viaje",
+      "dinner": "Cena"
     },
     "generate": "Generar conjunto",
     "generating": "Generando...",
@@ -2598,7 +2599,8 @@
       "outdoor": "Aire libre",
       "party": "Fiesta",
       "travel": "Viaje",
-      "pairing": "Combinación"
+      "pairing": "Combinación",
+      "dinner": "Cena"
     }
   },
   "colorPicker": {

@@ -634,7 +634,8 @@
       "sporty": "Sporty",
       "outdoor": "Outdoor",
       "party": "Party",
-      "travel": "Travel"
+      "travel": "Travel",
+      "dinner": "Dinner"
     },
     "generate": "Generate outfit",
     "generating": "Generating...",
@@ -2598,7 +2599,8 @@
       "outdoor": "Outdoor",
       "party": "Party",
       "travel": "Travel",
-      "pairing": "Pairing"
+      "pairing": "Pairing",
+      "dinner": "Dinner"
     }
   },
   "colorPicker": {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -41,6 +41,7 @@ import { POP_BG, type PopColor } from '@/components/chip';
 import { StinkyTip } from '@/components/stinky-tip';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { Stinky } from '@/components/stinky/stinky';
+import { ShareLookPrompt } from '@/components/social/share-look-prompt';
 
 // -- Section header -------------------------------------------------------------
 
@@ -195,11 +196,16 @@ function TodayLook() {
   const { data: pending, isLoading } = usePendingOutfits(1);
   const accept = useAcceptOutfit();
   const featured = pending?.outfits?.[0];
+  // After "Me lo pongo", offer to share that look with friends.
+  const [justAccepted, setJustAccepted] = useState<{ id: string; shared: boolean } | null>(null);
 
   const onAccept = () => {
     if (!featured) return;
     accept.mutate(featured.id, {
-      onSuccess: () => toast.success(tPending('acceptedToast')),
+      onSuccess: (outfit) => {
+        toast.success(tPending('acceptedToast'));
+        setJustAccepted({ id: outfit.id, shared: !!outfit.visibility && outfit.visibility !== 'private' });
+      },
       onError: () => toast.error(tPending('acceptError')),
     });
   };
@@ -211,6 +217,14 @@ function TodayLook() {
 
   return (
     <section aria-labelledby="today-look-title" className="space-y-3">
+      {justAccepted && (
+        <ShareLookPrompt
+          key={justAccepted.id}
+          outfitId={justAccepted.id}
+          alreadyShared={justAccepted.shared}
+          onDismiss={() => setJustAccepted(null)}
+        />
+      )}
       <div className="rounded-lg bg-panel p-3.5 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 id="today-look-title" className="text-[15px] font-bold sm:text-lg">

@@ -18,6 +18,8 @@ from app.models.outfit import (
     Outfit,
     OutfitItem,
     OutfitStatus,
+    OutfitVisibility,
+    RatingScope,
     UserFeedback,
 )
 from app.models.user import User
@@ -32,6 +34,7 @@ from app.services.recommendation_service import (
     InsufficientWardrobeError,
     RecommendationService,
 )
+from app.services.social_service import apply_visibility, share_with_friends
 from app.services.studio_service import (
     ItemLayoutInput,
     ItemOwnershipError,
@@ -240,6 +243,8 @@ class OutfitResponse(BaseModel):
     family_rating_count: int | None = None
     is_starter_suggestion: bool = False
     music_inspiration: MusicInspiration | None = None
+    visibility: OutfitVisibility = OutfitVisibility.private
+    shared_at: datetime | None = None
     created_at: datetime
 
 
@@ -337,6 +342,13 @@ async def fetch_wore_instead_items_map(
     return wore_instead_map
 
 
+def _rater_name(user: User | None) -> str:
+    # Never fall back to the email: it is private.
+    if user is None:
+        return "Unknown"
+    return user.display_name or user.username or "Unknown"
+
+
 def outfit_to_response(
     outfit: Outfit,
     wore_instead_items_map: dict[str, list[WoreInsteadItem]] | None = None,
@@ -396,24 +408,26 @@ def outfit_to_response(
     family_ratings_list = None
     family_rating_average = None
     family_rating_count = None
-    if hasattr(outfit, "family_ratings") and outfit.family_ratings:
+    # Only family-scope ratings here: family members can list each other's outfits and
+    # must not see the owner's friends' reactions (those live under /social).
+    family_scope = [
+        r for r in (outfit.family_ratings or []) if r.scope in (None, RatingScope.family)
+    ]
+    if family_scope:
         family_ratings_list = [
             FamilyRatingResponse(
                 id=r.id,
                 user_id=r.user_id,
-                user_display_name=(r.user.display_name or r.user.email) if r.user else "Unknown",
+                user_display_name=_rater_name(r.user),
                 user_avatar_url=r.user.avatar_url if r.user else None,
                 rating=r.rating,
                 comment=r.comment,
                 created_at=r.created_at,
             )
-            for r in outfit.family_ratings
+            for r in family_scope
         ]
-        family_rating_count = len(outfit.family_ratings)
-        if family_rating_count > 0:
-            family_rating_average = (
-                sum(r.rating for r in outfit.family_ratings) / family_rating_count
-            )
+        family_rating_count = len(family_scope)
+        family_rating_average = sum(r.rating for r in family_scope) / family_rating_count
 
     return OutfitResponse(
         id=outfit.id,
@@ -435,6 +449,8 @@ def outfit_to_response(
         family_rating_count=family_rating_count,
         is_starter_suggestion=is_starter_suggestion,
         music_inspiration=music_inspiration,
+        visibility=outfit.visibility or OutfitVisibility.private,
+        shared_at=outfit.shared_at,
         created_at=outfit.created_at,
     )
 
@@ -949,12 +965,14 @@ async def submit_family_rating(
     if rating:
         rating.rating = request.rating
         rating.comment = request.comment
+        rating.scope = RatingScope.family
     else:
         rating = FamilyOutfitRating(
             outfit_id=outfit_id,
             user_id=current_user.id,
             rating=request.rating,
             comment=request.comment,
+            scope=RatingScope.family,
         )
         db.add(rating)
 
@@ -964,7 +982,7 @@ async def submit_family_rating(
     return FamilyRatingResponse(
         id=rating.id,
         user_id=rating.user_id,
-        user_display_name=current_user.display_name or current_user.email,
+        user_display_name=_rater_name(current_user),
         user_avatar_url=current_user.avatar_url,
         rating=rating.rating,
         comment=rating.comment,
@@ -996,7 +1014,10 @@ async def get_family_ratings(
 
     ratings_result = await db.execute(
         select(FamilyOutfitRating)
-        .where(FamilyOutfitRating.outfit_id == outfit_id)
+        .where(
+            FamilyOutfitRating.outfit_id == outfit_id,
+            FamilyOutfitRating.scope == RatingScope.family,
+        )
         .options(selectinload(FamilyOutfitRating.user))
         .order_by(FamilyOutfitRating.created_at.desc())
     )
@@ -1006,7 +1027,7 @@ async def get_family_ratings(
         FamilyRatingResponse(
             id=r.id,
             user_id=r.user_id,
-            user_display_name=r.user.display_name or r.user.email,
+            user_display_name=_rater_name(r.user),
             user_avatar_url=r.user.avatar_url,
             rating=r.rating,
             comment=r.comment,
@@ -1060,6 +1081,7 @@ class StudioCreateRequest(BaseModel):
     scheduled_for: date | None = None
     mark_worn: bool = False
     source_item_id: UUID | None = None
+    visibility: OutfitVisibility | None = None
 
     @field_validator("occasion")
     @classmethod
@@ -1185,6 +1207,9 @@ async def create_studio_outfit(
                 "message": "One or more items do not belong to you",
             },
         ) from None
+
+    if request.visibility is not None:
+        apply_visibility(outfit, request.visibility)
 
     await db.commit()
     await _run_learning_safely(db, outfit.id, current_user.id)
@@ -1394,3 +1419,71 @@ async def delete_family_rating(
 
     await db.delete(rating)
     await db.flush()
+
+
+# -- Social: visibility and "outfit del día" -------------------------------------
+
+
+class VisibilityRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    visibility: OutfitVisibility
+
+
+async def _get_own_outfit(db: AsyncSession, outfit_id: UUID, user: User) -> Outfit:
+    outfit = (
+        await db.execute(select(Outfit).where(Outfit.id == outfit_id, Outfit.user_id == user.id))
+    ).scalar_one_or_none()
+    if outfit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": "Outfit not found", "error_code": "OUTFIT_NOT_FOUND"},
+        )
+    return outfit
+
+
+@router.patch("/{outfit_id}/visibility", response_model=OutfitResponse)
+async def set_outfit_visibility(
+    outfit_id: UUID,
+    request: VisibilityRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> OutfitResponse:
+    """Owner only: private (default) | friends | public."""
+    outfit = await _get_own_outfit(db, outfit_id, current_user)
+    apply_visibility(outfit, request.visibility)
+    await db.commit()
+    full = await StudioService(db).get_full_outfit(outfit.id)
+    return outfit_to_response(full)
+
+
+@router.post("/{outfit_id}/share", response_model=OutfitResponse)
+async def share_outfit(
+    outfit_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> OutfitResponse:
+    """Share with friends ("Compartir con tus amigos"): private becomes friends-only (public stays public).
+
+    Several outfits can be shared on the same day; the feed groups them per day.
+    """
+    await rate_limit_by_user(current_user.id, "share_outfit", max_requests=30, window_seconds=60)
+    outfit = await _get_own_outfit(db, outfit_id, current_user)
+    share_with_friends(outfit)
+    await db.commit()
+    full = await StudioService(db).get_full_outfit(outfit.id)
+    return outfit_to_response(full)
+
+
+@router.delete("/{outfit_id}/share", response_model=OutfitResponse)
+async def unshare_outfit(
+    outfit_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> OutfitResponse:
+    """Stop sharing: the outfit goes back to private."""
+    outfit = await _get_own_outfit(db, outfit_id, current_user)
+    apply_visibility(outfit, OutfitVisibility.private)
+    await db.commit()
+    full = await StudioService(db).get_full_outfit(outfit.id)
+    return outfit_to_response(full)

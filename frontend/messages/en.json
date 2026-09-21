@@ -250,6 +250,8 @@
     "profileMenu": "Your profile and menu",
     "familySettings": "Manage family",
     "viewProfile": "Your profile and settings",
+    "friends": "Friends",
+    "newActivity": "{count, plural, one {# new} other {# new}}",
     "stinky": "Chat with Stinky",
     "music": "Music"
   },
@@ -2279,6 +2281,165 @@
       "cannot_deactivate_admin": "You can't deactivate an admin from here.",
       "user_uses_own_key": "This user uses their own key; there's no gift to remove.",
       "user_not_found": "User not found."
+    }
+  },
+  "social": {
+    "title": "Friends",
+    "subtitle": "Looks your friends share, and what they think of yours.",
+    "tabs": {
+      "feed": "Looks",
+      "friends": "Friends",
+      "activity": "Activity",
+      "pendingLabel": "{count, plural, one {# pending request} other {# pending requests}}",
+      "newLabel": "{count, plural, one {# new} other {# new}}"
+    },
+    "feed": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "cardLabel": "{name}'s looks",
+      "looksThatDay": "{count, plural, one {# look} other {# looks that day}}",
+      "lookOf": "Look {n} of {total}",
+      "errorTitle": "We couldn't load the looks",
+      "errorBody": "Check your connection and try again.",
+      "retry": "Retry",
+      "emptyTitle": "No looks here yet",
+      "emptyBody": "When your friends share what they wear, it shows up here.",
+      "noFriendsTitle": "Invite your friends",
+      "noFriendsBody": "Share your link and see what you all wear every day. Stinky gets bored alone.",
+      "loadMore": "Load more"
+    },
+    "friends": {
+      "celebrate": "You and {name} are now friends!",
+      "searchLabel": "Search by username",
+      "searchPlaceholder": "Search by @username",
+      "searchError": "Search failed. Try again in a moment.",
+      "noResults": "Nobody with the username “{q}”.",
+      "incoming": "{count, plural, one {Friend request} other {Friend requests}}",
+      "yourFriends": "{count, plural, =0 {Your friends} other {Your friends (#)}}",
+      "noFriendsYet": "No friends here yet. Search someone by username or share your link.",
+      "outgoing": "Sent requests",
+      "blocked": "Blocked",
+      "unblock": "Unblock",
+      "unblocked": "Unblocked"
+    },
+    "activity": {
+      "emptyTitle": "Nothing new",
+      "emptyBody": "When someone reacts to the looks you share, you'll see it here.",
+      "commented": "commented on",
+      "loved": "loved"
+    },
+    "reactions": {
+      "count": "{count, plural, one {# love} other {# loves}}",
+      "error": "Couldn't save. Try again.",
+      "commentSent": "Comment sent",
+      "love": "Love it",
+      "unlove": "Remove love",
+      "loveShort": "Love",
+      "comment": "Comment",
+      "commentShort": "Comment",
+      "editComment": "Edit",
+      "commentTitle": "Comment on {name}'s look",
+      "commentHint": "Only {name} will see it (and Stinky). Your comment includes a love.",
+      "commentPlaceholder": "What a great combo!",
+      "cancel": "Cancel",
+      "send": "Send",
+      "commentedShort": "commented",
+      "lovedShort": "loved it"
+    },
+    "invite": {
+      "title": "Invite your friends",
+      "body": "Share your link: opening it lets them add you in one tap.",
+      "cta": "Share my link",
+      "shareText": "Add me on Miaurmario and let's share looks!",
+      "copied": "Link copied",
+      "copyFailed": "Couldn't copy. Your link: {url}",
+      "setUsername": "Choose your username"
+    },
+    "errors": {
+      "usernameRequired": "Choose your username first so they know who you are.",
+      "alreadyFriends": "You're already friends.",
+      "alreadyRequested": "You already sent a request.",
+      "youBlocked": "You blocked this person. Unblock them first.",
+      "self": "You can't add yourself.",
+      "notFound": "We couldn't find that person.",
+      "tooMany": "Too many attempts. Wait a moment.",
+      "generic": "Something went wrong. Try again."
+    },
+    "actions": {
+      "add": "Add to your friends",
+      "addShort": "Add",
+      "requestSent": "Request sent",
+      "nowFriends": "You and {name} are now friends!",
+      "pending": "Pending",
+      "cancelRequestLabel": "Pending request: tap to cancel",
+      "requestCancelled": "Request cancelled",
+      "accept": "Accept",
+      "decline": "Decline",
+      "declineLabel": "Decline request",
+      "remove": "Remove friend",
+      "confirmRemove": "Remove from your friends? You'll stop seeing each other's looks.",
+      "removed": "Removed from your friends"
+    },
+    "profile": {
+      "back": "Friends",
+      "notFoundTitle": "Profile not found",
+      "notFoundBody": "The username may have changed or doesn't exist.",
+      "errorTitle": "Couldn't load the profile",
+      "friendCount": "{count, plural, one {# friend} other {# friends}}",
+      "block": "Block",
+      "confirmBlock": "Block {name}? They won't see your looks or be able to send you requests.",
+      "blocked": "User blocked",
+      "sharedLooks": "Shared looks",
+      "noLooksTitle": "No shared looks yet",
+      "noLooksBody": "When {name} shares what they wear, you'll see it here.",
+      "notFriendsTitle": "Friends only",
+      "notFriendsBody": "Add {name} to see the looks they share with friends.",
+      "loadMore": "Load more",
+      "borrowSoon": "Coming soon: borrow clothes from your friends."
+    },
+    "publicProfile": {
+      "loading": "Loading profile",
+      "notFoundTitle": "This link leads nowhere",
+      "notFoundBody": "The username may have changed. Ask for the link again.",
+      "goHome": "Go to Miaurmario",
+      "isMe": "This is your link. Share it so people can add you.",
+      "alreadyFriends": "You and {name} are already friends.",
+      "seeLooks": "See their looks",
+      "blockedByYou": "You blocked this person.",
+      "invite": "{name} invites you to share looks on Miaurmario.",
+      "goFriends": "Go to Friends"
+    },
+    "shareLook": {
+      "title": "Share with your friends?",
+      "body": "Show them today's look. Only your friends will see it.",
+      "cta": "Share with your friends",
+      "sharedTitle": "Shared!",
+      "sharedBody": "Your friends can now see today's look.",
+      "seeFriends": "See Friends",
+      "undo": "Undo",
+      "unshared": "No longer shared",
+      "error": "Couldn't share. Try again.",
+      "dismiss": "Not now",
+      "shareToggle": "Share with your friends"
+    },
+    "visibility": {
+      "title": "Who can see it",
+      "hint": {
+        "private": "Only you.",
+        "friends": "Your friends see it in their Friends tab.",
+        "public": "Anyone signed in with your profile link."
+      },
+      "option": {
+        "private": "Only me",
+        "friends": "Friends",
+        "public": "Public"
+      },
+      "toast": {
+        "private": "Now private",
+        "friends": "Shared with your friends",
+        "public": "Now public"
+      },
+      "error": "Couldn't change it. Try again."
     }
   },
   "stinkyChat": {

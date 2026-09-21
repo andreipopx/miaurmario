@@ -9,7 +9,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.outfit import Outfit, OutfitSource
+from app.models.outfit import Outfit, OutfitSource, RatingScope
 from app.models.user import User
 from app.services.ai_access import AIAccessError, ai_error_detail
 from app.services.ai_service import AIDisabledError
@@ -176,24 +176,29 @@ def pairing_to_response(outfit: Outfit) -> PairingResponse:
     family_ratings_list = None
     family_rating_average = None
     family_rating_count = None
-    if hasattr(outfit, "family_ratings") and outfit.family_ratings:
+    # Family-scope only; friends' reactions are served by /social to the owner.
+    family_scope = [
+        r
+        for r in (getattr(outfit, "family_ratings", None) or [])
+        if r.scope in (None, RatingScope.family)
+    ]
+    if family_scope:
         family_ratings_list = [
             FamilyRatingResponse(
                 id=r.id,
                 user_id=r.user_id,
-                user_display_name=r.user.display_name or r.user.email if r.user else "Unknown",
+                user_display_name=(r.user.display_name or r.user.username or "Unknown")
+                if r.user
+                else "Unknown",
                 user_avatar_url=r.user.avatar_url if r.user else None,
                 rating=r.rating,
                 comment=r.comment,
                 created_at=r.created_at,
             )
-            for r in outfit.family_ratings
+            for r in family_scope
         ]
-        family_rating_count = len(outfit.family_ratings)
-        if family_rating_count > 0:
-            family_rating_average = (
-                sum(r.rating for r in outfit.family_ratings) / family_rating_count
-            )
+        family_rating_count = len(family_scope)
+        family_rating_average = sum(r.rating for r in family_scope) / family_rating_count
 
     return PairingResponse(
         id=outfit.id,

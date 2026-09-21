@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { signOut } from 'next-auth/react';
 import { LogOut } from 'lucide-react';
+import { useSocialSummary } from '@/lib/hooks/use-social';
 import { cn } from '@/lib/utils';
 import { Wordmark } from '@/components/brand/wordmark';
 import {
@@ -27,6 +28,8 @@ export function NavRow({
   onClick?: () => void;
 }) {
   const Icon = item.icon;
+  const { data: summary } = useSocialSummary(!!item.socialBadge);
+  const badge = item.socialBadge ? summary?.total ?? 0 : 0;
   return (
     <Link
       href={item.href}
@@ -42,6 +45,16 @@ export function NavRow({
     >
       <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2 : 1.75} aria-hidden />
       <span className="truncate">{label}</span>
+      {badge > 0 && (
+        <span
+          className={cn(
+            'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold',
+            active ? 'bg-foreground text-background' : 'bg-signature text-signature-foreground'
+          )}
+        >
+          {badge > 9 ? '9+' : badge}
+        </span>
+      )}
     </Link>
   );
 }

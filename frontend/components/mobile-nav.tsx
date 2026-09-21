@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { DOCK_ITEMS, isActivePath } from '@/components/nav-items';
+import { useSocialSummary } from '@/lib/hooks/use-social';
 
 /**
  * Floating glass dock (mobile). Active tab = pink pill with icon + label;
@@ -14,6 +15,8 @@ import { DOCK_ITEMS, isActivePath } from '@/components/nav-items';
 export function MobileNav() {
   const pathname = usePathname();
   const t = useTranslations('nav');
+  const { data: summary } = useSocialSummary();
+  const socialCount = summary?.total ?? 0;
 
   return (
     <>
@@ -30,7 +33,8 @@ export function MobileNav() {
         {DOCK_ITEMS.map((item) => {
           const active = isActivePath(pathname, item.href);
           const Icon = item.icon;
-          const label = t(item.key);
+          const badge = item.socialBadge ? socialCount : 0;
+          const label = badge > 0 ? `${t(item.key)} · ${t('newActivity', { count: badge })}` : t(item.key);
           return (
             <Link
               key={item.href}
@@ -45,8 +49,21 @@ export function MobileNav() {
                   : 'w-12 text-foreground hover:bg-accent'
               )}
             >
-              <Icon className={active ? 'h-5 w-5' : 'h-[22px] w-[22px]'} strokeWidth={active ? 2 : 1.75} aria-hidden />
-              {active && <span className="text-sm font-bold">{label}</span>}
+              <span className="relative">
+                <Icon className={active ? 'h-5 w-5' : 'h-[22px] w-[22px]'} strokeWidth={active ? 2 : 1.75} aria-hidden />
+                {badge > 0 && (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none',
+                      active ? 'bg-foreground text-background' : 'bg-signature text-signature-foreground'
+                    )}
+                  >
+                    {badge > 9 ? '9+' : badge}
+                  </span>
+                )}
+              </span>
+              {active && <span className="text-sm font-bold">{t(item.key)}</span>}
             </Link>
           );
         })}

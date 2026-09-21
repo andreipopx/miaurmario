@@ -31,6 +31,8 @@ export interface StudioCreatePayload {
   scheduled_for?: string | null;
   mark_worn?: boolean;
   source_item_id?: string | null;
+  /** Social layer: share with friends on save (default private). */
+  visibility?: 'private' | 'friends' | 'public';
 }
 
 export function useCreateStudioOutfit() {

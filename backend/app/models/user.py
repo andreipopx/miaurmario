@@ -50,6 +50,8 @@ class User(Base):
     password_updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Social: reactions on my outfits newer than this are "new" (in-app badge).
+    social_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     body_measurements: Mapped[dict | None] = mapped_column(JSONB)

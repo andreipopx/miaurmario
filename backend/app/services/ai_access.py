@@ -219,8 +219,26 @@ def usage_for_current_month(row: UserAISettings | None) -> tuple[int, int]:
     return row.requests_this_month or 0, row.tokens_this_month or 0
 
 
-async def record_ai_usage(session: AsyncSession, user_id: UUID, requests: int, tokens: int) -> None:
-    """Atomically add usage, resetting counters when the month rolled over."""
+def token_split_for_current_month(row: UserAISettings | None) -> tuple[int, int]:
+    """(prompt_tokens, completion_tokens) for the current UTC month."""
+    if row is None or row.usage_month != current_usage_month():
+        return 0, 0
+    return row.prompt_tokens_this_month or 0, row.completion_tokens_this_month or 0
+
+
+async def record_ai_usage(
+    session: AsyncSession,
+    user_id: UUID,
+    requests: int,
+    tokens: int,
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+) -> None:
+    """Atomically add usage, resetting counters when the month rolled over.
+
+    ``tokens`` is the provider's total; ``prompt_tokens``/``completion_tokens``
+    are its input/output split when reported (used for the admin cost estimate).
+    """
     month = current_usage_month()
     table = UserAISettings.__table__
     stmt = pg_insert(table).values(
@@ -228,17 +246,25 @@ async def record_ai_usage(session: AsyncSession, user_id: UUID, requests: int, t
         usage_month=month,
         requests_this_month=requests,
         tokens_this_month=tokens,
+        prompt_tokens_this_month=prompt_tokens,
+        completion_tokens_this_month=completion_tokens,
         last_used_at=datetime.now(UTC),
     )
     same_month = table.c.usage_month == month
+
+    def _add(column, amount: int):
+        return case((same_month, column), else_=0) + amount
 
     stmt = stmt.on_conflict_do_update(
         index_elements=[table.c.user_id],
         set_={
             "usage_month": month,
-            "requests_this_month": case((same_month, table.c.requests_this_month), else_=0)
-            + requests,
-            "tokens_this_month": case((same_month, table.c.tokens_this_month), else_=0) + tokens,
+            "requests_this_month": _add(table.c.requests_this_month, requests),
+            "tokens_this_month": _add(table.c.tokens_this_month, tokens),
+            "prompt_tokens_this_month": _add(table.c.prompt_tokens_this_month, prompt_tokens),
+            "completion_tokens_this_month": _add(
+                table.c.completion_tokens_this_month, completion_tokens
+            ),
             "last_used_at": datetime.now(UTC),
         },
     )
@@ -249,11 +275,15 @@ def make_usage_sink(db: AsyncSession, user_id: UUID) -> UsageSink:
     """Usage sink writing through an independent session on the caller's engine."""
     bind = db.bind
 
-    async def _sink(requests: int, tokens: int) -> None:
+    async def _sink(
+        requests: int, tokens: int, prompt_tokens: int = 0, completion_tokens: int = 0
+    ) -> None:
         if bind is None:
             return
         async with AsyncSession(bind=bind, expire_on_commit=False) as session:
-            await record_ai_usage(session, user_id, requests, tokens)
+            await record_ai_usage(
+                session, user_id, requests, tokens, prompt_tokens, completion_tokens
+            )
             await session.commit()
 
     return _sink

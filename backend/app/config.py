@@ -206,6 +206,7 @@ class Settings(BaseSettings):
     def magic_link_origin(self) -> str:
         return (self.magic_link_base_url or self.app_url).rstrip("/")
 
+    @property
     def token_encryption_key(self) -> str | None:
         """Fernet key for integration tokens (new name first, legacy Pinterest name second)."""
         return self.integrations_token_encryption_key or self.pinterest_token_encryption_key
@@ -213,12 +214,15 @@ class Settings(BaseSettings):
     def public_app_url(self) -> str:
         """Public base URL of the frontend for post-OAuth browser redirects.
 
-        Reuses MAGIC_LINK_BASE_URL when it was explicitly configured. Otherwise returns
-        "" so callers emit a *relative* Location header, which the browser resolves
-        against the public URL it actually used. Never derived from the Host header
-        (the Cloudflare tunnel rewrites Host to the LAN name).
+        Reuses MAGIC_LINK_BASE_URL when it is configured. Otherwise returns "" so
+        callers emit a *relative* Location header, which the browser resolves against
+        the public URL it actually used. Deliberately does NOT fall back to APP_URL:
+        docker-compose.prod.yml always injects APP_URL (defaulting to
+        https://localhost:3000), and a relative redirect is correct in every
+        deployment. Never derived from the Host header (the Cloudflare tunnel
+        rewrites Host to the LAN name).
         """
-        if "magic_link_base_url" in self.model_fields_set and self.magic_link_base_url:
+        if self.magic_link_base_url:
             return self.magic_link_base_url.rstrip("/")
         return ""
 

@@ -25,6 +25,7 @@ import '@oneworks/avatar-react/renderer.css'
 import type { AvatarAnimationClip, AvatarAnimationLibrary, AvatarDefinition } from '@oneworks/avatar'
 
 import { Stinky, type StinkyProps } from './stinky'
+import { startPurrVibration } from './stinky-purr'
 import { observeSlitPupils } from './stinky-pupils'
 import {
   STINKY_ANIMATIONS_URL,
@@ -47,9 +48,9 @@ const getJson = <T,>(url: string) => {
   if (!cache.has(url)) cache.set(url, fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(url)))))
   return cache.get(url) as Promise<T>
 }
-// The ":3" mouth is a decal baked into the definition (neutral vs happy), so the definition follows the state.
-const load = (state: StinkyState, variant: StinkyVariant) => Promise.all([
-  getJson<AvatarDefinition>(stinkyDefinitionUrl(state, variant)),
+// One definition per variant; mouth accents (open mouth) are animated parts inside the clips.
+const load = (variant: StinkyVariant) => Promise.all([
+  getJson<AvatarDefinition>(stinkyDefinitionUrl(variant)),
   getJson<AvatarAnimationLibrary>(STINKY_ANIMATIONS_URL),
 ]).then(([definition, library]): Loaded => ({ definition, library }))
 
@@ -60,7 +61,10 @@ const looksLowEnd = () => {
 }
 
 export default function StinkyLive(props: StinkyLiveProps) {
-  const { state = 'idle', size = 128, settleTo = 'idle', variant: forced, onDone, label = 'Stinky', className, fps = 24 } = props
+  const { state = 'idle', size = 128, settleTo = 'idle', variant: forced, onDone, onPet, interactive, label = 'Stinky', className, fps = 24 } = props
+  const isInteractive = interactive ?? size >= 48
+  const beforePurr = useRef<StinkyState | null>(null)
+  const lastPet = useRef(-Infinity)
   const reducedMotion = usePrefersReducedMotion()
   const variant = useStinkyVariant(forced)
   const [data, setData] = useState<Loaded | null>(null)
@@ -74,9 +78,9 @@ export default function StinkyLive(props: StinkyLiveProps) {
   useEffect(() => setShown(requested), [requested])
   useEffect(() => {
     let alive = true
-    load(shown, variant).then(d => alive && setData(d)).catch(() => alive && setDowngraded(true))
+    load(variant).then(d => alive && setData(d)).catch(() => alive && setDowngraded(true))
     return () => { alive = false }
-  }, [shown, variant])
+  }, [variant])
 
   const clip = useMemo<AvatarAnimationClip | null>(
     () => (data?.library.groups.states?.clips[shown] as AvatarAnimationClip | undefined) ?? null,
@@ -114,6 +118,7 @@ export default function StinkyLive(props: StinkyLiveProps) {
         started = true
         t0 = now
         lastFrame = now
+        if (shown === 'purr') startPurrVibration(host)
         return
       }
       // Runtime performance guard: sample the first 30 frames after start.
@@ -135,7 +140,11 @@ export default function StinkyLive(props: StinkyLiveProps) {
         if (elapsed >= clip.durationMs) {
           finished = true
           onDone?.()
-          if (settle != null && settle !== shown) setShown(settle)
+          if (shown === 'purr') {
+            const back = beforePurr.current ?? requested
+            beforePurr.current = null
+            setShown(STINKY_STATE_META[back].playback === 'loop' ? back : settle ?? 'idle')
+          } else if (settle != null && settle !== shown) setShown(settle)
         }
       }
     }
@@ -150,7 +159,7 @@ export default function StinkyLive(props: StinkyLiveProps) {
       io?.disconnect()
       avatarAtStart.current?.stop({ trackId: 'stinky' })
     }
-  }, [clip, reducedMotion, downgraded, fps, settle, shown, onDone])
+  }, [clip, reducedMotion, downgraded, fps, settle, shown, onDone, requested])
 
   // Slit pupils: rewrite the SDK's (black) eye highlight into a vertical slit on every render.
   const live = !reducedMotion && !downgraded && data != null
@@ -162,19 +171,41 @@ export default function StinkyLive(props: StinkyLiveProps) {
 
   if (!live || data == null) {
     return (
-      <Stinky state={shown} size={size} settleTo={settleTo} variant={forced} onDone={onDone} label={label} className={className} />
+      <Stinky
+        state={shown}
+        size={size}
+        settleTo={settleTo}
+        variant={forced}
+        onDone={onDone}
+        interactive={interactive}
+        onPet={onPet}
+        label={label}
+        className={className}
+      />
     )
   }
 
-  const decorative = label === ''
+  const pet = () => {
+    const now = performance.now()
+    if (shown === 'purr' || now - lastPet.current < 1200) return
+    lastPet.current = now
+    beforePurr.current = shown
+    setShown('purr')
+    navigator.vibrate?.([15, 30, 15, 30, 15, 30, 15])
+    onPet?.()
+  }
+  const decorative = !isInteractive && label === ''
   return (
     <span
       ref={hostRef}
       className={className}
-      style={{ display: 'inline-block', width: size, height: size }}
-      role={decorative ? undefined : 'img'}
-      aria-label={decorative ? undefined : label}
+      style={{ display: 'inline-block', width: size, height: size, cursor: isInteractive ? 'pointer' : undefined }}
+      role={isInteractive ? 'button' : decorative ? undefined : 'img'}
+      tabIndex={isInteractive ? 0 : undefined}
+      aria-label={isInteractive ? 'Acariciar a Stinky' : decorative ? undefined : label}
       aria-hidden={decorative || undefined}
+      onClick={isInteractive ? pet : undefined}
+      onKeyDown={isInteractive ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pet() } } : undefined}
       data-stinky-state={shown}
       data-stinky-mode='live'
     >

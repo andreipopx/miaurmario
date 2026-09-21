@@ -161,8 +161,12 @@ async def update_settings(
 async def get_mood(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    refresh: bool = False,
 ) -> dict[str, Any]:
-    """What the Stylist would use as mood input right now when no song is typed."""
+    """What the Stylist would use as mood input right now when no song is typed.
+
+    `refresh=true` bypasses the 5-minute mood cache.
+    """
     settings = get_settings()
     fallback = "lastfm" if settings.lastfm_api_key else "musicbrainz"
     connection = await spotify_mood.get_connection(db, current_user.id)
@@ -173,6 +177,8 @@ async def get_mood(
             "reason": "not_connected" if connection is None else "disabled",
             "context": None,
         }
+    if refresh:
+        await spotify_mood.clear_mood_cache(current_user.id)
     ctx = await spotify_mood.listening_mood(db, connection)
     if ctx is None:
         return {"source": "manual", "fallback": fallback, "reason": "no_data", "context": None}

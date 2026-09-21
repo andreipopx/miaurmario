@@ -20,16 +20,21 @@ export default function PinsPage() {
   const query = usePinterestPins(PAGE_SIZE, offset);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 py-8">
-      <div className="flex items-baseline justify-between">
-        <div>
-          <h1 className="font-serif text-3xl">{t('title')}</h1>
-          <p className="mt-1 text-muted-foreground">{t('subtitle')}</p>
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-10 sm:py-14 space-y-10">
+      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-3">
+          <p className="label-editorial text-gold">Pinterest</p>
+          <h1 className="font-display italic font-black text-display-lg leading-none">
+            {t('title')}
+          </h1>
+          <p className="font-editorial italic text-lg text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <Button variant="ghost" asChild>
+        <Button variant="secondary" asChild>
           <Link href="/dashboard/settings/integrations/pinterest">{t('manageConnection')}</Link>
         </Button>
-      </div>
+      </header>
+
+      <div className="divider-gold" />
 
       {query.isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -38,7 +43,7 @@ export default function PinsPage() {
       )}
 
       {query.data && query.data.items.length === 0 && (
-        <div className="rounded border border-border-solid/40 p-8 text-center text-muted-foreground">
+        <div className="border border-border-solid/40 p-8 text-center font-editorial italic text-muted-foreground">
           <p>{t('empty')}</p>
           <Button asChild className="mt-4">
             <Link href="/dashboard/settings/integrations/pinterest">{t('connectCta')}</Link>
@@ -58,7 +63,7 @@ export default function PinsPage() {
                 href={pin.source_link ?? pin.image_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="group relative block overflow-hidden rounded"
+                className="group relative block overflow-hidden"
                 style={{ backgroundColor: pin.dominant_color ?? 'transparent' }}
               >
                 <div className="relative aspect-[3/4]">

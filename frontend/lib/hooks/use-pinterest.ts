@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, setAccessToken } from '@/lib/api';
 
@@ -41,11 +41,34 @@ export interface PinterestPinList {
   offset: number;
 }
 
-export function usePinterestBoards(enabled = true) {
+export interface PinterestStatus {
+  configured: boolean;
+  connected: boolean;
+  pinterest_user_id: string | null;
+  connected_at: string | null;
+  scopes: string | null;
+  pin_count: number;
+}
+
+export function usePinterestStatus() {
   useSetTokenIfAvailable();
   return useQuery({
+    queryKey: ['pinterest', 'status'],
+    queryFn: () => api.get<PinterestStatus>('/integrations/pinterest/status'),
+  });
+}
+
+export function usePinterestBoards(enabled = true) {
+  useSetTokenIfAvailable();
+  return useInfiniteQuery({
     queryKey: ['pinterest', 'boards'],
-    queryFn: () => api.get<PinterestBoardList>('/integrations/pinterest/boards'),
+    queryFn: ({ pageParam }) =>
+      api.get<PinterestBoardList>(
+        '/integrations/pinterest/boards',
+        pageParam ? { params: { bookmark: pageParam } } : undefined,
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.bookmark || null,
     enabled,
     retry: false,
   });

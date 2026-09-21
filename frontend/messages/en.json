@@ -611,7 +611,8 @@
     "songLabel": "What are you listening to today?",
     "songPlaceholder": "e.g. Mitski — My Love Mine All Mine, or paste a Spotify link",
     "songHelp": "Optional. The Stylist will use the song's mood as an extra layer of inspiration.",
-    "inspiredBy": "Inspired by"
+    "inspiredBy": "Inspired by",
+    "songSpotifyHint": "Spotify connected: leave it empty and we'll use what you're listening to."
   },
   "settings": {
     "title": "Settings",
@@ -830,6 +831,11 @@
       "textModel": "Text Model",
       "addEndpoint": "Add Endpoint",
       "testFailed": "Failed to test endpoint"
+    },
+    "integrations": {
+      "title": "Integrations",
+      "description": "Pinterest for inspiration and Spotify as the Stylist's musical mood.",
+      "cta": "Manage integrations"
     }
   },
   "invite": {
@@ -1610,25 +1616,108 @@
     "viewPairings": "See combinations"
   },
   "integrations": {
+    "eyebrow": "Connections",
     "title": "Integrations",
-    "subtitle": "Connect external services to feed your wardrobe.",
+    "subtitle": "Connect external services to feed your wardrobe and your style.",
+    "backToSettings": "← Settings",
+    "backToIntegrations": "← Integrations",
+    "loading": "Loading…",
+    "status": {
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "unavailable": "Unavailable"
+    },
     "pinterest": {
+      "eyebrow": "Inspiration",
       "title": "Pinterest",
       "description": "Import inspiration boards from Pinterest.",
+      "tagline": "Your boards, turned into references for the Stylist.",
       "manage": "Manage Pinterest",
       "connectTitle": "Connect your Pinterest account",
       "connectDescription": "Authorize Miaurmario to read your boards and pins. You can disconnect at any time.",
       "connectButton": "Connect Pinterest",
+      "connectedToast": "Pinterest connected.",
+      "notConfigured": "The Pinterest integration is not configured on this server yet.",
+      "scopesNote": "Permissions: read-only access to boards and pins",
+      "connectedAs": "Connected account",
+      "pinsImported": "{count, plural, =0 {No pins imported yet} one {# pin imported} other {# pins imported}}",
+      "viewPins": "View pins",
       "loadingBoards": "Loading boards…",
       "boardsTitle": "Your boards",
+      "boardsError": "We couldn't load your boards. Try reconnecting Pinterest.",
+      "noCover": "No cover",
       "importBoard": "Import board",
       "importQueued": "Import queued. Pins will appear in a few minutes.",
       "importFailed": "Could not start the import.",
       "noBoards": "No boards in this account.",
+      "loadMore": "Load more",
       "pinCount": "{count, plural, one {# pin} other {# pins}}",
       "disconnect": "Disconnect",
+      "disconnectConfirm": "Disconnect Pinterest? Imported pins will be deleted.",
       "disconnectSuccess": "Pinterest disconnected. Saved pins were removed.",
-      "errorGeneric": "Something went wrong connecting to Pinterest. Please try again."
+      "errorTitle": "Could not connect",
+      "errorGeneric": "Something went wrong connecting to Pinterest. Please try again.",
+      "errors": {
+        "invalid_state": "The request expired or is invalid. Please start again from here.",
+        "access_denied": "You cancelled the authorization on Pinterest.",
+        "exchange_failed": "Pinterest rejected the authorization. Please try again in a few minutes."
+      }
+    },
+    "spotify": {
+      "eyebrow": "Musical mood",
+      "title": "Spotify",
+      "description": "Use what you listen to as mood inspiration for the Stylist.",
+      "tagline": "What's in your headphones, translated into style.",
+      "manage": "Manage Spotify",
+      "connectTitle": "Connect your Spotify account",
+      "connectDescription": "Miaurmario will read what's playing now, what you played recently and your top artists to give the Stylist a mood. It never plays or changes anything.",
+      "connectButton": "Connect Spotify",
+      "connectedToast": "Spotify connected.",
+      "notConfigured": "The Spotify integration is not configured on this server yet.",
+      "scopesNote": "Permissions: currently playing, recently played and top artists (read-only)",
+      "allowlistNote": "While the Spotify app is in development mode, only accounts the administrator has added to the allowed-users list can connect.",
+      "connectedAs": "Connected account",
+      "disconnect": "Disconnect",
+      "disconnectSuccess": "Spotify disconnected.",
+      "useForMood": "Use Spotify as mood",
+      "useForMoodHelp": "When you ask for an outfit without typing a song, the Stylist takes inspiration from what you're listening to.",
+      "settingsFailed": "Could not save the setting.",
+      "moodEyebrow": "Right now",
+      "moodTitle": "Current mood",
+      "moodDescription": "What the Stylist would use as musical context if you ask for an outfit without typing a song.",
+      "moodLoading": "Checking Spotify…",
+      "moodError": "We couldn't reach Spotify right now.",
+      "currentSource": "Source",
+      "source": {
+        "spotify": "Spotify",
+        "manual": "Typed song only",
+        "lastfm": "Last.fm",
+        "musicbrainz": "MusicBrainz"
+      },
+      "listening": {
+        "now_playing": "Playing now",
+        "recently_played": "Recently played",
+        "top_artists": "Your artists of the moment"
+      },
+      "genres": "Genres",
+      "tags": "Mood tags",
+      "topArtists": "Top artists",
+      "reason": {
+        "not_connected": "Spotify is not connected.",
+        "disabled": "You turned off Spotify as mood. Only the song you type will be used.",
+        "no_data": "Spotify has no recent listening for this account."
+      },
+      "fallbackNote": "If you type a song, Spotify identifies it first; if that fails, {fallback} is used as a fallback.",
+      "refresh": "Refresh",
+      "errorTitle": "Could not connect",
+      "errorGeneric": "Something went wrong connecting to Spotify. Please try again.",
+      "errors": {
+        "invalid_state": "The request expired or is invalid. Please start again from here.",
+        "access_denied": "You cancelled the authorization on Spotify.",
+        "exchange_failed": "Spotify rejected the authorization. Please try again in a few minutes.",
+        "not_allowlisted": "Your Spotify account isn't on the app's allowed-users list (development mode). Ask the administrator to add it.",
+        "profile_failed": "We connected to Spotify but couldn't read your profile. Please try again."
+      }
     }
   },
   "pins": {

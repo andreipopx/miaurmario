@@ -68,7 +68,7 @@ function ItemCard({
   const name = item.name || typeLabel(item.type);
 
   const usage = item.last_worn_at
-    ? t('item.wornAgo', { days: getDaysSinceDateInTimezone(item.last_worn_at, userTimezone) })
+    ? t('item.wornAgo', { days: getDaysSinceDateInTimezone(item.last_worn_at.slice(0, 10), userTimezone) })
     : item.wear_count > 0
       ? t('item.wornCount', { count: item.wear_count })
       : t('item.neverWorn');
@@ -123,7 +123,7 @@ function ItemCard({
         <div
           className={cn(
             'absolute bottom-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 transition-opacity',
-            selected ? 'opacity-100' : 'opacity-0 focus-within:opacity-100 group-hover:opacity-100'
+            selected ? 'opacity-100' : 'opacity-0 focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
           )}
         >
           <Checkbox
@@ -636,7 +636,12 @@ export default function WardrobePage() {
           <EmptyWardrobe onAddClick={() => setAddDialogOpen(true)} />
         )
       ) : (
-        <div className="grid grid-cols-2 gap-x-2.5 gap-y-4 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
+        <div
+          className={cn(
+            'grid grid-cols-2 gap-x-2.5 gap-y-4 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4',
+            (selection.mode !== 'none' || total > pageSize) && 'pb-16'
+          )}
+        >
           {items.map((item) => {
             // Determine if item is selected based on selection mode
             const isSelected = selection.mode === 'all'

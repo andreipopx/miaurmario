@@ -230,12 +230,13 @@ function TodayLook() {
               href={`/dashboard/outfits/${featured.id}`}
               aria-label={t('viewLook')}
               className={cn(
-                'mt-2 grid gap-2 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                items.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
+                'mt-2 grid h-[208px] gap-2 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-[280px]',
+                items.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
+                items.length > 2 ? 'grid-rows-2' : 'grid-rows-1'
               )}
             >
               {items.map((item) => (
-                <div key={item.id} className={cn('relative', items.length > 2 ? 'aspect-square' : 'aspect-[4/5]')}>
+                <div key={item.id} className="relative min-h-0">
                   {item.thumbnail_url ? (
                     <Image
                       src={item.thumbnail_url}
@@ -252,7 +253,7 @@ function TodayLook() {
                 </div>
               ))}
             </Link>
-            <StinkyTip className="mt-3">{tip ? <span className="line-clamp-3">{tip}</span> : t('defaultTip')}</StinkyTip>
+            <StinkyTip className="mt-3" clamp>{tip || t('defaultTip')}</StinkyTip>
           </>
         ) : (
           <div className="flex flex-col items-center px-4 pb-4 pt-6 text-center">

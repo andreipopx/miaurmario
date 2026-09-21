@@ -75,6 +75,9 @@ export function BulkActionToolbar({
   const totalPages = Math.ceil(totalItems / pageSize);
   const showPagination = totalPages > 1;
 
+  // Nothing to act on: don't float an empty bar over the grid (tiles carry their own checkboxes).
+  if (!hasSelection && !showPagination) return null;
+
   return (
     // Floats above the mobile dock (24px inset + 64px dock + safe area) on < lg.
     <div

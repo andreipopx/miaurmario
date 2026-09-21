@@ -167,7 +167,7 @@ function ThemeSelector() {
   const current = mounted ? theme ?? 'system' : undefined;
 
   return (
-    <div role="group" aria-label={t('theme')} className="inline-flex flex-wrap items-center gap-1 rounded-full bg-panel p-1">
+    <div role="group" aria-label={t('theme')} className="grid w-full max-w-sm grid-cols-3 gap-1 rounded-full bg-panel p-1">
       {THEME_OPTIONS.map(({ value, labelKey, Icon }) => {
         const active = current === value;
         return (
@@ -177,7 +177,7 @@ function ThemeSelector() {
             onClick={() => setTheme(value)}
             aria-pressed={active}
             className={cn(
-              'inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors duration-150',
+              'inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-semibold transition-colors duration-150',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               active ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground hover:bg-background'
             )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { signOut } from 'next-auth/react';
@@ -46,7 +47,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
     <div className={cn('lg:hidden', !open && 'pointer-events-none')}>
       <div
         className={cn(
-          'fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300',
+          'fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px] transition-opacity duration-300',
           open ? 'opacity-100' : 'opacity-0'
         )}
         onClick={onClose}
@@ -57,18 +58,24 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
         aria-modal="true"
         aria-label={tNav('profileMenu')}
         className={cn(
-          'fixed inset-y-2 left-2 z-50 w-80 max-w-[calc(100vw-1rem)] rounded-lg bg-popover shadow-[0_20px_60px_rgba(0,0,0,0.25)] transition-[transform,visibility] duration-300 ease-out',
+          'fixed inset-y-2 left-2 z-[70] w-80 max-w-[calc(100vw-1rem)] rounded-lg bg-popover shadow-[0_20px_60px_rgba(0,0,0,0.25)] transition-[transform,visibility] duration-300 ease-out',
           open ? 'visible translate-x-0' : 'invisible -translate-x-[110%]'
         )}
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="flex h-full flex-col overflow-y-auto p-4">
           <div className="flex items-center gap-3 rounded-lg bg-panel p-3">
-            <StinkyAvatar size={52} className="bg-background" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-bold">{user?.display_name || tCommon('user')}</p>
-              {user?.email && <p className="truncate text-sm text-muted-foreground">{user.email}</p>}
-            </div>
+            <Link
+              href="/dashboard/settings"
+              onClick={onClose}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <StinkyAvatar size={52} className="bg-background" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-base font-bold">{user?.display_name || tCommon('user')}</span>
+                <span className="block truncate text-sm text-muted-foreground">{tNav('viewProfile')}</span>
+              </span>
+            </Link>
             <button
               ref={closeRef}
               type="button"

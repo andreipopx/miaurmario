@@ -234,7 +234,8 @@
     "looks": "Looks",
     "primary": "Principal",
     "profileMenu": "Tu perfil y menú",
-    "familySettings": "Gestionar familia"
+    "familySettings": "Gestionar familia",
+    "viewProfile": "Tu perfil y ajustes"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",

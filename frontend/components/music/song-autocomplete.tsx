@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Loader2, Music, Radio, X } from 'lucide-react';
@@ -15,6 +15,36 @@ export interface SongSelection {
   /** Exact Spotify track id when picked from Spotify results / now playing. */
   trackId: string | null;
   track?: MusicTrack | null;
+}
+
+/** Room the floating mobile dock (and its fade) takes at the bottom, below `lg`. */
+const MOBILE_DOCK_RESERVE = 120;
+const LIST_MAX = 344;
+const LIST_MIN = 160;
+/** The sticky app header at the top. */
+const HEADER_RESERVE = 72;
+
+interface ListPlacement {
+  up: boolean;
+  maxHeight: number;
+}
+
+/**
+ * Where the suggestions fit: below the field unless the floating dock would
+ * cover them and there is more room above (short pages on phones).
+ */
+function measurePlacement(anchor: HTMLElement): ListPlacement {
+  const rect = anchor.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const desktop =
+    typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches;
+  const reserve = desktop ? 16 : MOBILE_DOCK_RESERVE;
+  const gap = 8;
+  const below = vh - reserve - rect.bottom - gap;
+  const above = rect.top - HEADER_RESERVE - gap;
+  const up = below < Math.min(LIST_MAX, 240) && above > below;
+  const room = (up ? above : below) - 32; // source footer
+  return { up, maxHeight: Math.max(LIST_MIN, Math.min(LIST_MAX, Math.floor(room))) };
 }
 
 function Cover({ src, size = 40 }: { src: string | null | undefined; size?: number }) {
@@ -61,6 +91,8 @@ export function SongAutocomplete({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<ListPlacement>({ up: false, maxHeight: LIST_MAX });
 
   const searching = open && !value.trackId && value.text.trim().length >= 2;
   const search = useMusicSearch(value.text, searching);
@@ -105,9 +137,24 @@ export function SongAutocomplete({
   const showList = searching && (items.length > 0 || search.isFetching);
   const source = search.data?.source;
 
+  useLayoutEffect(() => {
+    if (!showList || !fieldRef.current) return;
+    const el = fieldRef.current;
+    const update = () => setPlacement(measurePlacement(el));
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, { passive: true });
+    window.visualViewport?.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update);
+      window.visualViewport?.removeEventListener('resize', update);
+    };
+  }, [showList]);
+
   return (
     <div ref={wrapRef} className="space-y-2">
-      <div className="relative">
+      <div ref={fieldRef} className="relative">
         {value.trackId && value.track ? (
           <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2">
             <Cover src={value.track.image_url} size={32} />
@@ -146,8 +193,20 @@ export function SongAutocomplete({
         )}
 
         {showList && (
-          <div className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-lg border border-border bg-card shadow-lg">
-            <ul id={listId} role="listbox" aria-label={t('songSuggestions')} className="max-h-[344px] overflow-y-auto py-1.5">
+          <div
+            data-placement={placement.up ? 'top' : 'bottom'}
+            className={cn(
+              'absolute inset-x-0 z-30 overflow-hidden rounded-lg border border-border bg-card shadow-lg',
+              placement.up ? 'bottom-full mb-2' : 'top-full mt-2'
+            )}
+          >
+            <ul
+              id={listId}
+              role="listbox"
+              aria-label={t('songSuggestions')}
+              className="overflow-y-auto py-1.5"
+              style={{ maxHeight: placement.maxHeight }}
+            >
               {items.map((item, i) => (
                 <li
                   key={`${item.track_id ?? item.name}-${i}`}

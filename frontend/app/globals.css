@@ -231,3 +231,25 @@ html {
   transform: translate(-50%, -40%);
   animation: stinky-fx-still 2600ms linear forwards;
 }
+
+/* Scrollbars: thin, rounded, quiet; pink on hover (Stinky pop). */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--signature); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+@layer utilities {
+  /* Swipeable rows (chips, carousels): no visible bar. */
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}

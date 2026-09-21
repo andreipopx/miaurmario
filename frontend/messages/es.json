@@ -2161,5 +2161,9 @@
       "user_uses_own_key": "Este usuario usa su propia clave; no hay regalo que quitar.",
       "user_not_found": "Usuario no encontrado."
     }
+  },
+  "pwa": {
+    "updateAvailable": "Hay una versión nueva de Miaurmario",
+    "update": "Actualizar"
   }
 }

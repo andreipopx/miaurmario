@@ -322,7 +322,7 @@ function FeedContent() {
       <PageHeader title={t('title')} description={t('subtitle')} action={<ManageFamilyButton />} />
 
       {/* Member selector */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
+      <div className="-mx-1 flex gap-2 overflow-x-auto scrollbar-none px-1 pb-2">
         {otherMembers.map((member) => (
           <button
             key={member.id}

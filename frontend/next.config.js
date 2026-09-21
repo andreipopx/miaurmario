@@ -4,6 +4,11 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Baked into the client bundle; versions the service worker cache per build so
+  // installed PWAs never keep stale same-name assets (e.g. Stinky clips).
+  env: {
+    NEXT_PUBLIC_BUILD_ID: process.env.NEXT_PUBLIC_BUILD_ID || String(Date.now()),
+  },
   experimental: {
     // Disable automatic static optimization for pages using client-side context
     missingSuspenseWithCSRBailout: false,

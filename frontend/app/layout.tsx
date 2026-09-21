@@ -82,8 +82,8 @@ export default async function RootLayout({
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>{children}</Providers>
+          <ServiceWorkerRegister />
         </NextIntlClientProvider>
-        <ServiceWorkerRegister />
       </body>
     </html>
   );

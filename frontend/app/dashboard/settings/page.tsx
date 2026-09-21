@@ -58,7 +58,6 @@ const BODY_MEASUREMENT_FIELDS = [
   { key: 'chest', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '96', placeholderImperial: '38' },
   { key: 'waist', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '82', placeholderImperial: '32' },
   { key: 'hips', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '98', placeholderImperial: '39' },
-  { key: 'inseam', unitMetric: 'cm', unitImperial: 'in', placeholderMetric: '81', placeholderImperial: '32' },
 ] as const;
 
 const SIZE_FIELDS = [

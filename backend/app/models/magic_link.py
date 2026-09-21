@@ -22,6 +22,9 @@ class MagicLinkToken(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ip_created: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    # Invite code captured at request time (from /login?invite=CODE); redeemed
+    # when the link creates a new account.
+    invite_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

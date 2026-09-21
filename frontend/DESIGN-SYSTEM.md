@@ -1,137 +1,120 @@
-# Wardrowbe — editorial design system
+# Miaurmario — "Stinky pop" design system
 
-Fashion-editorial aesthetic (Vogue / AnOther / Business of Fashion). Warm cream base, burgundy CTAs, old-gold accents, Playfair display, Cormorant italic for accents, Inter for body.
+Playful, mobile-first, Whering-inspired: a white canvas, light-gray panels behind garments,
+ink text, pill buttons, simple line icons, and saturated colour blocks taken from Stinky the
+cat (pink nose, amber eyes) plus sky and mint. Colour is for **surfaces** (quick-action tiles,
+active states, badges, avatars) — never for body text.
 
-Everything is driven by CSS variables in `app/globals.css` + Tailwind tokens in `tailwind.config.js`. Change one file, the whole app follows.
+Everything is driven by CSS variables in `app/globals.css`, mapped to Tailwind in
+`tailwind.config.js`. Swapping the palette is a one-file change.
 
 ## Palette
 
-Tokens live as raw hex under `:root` (light) and `.dark`. Tailwind reads them via `var(--…)`.
+| Token (CSS var) | Tailwind | Light | Dark | Use |
+|---|---|---|---|---|
+| `--background` | `bg-background` | `#FFFFFF` | `#0F0F0F` | Page background |
+| `--panel` / `--muted` | `bg-panel`, `bg-muted` | `#F4F4F2` | `#1C1C1C` | Gray surfaces: garment tiles, search field, "Tu look de hoy" panel |
+| `--card` | `bg-card` | `#FFFFFF` | `#161616` | Hairline cards |
+| `--border` | `border-border` | `#ECECEC` | `#2A2A2A` | Hairlines |
+| `--foreground` | `text-foreground` | `#111111` ink | `#F5F5F5` | Text, icons |
+| `--muted-foreground` | `text-muted-foreground` | `#6B6B6B` (5.3:1 on white) | `#A3A3A3` | Secondary text |
+| `--primary` | `bg-primary` | `#111111` | `#F5F5F5` | Primary CTA (ink pill, inverse in dark) |
+| `--secondary` | `bg-secondary` | `#F4F4F2` | `#262626` | Secondary CTA (gray pill) |
+| `--signature` | `bg-signature` | `#FF7EB6` bubblegum pink | same | Active tab/day, "Añadir", highlights |
+| `--signature-soft` | `bg-signature-soft` | `#FFE3EF` | `#3A1F2C` | Tinted backgrounds, Stinky circles |
+| `--pop-amber` | `bg-pop-amber` | `#FFB81C` | same | Quick action / category |
+| `--pop-pink` | `bg-pop-pink` | `#FF7EB6` | same | Quick action / category |
+| `--pop-sky` | `bg-pop-sky` | `#56C2FF` | same | Quick action / category, "Lavar" badge |
+| `--pop-mint` | `bg-pop-mint` | `#3FD99A` | same | Quick action / category |
+| `--destructive` | `bg-destructive`, `text-destructive` | `#D92D3A` | `#F0525E` | Errors, delete |
+| `--success` / `--warning` | `text-success`, `text-warning` | `#13804F` / `#A35A00` | mint / amber | Text-safe status colours |
+| `--ring` | `ring-ring` | ink | pink | Focus rings |
 
-| Token | Light | Dark | Use |
+**Rules**
+- Pink and the pop colours always carry **ink** (`#111`) text and icons (`text-signature-foreground`,
+  `text-pop-foreground`). Never put pink text on white — it fails contrast.
+- Primary CTA ("Me lo pongo", "Enviarme el enlace") = `<Button>` (ink pill). Secondary ("Otra idea")
+  = `<Button variant="secondary">` (gray pill). Pink highlight = `<Button variant="signature">`.
+- Assign pop colours to categories/occasions in the fixed order amber → sky → pink → mint
+  (`popColorAt(i)` in `components/chip.tsx`).
+
+## Typography
+
+| Family | Variable | Class | When |
 |---|---|---|---|
-| `--background` | `#F5EFE6` cream | `#0A0A0A` ink | Page background |
-| `--card` | `#FAF6EF` | `#141210` | Cards, modals, elevated surfaces |
-| `--foreground` | `#0A0A0A` | `#F5EFE6` | Main text |
-| `--muted-foreground` | `#6B5D4F` warm grey | `#A89988` | Secondary text |
-| `--primary` | `#7B1E1E` burgundy | `#A02828` | CTAs, active links, hover accents |
-| `--editorial-gold` | `#B8860B` old gold | `#D4A548` | Section dividers, editorial labels |
-| `--border` | `#D4C9B855` hairline | `#3A3530` | Everything border-y |
-| `--radius` | `0` | `0` | Sharp rectangles (raise to 2-4px only if a component truly needs softening) |
+| Figtree 400–800 | `--font-sans` | default (`font-sans`) | Everything |
+| Bagel Fat One | `--font-wordmark` | `font-wordmark` / `<Wordmark />` | **Only** the "miaurmario" logo |
 
-## Fonts
+- Page titles: `text-[28px] sm:text-3xl font-extrabold tracking-[-0.02em]` (use `<PageHeader>`).
+- Section titles: `text-[15px]`–`text-lg font-bold`.
+- `h1–h3` default to weight 800 and −0.02em tracking; `h4–h6` 700.
+- Small labels: `.eyebrow` (13px, 600, muted, sentence case). No uppercase-tracked labels.
 
-Wired via `next/font/google` in `app/layout.tsx` and exposed as CSS variables:
+## Radii
 
-| Family | Variable | Tailwind class | When |
-|---|---|---|---|
-| Playfair Display (400/700/900, italic) | `--font-display` | `font-display` | H1, H2, display sizes, editorial titles |
-| Cormorant Garamond (400/500, italic only) | `--font-editorial` | `font-editorial` | Taglines, poetic captions, quotes, "Modo desarrollo" labels |
-| Inter (400/500/600) | `--font-sans` | `font-body` (default on `<body>`) | UI, forms, body text |
+| What | Class | Value |
+|---|---|---|
+| Cards, panels, dialogs | `rounded-lg` | 24px (`--radius`) |
+| Garment tiles | `rounded-tile` | 18px |
+| Quick-action tiles | `rounded-quick` | 16px |
+| Buttons, inputs, chips, badges, dock | `rounded-full` | pill |
+| Small inner bits (select items, checkboxes) | `rounded-md` / `rounded-sm` | 14px / 10px |
 
-`h1/h2/h3` automatically get `font-display` via `globals.css`. `h4/h5/h6` keep sans.
+No 0-radius corners anywhere.
 
-## Sizes
+## Components
 
-Extended in `tailwind.config.js`:
+`components/ui/*` (shadcn-style) inherit the tokens:
 
-- `text-display-2xl` — clamp(3rem, 8vw, 6rem), tight leading & letter-spacing — hero headings
-- `text-display-xl` — clamp(2.5rem, 6vw, 4.5rem) — page titles
-- `text-display-lg` — clamp(2rem, 4.5vw, 3.5rem) — section titles
+- **Button** — `default` ink pill · `secondary` gray pill · `signature` pink pill · `outline` white pill
+  with hairline · `ghost` · `link` · `destructive`. Sizes: `sm` 36px, `default` 44px, `lg` 52px, `icon` 44×44.
+- **Input** — 48px white pill, 1.5px hairline; focus = ink border + soft pink ring. For a gray search
+  field add `bg-panel border-transparent`.
+- **Card** — white, hairline, 24px. For gray panels: `className="bg-panel border-0"`.
+- **Badge** — pill; `signature`, `amber`, `sky`, `mint`, `secondary`, `outline`, `destructive`.
+- **Alert** — rounded tinted panel (`default` gray, `signature` soft pink, `destructive`).
+- **Dialog / AlertDialog** — 24px rounded, no border, soft shadow, round gray close button.
+- **Tabs** — pill segmented control on panel gray. **Switch** pink when on. **Progress / Slider** pink fill.
 
-Everything else uses the default Tailwind scale.
+App-level building blocks:
 
-## Utilities (added in globals.css)
+- `components/page-header.tsx` — `<PageHeader title description action />`.
+- `components/chip.tsx` — `<Chip active dot="amber" activeStyle="ink|pop">` pill filter chip with a colour dot.
+- `components/empty-state.tsx` — `<EmptyState state="sleepy|sad" title description action />`
+  (Stinky in a soft-pink circle).
+- `components/stinky-tip.tsx` — `<StinkyTip>` "Stinky: …" bubble.
+- `components/brand/wordmark.tsx`, `components/brand/stinky-avatar.tsx` (static head in a circle).
+- `components/stinky/stinky.tsx` — animated mascot. States: `idle`, `thinking` (stylist generating),
+  `happy` (look accepted), `wave` (login/onboarding), `sleepy` (empty states), `sad` (errors).
+  Picks the `-dark` assets automatically and honours `prefers-reduced-motion`.
 
-```html
-<span class="label-editorial">SECTION</span>
-```
-Uppercase, 0.16em tracking, muted foreground, 11px, weight 500. Use for eyebrows, metadata rows, section headers, form labels, small captions.
+## Layout
 
-```html
-<div class="divider-gold" />        <!-- 1px, --editorial-gold, 60% opacity -->
-<div class="divider-hairline" />    <!-- 1px, --border-solid, 45% opacity -->
-```
-Editorial section breaks. In dashboard page, gold rules separate the three sections; hairline is for softer subdivisions.
+- **Mobile (default)**: sticky header (Stinky avatar → profile menu · greeting/wordmark · bell), content
+  with `px-4`, and a **floating glass dock** (`components/mobile-nav.tsx`): fixed, 16px side inset,
+  24px + safe-area from the bottom, 64px tall, radius 32, `.glass-dock` surface. Active tab = pink
+  pill with icon + label; inactive = icon only with `aria-label`. `<main>` uses `.pb-dock` so the
+  dock never covers content.
+- **Desktop (lg+)**: 256px white sidebar with the wordmark and pill nav rows (active = pink),
+  content centred at `max-w-6xl`.
 
-```html
-<a class="link-editorial">Explore</a>
-```
-Underline is drawn left-to-right on hover (transform: scaleX). Pairs with `label-editorial` on nav CTAs.
+## Accessibility
 
-```html
-<article class="card-editorial">...</article>
-```
-Rises 4px on hover with a 260ms editorial ease.
+- Touch targets ≥ 44px (`h-11`, `min-h-[44px]`).
+- Icon-only buttons/links need `aria-label`; toggle chips use `aria-pressed`; the current tab uses
+  `aria-current="page"`.
+- Focus: `focus-visible:ring-2 ring-ring ring-offset-2` (ink in light, pink in dark).
+- Text contrast ≥ 4.5:1 — use `text-foreground` / `text-muted-foreground`; `text-success` /
+  `text-warning` are the text-safe status colours.
 
-```html
-<div class="img-zoom">
-  <Image ... />   {/* direct child */}
-</div>
-```
-Direct child zooms to 105% over 400ms on hover. Container needs `overflow-hidden` (already applied by the class).
+## Iconography & motion
 
-```html
-<div className="ease-editorial">...</div>
-```
-Custom Tailwind timing function `cubic-bezier(0.4, 0, 0.2, 1)` — apply to every transition to keep motion consistent.
-
-## Component variants
-
-### Button (`components/ui/button.tsx`)
-
-- `variant="default"` — burgundy fill, hover inverts to burgundy-on-cream border.
-- `variant="outline"` — burgundy border only, hover fills.
-- `variant="secondary"` — text-only with the animated underline (like `link-editorial` but as a button).
-- `variant="ghost"` — text-only, no underline. Hover turns burgundy.
-- `variant="link"` — inline text link with a soft burgundy underline.
-- `variant="destructive"` — same as default but semantically flagged.
-
-All sizes apply `uppercase tracking-widest text-xs` (or `text-[11px]` for `sm`). Icon buttons stay plain.
-
-### Input (`components/ui/input.tsx`)
-Editorial single-line: no side/top border, hairline bottom border, focus turns it burgundy. Placeholder is Cormorant italic. Height 44px.
-
-### Card (`components/ui/card.tsx`)
-Cream background, hairline border at 60% opacity, no shadow. `CardTitle` renders in Playfair 400.
-
-### Alert (`components/ui/alert.tsx`)
-Left-only border (burgundy for `default`/`destructive`, gold for `gold`). Playfair `AlertTitle`. Cream fill.
-
-### Dialog (`components/ui/dialog.tsx`)
-Dark 85% overlay, cream card, hairline border, no radius. Title is Playfair. Close icon is stroke-1.5 lucide.
-
-### Badge (`components/ui/badge.tsx`)
-Uppercase small caps, tracking-[0.14em], 10px. `variant="outline"` behaves as a hairline pill that fills on hover — use for tag chips.
-
-## Adopting the style in a new page
-
-1. Wrap the page in `mx-auto max-w-{size} px-4 sm:px-6 lg:px-10 py-10 sm:py-14 space-y-10`.
-2. Header:
-   ```jsx
-   <header className="space-y-3">
-     <p className="label-editorial text-gold">SECTION LABEL</p>
-     <h1 className="font-display italic font-black text-display-lg leading-none">Page title</h1>
-     <p className="font-editorial italic text-lg text-muted-foreground">Cormorant tagline</p>
-   </header>
-   ```
-3. `<div className="divider-gold" />` between sections.
-4. Use `<Button>` + `<Card>` + `<Input>` from `components/ui/`, they inherit the tokens.
-5. For any raw text, prefer:
-   - `font-display` on display-scale headings
-   - `font-editorial italic` on poetic/tagline text
-   - Default (`font-body`) on everything else
-
-## Iconography
-Lucide, stroke-width `1.5`. Never coloured; always inherits `currentColor`. Prefer omitting icons in favour of text — editorial reads more label than glyph.
-
-## Motion
-Everything uses `duration-200 ease-editorial` (or `duration-260` for card lifts). Never spring or elastic. Keep it hushed.
-
-## Sonner toasts
-Restyled globally in `globals.css`. Titles render Playfair, borders are burgundy for errors, gold for success. No further per-toast styling required.
+Lucide line icons, stroke 1.75 (2 when active), `currentColor`. Motion is quick and friendly:
+150–200ms, `ease-pop` for springy UI (dock pill), `active:scale-[0.97]` on buttons.
 
 ## Assets
-- `public/favicon.svg` — burgundy Playfair-italic W on cream.
-- `public/logo-wordmark.svg` — scalable "wardrowbe" wordmark that inherits `currentColor`. Drop into headers/footers when the text alone isn't rich enough.
-- `public/manifest.webmanifest` — `theme_color #7B1E1E`, `background_color #F5EFE6`.
+
+- `public/brand/stinky/head/` — mascot (animated WebP per state, poster SVG/PNG, static head SVG).
+- `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`,
+  `icon-maskable-512.png` — Stinky head. Regenerate with `scripts/generate-icons.mjs`.
+- `public/manifest.webmanifest` — `theme_color #FF7EB6`, `background_color #FFFFFF`.

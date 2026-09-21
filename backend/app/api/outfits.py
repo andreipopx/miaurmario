@@ -125,6 +125,14 @@ class SuggestRequest(BaseModel):
             "use the song's mood/tags as an extra styling input."
         ),
     )
+    song_track_id: str | None = Field(
+        default=None,
+        pattern=r"^[A-Za-z0-9]{10,40}$",
+        description=(
+            "Exact Spotify track id picked from /music/search. When set, the Stylist "
+            "uses that track directly instead of resolving `song_query` as text."
+        ),
+    )
 
     @field_validator("song_query")
     @classmethod
@@ -477,6 +485,7 @@ async def suggest_outfit(
             include_items=request.include_items,
             time_of_day=request.time_of_day,
             song_query=request.song_query,
+            song_track_id=request.song_track_id,
         )
     except InsufficientWardrobeError as e:
         raise HTTPException(

@@ -15,6 +15,7 @@ the suggestion endpoint never fails because of Spotify.
 """
 
 import logging
+import re
 import uuid
 from typing import Any
 
@@ -37,6 +38,7 @@ logger = logging.getLogger(__name__)
 MOOD_CACHE_TTL_SECONDS = 300
 MOOD_CACHE_PREFIX = "music:spotify:mood"
 QUERY_CACHE_PREFIX = "music:spotify:query"
+TRACK_CACHE_PREFIX = "music:spotify:track"
 MAX_GENRES = 6
 SPOTIFY_TIMEOUT = 5.0
 
@@ -189,13 +191,47 @@ async def resolve_query(
     except Exception as exc:
         logger.info("Spotify query resolution failed (%s); falling back to Last.fm", exc)
         return None
+    ctx = await _context_from_track(client, track, query)
+    if ctx is not None:
+        await _cache_set(cache_key, ctx)
+    return ctx
+
+
+TRACK_ID_RE = re.compile(r"^[A-Za-z0-9]{10,40}$")
+
+
+async def resolve_track_id(
+    db: AsyncSession, connection: SpotifyConnection, track_id: str, label: str | None = None
+) -> SongContext | None:
+    """Resolve an exact Spotify track id (picked from the autocomplete)."""
+    track_id = (track_id or "").strip()
+    if not TRACK_ID_RE.match(track_id):
+        return None
+    cache_key = f"{TRACK_CACHE_PREFIX}:{track_id}"
+    cached = await _cache_get(cache_key)
+    if cached:
+        return cached
+    client = SpotifyClient(connection, db, timeout=SPOTIFY_TIMEOUT)
+    try:
+        track = await client.get_track(track_id)
+    except Exception as exc:
+        logger.info("Spotify track %s lookup failed: %s", track_id, exc)
+        return None
+    ctx = await _context_from_track(client, track, label or track_id)
+    if ctx is not None:
+        await _cache_set(cache_key, ctx)
+    return ctx
+
+
+async def _context_from_track(
+    client: SpotifyClient, track: dict[str, Any] | None, query: str
+) -> SongContext | None:
     if not track or not track.get("name"):
         return None
-
     parts = _track_parts(track)
     genres = await _artist_genres(client, parts.get("artist_id"))
     tags = await lastfm_tags(parts.get("artist"), parts.get("track"))
-    ctx = SongContext(
+    return SongContext(
         query=query,
         artist=parts.get("artist"),
         track=parts.get("track"),
@@ -205,8 +241,6 @@ async def resolve_query(
         tags=tags,
         source="spotify",
     )
-    await _cache_set(cache_key, ctx)
-    return ctx
 
 
 async def _cache_set_ttl(key: str, ctx: SongContext, ttl: int) -> None:

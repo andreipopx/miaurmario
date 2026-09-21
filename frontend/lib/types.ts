@@ -338,6 +338,8 @@ export interface SuggestRequest {
   exclude_items?: string[];
   include_items?: string[];
   song_query?: string;
+  /** Exact Spotify track id picked from /music/search (optional). */
+  song_track_id?: string;
 }
 
 // Pairing types

@@ -29,6 +29,7 @@ from app.integrations.spotify import (
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
 from app.services import spotify_mood
+from app.services.music_overview import clear_user_cache as clear_music_cache
 from app.utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -206,3 +207,4 @@ async def disconnect(
     await db.execute(delete(SpotifyConnection).where(SpotifyConnection.user_id == current_user.id))
     await db.commit()
     await spotify_mood.clear_mood_cache(current_user.id)
+    await clear_music_cache(current_user.id)

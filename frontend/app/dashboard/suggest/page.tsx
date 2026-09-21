@@ -43,12 +43,12 @@ import { OCCASIONS, Outfit, SuggestRequest } from '@/lib/types';
 import { useWeather, Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
 import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
+import { SongAutocomplete, type SongSelection } from '@/components/music/song-autocomplete';
 import { cn } from '@/lib/utils';
 import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
 import { getAiAccessErrorCode } from '@/lib/ai-access';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { TempUnit, formatTemp, displayValue, toF, toCelsius } from '@/lib/temperature';
-import { Input } from '@/components/ui/input';
 import { Chip } from '@/components/chip';
 import { OccasionChips } from '@/components/shared/occasion-chips';
 import { PageHeader } from '@/components/page-header';
@@ -410,7 +410,8 @@ export default function SuggestPage() {
   const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
   const [occasionInitialized, setOccasionInitialized] = useState(false);
   const [weatherOverride, setWeatherOverride] = useState<WeatherOverride | null>(null);
-  const [songQuery, setSongQuery] = useState<string>('');
+  const [song, setSong] = useState<SongSelection>({ text: '', trackId: null, track: null });
+  const songQuery = song.text;
   const spotifyStatus = useSpotifyStatus();
   const [isGenerating, setIsGenerating] = useState(false);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
@@ -460,6 +461,9 @@ export default function SuggestPage() {
       const trimmedSong = songQuery.trim();
       if (trimmedSong) {
         request.song_query = trimmedSong;
+      }
+      if (song.trackId) {
+        request.song_track_id = song.trackId;
       }
 
       const result = await api.post<Outfit>('/outfits/suggest', request);
@@ -616,15 +620,11 @@ export default function SuggestPage() {
               <Music className="h-4 w-4" aria-hidden />
               {t('songLabel')}
             </label>
-            <Input
-              id="song-query"
-              type="text"
-              value={songQuery}
-              onChange={(e) => setSongQuery(e.target.value)}
-              placeholder={t('songPlaceholder')}
-              maxLength={280}
-              className="border-transparent bg-panel"
-              aria-describedby="song-help"
+            <SongAutocomplete
+              value={song}
+              onChange={setSong}
+              spotifyConnected={Boolean(spotifyStatus.data?.connected)}
+              describedBy="song-help"
             />
             <p id="song-help" className="px-1 text-xs text-muted-foreground">
               {t('songHelp')}

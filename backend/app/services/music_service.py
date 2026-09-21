@@ -273,8 +273,13 @@ async def lastfm_tags(artist: str | None, track: str | None) -> list[str]:
     return _clean_tags(raw_tags if isinstance(raw_tags, list) else [])
 
 
-async def resolve_music_context(db: Any, user: Any, song_query: str | None) -> SongContext | None:
+async def resolve_music_context(
+    db: Any, user: Any, song_query: str | None, song_track_id: str | None = None
+) -> SongContext | None:
     """Pick the music mood input for a suggestion.
+
+    - Exact Spotify track id (picked from the autocomplete) + Spotify connected:
+      fetch that track directly instead of guessing from text.
 
     - Spotify connected + song query: resolve the query through the Spotify Web
       API (track URL or search) for canonical artist/genres; Last.fm adds tags.
@@ -294,6 +299,15 @@ async def resolve_music_context(db: Any, user: Any, song_query: str | None) -> S
         connection = await spotify_mood.get_connection(db, user.id)
     except Exception:
         logger.debug("Spotify connection lookup failed", exc_info=True)
+
+    if song_track_id and connection is not None:
+        ctx = await spotify_mood.resolve_track_id(db, connection, song_track_id, song_query)
+        if ctx is not None:
+            return ctx
+
+    if not (song_query and song_query.strip()) and song_track_id:
+        # Not connected: the public embed page still resolves a track id.
+        song_query = f"https://open.spotify.com/track/{song_track_id}"
 
     if song_query and song_query.strip():
         if connection is not None:

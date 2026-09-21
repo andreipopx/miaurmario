@@ -627,6 +627,7 @@ class RecommendationService:
         single_outfit: bool = False,
         scheduled_date: date | None = None,
         song_query: str | None = None,
+        song_track_id: str | None = None,
     ) -> Outfit:
         # Guard first so deferral is unconditional, before any location/weather work.
         # Resolves the user's AI access (none / platform / byok); raises
@@ -645,7 +646,9 @@ class RecommendationService:
         # Without Spotify, only an explicit song_query produces music context.
         song_context: SongContext | None = None
         try:
-            song_context = await resolve_music_context(self.db, user, song_query)
+            song_context = await resolve_music_context(
+                self.db, user, song_query, song_track_id=song_track_id
+            )
         except Exception as e:
             logger.warning(f"Music enrichment failed for query {song_query!r}: {e}")
             song_context = None

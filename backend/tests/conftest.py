@@ -144,6 +144,16 @@ async def test_user_with_preferences(db_session: AsyncSession, test_user: User) 
     return test_user
 
 
+@pytest_asyncio.fixture
+async def platform_ai_user(db_session: AsyncSession, test_user: User) -> User:
+    """test_user with AI granted from the platform key (new users default to "none")."""
+    from app.models.user_ai_settings import UserAISettings
+
+    db_session.add(UserAISettings(user_id=test_user.id, ai_access="platform"))
+    await db_session.commit()
+    return test_user
+
+
 @pytest.fixture
 def auth_headers(test_user: User) -> dict[str, str]:
     token = create_access_token(test_user.external_id)

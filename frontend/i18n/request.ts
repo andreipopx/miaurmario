@@ -1,3 +1,4 @@
+import type { AbstractIntlMessages } from 'next-intl';
 import { getRequestConfig } from 'next-intl/server';
 
 export const SUPPORTED_LOCALES = ['en', 'es'] as const;
@@ -12,25 +13,21 @@ export const LOCALE_COOKIE = 'wardrowbe_locale';
 
 // Async fallback: any key missing from es.json falls through to en.json so we
 // never surface a raw dotted key like "wardrobe.emptyState.title" in the UI.
-async function loadMessages(locale: Locale): Promise<Record<string, unknown>> {
-  const primary = (await import(`../messages/${locale}.json`)).default;
+async function loadMessages(locale: Locale): Promise<AbstractIntlMessages> {
+  const primary: AbstractIntlMessages = (await import(`../messages/${locale}.json`)).default;
   if (locale === 'en') return primary;
-  const fallback = (await import(`../messages/en.json`)).default;
+  const fallback: AbstractIntlMessages = (await import(`../messages/en.json`)).default;
   return deepMerge(fallback, primary);
 }
 
-function deepMerge<T extends Record<string, any>>(base: T, override: Record<string, any>): T {
-  const out: Record<string, any> = { ...base };
+function deepMerge(base: AbstractIntlMessages, override: AbstractIntlMessages): AbstractIntlMessages {
+  const out: AbstractIntlMessages = { ...base };
   for (const key of Object.keys(override)) {
     const b = out[key];
     const o = override[key];
-    if (b && o && typeof b === 'object' && typeof o === 'object' && !Array.isArray(b) && !Array.isArray(o)) {
-      out[key] = deepMerge(b, o);
-    } else {
-      out[key] = o;
-    }
+    out[key] = typeof b === 'object' && typeof o === 'object' ? deepMerge(b, o) : o;
   }
-  return out as T;
+  return out;
 }
 
 export default getRequestConfig(async () => {

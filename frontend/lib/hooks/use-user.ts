@@ -7,6 +7,8 @@ import { api, setAccessToken } from '@/lib/api';
 export interface UserProfile {
   id: string;
   email: string;
+  username?: string | null;
+  bio?: string | null;
   display_name: string;
   avatar_url?: string;
   timezone: string;
@@ -21,6 +23,8 @@ export interface UserProfile {
 
 export interface UserProfileUpdate {
   display_name?: string;
+  username?: string;
+  bio?: string | null;
   timezone?: string;
   location_lat?: number;
   location_lon?: number;

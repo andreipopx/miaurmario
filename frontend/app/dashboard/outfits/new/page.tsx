@@ -124,7 +124,7 @@ export default function StudioEditorPage() {
     if (!pendingDraft || !draftItemsData?.items) return;
     const byId = new Map(draftItemsData.items.map((i) => [i.id, i]));
     const resumedItems: StudioItem[] = pendingDraft.items
-      .map((draftItem) => {
+      .map((draftItem): StudioItem | null => {
         const wardrobe = byId.get(draftItem.id);
         if (!wardrobe) return null;
         return {
@@ -139,7 +139,7 @@ export default function StudioEditorPage() {
           scale: draftItem.scale,
           rotation: draftItem.rotation,
           z_index: draftItem.z_index,
-        } satisfies StudioItem;
+        };
       })
       .filter((item): item is StudioItem => item !== null);
     dispatch({

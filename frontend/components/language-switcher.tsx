@@ -20,8 +20,12 @@ interface Props {
   className?: string;
 }
 
-export function LanguageSwitcher({ variant = 'default', className }: Props) {
+export function LanguageSwitcher(props: Props) {
   if (!SHOW_LANGUAGE_SWITCHER) return null;
+  return <LanguageSwitcherControl {...props} />;
+}
+
+function LanguageSwitcherControl({ variant = 'default', className }: Props) {
   const t = useTranslations('common');
   const current = useLocale();
   const [isPending, startTransition] = useTransition();

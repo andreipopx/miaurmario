@@ -28,20 +28,31 @@ function StarRating({
   onRate?: (rating: number) => void;
   size?: 'sm' | 'lg';
 }) {
-  const sizeClass = size === 'lg' ? 'h-6 w-6' : 'h-4 w-4';
+  const t = useTranslations('feedback');
+  const sizeClass = size === 'lg' ? 'h-7 w-7' : 'h-4 w-4';
 
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-0.5" role="group" aria-label={t('overallRating')}>
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
           type="button"
           onClick={() => onRate?.(star)}
           disabled={!onRate}
-          className={onRate ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'}
+          aria-label={t('starLabel', { count: star })}
+          aria-pressed={onRate ? star <= rating : undefined}
+          className={cn(
+            'flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            size === 'lg' && 'h-11 w-11',
+            onRate ? 'cursor-pointer transition-transform duration-150 hover:scale-110 active:scale-95' : 'cursor-default'
+          )}
         >
           <Star
-            className={`${sizeClass} ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`}
+            className={cn(
+              sizeClass,
+              star <= rating ? 'fill-pop-amber text-pop-amber' : 'text-muted-foreground/40'
+            )}
+            strokeWidth={1.75}
           />
         </button>
       ))}
@@ -216,34 +227,32 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-3 py-4">
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-16 justify-start gap-3"
+              <button
+                type="button"
+                className="flex min-h-[64px] items-center gap-3 rounded-quick bg-panel p-3 text-left transition-[background-color,transform] duration-150 hover:bg-accent active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 onClick={() => handleWearAnswer(true)}
               >
-                <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-2">
-                  <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div className="text-left">
-                  <div className="font-medium">{t('yesIWoreIt')}</div>
-                  <div className="text-sm text-muted-foreground">{t('rateHowItWent')}</div>
-                </div>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-16 justify-start gap-3"
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pop-mint text-pop-foreground">
+                  <Check className="h-5 w-5" strokeWidth={2} />
+                </span>
+                <span>
+                  <span className="block font-bold">{t('yesIWoreIt')}</span>
+                  <span className="block text-sm text-muted-foreground">{t('rateHowItWent')}</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="flex min-h-[64px] items-center gap-3 rounded-quick bg-panel p-3 text-left transition-[background-color,transform] duration-150 hover:bg-accent active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 onClick={() => handleWearAnswer(false)}
               >
-                <div className="rounded-full bg-orange-100 dark:bg-orange-900/30 p-2">
-                  <X className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div className="text-left">
-                  <div className="font-medium">{t('noWoreElse')}</div>
-                  <div className="text-sm text-muted-foreground">{t('tellUsWhatYouWore')}</div>
-                </div>
-              </Button>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pop-amber text-pop-foreground">
+                  <X className="h-5 w-5" strokeWidth={2} />
+                </span>
+                <span>
+                  <span className="block font-bold">{t('noWoreElse')}</span>
+                  <span className="block text-sm text-muted-foreground">{t('tellUsWhatYouWore')}</span>
+                </span>
+              </button>
             </div>
           </>
         )}
@@ -256,27 +265,28 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">{t('overallRating')}</label>
+                <p className="mb-1 block text-sm font-bold">{t('overallRating')}</p>
                 <StarRating rating={rating} onRate={setRating} size="lg" />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">{t('commentsLabel')}</label>
+                <label htmlFor="feedback-comment" className="mb-2 block text-sm font-bold">{t('commentsLabel')}</label>
                 <Textarea
+                  id="feedback-comment"
                   placeholder={t('commentsPlaceholder')}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                 />
               </div>
             </div>
-            <div className="flex justify-between">
+            <div className="flex flex-wrap justify-between gap-2">
               {!outfit.feedback?.rating && (
-                <Button variant="ghost" onClick={() => setStep('wear-question')}>
-                  <ChevronLeft className="h-4 w-4 mr-1" />
+                <Button variant="ghost" className="-ml-2" onClick={() => setStep('wear-question')}>
+                  <ChevronLeft className="h-4 w-4" />
                   {t('back')}
                 </Button>
               )}
-              <div className="flex gap-2 ml-auto">
-                <Button variant="outline" onClick={onClose}>
+              <div className="ml-auto flex gap-2">
+                <Button variant="secondary" onClick={onClose}>
                   {t('cancel')}
                 </Button>
                 <Button onClick={handleSubmit} disabled={submitFeedback.isPending}>
@@ -297,12 +307,13 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
             </DialogHeader>
 
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t('searchWardrobe')}
+                aria-label={t('searchWardrobe')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="h-11 border-transparent bg-panel pl-10"
               />
             </div>
 
@@ -312,12 +323,12 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
               className="h-[280px] overflow-y-auto py-2 -mx-2 px-2"
             >
               {selectedItems.length > 0 && (
-                <div className="text-xs text-muted-foreground mb-2">
+                <div className="mb-2 text-xs font-semibold text-muted-foreground">
                   {t('itemsSelected', { count: selectedItems.length })}
                 </div>
               )}
 
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-x-2 gap-y-3 sm:grid-cols-4">
                 {wardrobeItems
                   .filter((item) => !outfitItemIds.has(item.id))
                   .map((item) => (
@@ -325,33 +336,34 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
                       key={item.id}
                       type="button"
                       onClick={() => toggleItemSelection(item.id)}
-                      className={cn(
-                        'relative aspect-square rounded-lg overflow-hidden border-2 transition-all',
-                        selectedItems.includes(item.id)
-                          ? 'border-primary ring-2 ring-primary/20'
-                          : 'border-border hover:border-muted-foreground/50'
-                      )}
+                      aria-pressed={selectedItems.includes(item.id)}
+                      className="group min-w-0 rounded-tile text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      <Image
-                        src={item.thumbnail_url || item.image_url || item.image_path}
-                        alt={item.name || item.type}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 33vw, 25vw"
-                        loading="lazy"
-                      />
-                      {selectedItems.includes(item.id) && (
-                        <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
-                          <div className="rounded-full bg-primary p-1.5 shadow-lg">
-                            <Check className="h-4 w-4 text-primary-foreground" />
+                      <div
+                        className={cn(
+                          'relative aspect-square overflow-hidden rounded-tile bg-panel transition-shadow duration-150',
+                          selectedItems.includes(item.id)
+                            ? 'ring-[2.5px] ring-inset ring-signature'
+                            : 'group-hover:ring-[1.5px] group-hover:ring-inset group-hover:ring-border'
+                        )}
+                      >
+                        <Image
+                          src={item.thumbnail_url || item.image_url || item.image_path}
+                          alt={item.name || item.type}
+                          fill
+                          className="object-contain p-2"
+                          sizes="(max-width: 640px) 33vw, 25vw"
+                          loading="lazy"
+                        />
+                        {selectedItems.includes(item.id) && (
+                          <div className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-signature text-signature-foreground">
+                            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                           </div>
-                        </div>
-                      )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
-                        <span className="text-[10px] sm:text-xs text-white font-medium truncate block">
-                          {item.name || item.type}
-                        </span>
+                        )}
                       </div>
+                      <span className="mt-1 block truncate px-0.5 text-xs font-semibold">
+                        {item.name || item.type}
+                      </span>
                     </button>
                   ))}
               </div>
@@ -364,13 +376,13 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
 
               {isFetching && !isLoading && (
                 <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">{t('loadingMore')}</span>
                 </div>
               )}
 
               {!isLoading && wardrobeItems.length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
+                <div className="py-8 text-center text-sm text-muted-foreground">
                   {debouncedSearch ? t('noMatchSearch') : t('noItemsInWardrobe')}
                 </div>
               )}
@@ -382,13 +394,13 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
               )}
             </div>
 
-            <div className="flex justify-between pt-2 border-t">
-              <Button variant="ghost" onClick={() => setStep('wear-question')}>
-                <ChevronLeft className="h-4 w-4 mr-1" />
+            <div className="flex flex-wrap justify-between gap-2 border-t border-border pt-3">
+              <Button variant="ghost" className="-ml-2" onClick={() => setStep('wear-question')}>
+                <ChevronLeft className="h-4 w-4" />
                 {t('back')}
               </Button>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleSkipWoreInstead}>
+                <Button variant="secondary" onClick={handleSkipWoreInstead}>
                   {t('skip')}
                 </Button>
                 <Button

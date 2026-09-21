@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Zap, Edit3, ThumbsUp, ThumbsDown, Clock, Eye, Star, ArrowRight, Shirt, Users, ExternalLink } from 'lucide-react';
+import { Calendar, Zap, Edit3, ThumbsUp, ThumbsDown, Clock, Eye, Star, ArrowRight, Shirt, Users, ExternalLink, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StinkyTip } from '@/components/stinky-tip';
 import {
   Dialog,
   DialogContent,
@@ -15,73 +16,44 @@ import {
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useAcceptOutfit, useRejectOutfit, type Outfit, type OutfitSource, type WoreInsteadItem } from '@/lib/hooks/use-outfits';
+import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
-function StatusIcon({ status }: { status: Outfit['status'] }) {
+type StatusKey = 'accepted' | 'rejected' | 'viewed' | 'sent' | 'pending' | 'expired';
+
+function StatusIcon({ status, label }: { status: Outfit['status']; label: string }) {
+  const common = { className: 'h-4 w-4', strokeWidth: 1.75, 'aria-label': label, role: 'img' } as const;
   switch (status) {
     case 'accepted':
-      return <ThumbsUp className="h-4 w-4 text-green-500" />;
+      return <ThumbsUp {...common} className="h-4 w-4 text-success" />;
     case 'rejected':
-      return <ThumbsDown className="h-4 w-4 text-red-500" />;
+      return <ThumbsDown {...common} className="h-4 w-4 text-destructive" />;
     case 'viewed':
-      return <Eye className="h-4 w-4 text-blue-500" />;
+      return <Eye {...common} className="h-4 w-4 text-foreground" />;
+    case 'expired':
+      return <Clock {...common} className="h-4 w-4 text-warning" />;
     case 'sent':
     case 'pending':
-      return <Clock className="h-4 w-4 text-muted-foreground" />;
-    case 'expired':
-      return <Clock className="h-4 w-4 text-orange-500" />;
     default:
-      return <Clock className="h-4 w-4 text-muted-foreground" />;
+      return <Clock {...common} className="h-4 w-4 text-muted-foreground" />;
   }
 }
 
-function StatusBadge({ status }: { status: Outfit['status'] }) {
-  const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    accepted: 'default',
-    rejected: 'destructive',
-    viewed: 'secondary',
-    sent: 'outline',
-    pending: 'outline',
-    expired: 'secondary',
-  };
-
-  return (
-    <Badge variant={variants[status] || 'outline'} className="capitalize">
-      {status}
-    </Badge>
-  );
-}
-
 function SourceBadge({ source }: { source: OutfitSource }) {
-  const config: Record<OutfitSource, { icon: typeof Calendar; label: string; className: string }> = {
-    scheduled: {
-      icon: Calendar,
-      label: 'Scheduled',
-      className: 'bg-primary/10 text-primary border-primary/20',
-    },
-    on_demand: {
-      icon: Zap,
-      label: 'On Demand',
-      className: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-    },
-    manual: {
-      icon: Edit3,
-      label: 'Manual',
-      className: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-    },
-    pairing: {
-      icon: Zap,
-      label: 'Pairing',
-      className: 'bg-violet-500/10 text-violet-600 border-violet-500/20',
-    },
+  const t = useTranslations('outfitHistoryCard');
+  const config: Record<OutfitSource, { icon: typeof Calendar; variant: 'sky' | 'amber' | 'signature' | 'mint' }> = {
+    scheduled: { icon: Calendar, variant: 'sky' },
+    on_demand: { icon: Zap, variant: 'amber' },
+    manual: { icon: Edit3, variant: 'signature' },
+    pairing: { icon: Layers, variant: 'mint' },
   };
 
-  const { icon: Icon, label, className } = config[source];
+  const { icon: Icon, variant } = config[source] ?? config.on_demand;
 
   return (
-    <Badge variant="outline" className={className}>
-      <Icon className="h-3 w-3 mr-1" />
-      {label}
+    <Badge variant={variant}>
+      <Icon className="h-3 w-3" />
+      {t(`source.${source}`)}
     </Badge>
   );
 }
@@ -94,7 +66,7 @@ function StarRating({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'lg
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`${sizeClass} ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`}
+          className={cn(sizeClass, star <= rating ? 'fill-pop-amber text-pop-amber' : 'text-muted-foreground/30')}
         />
       ))}
     </div>
@@ -109,6 +81,7 @@ interface OutfitHistoryCardProps {
 
 export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHistoryCardProps) {
   const t = useTranslations('outfitHistoryCard');
+  const tOccasions = useTranslations('suggest.occasions');
   const acceptOutfit = useAcceptOutfit();
   const rejectOutfit = useRejectOutfit();
   const [previewItem, setPreviewItem] = useState<WoreInsteadItem | null>(null);
@@ -132,18 +105,22 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
   };
 
   const isPending = outfit.status === 'pending' || outfit.status === 'sent' || outfit.status === 'viewed';
+  const occasionLabel = tOccasions.has(outfit.occasion as never)
+    ? tOccasions(outfit.occasion as never)
+    : outfit.occasion;
+  const statusLabel = t.has(`status.${outfit.status}` as never)
+    ? t(`status.${outfit.status as StatusKey}`)
+    : outfit.status;
 
   return (
-    <Card className="overflow-hidden h-full flex flex-col">
-      <CardContent className="p-3 flex flex-col flex-1">
+    <Card className="flex h-full flex-col overflow-hidden">
+      <CardContent className="flex flex-1 flex-col p-4 sm:p-4">
         {/* Header with source badge and status */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <SourceBadge source={outfit.source} />
-          <div className="flex items-center gap-1.5">
-            <Badge variant="secondary" className="capitalize text-xs">
-              {outfit.occasion}
-            </Badge>
-            <StatusIcon status={outfit.status} />
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{occasionLabel}</Badge>
+            <StatusIcon status={outfit.status} label={statusLabel} />
           </div>
         </div>
 
@@ -151,23 +128,24 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
         <button
           type="button"
           onClick={onPreview}
-          className="flex gap-2 text-left w-full group"
+          aria-label={t('preview')}
+          className="group flex w-full flex-wrap gap-2 rounded-[18px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           {outfit.items.map((item) => (
             <div
               key={item.id}
-              className="w-16 h-16 rounded-lg bg-muted overflow-hidden relative border shadow-sm group-hover:shadow-md transition-shadow"
+              className="relative h-16 w-16 overflow-hidden rounded-[14px] bg-panel transition-transform duration-150 group-hover:scale-[1.03]"
             >
               {item.thumbnail_url ? (
                 <Image
                   src={item.thumbnail_url}
                   alt={item.name || item.type}
                   fill
-                  className="object-cover"
+                  className="object-contain p-1.5"
                   sizes="64px"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
                   {item.type}
                 </div>
               )}
@@ -177,13 +155,13 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
 
         {/* Inline feedback display */}
         {outfit.feedback && (outfit.feedback.rating || outfit.feedback.comment) && (
-          <div className="mt-2 pt-2 border-t">
+          <div className="mt-3 border-t border-border pt-3">
             <div className="flex items-center gap-2">
               {outfit.feedback.rating && (
                 <StarRating rating={outfit.feedback.rating} />
               )}
               {outfit.feedback.comment && (
-                <p className="text-xs text-muted-foreground truncate flex-1">
+                <p className="flex-1 truncate text-xs text-muted-foreground">
                   &ldquo;{outfit.feedback.comment}&rdquo;
                 </p>
               )}
@@ -193,37 +171,38 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
 
         {/* Wore instead display */}
         {outfit.feedback?.actually_worn === false && (
-          <div className="mt-2 pt-2 border-t">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-              <span>Didn&apos;t wear this</span>
+          <div className="mt-3 border-t border-border pt-3">
+            <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{t('didntWear')}</span>
               {outfit.feedback.wore_instead_items && outfit.feedback.wore_instead_items.length > 0 && (
                 <>
                   <ArrowRight className="h-3 w-3" />
-                  <span className="text-foreground font-medium">Wore instead:</span>
+                  <span className="font-semibold text-foreground">{t('woreInstead')}</span>
                 </>
               )}
             </div>
             {outfit.feedback.wore_instead_items && outfit.feedback.wore_instead_items.length > 0 && (
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex flex-wrap gap-2">
                 {outfit.feedback.wore_instead_items.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => setPreviewItem(item)}
-                    className="w-14 h-14 rounded-lg bg-muted overflow-hidden relative border hover:ring-2 ring-primary transition-all"
+                    className="relative h-14 w-14 overflow-hidden rounded-[14px] bg-panel transition-shadow hover:ring-2 hover:ring-signature focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     title={item.name || item.type}
+                    aria-label={item.name || item.type}
                   >
                     {item.thumbnail_url ? (
                       <Image
                         src={item.thumbnail_url}
                         alt={item.name || item.type}
                         fill
-                        className="object-cover"
+                        className="object-contain p-1"
                         sizes="56px"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Shirt className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Shirt className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
                       </div>
                     )}
                   </button>
@@ -235,10 +214,10 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
 
         {/* Family ratings summary */}
         {outfit.family_rating_count != null && outfit.family_rating_count > 0 && (
-          <div className="mt-2 pt-2 border-t">
+          <div className="mt-3 border-t border-border pt-3">
             <div className="flex items-center gap-2 text-xs">
-              <Users className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Family:</span>
+              <Users className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+              <span className="text-muted-foreground">{t('family')}</span>
               <StarRating rating={Math.round(outfit.family_rating_average ?? 0)} />
               <span className="text-muted-foreground">
                 ({outfit.family_rating_count})
@@ -249,26 +228,22 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
 
         {/* Details section */}
         {(outfit.reasoning || outfit.style_notes || (outfit.highlights && outfit.highlights.length > 0)) && (
-          <div className="mt-2 space-y-2 text-xs flex-1">
+          <div className="mt-3 flex-1 space-y-2 text-[13px]">
             {outfit.reasoning && (
-              <p className="font-medium text-foreground">{outfit.reasoning}</p>
+              <p className="font-semibold text-foreground">{outfit.reasoning}</p>
             )}
             {outfit.highlights && outfit.highlights.length > 0 && (
-              <ul className="space-y-0.5">
+              <ul className="space-y-1">
                 {outfit.highlights.map((highlight, index) => (
-                  <li key={index} className="flex items-start gap-1.5 text-muted-foreground">
-                    <span className="text-primary mt-0.5">•</span>
+                  <li key={index} className="flex items-start gap-2 text-muted-foreground">
+                    <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-signature" />
                     <span>{highlight}</span>
                   </li>
                 ))}
               </ul>
             )}
             {outfit.style_notes && (
-              <div className="p-2 bg-muted rounded border">
-                <p className="text-muted-foreground">
-                  <span className="font-medium text-foreground">Tip:</span> {outfit.style_notes}
-                </p>
-              </div>
+              <StinkyTip className="bg-panel">{outfit.style_notes}</StinkyTip>
             )}
           </div>
         )}
@@ -278,36 +253,33 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
           {isPending && (
             <div className="flex gap-2">
               <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 h-8 text-xs"
+                variant="secondary"
+                className="flex-1"
                 onClick={handleReject}
                 disabled={rejectOutfit.isPending}
               >
-                <ThumbsDown className="h-3 w-3 mr-1" />
-                Reject
+                <ThumbsDown className="h-4 w-4" strokeWidth={1.75} />
+                {t('reject')}
               </Button>
               <Button
-                size="sm"
-                className="flex-1 h-8 text-xs"
+                className="flex-1"
                 onClick={handleAccept}
                 disabled={acceptOutfit.isPending}
               >
-                <ThumbsUp className="h-3 w-3 mr-1" />
-                Accept
+                <ThumbsUp className="h-4 w-4" strokeWidth={1.75} />
+                {t('accept')}
               </Button>
             </div>
           )}
 
           {outfit.status === 'accepted' && outfit.feedback?.actually_worn !== false && (
             <Button
-              size="sm"
-              variant="outline"
-              className="w-full h-8 text-xs"
+              variant="secondary"
+              className="w-full"
               onClick={onFeedback}
             >
-              <Star className="h-3 w-3 mr-1" />
-              {outfit.feedback?.rating ? 'Update' : 'Rate'}
+              <Star className="h-4 w-4" strokeWidth={1.75} />
+              {outfit.feedback?.rating ? t('update') : t('rate')}
             </Button>
           )}
         </div>
@@ -315,37 +287,40 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
 
       {/* Wore instead item preview modal */}
       <Dialog open={!!previewItem} onOpenChange={(open) => !open && setPreviewItem(null)}>
-        <DialogContent className="sm:max-w-md p-0 overflow-hidden [&>button]:hidden">
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle>{previewItem?.name || previewItem?.type || 'Item'}</DialogTitle>
+        <DialogContent className="overflow-hidden p-0 sm:max-w-md [&>button]:hidden">
+          <DialogHeader className="p-5 pb-2">
+            <DialogTitle>{previewItem?.name || previewItem?.type || t('item')}</DialogTitle>
           </DialogHeader>
-          <div className="relative bg-muted">
-            <Link href={`/dashboard/wardrobe?item=${previewItem?.id}`} className="block">
-              <div className="relative aspect-square w-full max-h-[350px]">
+          <div className="px-5">
+            <Link
+              href={`/dashboard/wardrobe?item=${previewItem?.id}`}
+              className="block rounded-tile bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <div className="relative aspect-square max-h-[350px] w-full">
                 {previewItem?.thumbnail_url ? (
                   <Image
                     src={previewItem.thumbnail_url}
                     alt={previewItem.name || previewItem.type}
                     fill
-                    className="object-contain"
+                    className="object-contain p-4"
                     sizes="(max-width: 448px) 100vw, 448px"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Shirt className="h-16 w-16 text-muted-foreground" />
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Shirt className="h-16 w-16 text-muted-foreground" strokeWidth={1.75} />
                   </div>
                 )}
               </div>
             </Link>
           </div>
-          <div className="p-4 pt-2 space-y-3">
+          <div className="space-y-3 p-5 pt-3">
             <Badge variant="secondary" className="capitalize">
               {previewItem?.type}
             </Badge>
-            <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5" asChild>
+            <Button variant="secondary" className="w-full" asChild>
               <Link href={`/dashboard/wardrobe?item=${previewItem?.id}`}>
-                <ExternalLink className="h-3 w-3" />
-                View item details
+                <ExternalLink className="h-4 w-4" strokeWidth={1.75} />
+                {t('viewItemDetails')}
               </Link>
             </Button>
           </div>

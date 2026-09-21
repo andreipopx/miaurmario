@@ -20,9 +20,9 @@ export function Pagination({ page, total, pageSize, onPageChange }: PaginationPr
   }
 
   return (
-    <div className="flex items-center justify-center gap-2">
+    <nav className="flex items-center justify-center gap-2" aria-label={t('pagination')}>
       <Button
-        variant="outline"
+        variant="secondary"
         size="icon"
         disabled={page === 1}
         onClick={() => onPageChange(1)}
@@ -31,7 +31,7 @@ export function Pagination({ page, total, pageSize, onPageChange }: PaginationPr
         <ChevronsLeft className="h-4 w-4" />
       </Button>
       <Button
-        variant="outline"
+        variant="secondary"
         size="icon"
         disabled={page === 1}
         onClick={() => onPageChange(page - 1)}
@@ -39,11 +39,11 @@ export function Pagination({ page, total, pageSize, onPageChange }: PaginationPr
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
-      <span className="px-4 text-sm text-muted-foreground">
+      <span className="min-w-[4.5rem] px-2 text-center text-sm font-bold tabular-nums" aria-live="polite">
         {`${page} / ${totalPages}`}
       </span>
       <Button
-        variant="outline"
+        variant="secondary"
         size="icon"
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
@@ -52,7 +52,7 @@ export function Pagination({ page, total, pageSize, onPageChange }: PaginationPr
         <ChevronRight className="h-4 w-4" />
       </Button>
       <Button
-        variant="outline"
+        variant="secondary"
         size="icon"
         disabled={page >= totalPages}
         onClick={() => onPageChange(totalPages)}
@@ -60,6 +60,6 @@ export function Pagination({ page, total, pageSize, onPageChange }: PaginationPr
       >
         <ChevronsRight className="h-4 w-4" />
       </Button>
-    </div>
+    </nav>
   );
 }

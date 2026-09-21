@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LineageCard } from '@/components/shared/lineage-card';
+import { StinkyTip } from '@/components/stinky-tip';
 import { CloneToLookbookDialog } from '@/components/shared/clone-to-lookbook-dialog';
 import { CanvasPreview } from '@/components/studio/canvas-panel';
 import { hasCanvasLayout } from '@/lib/studio/editor-state';
@@ -33,6 +34,7 @@ import { getErrorMessage } from '@/lib/api';
 
 export default function OutfitDetailPage() {
   const t = useTranslations('outfitDetail');
+  const tOccasions = useTranslations('suggest.occasions');
   const dateFnsLocale = useDateFnsLocale();
   const formatDate = useFormatDate();
   const router = useRouter();
@@ -58,8 +60,9 @@ export default function OutfitDetailPage() {
   if (isLoading || !outfit) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-64" />
+        <Skeleton className="h-11 w-40 rounded-full" />
+        <Skeleton className="h-9 w-64 rounded-full" />
+        <Skeleton className="h-64 rounded-lg" />
       </div>
     );
   }
@@ -85,28 +88,32 @@ export default function OutfitDetailPage() {
     }
   };
 
-  const title = outfit.name || outfit.reasoning || t('titleFallback', { occasion: outfit.occasion });
+  const occasionLabel = tOccasions.has(outfit.occasion as never)
+    ? tOccasions(outfit.occasion as never)
+    : outfit.occasion;
+  const sourceLabel = t.has(`source.${outfit.source}` as never)
+    ? t(`source.${outfit.source}` as never)
+    : outfit.source.replace('_', ' ');
+  const title = outfit.name || outfit.reasoning || t('titleFallback', { occasion: occasionLabel });
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <Button variant="ghost" size="sm" asChild>
+        <Button variant="ghost" size="sm" asChild className="-ml-2 h-11">
           <Link href="/dashboard/outfits">
-            <ChevronLeft className="h-4 w-4 mr-1" />
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
             {t('backToOutfits')}
           </Link>
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight capitalize">{title}</h1>
-        <div className="flex items-center gap-2 mt-2">
-          <Badge variant="outline" className="capitalize">
-            {outfit.occasion}
-          </Badge>
-          <Badge variant="outline" className="capitalize">
-            {outfit.source.replace('_', ' ')}
-          </Badge>
+      <div className="space-y-3">
+        <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] first-letter:uppercase sm:text-3xl">
+          {title}
+        </h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="amber">{occasionLabel}</Badge>
+          <Badge variant="secondary">{sourceLabel}</Badge>
           <span className="text-sm text-muted-foreground">
             {outfit.scheduled_for
               ? formatDistanceToNow(parseISO(outfit.scheduled_for), {
@@ -120,15 +127,15 @@ export default function OutfitDetailPage() {
         {/* AI reasoning */}
         {((outfit.name && outfit.reasoning) ||
           (outfit.highlights && outfit.highlights.length > 0)) && (
-          <div className="mt-2 space-y-1.5 text-xs flex-1">
+          <div className="space-y-2 text-sm">
             {outfit.name && outfit.reasoning && (
-              <p className="font-medium text-foreground break-words">{outfit.reasoning}</p>
+              <p className="break-words font-medium text-foreground">{outfit.reasoning}</p>
             )}
             {outfit.highlights && outfit.highlights.length > 0 && (
-              <ul className="space-y-0.5">
+              <ul className="space-y-1">
                 {outfit.highlights.slice(0, 3).map((highlight, index) => (
-                  <li key={index} className="flex items-start gap-1.5 text-muted-foreground">
-                    <span className="text-primary">•</span>
+                  <li key={index} className="flex items-start gap-2 text-muted-foreground">
+                    <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-signature" />
                     <span>{highlight}</span>
                   </li>
                 ))}
@@ -139,13 +146,8 @@ export default function OutfitDetailPage() {
 
         {/* Styling tip */}
         {outfit.style_notes && (
-          <div className="mt-2 p-2 bg-muted rounded border text-xs">
-            <p className="text-muted-foreground">
-              <span className="font-medium text-foreground">{t('tipLabel')}</span> {outfit.style_notes}
-            </p>
-          </div>
+          <StinkyTip className="bg-panel">{outfit.style_notes}</StinkyTip>
         )}
-
       </div>
 
       <LineageCard outfit={outfit} />
@@ -170,65 +172,63 @@ export default function OutfitDetailPage() {
         </div>
       )}
 
-      <Card>
-        <CardContent className="p-4">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-            {t('itemsCount', { count: outfit.items.length })}
-          </h2>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-            {outfit.items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/dashboard/wardrobe?itemId=${item.id}`}
-                className="group"
-              >
-                <div className="relative aspect-square rounded-lg overflow-hidden border bg-muted">
-                  {item.thumbnail_url || item.image_url ? (
-                    <Image
-                      src={(item.thumbnail_url || item.image_url)!}
-                      alt={item.name || item.type}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                      sizes="(max-width: 640px) 33vw, 20vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground">
-                        {item.type}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 truncate">
-                  {item.name || item.type}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold">
+          {t('itemsCount', { count: outfit.items.length })}
+        </h2>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+          {outfit.items.map((item) => (
+            <Link
+              key={item.id}
+              href={`/dashboard/wardrobe?itemId=${item.id}`}
+              className="group rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <div className="relative aspect-square overflow-hidden rounded-tile bg-panel">
+                {item.thumbnail_url || item.image_url ? (
+                  <Image
+                    src={(item.thumbnail_url || item.image_url)!}
+                    alt={item.name || item.type}
+                    fill
+                    className="object-contain p-2 transition-transform duration-200 group-hover:scale-[1.03]"
+                    sizes="(max-width: 640px) 33vw, 20vw"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="text-xs text-muted-foreground">
+                      {item.type}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="mt-1.5 truncate text-[13px] font-semibold">
+                {item.name || item.type}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <div className="flex flex-wrap gap-2">
         {isTemplate && (
           <Button onClick={handleWearToday} disabled={wearTodayMutation.isPending}>
             {wearTodayMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <CalendarPlus className="h-4 w-4 mr-2" />
+              <CalendarPlus className="h-4 w-4" />
             )}
             {t('wearToday')}
           </Button>
         )}
         {!isTemplate && (
-          <Button variant="outline" onClick={() => setCloneDialogOpen(true)}>
-            <BookmarkPlus className="h-4 w-4 mr-2" />
+          <Button variant="secondary" onClick={() => setCloneDialogOpen(true)}>
+            <BookmarkPlus className="h-4 w-4" />
             {t('saveToLookbook')}
           </Button>
         )}
         {!isWorn && (
-          <Button variant="outline" asChild>
+          <Button variant="secondary" asChild>
             <Link href={`/dashboard/outfits/new?edit=${outfit.id}`}>
-              <Pencil className="h-4 w-4 mr-2" />
+              <Pencil className="h-4 w-4" />
               {t('edit')}
             </Link>
           </Button>
@@ -239,15 +239,15 @@ export default function OutfitDetailPage() {
           onClick={handleDelete}
           disabled={deleteMutation.isPending}
         >
-          <Trash2 className="h-4 w-4 mr-2" />
+          <Trash2 className="h-4 w-4" />
           {t('delete')}
         </Button>
       </div>
 
       {isTemplate && wearInstancesData && wearInstancesData.total > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+        <Card className="border-0 bg-panel">
+          <CardContent className="p-4 sm:p-5">
+            <h2 className="mb-3 text-lg font-bold">
               {t('wornCount', { count: wearInstancesData.total })}
             </h2>
             <div className="space-y-2">
@@ -255,16 +255,16 @@ export default function OutfitDetailPage() {
                 <Link
                   key={wear.id}
                   href={`/dashboard/outfits/${wear.id}`}
-                  className="flex items-center justify-between rounded-lg border px-3 py-2 hover:bg-muted/50"
+                  className="flex min-h-[44px] items-center justify-between rounded-full bg-background px-4 py-2 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <span className="text-sm">
+                  <span className="text-sm font-medium">
                     {wear.scheduled_for
                       ? formatDate(parseISO(wear.scheduled_for), 'medium')
                       : t('undated')}
                   </span>
                   {wear.feedback?.rating && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                    <div className="flex items-center gap-1 text-xs font-semibold">
+                      <Star className="h-3.5 w-3.5 fill-pop-amber text-pop-amber" />
                       {wear.feedback.rating}
                     </div>
                   )}
@@ -272,7 +272,7 @@ export default function OutfitDetailPage() {
               ))}
             </div>
             {wearInstancesData.has_more && (
-              <Button variant="link" size="sm" asChild className="mt-2 px-0">
+              <Button variant="link" size="sm" asChild className="mt-3">
                 <Link href={`/dashboard/outfits?filter=worn&cloned_from=${outfit.id}`}>
                   {t('seeAll')}
                 </Link>
@@ -283,8 +283,8 @@ export default function OutfitDetailPage() {
       )}
 
       {isTemplate && wearInstancesData && wearInstancesData.total === 0 && (
-        <Alert className="border-muted">
-          <AlertDescription className="text-sm text-muted-foreground">
+        <Alert variant="signature">
+          <AlertDescription className="text-sm text-foreground">
             {t('notWornYet')}
           </AlertDescription>
         </Alert>

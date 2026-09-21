@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Wordmark } from '@/components/brand/wordmark';
+import { Stinky } from '@/components/stinky/stinky';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/hooks/use-auth';
 
@@ -70,83 +76,110 @@ export default function UsernameOnboardingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
+  const hintId = 'username-hint';
+  const statusId = 'username-status';
+
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="flex min-h-screen items-center justify-center px-6 py-16">
+      <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6">
         <div className="w-full max-w-md">
-          <header className="text-center mb-10">
-            <h1 className="font-display italic font-black text-4xl leading-none">{t('title')}</h1>
-            <div className="h-px w-16 bg-gold mx-auto mt-6" />
-            <p className="font-editorial italic text-base text-muted-foreground mt-6">
+          <header className="mb-8 flex flex-col items-center text-center">
+            <Wordmark className="text-[28px]" />
+            <div className="mt-6 flex h-36 w-36 items-center justify-center rounded-full bg-signature-soft">
+              <Stinky state="wave" size={124} label="" />
+            </div>
+            <h1 className="mt-6 text-[28px] font-extrabold leading-tight tracking-[-0.02em] sm:text-3xl">
+              {t('title')}
+            </h1>
+            <p className="mt-2 max-w-sm text-[15px] leading-snug text-muted-foreground">
               {t('subtitle')}
             </p>
           </header>
 
-          <form onSubmit={submit} className="space-y-8">
+          <form onSubmit={submit} className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="username" className="label-editorial block">
+              <Label htmlFor="username" className="block font-bold">
                 {t('usernameLabel')}
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => {
-                  const v = e.target.value.toLowerCase();
-                  setUsername(v);
-                  setAvailability('idle');
-                }}
-                onBlur={() => username && check(username)}
-                placeholder="stinky_gato"
-                autoComplete="off"
-                autoCapitalize="none"
-                className="w-full h-11 border-0 border-b border-border-solid/60 bg-transparent px-1 py-2 text-base font-body focus:outline-none focus:border-primary transition-colors"
-              />
-              {availability === 'checking' && (
-                <p className="text-xs text-muted-foreground">{t('checking')}</p>
-              )}
-              {availability === 'available' && (
-                <p className="text-xs text-gold">{t('available')}</p>
-              )}
-              {availability === 'taken' && (
-                <p className="text-xs text-destructive">{t('takenError')}</p>
-              )}
-              {availability === 'format' && (
-                <p className="text-xs text-destructive">{t('formatError')}</p>
-              )}
-              <p className="text-xs text-muted-foreground italic">{t('rulesHint')}</p>
+              </Label>
+              <div className="relative">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-base font-semibold text-muted-foreground"
+                >
+                  @
+                </span>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => {
+                    const v = e.target.value.toLowerCase();
+                    setUsername(v);
+                    setAvailability('idle');
+                  }}
+                  onBlur={() => username && check(username)}
+                  placeholder="stinky_gato"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  aria-describedby={`${statusId} ${hintId}`}
+                  aria-invalid={availability === 'taken' || availability === 'format' || undefined}
+                  className="pl-10"
+                />
+              </div>
+              <div id={statusId} aria-live="polite" className="px-1">
+                {availability === 'checking' && (
+                  <p className="text-xs text-muted-foreground">{t('checking')}</p>
+                )}
+                {availability === 'available' && (
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-success">
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    {t('available')}
+                  </p>
+                )}
+                {availability === 'taken' && (
+                  <p className="text-xs font-semibold text-destructive">{t('takenError')}</p>
+                )}
+                {availability === 'format' && (
+                  <p className="text-xs font-semibold text-destructive">{t('formatError')}</p>
+                )}
+              </div>
+              <p id={hintId} className="px-1 text-xs text-muted-foreground">{t('rulesHint')}</p>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="bio" className="label-editorial block">
+              <Label htmlFor="bio" className="block font-bold">
                 {t('bioLabel')}
-              </label>
-              <textarea
+              </Label>
+              <Textarea
                 id="bio"
                 value={bio}
                 maxLength={280}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder={t('bioPlaceholder')}
                 rows={3}
-                className="w-full border border-border-solid/60 bg-transparent px-3 py-2 text-sm font-body focus:outline-none focus:border-primary transition-colors"
               />
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p role="alert" className="text-sm font-semibold text-destructive">
+                {error}
+              </p>
+            )}
 
-            <button
+            <Button
               type="submit"
+              size="lg"
+              className="w-full"
               disabled={submitting || availability === 'taken' || availability === 'format'}
-              className="w-full h-12 bg-primary text-primary-foreground border border-primary uppercase tracking-widest text-xs hover:bg-transparent hover:text-primary transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('continue')}
-            </button>
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('continue')}
+            </Button>
           </form>
         </div>
       </div>

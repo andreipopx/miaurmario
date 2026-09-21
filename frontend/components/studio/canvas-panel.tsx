@@ -26,7 +26,7 @@ interface CanvasPanelProps {
   onSendToBack: (itemId: string) => void;
 }
 
-// Canvas is a 3:4 portrait — lookbook / magazine page proportions. Coordinates
+// Canvas is a 3:4 portrait — lookbook page proportions. Coordinates
 // on items are normalized [0..1] against this box so they survive resizes.
 const CANVAS_MARGIN = 0.04;
 
@@ -77,10 +77,10 @@ function DraggableCanvasItem({
         onSelect(item.id);
       }}
       className={cn(
-        'select-none outline-none',
+        'select-none outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel',
         'w-[26%] max-w-[140px] aspect-square',
-        'rounded-sm bg-transparent',
-        isSelected && 'ring-2 ring-primary/70 ring-offset-2 ring-offset-background',
+        'rounded-tile bg-transparent',
+        isSelected && 'ring-2 ring-signature ring-offset-2 ring-offset-panel',
         isDragging && 'opacity-90 drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)]'
       )}
       aria-label={item.name ?? item.type}
@@ -96,7 +96,7 @@ function DraggableCanvasItem({
           draggable={false}
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-muted rounded-sm">
+        <div className="flex h-full w-full items-center justify-center rounded-tile bg-background">
           <span className="text-xs text-muted-foreground">{item.type}</span>
         </div>
       )}
@@ -105,7 +105,7 @@ function DraggableCanvasItem({
 }
 
 /**
- * Editorial free-form canvas for arranging outfit items. iPhone-first: a
+ * Free-form canvas for arranging outfit items. iPhone-first: a
  * long-press starts the drag on touch so scrolling still works over the panel.
  */
 export function CanvasPanel({
@@ -159,16 +159,16 @@ export function CanvasPanel({
     return (
       <div
         className={cn(
-          'relative w-full max-w-md mx-auto aspect-[3/4] rounded-sm',
-          'bg-card border-double border-2 border-primary/20',
+          'relative mx-auto aspect-[3/4] w-full max-w-md rounded-lg',
+          'bg-panel border-2 border-dashed border-border',
           'flex items-center justify-center p-8'
         )}
       >
-        <div className="text-center space-y-2">
-          <p className="font-editorial italic text-lg text-muted-foreground">
+        <div className="space-y-2 text-center">
+          <p className="text-lg font-bold text-foreground">
             {t('emptyTitle')}
           </p>
-          <p className="text-xs text-muted-foreground/80">{t('emptyHint')}</p>
+          <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
         </div>
       </div>
     );
@@ -176,14 +176,13 @@ export function CanvasPanel({
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="w-full max-w-md mx-auto space-y-2">
+      <div className="mx-auto w-full max-w-md space-y-3">
         <div
           ref={canvasRef}
           onClick={() => setSelectedId(null)}
           className={cn(
-            'relative w-full aspect-[3/4] rounded-sm overflow-hidden',
-            'bg-card border-double border-2 border-primary/20',
-            'shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]'
+            'relative aspect-[3/4] w-full overflow-hidden rounded-lg',
+            'bg-panel'
           )}
         >
           {items.map((item) => (
@@ -201,15 +200,15 @@ export function CanvasPanel({
             role="toolbar"
             aria-label={t('toolbarLabel')}
             className={cn(
-              'flex items-center justify-center gap-1 py-1.5 px-2',
-              'rounded-full bg-foreground text-background shadow-lg',
+              'flex items-center justify-center gap-0.5 p-1',
+              'rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_rgba(0,0,0,0.12)]',
               'mx-auto w-fit'
             )}
           >
             <button
               type="button"
               onClick={() => onBringToFront(selected.id)}
-              className="p-1.5 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-gold/60"
+              className="flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-primary-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signature"
               aria-label={t('bringToFront')}
               title={t('bringToFront')}
             >
@@ -218,13 +217,13 @@ export function CanvasPanel({
             <button
               type="button"
               onClick={() => onSendToBack(selected.id)}
-              className="p-1.5 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-gold/60"
+              className="flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-primary-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signature"
               aria-label={t('sendToBack')}
               title={t('sendToBack')}
             >
               <ArrowDownToLine className="h-4 w-4" />
             </button>
-            <span className="mx-1 text-xs text-background/70 font-editorial italic max-w-[8rem] truncate">
+            <span className="mx-1 max-w-[8rem] truncate text-[13px] font-semibold text-primary-foreground/80">
               {selected.name ?? selected.type}
             </span>
             <button
@@ -233,7 +232,7 @@ export function CanvasPanel({
                 onRemove(selected.id);
                 setSelectedId(null);
               }}
-              className="p-1.5 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-destructive/60"
+              className="flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-primary-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signature"
               aria-label={t('remove')}
               title={t('remove')}
             >
@@ -243,7 +242,7 @@ export function CanvasPanel({
         )}
 
         {!selected && (
-          <p className="text-center text-[11px] text-muted-foreground/80 font-editorial italic">
+          <p className="text-center text-xs text-muted-foreground">
             {t('hint')}
           </p>
         )}
@@ -263,8 +262,8 @@ export function CanvasPreview({ items }: { items: StudioItem[] }) {
   return (
     <div
       className={cn(
-        'relative w-full max-w-md mx-auto aspect-[3/4] rounded-sm overflow-hidden',
-        'bg-card border-double border-2 border-primary/20'
+        'relative mx-auto aspect-[3/4] w-full max-w-md overflow-hidden rounded-lg',
+        'bg-panel'
       )}
     >
       {items.map((item) => {
@@ -291,7 +290,7 @@ export function CanvasPreview({ items }: { items: StudioItem[] }) {
                 draggable={false}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-muted rounded-sm">
+              <div className="flex h-full w-full items-center justify-center rounded-tile bg-background">
                 <span className="text-xs text-muted-foreground">
                   {item.type}
                 </span>

@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertCircle, AlertTriangle, ChevronLeft, Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/empty-state';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -286,7 +287,7 @@ export default function StudioEditorPage() {
 
   if (isEditMode && editPhase === 'loading') {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
+      <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -294,15 +295,17 @@ export default function StudioEditorPage() {
 
   if (isEditMode && editPhase === 'missing') {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] px-4 text-center">
-        <AlertCircle className="h-10 w-10 text-muted-foreground mb-3" />
-        <h2 className="text-lg font-semibold mb-1">{t('notFoundTitle')}</h2>
-        <p className="text-sm text-muted-foreground mb-4 max-w-md">
-          {t('notFoundBody')}
-        </p>
-        <Button asChild>
-          <Link href="/dashboard/outfits">{t('back')}</Link>
-        </Button>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <EmptyState
+          state="sleepy"
+          title={t('notFoundTitle')}
+          description={t('notFoundBody')}
+          action={
+            <Button asChild>
+              <Link href="/dashboard/outfits">{t('back')}</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
@@ -312,20 +315,24 @@ export default function StudioEditorPage() {
     const headline = isAuthError ? t('authErrorTitle') : t('loadErrorTitle');
     const body = isAuthError ? t('authErrorBody') : t('loadErrorBody');
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] px-4 text-center">
-        <AlertTriangle className="h-10 w-10 text-destructive mb-3" />
-        <h2 className="text-lg font-semibold mb-1">{headline}</h2>
-        <p className="text-sm text-muted-foreground mb-4 max-w-md">{body}</p>
-        <div className="flex gap-2">
-          {!isAuthError && (
-            <Button variant="outline" onClick={() => refetchEdit()}>
-              {t('tryAgain')}
-            </Button>
-          )}
-          <Button asChild>
-            <Link href="/dashboard/outfits">{t('back')}</Link>
-          </Button>
-        </div>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <EmptyState
+          state="sad"
+          title={headline}
+          description={body}
+          action={
+            <>
+              {!isAuthError && (
+                <Button variant="secondary" onClick={() => refetchEdit()}>
+                  {t('tryAgain')}
+                </Button>
+              )}
+              <Button asChild>
+                <Link href="/dashboard/outfits">{t('back')}</Link>
+              </Button>
+            </>
+          }
+        />
       </div>
     );
   }
@@ -333,18 +340,20 @@ export default function StudioEditorPage() {
   if (isEditMode && editPhase === 'wornImmutable' && editOutfit && editId) {
     return (
       <>
-        <div className="flex flex-col items-center justify-center h-[60vh] px-4 text-center">
-          <AlertCircle className="h-10 w-10 text-muted-foreground mb-3" />
-          <h2 className="text-lg font-semibold mb-1">{t('wornImmutableTitle')}</h2>
-          <p className="text-sm text-muted-foreground mb-4 max-w-md">
-            {t('wornImmutableBody')}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link href={`/dashboard/outfits/${editId}`}>{t('backToOutfit')}</Link>
-            </Button>
-            <Button onClick={() => setCloneDialogOpen(true)}>{t('saveAsNew')}</Button>
-          </div>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <EmptyState
+            state="sleepy"
+            title={t('wornImmutableTitle')}
+            description={t('wornImmutableBody')}
+            action={
+              <>
+                <Button variant="secondary" asChild>
+                  <Link href={`/dashboard/outfits/${editId}`}>{t('backToOutfit')}</Link>
+                </Button>
+                <Button onClick={() => setCloneDialogOpen(true)}>{t('saveAsNew')}</Button>
+              </>
+            }
+          />
         </div>
         <CloneToLookbookDialog
           open={cloneDialogOpen}
@@ -360,23 +369,23 @@ export default function StudioEditorPage() {
   const cancelHref = isEditMode && editId ? `/dashboard/outfits/${editId}` : '/dashboard/outfits';
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="sticky top-0 z-10 bg-background border-b px-4 py-3 flex items-center justify-between">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={cancelHref}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            {t('cancel')}
-          </Link>
-        </Button>
-        <h1 className="text-lg font-semibold">
-          {isEditMode ? t('editTitle') : t('studioTitle')}
-        </h1>
+    <div className="flex h-full flex-col">
+      <div className="sticky top-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:mx-0 lg:px-0">
+        <div className="flex min-w-0 items-center gap-1">
+          <Button variant="ghost" size="icon" asChild className="-ml-2 shrink-0">
+            <Link href={cancelHref} aria-label={t('cancel')}>
+              <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
+            </Link>
+          </Button>
+          <h1 className="truncate text-[22px] font-extrabold tracking-[-0.02em] sm:text-2xl">
+            {isEditMode ? t('editTitle') : t('studioTitle')}
+          </h1>
+        </div>
         <div className="flex flex-col items-end">
           <div className="flex gap-2">
             {!isEditMode && (
               <Button
-                variant="outline"
-                size="sm"
+                variant="secondary"
                 disabled={!canSave}
                 onClick={() => handleSave(true)}
               >
@@ -387,7 +396,7 @@ export default function StudioEditorPage() {
                 )}
               </Button>
             )}
-            <Button size="sm" disabled={!canSave} onClick={() => handleSave(false)}>
+            <Button disabled={!canSave} onClick={() => handleSave(false)}>
               {mutationPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : isEditMode ? (
@@ -398,7 +407,7 @@ export default function StudioEditorPage() {
             </Button>
           </div>
           {!canSave && !mutationPending && (
-            <p className="text-xs text-muted-foreground mt-1 text-right">
+            <p className="mt-1 text-right text-xs text-muted-foreground">
               {state.items.length === 0 && state.occasion === null
                 ? t('pickAtLeastOneOrOccasion')
                 : state.items.length === 0
@@ -412,8 +421,8 @@ export default function StudioEditorPage() {
       </div>
 
       {pendingDraft && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-3 flex items-center justify-between gap-4">
-          <p className="text-sm text-blue-900">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-signature-soft px-4 py-3">
+          <p className="text-sm font-medium text-foreground">
             {t('draftBanner')}
           </p>
           <div className="flex gap-2">
@@ -427,11 +436,11 @@ export default function StudioEditorPage() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+      <div className="flex-1 overflow-y-auto pt-4">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <section>
+              <h2 className="mb-2 text-lg font-bold">
                 {t('canvas')}
               </h2>
               <CanvasPanel
@@ -447,9 +456,9 @@ export default function StudioEditorPage() {
                   dispatch({ type: 'SEND_TO_BACK', itemId: id })
                 }
               />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+            </section>
+            <section>
+              <h2 className="mb-2 text-lg font-bold">
                 {t('details')}
               </h2>
               <DetailsPanel
@@ -464,11 +473,11 @@ export default function StudioEditorPage() {
                   dispatch({ type: 'REPLACE_CANVAS', items: merged })
                 }
               />
-            </div>
+            </section>
           </div>
 
-          <div>
-            <h2 className="text-sm font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+          <section>
+            <h2 className="mb-2 text-lg font-bold">
               {t('yourWardrobe')}
             </h2>
             <ItemPicker
@@ -478,7 +487,7 @@ export default function StudioEditorPage() {
               emptyMessage={t('emptyWardrobe')}
               heightClass="h-[280px]"
             />
-          </div>
+          </section>
         </div>
       </div>
 

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
+import { EmptyState } from '@/components/empty-state';
 import {
   Select,
   SelectContent,
@@ -24,18 +26,16 @@ import { useTranslations } from 'next-intl';
 function EmptyHistory() {
   const t = useTranslations('history');
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="rounded-full bg-muted p-6 mb-4">
-        <Calendar className="h-12 w-12 text-muted-foreground" />
-      </div>
-      <h3 className="text-lg font-semibold mb-2">{t('emptyTitle')}</h3>
-      <p className="text-muted-foreground mb-6 max-w-sm">
-        {t('emptyBody')}
-      </p>
-      <Button variant="outline" asChild>
-        <a href="/dashboard/suggest">{t('getFirstSuggestion')}</a>
-      </Button>
-    </div>
+    <EmptyState
+      state="sleepy"
+      title={t('emptyTitle')}
+      description={t('emptyBody')}
+      action={
+        <Button variant="signature" asChild>
+          <Link href="/dashboard/suggest">{t('getFirstSuggestion')}</Link>
+        </Button>
+      }
+    />
   );
 }
 
@@ -43,12 +43,11 @@ function EmptyDate({ date }: { date: Date }) {
   const t = useTranslations('history');
   const formatDate = useFormatDate();
   return (
-    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-      <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
-      <p className="text-sm text-muted-foreground">
-        {t('noOutfitsForDate', { date: formatDate(date, 'long') })}
-      </p>
-    </div>
+    <EmptyState
+      state="sleepy"
+      size="sm"
+      title={t('noOutfitsForDate', { date: formatDate(date, 'long') })}
+    />
   );
 }
 
@@ -57,17 +56,17 @@ function LoadingSkeleton() {
     <div className="space-y-4">
       {[1, 2, 3].map((i) => (
         <Card key={i}>
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-3">
+          <CardContent className="p-4 sm:p-4">
+            <div className="mb-3 flex items-start justify-between">
               <div>
-                <Skeleton className="h-5 w-24 mb-2" />
-                <Skeleton className="h-5 w-16" />
+                <Skeleton className="mb-2 h-5 w-24 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
               </div>
-              <Skeleton className="h-5 w-5" />
+              <Skeleton className="h-6 w-6 rounded-full" />
             </div>
             <div className="flex gap-2">
               {[1, 2, 3].map((j) => (
-                <Skeleton key={j} className="w-16 h-16 rounded" />
+                <Skeleton key={j} className="h-16 w-16 rounded-tile" />
               ))}
             </div>
           </CardContent>
@@ -80,14 +79,14 @@ function LoadingSkeleton() {
 function CalendarSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <Skeleton className="h-8 w-8" />
-        <Skeleton className="h-6 w-32" />
-        <Skeleton className="h-8 w-8" />
+      <div className="mb-4 flex items-center justify-between">
+        <Skeleton className="h-11 w-11 rounded-full bg-background" />
+        <Skeleton className="h-6 w-32 rounded-full bg-background" />
+        <Skeleton className="h-11 w-11 rounded-full bg-background" />
       </div>
       <div className="grid grid-cols-7 gap-1">
         {[...Array(35)].map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full rounded-md" />
+          <Skeleton key={i} className="h-10 w-full rounded-full bg-background" />
         ))}
       </div>
     </div>
@@ -136,28 +135,18 @@ export default function HistoryPage() {
 
   if (isError) {
     return (
-      <div className="text-center py-8 text-red-500">
-        {t('loadError')}
-      </div>
+      <EmptyState state="sad" title={t('loadError')} />
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground">
-            {t('subtitle')}
-          </p>
-        </div>
-      </div>
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
       {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex flex-wrap gap-2">
         <Select value={filters.occasion || 'all'} onValueChange={handleOccasionChange}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="h-11 w-[170px]" aria-label={t('allOccasions')}>
             <SelectValue placeholder={t('allOccasions')} />
           </SelectTrigger>
           <SelectContent>
@@ -170,7 +159,7 @@ export default function HistoryPage() {
           </SelectContent>
         </Select>
         <Select value={filters.status || 'all'} onValueChange={handleStatusChange}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="h-11 w-[170px]" aria-label={t('allStatus')}>
             <SelectValue placeholder={t('allStatus')} />
           </SelectTrigger>
           <SelectContent>
@@ -184,10 +173,10 @@ export default function HistoryPage() {
       </div>
 
       {/* Main content - two column layout */}
-      <div className="grid lg:grid-cols-[350px_1fr] gap-6">
+      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         {/* Calendar column */}
-        <Card className="h-fit order-2 lg:order-1">
-          <CardContent className="p-4">
+        <Card className="order-2 h-fit border-0 bg-panel lg:order-1">
+          <CardContent className="p-4 sm:p-4">
             {isLoading ? (
               <CalendarSkeleton />
             ) : (
@@ -207,8 +196,8 @@ export default function HistoryPage() {
         <div className="order-1 lg:order-2 space-y-4">
           {/* Selected date header */}
           {selectedDate && (
-            <div className="border-b pb-3">
-              <h2 className="text-lg font-semibold">
+            <div className="space-y-0.5">
+              <h2 className="text-lg font-bold">
                 {capitalizeFirst(formatDate(selectedDate, 'weekdayLong'))}
               </h2>
               <p className="text-sm text-muted-foreground">

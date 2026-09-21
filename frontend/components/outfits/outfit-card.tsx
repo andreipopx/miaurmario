@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow, parseISO, type Locale } from 'date-fns';
+import { useTranslations } from 'next-intl';
 import {
   BookmarkCheck,
   Layers,
@@ -12,7 +13,6 @@ import {
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Outfit } from '@/lib/hooks/use-outfits';
 import { useDateFnsLocale } from '@/lib/date-locale';
@@ -22,16 +22,25 @@ interface OutfitCardProps {
   onClick?: () => void;
 }
 
+type SourceBadgeKey =
+  | 'badgeReplacement'
+  | 'badgeWorn'
+  | 'badgeStudio'
+  | 'badgePairing'
+  | 'badgeAi';
+
+type BadgeVariant = 'amber' | 'sky' | 'mint' | 'signature' | 'secondary';
+
 function getSourceBadge(outfit: Outfit): {
-  label: string;
+  labelKey: SourceBadgeKey;
   icon: React.ReactNode;
-  className: string;
-} | null {
+  variant: BadgeVariant;
+} {
   if (outfit.replaces_outfit_id) {
     return {
-      label: 'Replacement',
+      labelKey: 'badgeReplacement',
       icon: <RefreshCw className="h-3 w-3" />,
-      className: 'bg-orange-100 text-orange-700 border-orange-200',
+      variant: 'amber',
     };
   }
   if (
@@ -40,45 +49,34 @@ function getSourceBadge(outfit: Outfit): {
     outfit.scheduled_for
   ) {
     return {
-      label: 'Worn',
+      labelKey: 'badgeWorn',
       icon: <BookmarkCheck className="h-3 w-3" />,
-      className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      variant: 'mint',
     };
   }
   if (outfit.source === 'manual') {
     return {
-      label: 'Studio',
+      labelKey: 'badgeStudio',
       icon: <Shirt className="h-3 w-3" />,
-      className: 'bg-purple-100 text-purple-700 border-purple-200',
+      variant: 'signature',
     };
   }
   if (outfit.source === 'pairing') {
     return {
-      label: 'Pairing',
+      labelKey: 'badgePairing',
       icon: <Layers className="h-3 w-3" />,
-      className: 'bg-amber-100 text-amber-700 border-amber-200',
+      variant: 'amber',
     };
   }
   return {
-    label: 'AI',
+    labelKey: 'badgeAi',
     icon: <Sparkles className="h-3 w-3" />,
-    className: 'bg-blue-100 text-blue-700 border-blue-200',
+    variant: 'sky',
   };
 }
 
-function getCardTitle(outfit: Outfit): string {
-  if (outfit.name) return outfit.name;
-  if (outfit.reasoning) return outfit.reasoning;
-  if (outfit.highlights && outfit.highlights.length > 0) {
-    return outfit.highlights[0];
-  }
-  const occasion =
-    outfit.occasion.charAt(0).toUpperCase() + outfit.occasion.slice(1);
-  return `${occasion} outfit`;
-}
-
-function getMetaLabel(outfit: Outfit, dateFnsLocale: Locale): string {
-  if (!outfit.scheduled_for) return 'Lookbook template';
+function formatRelative(outfit: Outfit, dateFnsLocale: Locale): string | null {
+  if (!outfit.scheduled_for) return null;
   try {
     return formatDistanceToNow(parseISO(outfit.scheduled_for), {
       addSuffix: true,
@@ -90,83 +88,95 @@ function getMetaLabel(outfit: Outfit, dateFnsLocale: Locale): string {
 }
 
 export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
+  const t = useTranslations('outfitCard');
+  const tOccasions = useTranslations('suggest.occasions');
   const dateFnsLocale = useDateFnsLocale();
   const badge = getSourceBadge(outfit);
   const visibleItems = outfit.items.slice(0, 4);
   const overflow = outfit.items.length - visibleItems.length;
 
+  const occasionLabel = tOccasions.has(outfit.occasion as never)
+    ? tOccasions(outfit.occasion as never)
+    : outfit.occasion;
+
+  const title =
+    outfit.name ||
+    outfit.reasoning ||
+    (outfit.highlights && outfit.highlights.length > 0
+      ? outfit.highlights[0]
+      : t('titleFallback', { occasion: occasionLabel }));
+
+  const meta = formatRelative(outfit, dateFnsLocale) ?? t('lookbookTemplate');
+
   const content = (
-    <Card
+    <div
       className={cn(
-        'overflow-hidden transition-all hover:shadow-md',
+        'group overflow-hidden rounded-lg border border-border bg-card transition-shadow duration-200 hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)]',
         onClick && 'cursor-pointer'
       )}
       onClick={onClick}
     >
-      <CardContent className="p-0">
-        <div className="relative aspect-[5/4] bg-muted">
-          <div className="absolute inset-0 grid grid-cols-4 gap-0.5 p-2">
-            {visibleItems.map((item, idx) => (
-              <div
-                key={`${item.id}-${idx}`}
-                className="relative rounded overflow-hidden bg-background"
-              >
-                {item.thumbnail_url || item.image_url ? (
-                  <Image
-                    src={(item.thumbnail_url || item.image_url)!}
-                    alt={item.name || item.type}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 25vw, 15vw"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground">
-                      {item.type}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-            {overflow > 0 && (
-              <div className="relative rounded overflow-hidden bg-background flex items-center justify-center">
-                <span className="text-sm font-medium text-muted-foreground">
-                  +{overflow}
-                </span>
-              </div>
-            )}
-          </div>
-          {badge && (
+      <div className="relative aspect-[5/4] p-2">
+        <div className="grid h-full grid-cols-4 gap-1.5">
+          {visibleItems.map((item, idx) => (
             <div
-              className={cn(
-                'absolute top-2 right-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium',
-                badge.className
-              )}
+              key={`${item.id}-${idx}`}
+              className="relative overflow-hidden rounded-tile bg-panel"
             >
-              {badge.icon}
-              <span>{badge.label}</span>
+              {item.thumbnail_url || item.image_url ? (
+                <Image
+                  src={(item.thumbnail_url || item.image_url)!}
+                  alt={item.name || item.type}
+                  fill
+                  className="object-contain p-1.5"
+                  sizes="(max-width: 640px) 25vw, 15vw"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <span className="text-[11px] text-muted-foreground">
+                    {item.type}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+          {overflow > 0 && (
+            <div className="relative flex items-center justify-center overflow-hidden rounded-tile bg-panel">
+              <span className="text-sm font-bold text-muted-foreground">
+                +{overflow}
+              </span>
             </div>
           )}
         </div>
-        <div className="p-3 space-y-1">
-          <h3 className="text-sm font-semibold leading-tight truncate">
-            {getCardTitle(outfit)}
-          </h3>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <Badge variant="outline" className="capitalize">
-              {outfit.occasion}
-            </Badge>
-            <span>{getMetaLabel(outfit, dateFnsLocale)}</span>
-          </div>
+        <Badge
+          variant={badge.variant}
+          className="absolute right-3 top-3 text-[11px]"
+        >
+          {badge.icon}
+          <span>{t(badge.labelKey)}</span>
+        </Badge>
+      </div>
+      <div className="space-y-2 px-4 pb-4 pt-1">
+        <h3 className="truncate text-[15px] font-bold leading-tight">
+          {title}
+        </h3>
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <Badge variant="secondary" className="font-semibold">
+            {occasionLabel}
+          </Badge>
+          <span className="truncate">{meta}</span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 
   if (onClick) return content;
   return (
-    <Link href={`/dashboard/outfits/${outfit.id}`} className="block">
+    <Link
+      href={`/dashboard/outfits/${outfit.id}`}
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    >
       {content}
     </Link>
   );

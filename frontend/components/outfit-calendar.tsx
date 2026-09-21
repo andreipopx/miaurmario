@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export function OutfitCalendar({
   onSelectDate,
   onMonthChange,
 }: OutfitCalendarProps) {
+  const t = useTranslations('outfitCalendar');
   const currentMonth = new Date(year, month - 1, 1);
   const dateFnsLocale = useDateFnsLocale();
   const formatDate = useFormatDate();
@@ -89,14 +91,24 @@ export function OutfitCalendar({
     <div className="w-full">
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-4">
-        <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-          <ChevronLeft className="h-4 w-4" />
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={handlePrevMonth}
+          aria-label={t('prevMonth')}
+        >
+          <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
         </Button>
-        <h3 className="font-semibold text-lg">
+        <h3 className="text-lg font-bold">
           {capitalizeFirst(formatDate(currentMonth, 'monthYear'))}
         </h3>
-        <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-          <ChevronRight className="h-4 w-4" />
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={handleNextMonth}
+          aria-label={t('nextMonth')}
+        >
+          <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
         </Button>
       </div>
 
@@ -105,7 +117,7 @@ export function OutfitCalendar({
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-xs text-muted-foreground font-medium py-1"
+            className="py-1 text-center text-xs font-semibold text-muted-foreground"
           >
             {day}
           </div>
@@ -119,7 +131,7 @@ export function OutfitCalendar({
           const sources = outfitsByDate.get(dateKey);
           const hasScheduled = sources?.has('scheduled');
           const hasOnDemand = sources?.has('on_demand') || sources?.has('manual');
-          const isSelected = selectedDate && isSameDay(day, selectedDate);
+          const isSelected = !!selectedDate && isSameDay(day, selectedDate);
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isDayToday = isToday(day);
 
@@ -128,24 +140,33 @@ export function OutfitCalendar({
               key={dateKey}
               type="button"
               onClick={() => onSelectDate(day)}
-              className={cn(
-                'relative h-10 w-full rounded-md text-sm transition-colors',
-                'hover:bg-accent hover:text-accent-foreground',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                !isCurrentMonth && 'text-muted-foreground/50',
-                isSelected && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
-                isDayToday && !isSelected && 'bg-accent font-semibold'
-              )}
+              aria-pressed={isSelected}
+              aria-current={isDayToday ? 'date' : undefined}
+              aria-label={formatDate(day, 'long')}
+              className="group relative flex h-11 w-full items-center justify-center rounded-full focus-visible:outline-none"
             >
-              <span>{format(day, 'd')}</span>
+              <span
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-colors duration-150',
+                  'group-hover:bg-accent group-focus-visible:ring-2 group-focus-visible:ring-ring group-focus-visible:ring-offset-2',
+                  !isCurrentMonth && 'text-muted-foreground/60',
+                  isSelected &&
+                    'bg-signature font-bold text-signature-foreground group-hover:bg-signature',
+                  isDayToday &&
+                    !isSelected &&
+                    'bg-signature-soft font-bold text-foreground ring-[1.5px] ring-inset ring-signature group-hover:bg-signature-soft'
+                )}
+              >
+                {format(day, 'd')}
+              </span>
               {/* Outfit indicators */}
               {sources && sources.size > 0 && (
-                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                <div className="absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-0.5">
                   {hasScheduled && (
                     <span
                       className={cn(
                         'w-1.5 h-1.5 rounded-full',
-                        isSelected ? 'bg-primary-foreground' : 'bg-primary'
+                        'bg-foreground'
                       )}
                     />
                   )}
@@ -153,7 +174,7 @@ export function OutfitCalendar({
                     <span
                       className={cn(
                         'w-1.5 h-1.5 rounded-full',
-                        isSelected ? 'bg-primary-foreground' : 'bg-orange-500'
+                        'bg-pop-amber ring-1 ring-foreground/20'
                       )}
                     />
                   )}
@@ -165,14 +186,14 @@ export function OutfitCalendar({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+      <div className="mt-4 flex items-center gap-4 text-xs font-medium text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-primary" />
-          <span>Scheduled</span>
+          <span aria-hidden className="h-2 w-2 rounded-full bg-foreground" />
+          <span>{t('scheduled')}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-orange-500" />
-          <span>On-demand</span>
+          <span aria-hidden className="h-2 w-2 rounded-full bg-pop-amber" />
+          <span>{t('onDemand')}</span>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Sparkles, Check, AlertCircle } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Stinky } from '@/components/stinky/stinky';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useGeneratePairings } from '@/lib/hooks/use-pairings';
@@ -75,7 +76,9 @@ export function GeneratePairingsDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-signature text-signature-foreground">
+              <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+            </span>
             {t('dialogTitle')}
           </DialogTitle>
           <DialogDescription>
@@ -85,20 +88,20 @@ export function GeneratePairingsDialog({
 
         {!generatedPairings ? (
           // Generation form
-          <div className="space-y-6 py-4 min-w-0">
+          <div className="min-w-0 space-y-6 py-4">
             {/* Source item preview */}
-            <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border">
-              <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden relative border-2 border-primary/30">
+            <div className="flex items-center gap-4 rounded-[18px] bg-panel p-2 pr-4">
+              <div className="relative h-16 w-16 overflow-hidden rounded-[14px] bg-background">
                 <Image
                   src={imageUrl}
                   alt={item.name || item.type}
                   fill
-                  className="object-cover"
+                  className="object-contain p-1.5"
                   sizes="64px"
                 />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{item.name || item.type}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-bold">{item.name || item.type}</p>
                 {item.primary_color && (
                   <p className="text-sm text-muted-foreground capitalize">
                     {t('colorTypeSubtitle', { color: item.primary_color, type: item.type })}
@@ -110,8 +113,10 @@ export function GeneratePairingsDialog({
             {/* Number of pairings selector */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>{t('numberOfOutfits')}</Label>
-                <span className="text-sm font-medium text-primary">{numPairings}</span>
+                <Label id="num-pairings-label" className="font-bold">{t('numberOfOutfits')}</Label>
+                <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-signature px-2 text-sm font-bold text-signature-foreground">
+                  {numPairings}
+                </span>
               </div>
               <Slider
                 value={[numPairings]}
@@ -120,6 +125,7 @@ export function GeneratePairingsDialog({
                 max={5}
                 step={1}
                 className="w-full"
+                aria-labelledby="num-pairings-label"
               />
               <p className="text-xs text-muted-foreground">
                 {t('helpMore')}
@@ -128,41 +134,41 @@ export function GeneratePairingsDialog({
           </div>
         ) : (
           // Success state
-          <div className="py-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mx-auto flex items-center justify-center">
-              <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
+          <div className="space-y-4 py-4 text-center">
+            <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-signature-soft">
+              <Stinky state="happy" size={96} label="" />
             </div>
             <div>
-              <p className="font-medium text-lg">
+              <p className="text-lg font-extrabold">
                 {t('createdHeadline', { count: generatedPairings.length })}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {t('viewInPairings')}
               </p>
             </div>
 
             {/* Preview of generated pairings */}
-            <div className="flex justify-center gap-2 flex-wrap">
+            <div className="flex flex-wrap justify-center gap-2">
               {generatedPairings.slice(0, 3).map((pairing) => (
                 <div
                   key={pairing.id}
-                  className="flex gap-1 p-1 rounded-lg bg-muted border"
+                  className="flex gap-1 rounded-[14px] bg-panel p-1.5"
                 >
                   {pairing.items.slice(0, 3).map((pairingItem) => (
                     <div
                       key={pairingItem.id}
-                      className="w-8 h-8 rounded overflow-hidden relative"
+                      className="relative h-9 w-9 overflow-hidden rounded-[10px] bg-background"
                     >
                       {pairingItem.thumbnail_url ? (
                         <Image
                           src={pairingItem.thumbnail_url}
                           alt={pairingItem.type}
                           fill
-                          className="object-cover"
-                          sizes="32px"
+                          className="object-contain p-0.5"
+                          sizes="36px"
                         />
                       ) : (
-                        <div className="w-full h-full bg-muted-foreground/20" />
+                        <div className="h-full w-full bg-muted" />
                       )}
                     </div>
                   ))}
@@ -172,24 +178,25 @@ export function GeneratePairingsDialog({
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           {!generatedPairings ? (
             <>
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="secondary" onClick={handleClose}>
                 {t('cancel')}
               </Button>
               <Button
                 onClick={handleGenerate}
                 disabled={generatePairings.isPending}
+                aria-busy={generatePairings.isPending}
               >
                 {generatePairings.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Stinky state="thinking" size={28} label="" className="-my-1" />
                     {t('generating')}
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4 mr-2" />
+                    <Sparkles className="h-4 w-4" strokeWidth={1.75} />
                     {t('generate')}
                   </>
                 )}
@@ -197,7 +204,7 @@ export function GeneratePairingsDialog({
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="secondary" onClick={handleClose}>
                 {t('close')}
               </Button>
               <Button onClick={handleViewPairings}>

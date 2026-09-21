@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
+import { AlertTriangle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OccasionChips } from '@/components/shared/occasion-chips';
+import { Stinky } from '@/components/stinky/stinky';
 import { api, getErrorMessage } from '@/lib/api';
 import { ITEM_ROLE } from '@/lib/studio/canonical-order';
 import { mergeAiAssist } from '@/lib/studio/ai-assist-merge';
@@ -116,9 +117,9 @@ export function DetailsPanel({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="studio-name" className="flex items-center gap-1">
+        <Label htmlFor="studio-name" className="flex items-center gap-1 font-bold">
           {t('nameLabel')}
-          <span className="text-xs text-muted-foreground font-normal ml-1">
+          <span className="ml-1 text-xs font-normal text-muted-foreground">
             {t('nameLabelHelp')}
           </span>
         </Label>
@@ -132,25 +133,26 @@ export function DetailsPanel({
       </div>
 
       <div className="space-y-2">
-        <Label className="flex items-center gap-1">
+        <Label className="flex items-center gap-1 font-bold">
           {t('occasionLabel')}
-          <span className="text-destructive" aria-label="required">*</span>
+          <span className="text-destructive" aria-hidden>*</span>
+          <span className="sr-only">{t('required')}</span>
         </Label>
         <OccasionChips selected={occasion} onSelect={onOccasionChange} />
         {!occasion && (
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="mt-1 text-xs text-muted-foreground">
             {t('occasionRequiredHint')}
           </p>
         )}
       </div>
 
       {warnings.length > 0 && (
-        <Alert className="border-amber-200 bg-amber-50 text-amber-900">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription>
-            <ul className="list-disc pl-4 space-y-1">
+        <Alert className="bg-pop-amber/25">
+          <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
+          <AlertDescription className="text-foreground">
+            <ul className="list-disc space-y-1 pl-4">
               {warnings.map((w) => (
-                <li key={w} className="text-xs">
+                <li key={w} className="text-[13px]">
                   {t(`warnings.${w}`)}
                 </li>
               ))}
@@ -161,19 +163,20 @@ export function DetailsPanel({
 
       <Button
         type="button"
-        variant="outline"
+        variant="signature"
         className="w-full"
         disabled={items.length === 0 || !occasion || aiLoading}
         onClick={handleAiAssist}
+        aria-busy={aiLoading}
       >
         {aiLoading ? (
           <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Stinky state="thinking" size={28} label="" className="-my-1" />
             {t('aiThinking')}
           </>
         ) : (
           <>
-            <Sparkles className="h-4 w-4 mr-2" />
+            <Sparkles className="h-4 w-4" />
             {t('aiAssist')}
           </>
         )}

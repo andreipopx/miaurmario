@@ -38,6 +38,8 @@ import {
 } from '@/components/ui/select';
 import { useCreateItem, useBulkCreateItems, BulkUploadResponse } from '@/lib/hooks/use-items';
 import { CLOTHING_TYPES, CLOTHING_COLORS } from '@/lib/types';
+import { Stinky } from '@/components/stinky/stinky';
+import { cn } from '@/lib/utils';
 
 interface AddItemDialogProps {
   open: boolean;
@@ -257,15 +259,18 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               {!preview ? (
                 <div
                   {...getSingleRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  className={cn(
+                    'cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                     isSingleDragActive
-                      ? 'border-primary bg-primary/5'
-                      : 'border-muted-foreground/25 hover:border-primary/50'
-                  }`}
+                      ? 'border-signature bg-signature-soft'
+                      : 'border-border bg-panel hover:bg-accent'
+                  )}
                 >
                   <input {...getSingleInputProps()} />
-                  <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
+                  <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-signature text-signature-foreground">
+                    <Upload className="h-6 w-6" strokeWidth={1.75} />
+                  </span>
+                  <p className="mt-3 text-sm font-bold text-foreground">
                     {isSingleDragActive ? t('dragDropSingleActive') : t('dragDropSingle')}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -273,29 +278,30 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                   </p>
                 </div>
               ) : (
-                <div className="relative">
+                <div className="relative rounded-tile bg-panel">
                   <img
                     src={preview}
                     alt={t('previewAlt')}
-                    className="w-full h-48 object-cover rounded-lg"
+                    className="h-48 w-full rounded-tile object-contain p-3"
                   />
                   <Button
                     type="button"
-                    variant="destructive"
+                    variant="outline"
                     size="icon"
-                    className="absolute top-2 right-2 h-8 w-8"
+                    className="absolute right-2 top-2 border-0 bg-background/90 shadow-sm"
                     onClick={clearSingleFile}
+                    aria-label={t('removePhoto')}
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" strokeWidth={1.75} />
                   </Button>
                 </div>
               )}
 
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="type">{t('typeLabel')} <span className="text-muted-foreground font-normal">{t('typeHint')}</span></Label>
+                  <Label htmlFor="type" className="font-bold">{t('typeLabel')} <span className="font-normal text-muted-foreground">{t('typeHint')}</span></Label>
                   <Select value={type} onValueChange={setType}>
-                    <SelectTrigger>
+                    <SelectTrigger id="type">
                       <SelectValue placeholder={t('typePlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -309,7 +315,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="name">{t('nameLabelOptional')}</Label>
+                  <Label htmlFor="name" className="font-bold">{t('nameLabelOptional')}</Label>
                   <Input
                     id="name"
                     value={name}
@@ -320,7 +326,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="brand">{t('brandLabel')}</Label>
+                    <Label htmlFor="brand" className="font-bold">{t('brandLabel')}</Label>
                     <Input
                       id="brand"
                       value={brand}
@@ -330,9 +336,9 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="color">{t('colorLabel')}</Label>
+                    <Label htmlFor="color" className="font-bold">{t('colorLabel')}</Label>
                     <Select value={primaryColor} onValueChange={setPrimaryColor}>
-                      <SelectTrigger>
+                      <SelectTrigger id="color">
                         <SelectValue placeholder={t('colorPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -340,7 +346,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                           <SelectItem key={c.value} value={c.value}>
                             <div className="flex items-center gap-2">
                               <div
-                                className="w-3 h-3 rounded-full border"
+                                className="h-3.5 w-3.5 rounded-full ring-1 ring-inset ring-black/10"
                                 style={{ backgroundColor: c.hex }}
                               />
                               {c.name}
@@ -353,7 +359,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">{t('notesLabel')}</Label>
+                  <Label htmlFor="notes" className="font-bold">{t('notesLabel')}</Label>
                   <Input
                     id="notes"
                     value={notes}
@@ -364,7 +370,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={handleCloseRequest}>
+                <Button type="button" variant="secondary" onClick={handleCloseRequest}>
                   {t('cancel')}
                 </Button>
                 <Button
@@ -373,7 +379,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                 >
                   {createItem.isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       {t('uploading')}
                     </>
                   ) : (
@@ -390,15 +396,18 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               <>
                 <div
                   {...getBulkRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                  className={cn(
+                    'cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                     isBulkDragActive
-                      ? 'border-primary bg-primary/5'
-                      : 'border-muted-foreground/25 hover:border-primary/50'
-                  }`}
+                      ? 'border-signature bg-signature-soft'
+                      : 'border-border bg-panel hover:bg-accent'
+                  )}
                 >
                   <input {...getBulkInputProps()} />
-                  <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
+                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-signature text-signature-foreground">
+                    <Upload className="h-5 w-5" strokeWidth={1.75} />
+                  </span>
+                  <p className="mt-3 text-sm font-bold text-foreground">
                     {isBulkDragActive ? t('dragDropBulkActive') : t('dragDropBulk')}
                   </p>
                 </div>
@@ -406,7 +415,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                 {bulkFiles.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">
+                      <p className="text-sm font-bold">
                         {t('imagesSelected', { count: bulkFiles.length })}
                       </p>
                       <Button
@@ -419,25 +428,24 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                       </Button>
                     </div>
 
-                    <ScrollArea className="h-[200px] rounded-md border p-2">
+                    <ScrollArea className="h-[200px] rounded-lg bg-panel p-2">
                       <div className="grid grid-cols-4 gap-2">
                         {bulkFiles.map((f) => (
-                          <div key={f.id} className="relative group">
+                          <div key={f.id} className="group relative">
                             <img
                               src={f.preview}
                               alt={f.file.name}
-                              className="w-full aspect-square object-cover rounded-md"
+                              className="aspect-square w-full rounded-[14px] bg-background object-contain p-1"
                             />
-                            <Button
+                            <button
                               type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute right-0.5 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-100 shadow-sm transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:opacity-0 sm:group-hover:opacity-100"
                               onClick={() => removeBulkFile(f.id)}
+                              aria-label={t('removeFile', { name: f.file.name })}
                             >
-                              <X className="h-3 w-3" />
-                            </Button>
-                            <p className="text-[10px] text-muted-foreground truncate mt-1 px-1">
+                              <X className="h-3.5 w-3.5" strokeWidth={2} />
+                            </button>
+                            <p className="mt-1 truncate px-1 text-[11px] text-muted-foreground">
                               {f.file.name}
                             </p>
                           </div>
@@ -467,17 +475,17 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-sm">{t('uploadingCount', { count: bulkFiles.length })}</span>
+                        <Stinky state="thinking" size={28} label="" />
+                        <span className="text-sm font-semibold">{t('uploadingCount', { count: bulkFiles.length })}</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">{bulkCreateItems.uploadProgress}%</span>
+                      <span className="text-sm font-semibold tabular-nums text-muted-foreground">{bulkCreateItems.uploadProgress}%</span>
                     </div>
                     <Progress value={bulkCreateItems.uploadProgress} className="h-2" />
                   </div>
                 )}
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={handleCloseRequest}>
+                  <Button type="button" variant="secondary" onClick={handleCloseRequest}>
                     {t('cancel')}
                   </Button>
                   <Button
@@ -486,12 +494,12 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                   >
                     {bulkCreateItems.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         {t('uploading')}
                       </>
                     ) : (
                       <>
-                        <Upload className="mr-2 h-4 w-4" />
+                        <Upload className="h-4 w-4" strokeWidth={1.75} />
                         {t('uploadBulk', { count: bulkFiles.length })}
                       </>
                     )}
@@ -501,18 +509,18 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             ) : (
               /* Bulk Upload Results */
               <div className="space-y-4">
-                <div className="flex items-center justify-center gap-3 py-4">
-                  {bulkResult.failed === 0 ? (
-                    <CheckCircle2 className="h-12 w-12 text-green-500" />
-                  ) : bulkResult.successful === 0 ? (
-                    <AlertCircle className="h-12 w-12 text-destructive" />
-                  ) : (
-                    <AlertCircle className="h-12 w-12 text-yellow-500" />
-                  )}
+                <div className="flex items-center justify-center py-2">
+                  <div className="flex h-28 w-28 items-center justify-center rounded-full bg-signature-soft">
+                    <Stinky
+                      state={bulkResult.failed === 0 ? 'happy' : bulkResult.successful === 0 ? 'sad' : 'idle'}
+                      size={96}
+                      label=""
+                    />
+                  </div>
                 </div>
 
                 <div className="text-center">
-                  <p className="text-lg font-medium">
+                  <p className="text-lg font-extrabold">
                     {t('resultHeadline', { ok: bulkResult.successful, total: bulkResult.total })}
                   </p>
                   {bulkResult.failed > 0 && (
@@ -522,22 +530,20 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                   )}
                 </div>
 
-                <ScrollArea className="h-[200px] rounded-md border">
-                  <div className="p-3 space-y-2">
+                <ScrollArea className="h-[200px] rounded-lg bg-panel">
+                  <div className="space-y-2 p-2">
                     {bulkResult.results.map((result, index) => (
                       <div
                         key={index}
-                        className={`flex items-center gap-3 p-2 rounded-md ${
-                          result.success ? 'bg-green-500/10' : 'bg-destructive/10'
-                        }`}
+                        className="flex items-center gap-3 rounded-[14px] bg-background p-2.5"
                       >
                         {result.success ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-success" strokeWidth={2} />
                         ) : (
-                          <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                          <AlertCircle className="h-4 w-4 shrink-0 text-destructive" strokeWidth={2} />
                         )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{result.filename}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">{result.filename}</p>
                           {result.error && (
                             <p className="text-xs text-destructive">{result.error}</p>
                           )}
@@ -551,7 +557,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                 </ScrollArea>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="outline" onClick={clearBulkFiles}>
+                  <Button variant="secondary" onClick={clearBulkFiles}>
                     {t('uploadMore')}
                   </Button>
                   <Button onClick={handleClose}>

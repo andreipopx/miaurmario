@@ -8,7 +8,10 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
+import { StinkyTip } from '@/components/stinky-tip';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { type Outfit } from '@/lib/hooks/use-outfits';
 import { useFamily } from '@/lib/hooks/use-family';
@@ -27,6 +30,8 @@ interface OutfitPreviewDialogProps {
 
 export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: OutfitPreviewDialogProps) {
   const t = useTranslations('outfitPreview');
+  const tc = useTranslations('common');
+  const tOccasions = useTranslations('suggest.occasions');
   const format = useFormatter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageKey, setImageKey] = useState(0); // Force image reload after rotation
@@ -64,49 +69,62 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
 
   if (!currentItem) return null;
 
+  const occasionLabel = tOccasions.has(outfit.occasion as never)
+    ? tOccasions(outfit.occasion as never)
+    : outfit.occasion;
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden">
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col overflow-hidden p-0 [&>button]:hidden">
         {/* Header - sticky */}
-        <div className="flex items-center justify-between p-4 pb-2 border-b flex-shrink-0">
-          <div>
-            <h2 className="text-lg font-semibold capitalize">{outfit.occasion}</h2>
-            <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex flex-shrink-0 items-center justify-between px-5 pb-3 pt-4">
+          <div className="min-w-0">
+            <DialogTitle className="pr-0 text-xl font-extrabold">{occasionLabel}</DialogTitle>
+            <div className="mt-0.5 flex items-center gap-2">
               {outfit.scheduled_for && (
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <CalendarDays className="h-3 w-3" />
+                  <CalendarDays className="h-3.5 w-3.5" strokeWidth={1.75} />
                   {format.dateTime(new Date(outfit.scheduled_for + 'T00:00:00'), { weekday: 'short', month: 'short', day: 'numeric' })}
                 </span>
               )}
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground" aria-live="polite">
                 {currentIndex + 1} / {items.length}
               </span>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full -mr-2">
-            <X className="h-5 w-5" />
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={onClose}
+            className="-mr-1 shrink-0"
+            aria-label={tc('close')}
+          >
+            <X className="h-5 w-5" strokeWidth={1.75} />
           </Button>
         </div>
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {/* Main image area */}
-          <div className="relative bg-muted">
-            <Link href={`/dashboard/wardrobe?item=${currentItem.id}`} className="block">
+          <div className="relative mx-5 rounded-tile bg-panel">
+            <Link
+              href={`/dashboard/wardrobe?item=${currentItem.id}`}
+              className="block rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
               {/* Image - smaller on mobile */}
-              <div className="relative aspect-square w-full max-h-[280px] sm:max-h-[350px]">
+              <div className="relative aspect-square max-h-[280px] w-full sm:max-h-[350px]">
                 {currentItem.image_url ? (
                   <Image
                     key={`${currentItem.id}-${imageKey}`}
                     src={currentItem.image_url}
                     alt={currentItem.name || currentItem.type}
                     fill
-                    className="object-contain"
+                    className="object-contain p-4"
                     sizes="(max-width: 512px) 100vw, 512px"
                     priority
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                     —
                   </div>
                 )}
@@ -117,29 +135,31 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
             {items.length > 1 && (
               <>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background/90 rounded-full"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 border-0 bg-background/90 shadow-sm hover:bg-background"
                   onClick={goToPrev}
+                  aria-label={tc('aria.previousImage')}
                 >
-                  <ChevronLeft className="h-6 w-6" />
+                  <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background/90 rounded-full"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 border-0 bg-background/90 shadow-sm hover:bg-background"
                   onClick={goToNext}
+                  aria-label={tc('aria.nextImage')}
                 >
-                  <ChevronRight className="h-6 w-6" />
+                  <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
                 </Button>
               </>
             )}
           </div>
 
           {/* Item details */}
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-wrap">
+          <div className="space-y-3 px-5 py-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="capitalize">
                   {currentItem.type}
                 </Badge>
@@ -149,32 +169,30 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
                   </Badge>
                 )}
                 {currentItem.primary_color && (
-                  <Badge
-                    variant="outline"
-                    className="capitalize"
-                    style={{
-                      borderColor: currentItem.primary_color,
-                      backgroundColor: `${currentItem.primary_color}20`,
-                    }}
-                  >
+                  <Badge variant="outline" className="gap-1.5 capitalize">
+                    <span
+                      aria-hidden
+                      className="h-2.5 w-2.5 rounded-full ring-1 ring-inset ring-black/10"
+                      style={{ backgroundColor: currentItem.primary_color }}
+                    />
                     {currentItem.primary_color}
                   </Badge>
                 )}
               </div>
               {/* Rotate buttons */}
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleRotate('ccw')}
                   disabled={rotateImage.isPending}
                   title={t('rotateLeft')}
-                  className="h-8 w-8"
+                  aria-label={t('rotateLeft')}
                 >
                   {rotateImage.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <RotateCcw className="h-4 w-4" />
+                    <RotateCcw className="h-4 w-4" strokeWidth={1.75} />
                   )}
                 </Button>
                 <Button
@@ -183,52 +201,55 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
                   onClick={() => handleRotate('cw')}
                   disabled={rotateImage.isPending}
                   title={t('rotateRight')}
-                  className="h-8 w-8"
+                  aria-label={t('rotateRight')}
                 >
                   {rotateImage.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <RotateCw className="h-4 w-4" />
+                    <RotateCw className="h-4 w-4" strokeWidth={1.75} />
                   )}
                 </Button>
               </div>
             </div>
             {currentItem.name && (
-              <p className="font-medium break-words">{currentItem.name}</p>
+              <p className="break-words font-bold">{currentItem.name}</p>
             )}
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 mt-1" asChild>
+            <Button variant="secondary" size="sm" asChild>
               <Link href={`/dashboard/wardrobe?item=${currentItem.id}`}>
-                <ExternalLink className="h-3 w-3" />
-                View item details
+                <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
+                {t('viewItemDetails')}
               </Link>
             </Button>
           </div>
 
           {/* Thumbnail strip */}
           {items.length > 1 && (
-            <div className="border-t p-3">
-              <div className="flex gap-2 overflow-x-auto">
+            <div className="border-t border-border px-5 py-3">
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 py-1">
                 {items.map((item, index) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => setCurrentIndex(index)}
-                    className={`relative w-14 h-14 rounded overflow-hidden flex-shrink-0 border-2 transition-colors ${
+                    aria-label={item.name || item.type}
+                    aria-current={index === currentIndex ? 'true' : undefined}
+                    className={cn(
+                      'relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[14px] bg-panel transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                       index === currentIndex
-                        ? 'border-primary'
-                        : 'border-transparent hover:border-muted-foreground/50'
-                    }`}
+                        ? 'ring-[2.5px] ring-inset ring-signature'
+                        : 'hover:ring-[1.5px] hover:ring-inset hover:ring-border'
+                    )}
                   >
                     {item.thumbnail_url ? (
                       <Image
                         src={item.thumbnail_url}
-                        alt={item.name || item.type}
+                        alt=""
                         fill
-                        className="object-cover"
+                        className="object-contain p-1"
                         sizes="56px"
                       />
                     ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                      <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
                         {item.type.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -240,53 +261,51 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
 
           {/* Outfit details section */}
           {(outfit.reasoning || outfit.highlights || outfit.style_notes) && (
-            <div className="border-t p-4 space-y-3">
+            <div className="space-y-3 border-t border-border px-5 py-4">
               {outfit.reasoning && (
-                <p className="font-medium text-foreground break-words">{outfit.reasoning}</p>
+                <p className="break-words font-semibold text-foreground">{outfit.reasoning}</p>
               )}
               {outfit.highlights && outfit.highlights.length > 0 && (
                 <ul className="space-y-1.5">
                   {outfit.highlights.map((highlight, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <span className="text-primary mt-0.5">•</span>
+                      <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-signature" />
                       <span>{highlight}</span>
                     </li>
                   ))}
                 </ul>
               )}
               {outfit.style_notes && (
-                <div className="p-3 bg-muted rounded-lg border">
-                  <p className="text-sm text-muted-foreground break-words">
-                    <span className="font-medium text-foreground">Tip:</span> {outfit.style_notes}
-                  </p>
-                </div>
+                <StinkyTip className="bg-panel">
+                  <span className="break-words">{outfit.style_notes}</span>
+                </StinkyTip>
               )}
             </div>
           )}
 
           {/* Family ratings section */}
           {isInFamily && (
-            <div className="border-t p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Family Ratings
+            <div className="space-y-3 border-t border-border px-5 py-4">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="flex items-center gap-2 text-[15px] font-bold">
+                  <Users className="h-4 w-4" strokeWidth={1.75} />
+                  {t('familyRatings')}
                   {outfit.family_rating_count != null && outfit.family_rating_count > 0 && (
-                    <span className="text-muted-foreground font-normal">
-                      ({outfit.family_rating_average?.toFixed(1)}{' '}
-                      <Star className="h-3 w-3 inline fill-yellow-400 text-yellow-400" /> avg)
+                    <span className="inline-flex items-center gap-1 text-sm font-normal text-muted-foreground">
+                      ({outfit.family_rating_average?.toFixed(1)}
+                      <Star className="h-3 w-3 fill-pop-amber text-pop-amber" />
+                      {t('avg')})
                     </span>
                   )}
                 </h3>
                 {canRate && !showRatingForm && !myRating && (
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="signature"
                     onClick={() => setShowRatingForm(true)}
-                    className="h-7 text-xs"
                   >
-                    <Star className="h-3 w-3 mr-1" />
-                    Rate
+                    <Star className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    {t('rate')}
                   </Button>
                 )}
               </div>
@@ -309,12 +328,12 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
 
               {(!outfit.family_ratings || outfit.family_ratings.length === 0) && !canRate && (
                 <p className="text-xs text-muted-foreground">
-                  No family ratings yet.
+                  {t('noFamilyRatings')}
                 </p>
               )}
               {(!outfit.family_ratings || outfit.family_ratings.length === 0) && canRate && !showRatingForm && !myRating && (
                 <p className="text-xs text-muted-foreground">
-                  No family ratings yet. Be the first to rate!
+                  {t('noFamilyRatingsBeFirst')}
                 </p>
               )}
             </div>
@@ -322,9 +341,9 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
         </div>
 
         {/* Close button at bottom - always visible */}
-        <div className="border-t p-3 flex-shrink-0">
-          <Button variant="outline" className="w-full" onClick={onClose}>
-            Close
+        <div className="flex-shrink-0 border-t border-border p-4">
+          <Button variant="secondary" className="w-full" onClick={onClose}>
+            {tc('close')}
           </Button>
         </div>
       </DialogContent>

@@ -99,21 +99,22 @@ export function ItemPicker({
   return (
     <div className="flex flex-col gap-2">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder={t('search')}
+          aria-label={t('search')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-9"
+          className="h-11 border-transparent bg-panel pl-10"
         />
       </div>
 
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className={cn('overflow-y-auto py-2 -mx-1 px-1', heightClass)}
+        className={cn('-mx-1 overflow-y-auto px-1 py-2', heightClass)}
       >
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 gap-x-2 gap-y-3 sm:grid-cols-4 md:grid-cols-5">
           {items.map((item) => {
             const isSelected = selectedIds.has(item.id);
             return (
@@ -121,41 +122,42 @@ export function ItemPicker({
                 key={item.id}
                 type="button"
                 onClick={() => onToggle(item)}
-                className={cn(
-                  'relative aspect-square rounded-lg overflow-hidden border-2 transition-all',
-                  isSelected
-                    ? 'border-primary ring-2 ring-primary/20'
-                    : 'border-border hover:border-muted-foreground/50'
-                )}
+                aria-pressed={isSelected}
+                className="group min-w-0 rounded-tile text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {item.thumbnail_url || item.image_url ? (
-                  <Image
-                    src={(item.thumbnail_url || item.image_url)!}
-                    alt={item.name || item.type}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 33vw, 20vw"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <span className="text-xs text-muted-foreground">
-                      {item.type}
-                    </span>
-                  </div>
-                )}
-                {isSelected && (
-                  <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
-                    <div className="rounded-full bg-primary p-1.5 shadow-lg">
-                      <Check className="h-4 w-4 text-primary-foreground" />
+                <div
+                  className={cn(
+                    'relative aspect-square overflow-hidden rounded-tile bg-panel transition-shadow duration-150',
+                    isSelected
+                      ? 'ring-[2.5px] ring-inset ring-signature'
+                      : 'group-hover:ring-[1.5px] group-hover:ring-inset group-hover:ring-border'
+                  )}
+                >
+                  {item.thumbnail_url || item.image_url ? (
+                    <Image
+                      src={(item.thumbnail_url || item.image_url)!}
+                      alt={item.name || item.type}
+                      fill
+                      className="object-contain p-2"
+                      sizes="(max-width: 640px) 33vw, 20vw"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <span className="text-xs text-muted-foreground">
+                        {item.type}
+                      </span>
                     </div>
-                  </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
-                  <span className="text-[10px] sm:text-xs text-white font-medium truncate block">
-                    {item.name ?? item.type}
-                  </span>
+                  )}
+                  {isSelected && (
+                    <div className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-signature text-signature-foreground">
+                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    </div>
+                  )}
                 </div>
+                <span className="mt-1 block truncate px-0.5 text-xs font-semibold">
+                  {item.name ?? item.type}
+                </span>
               </button>
             );
           })}
@@ -169,7 +171,7 @@ export function ItemPicker({
 
         {isFetching && !isLoading && (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
             <span className="text-xs text-muted-foreground">
               {t('loadingMore')}
             </span>
@@ -177,7 +179,7 @@ export function ItemPicker({
         )}
 
         {!isLoading && items.length === 0 && (
-          <div className="text-center text-muted-foreground py-8">
+          <div className="py-8 text-center text-sm text-muted-foreground">
             {debouncedSearch ? t('empty') : (emptyMessage ?? t('empty'))}
           </div>
         )}

@@ -28,7 +28,7 @@ interface CloneToLookbookDialogProps {
 }
 
 function defaultCloneName(occasion: string, locale: string): string {
-  const occasionTitle = occasion.charAt(0).toUpperCase() + occasion.slice(1);
+  const occasionTitle = occasion.charAt(0).toLocaleUpperCase() + occasion.slice(1);
   return `${occasionTitle} — ${formatDateLocalized(new Date(), 'short', locale)}`;
 }
 
@@ -40,8 +40,16 @@ export function CloneToLookbookDialog({
   onSuccess,
 }: CloneToLookbookDialogProps) {
   const t = useTranslations('cloneToLookbook');
+  const tOccasions = useTranslations('suggest.occasions');
   const locale = useLocale();
-  const [name, setName] = useState(() => defaultCloneName(sourceOccasion, locale));
+  const [name, setName] = useState(() =>
+    defaultCloneName(
+      tOccasions.has(sourceOccasion as never)
+        ? tOccasions(sourceOccasion as never)
+        : sourceOccasion,
+      locale
+    )
+  );
   const clone = useCloneToLookbook(sourceOutfitId);
 
   const handleConfirm = async () => {
@@ -80,8 +88,8 @@ export function CloneToLookbookDialog({
             autoFocus
           />
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={clone.isPending}>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="secondary" onClick={onClose} disabled={clone.isPending}>
             {t('cancel')}
           </Button>
           <Button

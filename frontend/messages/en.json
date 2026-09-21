@@ -204,7 +204,8 @@
       "typePlaceholder": "Select type...",
       "addButton": "Add to Wardrobe",
       "addedToast": "Item added to your wardrobe!",
-      "addError": "Failed to upload item. Please try again."
+      "addError": "Failed to upload item. Please try again.",
+      "previewAlt": "Item preview"
     },
     "complete": {
       "title": "You're All Set!",
@@ -212,7 +213,8 @@
       "finish": "Go to Dashboard",
       "finishing": "Finishing...",
       "finishError": "Failed to complete setup. Please try again."
-    }
+    },
+    "stepOf": "Step {current} of {total}"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -434,7 +436,8 @@
         "editItem": "Edit item",
         "close": "Close",
         "setAsPrimary": "Set as primary",
-        "deleteImage": "Delete image"
+        "deleteImage": "Delete image",
+        "label": "Item actions"
       },
       "analyzing": "AI analyzing...",
       "form": {
@@ -475,7 +478,8 @@
         "avgPerMonth": "Avg/month",
         "usualOccasion": "Usual occasion",
         "lastSixMonths": "Last 6 months",
-        "timelineToggle": "Timeline ({count} events)"
+        "timelineToggle": "Timeline ({count} events)",
+        "monthTooltip": "{month}: {count, plural, one {# wear} other {# wears}}"
       },
       "ai": {
         "title": "AI analysis",
@@ -508,7 +512,9 @@
         "imageReplaced": "Image replaced",
         "imageReplaceFailed": "Could not replace the image"
       },
-      "wornAgo": "{days, plural, =0 {Worn today} =1 {Worn yesterday} other {Worn # days ago}}"
+      "wornAgo": "{days, plural, =0 {Worn today} =1 {Worn yesterday} other {Worn # days ago}}",
+      "imageN": "Image {n}",
+      "addImage": "Add image"
     },
     "bulk": {
       "deleted": "{count, plural, one {Deleted # item} other {Deleted # items}}",
@@ -574,7 +580,9 @@
       "closeConfirmMultiple": "You have {count, plural, one {# image} other {# images}} selected that will be lost if you close.",
       "keepEditing": "Keep editing",
       "discard": "Discard",
-      "previewAlt": "Preview"
+      "previewAlt": "Preview",
+      "removePhoto": "Remove photo",
+      "removeFile": "Remove {name}"
     },
     "searchCountPlaceholder": "Search your {count, plural, one {# item} other {# items}}",
     "moreFilters": "More filters",
@@ -1359,7 +1367,8 @@
     "noItemsInWardrobe": "There are no pieces in your wardrobe yet",
     "showingAll": "Showing all {total} pieces",
     "skip": "Skip",
-    "submitWithCount": "Submit ({count})"
+    "submitWithCount": "Submit ({count})",
+    "starLabel": "{count, plural, one {# star} other {# stars}}"
   },
   "studio": {
     "aiAssistFallbackOccasion": "Friday brunch",
@@ -1436,7 +1445,8 @@
     "firstPage": "First page",
     "prevPage": "Previous page",
     "nextPage": "Next page",
-    "lastPage": "Last page"
+    "lastPage": "Last page",
+    "pagination": "Pagination"
   },
   "outfitPreview": {
     "rotateLeft": "Rotate left",
@@ -1445,7 +1455,13 @@
       "rotated": "Image rotated",
       "rotateFailed": "Could not rotate the image"
     },
-    "occasionSuffix": "outfit"
+    "occasionSuffix": "outfit",
+    "viewItemDetails": "View item details",
+    "familyRatings": "Family ratings",
+    "avg": "avg",
+    "rate": "Rate",
+    "noFamilyRatings": "No family ratings yet.",
+    "noFamilyRatingsBeFirst": "No family ratings yet. Be the first to rate!"
   },
   "outfitHistoryCard": {
     "toast": {
@@ -1453,7 +1469,31 @@
       "acceptFailed": "Could not save the outfit",
       "rejected": "Understood — we'll try again",
       "rejectFailed": "Could not send the feedback"
-    }
+    },
+    "status": {
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "viewed": "Viewed",
+      "sent": "Sent",
+      "pending": "Pending",
+      "expired": "Expired"
+    },
+    "source": {
+      "scheduled": "Scheduled",
+      "on_demand": "On demand",
+      "manual": "Manual",
+      "pairing": "Pairing"
+    },
+    "didntWear": "Didn't wear this",
+    "woreInstead": "Wore instead:",
+    "family": "Family:",
+    "reject": "Reject",
+    "accept": "Accept",
+    "update": "Update rating",
+    "rate": "Rate",
+    "item": "Item",
+    "viewItemDetails": "View item details",
+    "preview": "Preview outfit"
   },
   "familyRatings": {
     "toast": {
@@ -1496,7 +1536,8 @@
       "multiBottoms": "More than one bottom selected.",
       "noFootwear": "No footwear selected."
     },
-    "aiThinking": "Stinky is thinking..."
+    "aiThinking": "Stinky is thinking...",
+    "required": "required"
   },
   "itemPicker": {
     "searchPlaceholder": "Search your wardrobe...",
@@ -1556,7 +1597,13 @@
     "undated": "Undated",
     "seeAll": "See all",
     "notWornYet": "This look has not been worn yet. Tap \"Wear today\" to log it.",
-    "titleFallback": "{occasion} outfit"
+    "titleFallback": "{occasion} outfit",
+    "source": {
+      "scheduled": "Scheduled",
+      "on_demand": "On demand",
+      "manual": "Studio",
+      "pairing": "Pairing"
+    }
   },
   "familyFeed": {
     "title": "Family feed",
@@ -1596,7 +1643,12 @@
     "toast": {
       "deleted": "Look deleted",
       "deleteFailed": "Could not delete the look"
-    }
+    },
+    "builtAround": "Built around",
+    "updateRating": "Update rating",
+    "ratePairing": "Rate this pairing",
+    "delete": "Delete pairing",
+    "preview": "Preview outfit"
   },
   "outfitNew": {
     "title": "New outfit",
@@ -1861,5 +1913,71 @@
     "belt": "Belt",
     "bag": "Bag",
     "accessories": "Accessories"
+  },
+  "outfitCard": {
+    "badgeReplacement": "Replacement",
+    "badgeWorn": "Worn",
+    "badgeStudio": "Studio",
+    "badgePairing": "Pairing",
+    "badgeAi": "AI",
+    "lookbookTemplate": "Lookbook template",
+    "titleFallback": "{occasion} outfit"
+  },
+  "outfitCalendar": {
+    "scheduled": "Scheduled",
+    "onDemand": "On-demand",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
+  "imageLightbox": {
+    "openInWardrobe": "Open in wardrobe",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out"
+  },
+  "legal": {
+    "metaTitle": "Privacy and terms · Miaurmario",
+    "metaDescription": "What data Miaurmario keeps, why, and how to delete it.",
+    "eyebrow": "Legal",
+    "title": "Privacy and terms",
+    "updated": "Last updated: {date}",
+    "updatedDate": "September 21, 2026",
+    "back": "Back to Miaurmario",
+    "sections": {
+      "who": {
+        "title": "Who is behind it",
+        "p1": "Miaurmario is a personal project by Andrei Pop. For anything related to your data, write to {contact}."
+      },
+      "data": {
+        "title": "What data we keep",
+        "p1": "Your email (to sign in with a magic link), your username and, if you add them, your display name, bio, approximate location and style preferences.",
+        "p2": "Photos of your clothes, their tags, and the outfits, ratings and history you create in the app.",
+        "p3": "If you connect Spotify: what you're listening to, your recent plays and your top artists, only to infer the \"mood\" used to suggest looks. We don't store your full history.",
+        "p4": "If you connect Pinterest: the boards and pins you choose to import, read-only. We never post anything to your account.",
+        "p5": "Spotify and Pinterest access tokens are stored encrypted, and you can revoke them by disconnecting the integration in Settings."
+      },
+      "purpose": {
+        "title": "What we use it for",
+        "p1": "Only to make the app work: showing your wardrobe, suggesting outfits, your local weather and the notifications you turn on.",
+        "p2": "We don't sell or hand over your data, we don't show ads and we don't use it to train models."
+      },
+      "sharing": {
+        "title": "Who it's shared with",
+        "p1": "AI provider (OpenAI-compatible API): receives the clothing photos and descriptions needed to tag them and suggest looks.",
+        "p2": "Resend: sends the sign-in emails. Cloudflare: protects and serves the website. Open-Meteo: weather data for your approximate location.",
+        "p3": "Spotify and Pinterest: only if you connect your account, and only to read the data described above."
+      },
+      "retention": {
+        "title": "Where and for how long",
+        "p1": "Data is stored on our own server in the European Union for as long as you have an account. If you delete your account or ask us to, we delete your data and photos within 30 days."
+      },
+      "rights": {
+        "title": "Your rights",
+        "p1": "You can request access to, correction, export or deletion of your data, or object to its processing, by writing to {contact}. You can also file a complaint with the Spanish Data Protection Agency (aepd.es)."
+      },
+      "terms": {
+        "title": "Terms of use",
+        "p1": "Miaurmario is provided as is, without warranties, and may change or stop being available. Only upload photos you have the right to use, and don't use the app for anything illegal or that bothers other people."
+      }
+    }
   }
 }

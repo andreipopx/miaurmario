@@ -11,7 +11,6 @@ import {
   MapPin,
   Palette,
   Camera,
-  ChevronRight,
   ChevronLeft,
   Check,
   ArrowRight,
@@ -37,18 +36,51 @@ import { api, setAccessToken } from '@/lib/api';
 import { CLOTHING_COLORS, CLOTHING_TYPES, StyleProfile } from '@/lib/types';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { Wordmark } from '@/components/brand/wordmark';
+import { Stinky } from '@/components/stinky/stinky';
+import type { StinkyStateInput } from '@/components/stinky/stinky-states';
+import { cn } from '@/lib/utils';
 
 const STEPS = [
-  { id: 'welcome', title: 'Welcome', icon: Shirt },
-  { id: 'family', title: 'Family', icon: Users },
-  { id: 'location', title: 'Location', icon: MapPin },
-  { id: 'preferences', title: 'Style', icon: Palette },
-  { id: 'upload', title: 'First Item', icon: Camera },
-];
+  { id: 'welcome', icon: Shirt },
+  { id: 'family', icon: Users },
+  { id: 'location', icon: MapPin },
+  { id: 'preferences', icon: Palette },
+  { id: 'upload', icon: Camera },
+] as const;
+
+/** Stinky in a soft-pink circle — the friendly header used across onboarding. */
+function StinkyHeader({ state = 'wave', size = 128 }: { state?: StinkyStateInput; size?: number }) {
+  return (
+    <div
+      className="mx-auto flex items-center justify-center rounded-full bg-signature-soft"
+      style={{ width: size, height: size }}
+    >
+      <Stinky state={state} size={Math.round(size * 0.86)} label="" />
+    </div>
+  );
+}
+
+function StepHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="text-center">
+      <h2 className="text-2xl font-extrabold tracking-[-0.02em] sm:text-[28px]">{title}</h2>
+      <p className="mx-auto mt-1.5 max-w-md text-[15px] leading-snug text-muted-foreground">{subtitle}</p>
+    </div>
+  );
+}
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
+  const t = useTranslations('onboarding');
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
+    <div
+      className="mb-6 flex items-center justify-center gap-1.5"
+      role="progressbar"
+      aria-valuemin={1}
+      aria-valuemax={STEPS.length}
+      aria-valuenow={currentStep + 1}
+      aria-label={t('stepOf', { current: currentStep + 1, total: STEPS.length })}
+    >
       {STEPS.map((step, index) => {
         const Icon = step.icon;
         const isComplete = index < currentStep;
@@ -57,21 +89,29 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
         return (
           <div key={step.id} className="flex items-center">
             <div
-              className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
-                isComplete
+              aria-hidden
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200',
+                isCurrent
+                  ? 'bg-signature text-signature-foreground'
+                  : isComplete
                   ? 'bg-primary text-primary-foreground'
-                  : isCurrent
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}
+                  : 'bg-panel text-muted-foreground'
+              )}
             >
-              {isComplete ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+              {isComplete ? (
+                <Check className="h-[18px] w-[18px]" strokeWidth={2.5} />
+              ) : (
+                <Icon className="h-[18px] w-[18px]" strokeWidth={isCurrent ? 2 : 1.75} />
+              )}
             </div>
             {index < STEPS.length - 1 && (
               <div
-                className={`w-8 h-1 mx-1 rounded ${
-                  index < currentStep ? 'bg-primary' : 'bg-muted'
-                }`}
+                aria-hidden
+                className={cn(
+                  'mx-0.5 h-1 w-4 rounded-full sm:mx-1 sm:w-8',
+                  index < currentStep ? 'bg-primary' : 'bg-panel'
+                )}
               />
             )}
           </div>
@@ -85,55 +125,42 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
   // Use unified auth hook to get user name (works in both auth modes)
   const { user } = useAuth();
   const t = useTranslations('onboarding');
+  const tCommon = useTranslations('common');
   const firstName = user?.display_name ? user.display_name.split(' ')[0] : '';
 
+  const features = [
+    { icon: Camera, color: 'bg-pop-amber', title: t('step1Title'), desc: t('step1Desc') },
+    { icon: Palette, color: 'bg-pop-sky', title: t('step2Title'), desc: t('step2Desc') },
+    { icon: Users, color: 'bg-pop-mint', title: t('step3Title'), desc: t('step3Desc') },
+  ];
+
   return (
-    <div className="text-center space-y-6">
-      <div className="flex justify-center">
-        <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
-          <Shirt className="w-12 h-12 text-primary" />
-        </div>
-      </div>
+    <div className="space-y-6 text-center">
+      <StinkyHeader state="wave" size={144} />
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {t('welcomeTitle', { name: firstName || 'friend' })}
+        <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] sm:text-3xl">
+          {t('welcomeTitle', { name: firstName || tCommon('friend') })}
         </h1>
-        <p className="text-muted-foreground mt-2 text-lg">
+        <p className="mx-auto mt-2 max-w-md text-[15px] leading-snug text-muted-foreground sm:text-base">
           {t('welcomeSubtitle')}
         </p>
       </div>
-      <div className="grid gap-4 text-left max-w-md mx-auto">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-            <Camera className="w-4 h-4 text-primary" />
+      <div className="mx-auto grid max-w-md gap-2 text-left">
+        {features.map(({ icon: Icon, color, title, desc }) => (
+          <div key={title} className="flex items-start gap-3 rounded-quick bg-panel p-3">
+            <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-pop-foreground', color)}>
+              <Icon className="h-5 w-5" strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="font-bold">{title}</p>
+              <p className="text-sm text-muted-foreground">{desc}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-medium">{t('step1Title')}</p>
-            <p className="text-sm text-muted-foreground">{t('step1Desc')}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-            <Palette className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <p className="font-medium">{t('step2Title')}</p>
-            <p className="text-sm text-muted-foreground">{t('step2Desc')}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-            <Users className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <p className="font-medium">{t('step3Title')}</p>
-            <p className="text-sm text-muted-foreground">{t('step3Desc')}</p>
-          </div>
-        </div>
+        ))}
       </div>
-      <Button size="lg" onClick={onNext} className="min-h-[44px]">
+      <Button size="lg" onClick={onNext} className="w-full max-w-md">
         {t('getStarted')}
-        <ArrowRight className="ml-2 w-5 h-5" />
+        <ArrowRight className="h-5 w-5" />
       </Button>
     </div>
   );
@@ -173,24 +200,26 @@ function FamilyStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">{t('title')}</h2>
-        <p className="text-muted-foreground mt-1">
-          {t('subtitle')}
-        </p>
-      </div>
+      <StepHeader title={t('title')} subtitle={t('subtitle')} />
 
-      <div className="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
+      <div className="mx-auto grid max-w-2xl gap-3 md:grid-cols-2">
         <Card
-          className={`cursor-pointer transition-all ${
-            mode === 'create' ? 'ring-2 ring-primary' : 'hover:border-primary/50'
-          }`}
-          onClick={() => setMode('create')}
+          className={cn(
+            'transition-colors duration-150',
+            mode === 'create' ? 'border-signature bg-signature-soft ring-1 ring-signature' : 'border-0 bg-panel'
+          )}
         >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">{t('createCard')}</CardTitle>
-            <CardDescription>{t('createDesc')}</CardDescription>
-          </CardHeader>
+          <button
+            type="button"
+            onClick={() => setMode('create')}
+            aria-expanded={mode === 'create'}
+            className="block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">{t('createCard')}</CardTitle>
+              <CardDescription>{t('createDesc')}</CardDescription>
+            </CardHeader>
+          </button>
           {mode === 'create' && (
             <CardContent>
               <div className="space-y-4">
@@ -208,7 +237,7 @@ function FamilyStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
                   onClick={handleCreate}
                   disabled={!familyName.trim() || createFamily.isPending}
                 >
-                  {createFamily.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {createFamily.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   {t('createButton')}
                 </Button>
               </div>
@@ -217,15 +246,22 @@ function FamilyStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
         </Card>
 
         <Card
-          className={`cursor-pointer transition-all ${
-            mode === 'join' ? 'ring-2 ring-primary' : 'hover:border-primary/50'
-          }`}
-          onClick={() => setMode('join')}
+          className={cn(
+            'transition-colors duration-150',
+            mode === 'join' ? 'border-signature bg-signature-soft ring-1 ring-signature' : 'border-0 bg-panel'
+          )}
         >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">{t('joinCard')}</CardTitle>
-            <CardDescription>{t('joinDesc')}</CardDescription>
-          </CardHeader>
+          <button
+            type="button"
+            onClick={() => setMode('join')}
+            aria-expanded={mode === 'join'}
+            className="block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">{t('joinCard')}</CardTitle>
+              <CardDescription>{t('joinDesc')}</CardDescription>
+            </CardHeader>
+          </button>
           {mode === 'join' && (
             <CardContent>
               <div className="space-y-4">
@@ -236,7 +272,7 @@ function FamilyStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
                     placeholder={t('inviteCodePlaceholder')}
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    className="font-mono uppercase"
+                    autoCapitalize="characters"
                   />
                 </div>
                 <Button
@@ -244,11 +280,11 @@ function FamilyStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
                   onClick={handleJoin}
                   disabled={!inviteCode.trim() || joinFamily.isPending}
                 >
-                  {joinFamily.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {joinFamily.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   {t('joinButton')}
                 </Button>
                 {joinFamily.isError && (
-                  <p className="text-sm text-destructive">{t('invalidCodeShort')}</p>
+                  <p role="alert" className="text-sm font-semibold text-destructive">{t('invalidCodeShort')}</p>
                 )}
               </div>
             </CardContent>
@@ -352,41 +388,33 @@ function LocationStep({
   };
 
   return (
-    <div className="space-y-6 max-w-md mx-auto">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">{t('title')}</h2>
-        <p className="text-muted-foreground mt-1">
-          {t('subtitle')}
-        </p>
-      </div>
+    <div className="mx-auto max-w-md space-y-6">
+      <StepHeader title={t('title')} subtitle={t('subtitle')} />
 
-      <Card>
-        <CardContent className="pt-6 space-y-4">
+      <Card className="border-0 bg-panel">
+        <CardContent className="space-y-4 p-5 sm:p-6">
           <Button
-            variant="outline"
+            variant="signature"
             className="w-full"
             onClick={detectLocation}
             disabled={detecting}
           >
             {detecting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <MapPin className="mr-2 h-4 w-4" />
+              <MapPin className="h-4 w-4" strokeWidth={1.75} />
             )}
             {t('detectButton')}
           </Button>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">{t('orManual')}</span>
-            </div>
+          <div className="flex items-center gap-3" aria-hidden>
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs font-semibold text-muted-foreground">{t('orManual')}</span>
+            <span className="h-px flex-1 bg-border" />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">{t('cityLabel')}</Label>
+            <Label htmlFor="location" className="font-bold">{t('cityLabel')}</Label>
             <Input
               id="location"
               placeholder={t('cityPlaceholder')}
@@ -400,7 +428,7 @@ function LocationStep({
             onClick={handleContinue}
             disabled={!locationName.trim() || saving}
           >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('continue')}
           </Button>
         </CardContent>
@@ -468,15 +496,10 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
   };
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">{t('title')}</h2>
-        <p className="text-muted-foreground mt-1">
-          {t('subtitle')}
-        </p>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-4">
+      <StepHeader title={t('title')} subtitle={t('subtitle')} />
 
-      <Card>
+      <Card className="border-0 bg-panel">
         <CardHeader>
           <CardTitle className="text-lg">{t('favoritesTitle')}</CardTitle>
           <CardDescription>{t('favoritesDesc')}</CardDescription>
@@ -490,17 +513,21 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
                   key={color.value}
                   type="button"
                   onClick={() => toggleColor(color.value, 'favorite')}
-                  className={`w-10 h-10 rounded-full border-2 transition-all ${
+                  aria-pressed={isSelected}
+                  aria-label={color.name}
+                  className={cn(
+                    'flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-inset ring-black/10 transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:ring-white/15',
                     isSelected
-                      ? 'border-primary ring-2 ring-primary/30 scale-110'
-                      : 'border-muted-foreground/20 hover:border-muted-foreground/40'
-                  }`}
+                      ? 'scale-105 outline outline-[2.5px] outline-offset-2 outline-signature'
+                      : 'hover:scale-105'
+                  )}
                   style={{ backgroundColor: color.hex }}
                   title={color.name}
                 >
                   {isSelected && (
                     <Check
-                      className={`h-5 w-5 mx-auto ${
+                      strokeWidth={2.5}
+                      className={`mx-auto h-5 w-5 ${
                         ['white', 'yellow', 'beige'].includes(color.value)
                           ? 'text-black'
                           : 'text-white'
@@ -514,7 +541,7 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-0 bg-panel">
         <CardHeader>
           <CardTitle className="text-lg">{t('avoidTitle')}</CardTitle>
           <CardDescription>{t('avoidDesc')}</CardDescription>
@@ -528,11 +555,14 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
                   key={color.value}
                   type="button"
                   onClick={() => toggleColor(color.value, 'avoid')}
-                  className={`w-10 h-10 rounded-full border-2 transition-all ${
+                  aria-pressed={isSelected}
+                  aria-label={color.name}
+                  className={cn(
+                    'flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-inset ring-black/10 transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:ring-white/15',
                     isSelected
-                      ? 'border-destructive ring-2 ring-destructive/30 scale-110'
-                      : 'border-muted-foreground/20 hover:border-muted-foreground/40'
-                  }`}
+                      ? 'scale-105 outline outline-[2.5px] outline-offset-2 outline-destructive'
+                      : 'hover:scale-105'
+                  )}
                   style={{ backgroundColor: color.hex }}
                   title={color.name}
                 >
@@ -554,7 +584,7 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-0 bg-panel">
         <CardHeader>
           <CardTitle className="text-lg">{t('profileTitle')}</CardTitle>
           <CardDescription>{t('profileDesc')}</CardDescription>
@@ -562,11 +592,12 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
         <CardContent className="space-y-6">
           {Object.entries(styleProfile).map(([key, value]) => (
             <div key={key} className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>{t(`style.${key}` as 'style.casual' | 'style.formal' | 'style.sporty' | 'style.minimalist' | 'style.bold')}</Label>
-                <span className="text-sm text-muted-foreground">{value}%</span>
+              <div className="flex items-center justify-between">
+                <Label id={`style-${key}`} className="font-bold">{t(`style.${key}` as 'style.casual' | 'style.formal' | 'style.sporty' | 'style.minimalist' | 'style.bold')}</Label>
+                <span className="text-sm font-semibold tabular-nums text-muted-foreground">{value}%</span>
               </div>
               <Slider
+                aria-labelledby={`style-${key}`}
                 value={[value]}
                 onValueChange={(vals) =>
                   setStyleProfile((prev) => ({ ...prev, [key]: vals[0] }))
@@ -580,12 +611,12 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
         </CardContent>
       </Card>
 
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between gap-3 pt-2">
         <Button variant="ghost" onClick={onSkip}>
           {tCommon('skip')}
         </Button>
         <Button onClick={handleContinue} disabled={saving}>
-          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           {t('continue')}
         </Button>
       </div>
@@ -647,28 +678,23 @@ function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
   };
 
   return (
-    <div className="space-y-6 max-w-md mx-auto">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">{t('title')}</h2>
-        <p className="text-muted-foreground mt-1">
-          {t('subtitle')}
-        </p>
-      </div>
+    <div className="mx-auto max-w-md space-y-6">
+      <StepHeader title={t('title')} subtitle={t('subtitle')} />
 
-      <Card>
-        <CardContent className="pt-6 space-y-4">
+      <Card className="border-0 bg-transparent">
+        <CardContent className="space-y-4 p-0 sm:p-0">
           {preview ? (
             <div className="space-y-4">
-              <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+              <div className="relative aspect-square overflow-hidden rounded-tile bg-panel">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={preview}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
+                  alt={t('previewAlt')}
+                  className="h-full w-full object-contain p-4"
                 />
               </div>
               <Button
-                variant="outline"
+                variant="secondary"
                 className="w-full"
                 onClick={clearFile}
               >
@@ -676,15 +702,17 @@ function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
               </Button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Camera className="w-12 h-12 text-muted-foreground mb-4" />
-                <p className="mb-2 text-sm font-medium">{t('clickToUpload')}</p>
+            <label className="flex aspect-square w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-panel transition-colors hover:bg-accent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+              <div className="flex flex-col items-center justify-center px-6 pb-6 pt-5 text-center">
+                <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-signature text-signature-foreground">
+                  <Camera className="h-7 w-7" strokeWidth={1.75} />
+                </span>
+                <p className="mb-1 text-[15px] font-bold">{t('clickToUpload')}</p>
                 <p className="text-xs text-muted-foreground">{t('acceptedFormats')}</p>
               </div>
               <input
                 type="file"
-                className="hidden"
+                className="sr-only"
                 accept="image/*"
                 capture="environment"
                 onChange={handleFileChange}
@@ -694,9 +722,9 @@ function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
 
           {file && (
             <div className="space-y-2">
-              <Label htmlFor="item-type">{t('typeLabel')}</Label>
+              <Label htmlFor="item-type" className="font-bold">{t('typeLabel')}</Label>
               <Select value={itemType} onValueChange={setItemType}>
-                <SelectTrigger>
+                <SelectTrigger id="item-type">
                   <SelectValue placeholder={t('typePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -715,7 +743,7 @@ function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
             onClick={handleUpload}
             disabled={!file || !itemType || createItem.isPending}
           >
-            {createItem.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {createItem.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('addButton')}
           </Button>
         </CardContent>
@@ -733,28 +761,24 @@ function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
 function CompleteStep({ onFinish, completing }: { onFinish: () => void; completing: boolean }) {
   const t = useTranslations('onboarding.complete');
   return (
-    <div className="text-center space-y-6">
-      <div className="flex justify-center">
-        <div className="w-24 h-24 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-          <Check className="w-12 h-12 text-green-600 dark:text-green-400" />
-        </div>
-      </div>
+    <div className="space-y-6 text-center">
+      <StinkyHeader state="happy" size={144} />
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="text-muted-foreground mt-2 text-lg">
+        <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] sm:text-3xl">{t('title')}</h1>
+        <p className="mx-auto mt-2 max-w-md text-[15px] leading-snug text-muted-foreground sm:text-base">
           {t('subtitle')}
         </p>
       </div>
-      <Button size="lg" onClick={onFinish} disabled={completing}>
+      <Button size="lg" onClick={onFinish} disabled={completing} className="w-full max-w-md">
         {completing ? (
           <>
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" />
             {t('finishing')}
           </>
         ) : (
           <>
             {t('finish')}
-            <ArrowRight className="ml-2 w-5 h-5" />
+            <ArrowRight className="h-5 w-5" />
           </>
         )}
       </Button>
@@ -824,21 +848,16 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top-right utility strip */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
+      {/* Top bar: wordmark + language */}
+      <div className="mx-auto flex max-w-4xl items-center justify-between px-4 pt-5 sm:px-6 sm:pt-8">
+        <Wordmark className="text-[26px]" />
         <LanguageSwitcher variant="compact" />
       </div>
 
-      {/* Editorial masthead */}
-      <div className="pt-8 sm:pt-12 pb-6 px-4 text-center">
-        <p className="font-display italic font-black text-lg text-foreground">miaurmario</p>
-        <div className="h-px w-12 bg-gold mx-auto mt-3" />
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <div className="mx-auto max-w-4xl px-4 pb-16 pt-8 sm:px-6 sm:pt-12">
         {currentStep < STEPS.length && <StepIndicator currentStep={currentStep} />}
 
-        <div className="py-8 sm:py-12">
+        <div className="py-4 sm:py-8">
           {currentStep === 0 && <WelcomeStep onNext={nextStep} />}
           {currentStep === 1 && <FamilyStep onNext={nextStep} onSkip={nextStep} />}
           {currentStep === 2 && (
@@ -854,15 +873,11 @@ export default function OnboardingPage() {
 
         {/* Navigation */}
         {currentStep > 0 && currentStep < STEPS.length && (
-          <div className="flex justify-center mt-8">
-            <button
-              type="button"
-              onClick={prevStep}
-              className="label-editorial link-editorial text-muted-foreground hover:text-primary flex items-center gap-2"
-            >
-              <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
+          <div className="mt-4 flex justify-center">
+            <Button variant="ghost" onClick={prevStep} className="text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
               {tCommon('back')}
-            </button>
+            </Button>
           </div>
         )}
       </div>

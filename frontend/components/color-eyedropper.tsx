@@ -258,12 +258,13 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
       ) : (
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="icon"
           onClick={() => setOpen(true)}
           title={t('buttonTitle')}
+          aria-label={t('buttonTitle')}
         >
-          <Pipette className="h-4 w-4" />
+          <Pipette className="h-4 w-4" strokeWidth={1.75} />
         </Button>
       )}
 
@@ -271,7 +272,9 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Pipette className="h-5 w-5" />
+              <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pop-sky text-pop-foreground">
+                <Pipette className="h-4 w-4" strokeWidth={1.75} />
+              </span>
               {t('dialogTitle')}
             </DialogTitle>
           </DialogHeader>
@@ -281,7 +284,7 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
               {t('instructions')}
             </p>
 
-            <div className="relative flex justify-center bg-muted rounded-lg p-2 min-h-[200px]">
+            <div className="relative flex min-h-[200px] justify-center rounded-tile bg-panel p-3">
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -289,15 +292,15 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
               )}
 
               {error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-destructive">
-                  <AlertCircle className="h-8 w-8" />
-                  <span className="text-sm">{error}</span>
+                <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-destructive">
+                  <AlertCircle className="h-8 w-8" strokeWidth={1.75} />
+                  <span className="text-sm font-medium">{error}</span>
                 </div>
               )}
 
               <canvas
                 ref={canvasRef}
-                className={`cursor-crosshair rounded max-w-full ${isLoading || error ? 'invisible' : ''}`}
+                className={`max-w-full cursor-crosshair rounded-[14px] ${isLoading || error ? 'invisible' : ''}`}
                 onMouseMove={handleCanvasMove}
                 onMouseLeave={handleCanvasLeave}
                 onClick={handleCanvasClick}
@@ -306,55 +309,54 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
               {/* Hover preview */}
               {!isLoading && !error && cursorPos && hoverColor && (
                 <div
-                  className="absolute pointer-events-none z-10 flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-lg border"
+                  className="glass-dock pointer-events-none absolute z-10 flex items-center gap-2 rounded-full py-1 pl-1 pr-3"
                   style={{
                     left: Math.min(cursorPos.x + 20, 400),
                     top: Math.max(cursorPos.y - 30, 10),
                   }}
                 >
                   <div
-                    className="w-6 h-6 rounded border shadow-inner"
+                    className="h-6 w-6 rounded-full ring-1 ring-inset ring-black/10"
                     style={{ backgroundColor: hoverColor }}
                   />
-                  <span className="text-xs font-mono">{hoverColor}</span>
+                  <span className="text-xs font-semibold tabular-nums">{hoverColor}</span>
                 </div>
               )}
             </div>
 
             {/* Selected color display */}
             {pickedColor && matchedColor && (
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-panel p-3">
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col items-center gap-1">
                     <div
-                      className="w-10 h-10 rounded border shadow-inner"
+                      className="h-10 w-10 rounded-full ring-1 ring-inset ring-black/10"
                       style={{ backgroundColor: pickedColor }}
                     />
                     <span className="text-xs text-muted-foreground">{t('pickedLabel')}</span>
                   </div>
-                  <div className="text-muted-foreground">&rarr;</div>
+                  <div aria-hidden className="text-muted-foreground">&rarr;</div>
                   <div className="flex flex-col items-center gap-1">
                     <div
-                      className="w-10 h-10 rounded border shadow-inner"
+                      className="h-10 w-10 rounded-full ring-1 ring-inset ring-black/10"
                       style={{ backgroundColor: matchedColor.hex }}
                     />
-                    <span className="text-xs font-medium">{matchedColor.name}</span>
+                    <span className="text-xs font-bold">{matchedColor.name}</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => {
                       setPickedColor(null);
                       setMatchedColor(null);
                     }}
                   >
-                    <X className="h-4 w-4 mr-1" />
+                    <X className="h-4 w-4" strokeWidth={1.75} />
                     {t('clear')}
                   </Button>
-                  <Button size="sm" onClick={handleConfirm}>
-                    <Check className="h-4 w-4 mr-1" />
+                  <Button onClick={handleConfirm}>
+                    <Check className="h-4 w-4" strokeWidth={2} />
                     {t('useName', { name: matchedColor.name })}
                   </Button>
                 </div>
@@ -362,7 +364,7 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
             )}
 
             {!pickedColor && (
-              <div className="text-center text-sm text-muted-foreground py-2">
+              <div className="py-2 text-center text-sm text-muted-foreground">
                 {t('noneSelected')}
               </div>
             )}

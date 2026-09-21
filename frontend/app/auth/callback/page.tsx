@@ -3,9 +3,10 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
-import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { magicLinkLanding } from '@/lib/magic-link';
+import { Stinky } from '@/components/stinky/stinky';
+import { Wordmark } from '@/components/brand/wordmark';
 
 // Landing page for the emailed magic link (/auth/callback?token=...).
 //
@@ -63,10 +64,13 @@ function MagicLinkCallback() {
 export default function MagicLinkCallbackPage() {
   const t = useTranslations('login.magicLink');
   return (
-    <main className="min-h-screen bg-background text-foreground flex items-center justify-center px-6">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 className="h-6 w-6 animate-spin" />
-        <p className="font-editorial italic text-muted-foreground">{t('verifying')}</p>
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+      <div className="flex flex-col items-center gap-5 text-center" role="status" aria-live="polite">
+        <Wordmark className="text-[28px]" />
+        <div className="flex h-36 w-36 items-center justify-center rounded-full bg-signature-soft">
+          <Stinky state="thinking" size={120} label="" />
+        </div>
+        <p className="text-[15px] font-semibold text-muted-foreground">{t('verifying')}</p>
       </div>
       <Suspense fallback={null}>
         <MagicLinkCallback />

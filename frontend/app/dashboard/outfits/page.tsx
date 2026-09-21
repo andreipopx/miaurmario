@@ -10,6 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
+import { Chip } from '@/components/chip';
+import { EmptyState } from '@/components/empty-state';
 import { OutfitCard } from '@/components/outfits/outfit-card';
 import { OutfitCalendar } from '@/components/outfit-calendar';
 import {
@@ -287,89 +290,78 @@ function OutfitsPageContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div
-            className="inline-flex rounded-full border-2 border-muted overflow-hidden"
-            role="group"
-            aria-label={t('viewToggle')}
-          >
-            <button
-              type="button"
-              onClick={() => handleViewChange('list')}
-              aria-pressed={view === 'list'}
-              className={cn(
-                'inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors',
-                view === 'list'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background text-muted-foreground hover:text-foreground',
-              )}
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        action={
+          <>
+            <div
+              className="inline-flex h-11 items-center gap-1 rounded-full bg-panel p-1"
+              role="group"
+              aria-label={t('viewToggle')}
             >
-              <ListIcon className="h-3.5 w-3.5" />
-              {t('viewList')}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleViewChange('calendar')}
-              aria-pressed={view === 'calendar'}
-              className={cn(
-                'inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors border-l-2 border-muted',
-                view === 'calendar'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              {t('viewCalendar')}
-            </button>
-          </div>
-          <Button asChild>
-            <Link href="/dashboard/outfits/new">
-              <Plus className="h-4 w-4 mr-2" />
-              {t('newOutfit')}
-            </Link>
-          </Button>
-        </div>
-      </div>
+              {(['list', 'calendar'] as const).map((v) => {
+                const Icon = v === 'list' ? ListIcon : CalendarDays;
+                const active = view === v;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => handleViewChange(v)}
+                    aria-pressed={active}
+                    className={cn(
+                      'inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                      active
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    <Icon className="h-4 w-4" strokeWidth={active ? 2 : 1.75} />
+                    {v === 'list' ? t('viewList') : t('viewCalendar')}
+                  </button>
+                );
+              })}
+            </div>
+            <Button asChild variant="signature">
+              <Link href="/dashboard/outfits/new">
+                <Plus className="h-4 w-4" />
+                {t('newOutfit')}
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {view === 'list' && (
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="-mx-4 flex w-[calc(100%+2rem)] gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {CHIP_ORDER.map((c) => (
-            <button
+            <Chip
               key={c}
-              type="button"
+              active={chip === c}
               onClick={() => handleChipClick(c)}
-              className={cn(
-                'inline-flex items-center rounded-full border-2 px-4 py-1.5 text-sm font-medium transition-all',
-                chip === c
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-muted bg-background hover:border-muted-foreground/50',
-              )}
+              className="h-11"
             >
               {t(`chips.${CHIP_KEYS[c]}` as `chips.${ChipKey}`)}
-            </button>
+            </Chip>
           ))}
         </div>
 
         {chip === 'my-looks' && (
-          <div className="relative ml-auto min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="relative ml-auto min-w-[220px] flex-1 sm:flex-none">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t('searchLookbook')}
+              aria-label={t('searchLookbook')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9"
+              className="h-11 border-transparent bg-panel pl-10"
             />
           </div>
         )}
 
         {listQuery.data && (
-          <Badge variant="outline" className="ml-auto">
+          <Badge variant="secondary" className="ml-auto">
             {t('totalCount', { count: listQuery.data.total })}
           </Badge>
         )}
@@ -379,7 +371,7 @@ function OutfitsPageContent() {
       {view === 'list' ? (
         <>
           {listError ? (
-            <div className="text-center py-8 text-destructive">{t('loadError')}</div>
+            <EmptyState state="sad" title={t('loadError')} />
           ) : listLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -387,17 +379,20 @@ function OutfitsPageContent() {
               ))}
             </div>
           ) : outfits.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <p className="text-muted-foreground mb-6 max-w-sm">{t(`empty.${CHIP_KEYS[chip]}` as `empty.${ChipKey}`)}</p>
-              {chip === 'my-looks' && (
-                <Button asChild>
-                  <Link href="/dashboard/outfits/new">
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('newOutfit')}
-                  </Link>
-                </Button>
-              )}
-            </div>
+            <EmptyState
+              state="sleepy"
+              title={t(`empty.${CHIP_KEYS[chip]}` as `empty.${ChipKey}`)}
+              action={
+                chip === 'my-looks' ? (
+                  <Button asChild variant="signature">
+                    <Link href="/dashboard/outfits/new">
+                      <Plus className="h-4 w-4" />
+                      {t('newOutfit')}
+                    </Link>
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -407,7 +402,7 @@ function OutfitsPageContent() {
               </div>
               {hasMore && (
                 <div className="flex justify-center pt-4">
-                  <Button variant="outline" onClick={() => setPage((p) => p + 1)}>
+                  <Button variant="secondary" onClick={() => setPage((p) => p + 1)}>
                     {t('loadMore')}
                   </Button>
                 </div>
@@ -417,18 +412,18 @@ function OutfitsPageContent() {
         </>
       ) : (
         <div className="grid lg:grid-cols-[360px_1fr] gap-6">
-          <Card className="h-fit">
-            <CardContent className="p-4">
+          <Card className="h-fit border-0 bg-panel">
+            <CardContent className="p-4 sm:p-4">
               {calendarLoading ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
-                    <Skeleton className="h-8 w-8" />
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-11 w-11 rounded-full bg-background" />
+                    <Skeleton className="h-6 w-32 rounded-full bg-background" />
+                    <Skeleton className="h-11 w-11 rounded-full bg-background" />
                   </div>
                   <div className="grid grid-cols-7 gap-1">
                     {Array.from({ length: 35 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 w-full rounded-md" />
+                      <Skeleton key={i} className="h-10 w-full rounded-full bg-background" />
                     ))}
                   </div>
                 </div>
@@ -449,7 +444,7 @@ function OutfitsPageContent() {
 
           <div className="space-y-4">
             {calendarError ? (
-              <div className="text-center py-8 text-destructive">{t('loadError')}</div>
+              <EmptyState state="sad" size="sm" title={t('loadError')} />
             ) : calendarLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -457,17 +452,12 @@ function OutfitsPageContent() {
                 ))}
               </div>
             ) : selectedDate && selectedDayOutfits.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-                <CalendarDays className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  {t('noOutfitsOnDay')}
-                </p>
-              </div>
+              <EmptyState state="sleepy" size="sm" title={t('noOutfitsOnDay')} />
             ) : (
               <>
                 {selectedDate && (
-                  <div className="border-b pb-3">
-                    <h2 className="text-lg font-semibold">
+                  <div className="space-y-0.5">
+                    <h2 className="text-lg font-bold">
                       {format.dateTime(parseYmd(selectedDate), { weekday: 'short', month: 'short', day: 'numeric' })}
                     </h2>
                     <p className="text-sm text-muted-foreground">
@@ -504,7 +494,7 @@ export default function OutfitsPage() {
     <Suspense
       fallback={
         <div className="space-y-6">
-          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-9 w-48 rounded-full" />
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="aspect-[5/4] rounded-lg" />

@@ -2,7 +2,8 @@
 
 import { X, Trash2, RefreshCw, Loader2, CheckSquare, Square, MinusSquare, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,27 +76,39 @@ export function BulkActionToolbar({
   const showPagination = totalPages > 1;
 
   return (
-    <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 bg-background border rounded-lg shadow-lg px-2 sm:px-4 py-2 sm:py-3 max-w-[calc(100vw-1rem)]">
+    // Floats above the mobile dock (24px inset + 64px dock + safe area) on < lg.
+    <div
+      role="toolbar"
+      aria-label={t('selectAll')}
+      className="glass-dock fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-1 rounded-full p-1.5 sm:gap-2 sm:px-2 lg:bottom-6"
+    >
       {/* Select All Checkbox */}
-      <div
-        className="flex items-center gap-1 sm:gap-2 cursor-pointer shrink-0"
+      <button
+        type="button"
         onClick={onSelectAll}
+        aria-pressed={isAllSelected ? true : isPartiallySelected ? 'mixed' : false}
+        aria-label={isAllSelected ? t('all') : t('selectAll')}
+        className="flex h-11 shrink-0 items-center gap-2 rounded-full px-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         {isAllSelected ? (
-          <CheckSquare className="h-5 w-5 text-primary" />
+          <CheckSquare className="h-5 w-5 text-foreground" strokeWidth={2} />
         ) : isPartiallySelected ? (
-          <MinusSquare className="h-5 w-5 text-primary" />
+          <MinusSquare className="h-5 w-5 text-foreground" strokeWidth={2} />
         ) : (
-          <Square className="h-5 w-5 text-muted-foreground" />
+          <Square className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
         )}
-        <span className="text-sm font-medium whitespace-nowrap hidden sm:inline">
+        <span className="hidden whitespace-nowrap text-sm font-semibold sm:inline">
           {isAllSelected ? t('all') : t('selectAll')}
         </span>
-      </div>
+      </button>
 
-      <div className="h-4 w-px bg-border shrink-0" />
-
-      <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">
+      <span
+        className={cn(
+          'shrink-0 whitespace-nowrap rounded-full text-sm font-bold',
+          hasSelection ? 'bg-signature px-3 py-1 text-signature-foreground' : 'text-muted-foreground'
+        )}
+        aria-live="polite"
+      >
         {selectedCount === 0 ? (
           <span className="hidden sm:inline">{t('noneSelected')}</span>
         ) : selection.mode === 'all' && selection.excludedIds.size > 0 ? (
@@ -120,7 +133,7 @@ export function BulkActionToolbar({
         <Button
           variant="link"
           size="sm"
-          className="h-8 px-0 text-xs shrink-0 hidden sm:inline-flex"
+          className="hidden shrink-0 text-xs sm:inline-flex"
           onClick={onSelectAllMatching}
         >
           {t('selectAllMatching', { total: totalItems })}
@@ -133,16 +146,15 @@ export function BulkActionToolbar({
             variant="ghost"
             size="icon"
             onClick={onClear}
-            className="text-muted-foreground h-8 w-8 shrink-0"
+            className="shrink-0 text-muted-foreground"
             aria-label={t('clearSelection')}
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" strokeWidth={1.75} />
           </Button>
-          <div className="h-4 w-px bg-border shrink-0" />
           <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
-            className="h-8 w-8 shrink-0"
+            className="shrink-0"
             onClick={onReanalyze}
             disabled={isReanalyzing}
             aria-label={t('reanalyze')}
@@ -150,16 +162,16 @@ export function BulkActionToolbar({
             {isReanalyzing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
             )}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="icon" className="h-8 w-8 shrink-0" disabled={isDeleting} aria-label={t('delete')}>
+              <Button variant="destructive" size="icon" className="shrink-0" disabled={isDeleting} aria-label={t('delete')}>
                 {isDeleting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                 )}
               </Button>
             </AlertDialogTrigger>
@@ -178,7 +190,7 @@ export function BulkActionToolbar({
                 <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={onDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className={buttonVariants({ variant: 'destructive' })}
                 >
                   {t('delete')}
                 </AlertDialogAction>
@@ -191,50 +203,48 @@ export function BulkActionToolbar({
       {/* Pagination */}
       {showPagination && (
         <>
-          <div className="h-4 w-px bg-border shrink-0" />
-          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+          <div className="h-5 w-px shrink-0 bg-border" aria-hidden />
+          <div className="flex shrink-0 items-center gap-0.5">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 hidden sm:flex"
+              className="hidden sm:flex"
               disabled={page === 1}
               onClick={() => onPageChange(1)}
               aria-label={t('firstPage')}
             >
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className="h-4 w-4" strokeWidth={1.75} />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
               disabled={page === 1}
               onClick={() => onPageChange(page - 1)}
               aria-label={t('prevPage')}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
             </Button>
-            <span className="px-1 sm:px-2 text-sm text-muted-foreground whitespace-nowrap">
+            <span className="whitespace-nowrap px-1 text-sm font-semibold tabular-nums sm:px-2">
               {page}/{totalPages}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
               aria-label={t('nextPage')}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 hidden sm:flex"
+              className="hidden sm:flex"
               disabled={page >= totalPages}
               onClick={() => onPageChange(totalPages)}
               aria-label={t('lastPage')}
             >
-              <ChevronsRight className="h-4 w-4" />
+              <ChevronsRight className="h-4 w-4" strokeWidth={1.75} />
             </Button>
           </div>
         </>

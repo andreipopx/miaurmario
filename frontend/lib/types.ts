@@ -293,7 +293,7 @@ export interface FeedbackSummary {
   worn_at?: string;
 }
 
-export type OutfitSource = 'scheduled' | 'on_demand' | 'manual' | 'pairing';
+export type OutfitSource = 'scheduled' | 'on_demand' | 'manual' | 'pairing' | 'stinky_chat';
 
 export interface MusicInspiration {
   artist?: string;

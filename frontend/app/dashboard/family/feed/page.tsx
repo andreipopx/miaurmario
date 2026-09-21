@@ -11,6 +11,7 @@ import {
   Calendar,
   Zap,
   Edit3,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,6 +48,7 @@ function SourceBadge({ source }: { source: OutfitSource }) {
     on_demand: { icon: Zap, label: t('sourceOnDemand'), variant: 'amber' },
     manual: { icon: Edit3, label: t('sourceManual'), variant: 'mint' },
     pairing: { icon: Zap, label: t('sourcePairing'), variant: 'signature' },
+    stinky_chat: { icon: MessageCircle, label: t('sourceStinky'), variant: 'signature' },
   };
 
   const { icon: Icon, label, variant } = config[source];

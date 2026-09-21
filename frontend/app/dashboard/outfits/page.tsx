@@ -121,7 +121,7 @@ function chipToFilters(chip: FilterChip, search: string): OutfitFilters {
       filters.is_replacement = true;
       return filters;
     case 'ai':
-      filters.source = 'scheduled,on_demand';
+      filters.source = 'scheduled,on_demand,stinky_chat';
       return filters;
     case 'all':
     default:

@@ -48,7 +48,7 @@ export interface FeedbackSummary {
   wore_instead_items: WoreInsteadItem[] | null;
 }
 
-export type OutfitSource = 'scheduled' | 'on_demand' | 'manual' | 'pairing';
+export type OutfitSource = 'scheduled' | 'on_demand' | 'manual' | 'pairing' | 'stinky_chat';
 
 export interface Outfit {
   id: string;

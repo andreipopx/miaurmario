@@ -4,10 +4,11 @@ import { Suspense, useEffect, useState } from 'react';
 import { signIn, getProviders, useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { LanguageSwitcher, SHOW_LANGUAGE_SWITCHER } from '@/components/language-switcher';
 import { safeCallbackPath } from '@/lib/magic-link';
+import { LoginMethods } from '@/components/auth/login-methods';
 
 function ThemeButton() {
   const { theme, setTheme } = useTheme();
@@ -102,6 +103,7 @@ function DevLogin({ callbackUrl }: { callbackUrl: string }) {
 function MagicLinkForm() {
   const t = useTranslations('login.magicLink');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -115,7 +117,7 @@ function MagicLinkForm() {
       const res = await fetch('/api/v1/auth/magic-link/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, locale }),
       });
       if (res.status === 202 || res.status === 200) {
         setSent(true);
@@ -218,6 +220,7 @@ function LoginContent() {
   const syncError = syncErrorParam || session?.syncError;
   const [authMode, setAuthMode] = useState<'loading' | 'oidc' | 'dev' | 'unconfigured'>('loading');
   const [magicLinkEnabled, setMagicLinkEnabled] = useState(false);
+  const [passwordEnabled, setPasswordEnabled] = useState(false);
 
   useEffect(() => {
     getProviders().then((providers) => {
@@ -227,7 +230,10 @@ function LoginContent() {
     });
     fetch('/api/v1/auth/config')
       .then((r) => r.json())
-      .then((data) => setMagicLinkEnabled(!!data?.magic_link?.enabled))
+      .then((data) => {
+        setMagicLinkEnabled(!!data?.magic_link?.enabled);
+        setPasswordEnabled(!!data?.password?.enabled);
+      })
       .catch(() => {});
   }, []);
 
@@ -263,7 +269,11 @@ function LoginContent() {
       )}
 
       <div className="space-y-4">
-        {magicLinkEnabled && <MagicLinkForm />}
+        <LoginMethods
+          magicLink={magicLinkEnabled ? <MagicLinkForm /> : null}
+          passwordEnabled={passwordEnabled}
+          callbackUrl={callbackUrl}
+        />
         {authMode === 'oidc' && <OIDCLoginButton callbackUrl={callbackUrl} />}
         {authMode === 'dev' && <DevLogin callbackUrl={callbackUrl} />}
         {authMode === 'unconfigured' && !magicLinkEnabled && (

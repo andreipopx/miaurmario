@@ -31,6 +31,7 @@ import {
 import { CLOTHING_COLORS, OCCASIONS, Preferences, StyleProfile, AIEndpoint } from '@/lib/types';
 import { toF, toCelsius } from '@/lib/temperature';
 import { toast } from 'sonner';
+import { SecurityCard } from '@/components/settings/security-card';
 
 const CM_TO_IN = 0.393701;
 const IN_TO_CM = 2.54;
@@ -603,6 +604,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <SecurityCard user={userProfile} />
 
         {/* Integrations Section */}
         <Card>

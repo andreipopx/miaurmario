@@ -16,6 +16,7 @@ import {
   type StinkyVariant,
 } from './stinky-states'
 import { startPurrVibration } from './stinky-purr'
+import { PURR_FX_MS, StinkyPurrFx } from './stinky-purr-fx'
 import { usePrefersReducedMotion, useStinkyVariant } from './use-stinky-env'
 
 export interface StinkyProps {
@@ -88,6 +89,9 @@ export function Stinky({
   const isInteractive = interactive ?? size >= 48
 
   const initial = stinkyAssets(requested, variant).webp
+  // Hearts + "prrr" burst shown while purring; a new key restarts the animation.
+  const [purrFx, setPurrFx] = useState<number | null>(null)
+  const purrFxTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [layers, setLayers] = useState<Layer[]>(() => [{ key: 0, state: requested, src: initial, blob: false, shown: true }])
 
   // Mutable playback bookkeeping (not render state).
@@ -224,6 +228,7 @@ export function Stinky({
       pending.forEach(clearTimeout)
       pending.clear()
       vibration.current?.cancel()
+      if (purrFxTimer.current) clearTimeout(purrFxTimer.current)
     }
   }, [])
 
@@ -234,6 +239,9 @@ export function Stinky({
     const prev = current.current.state
     returnTo.current = STINKY_STATE_META[prev].playback === 'loop' ? prev : latest.current.settle ?? 'idle'
     show('purr', { immediate: true })
+    setPurrFx(now)
+    if (purrFxTimer.current) clearTimeout(purrFxTimer.current)
+    purrFxTimer.current = setTimeout(() => setPurrFx(null), PURR_FX_MS)
     if (!latest.current.reducedMotion && typeof navigator !== 'undefined') navigator.vibrate?.(PURR_VIBRATION)
     latest.current.onPet?.()
   }, [show])
@@ -299,6 +307,7 @@ export function Stinky({
         )}
       >
         {images}
+        {purrFx !== null && <StinkyPurrFx key={purrFx} size={size} reducedMotion={reducedMotion} />}
       </button>
     )
   }

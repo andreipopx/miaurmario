@@ -207,3 +207,27 @@ html {
 [data-sonner-toast] [data-title] {
   font-weight: 700;
 }
+
+/* Stinky purr burst: hearts and "prrr" float up and fade (components/stinky/stinky-purr-fx.tsx). */
+@keyframes stinky-fx-float {
+  0%   { opacity: 0; transform: translate(-50%, 0) scale(0.4) rotate(0deg); }
+  12%  { opacity: 1; transform: translate(-50%, calc(var(--fx-rise) * 0.12)) scale(1.1) rotate(var(--fx-rot)); }
+  25%  { transform: translate(calc(-50% + var(--fx-dx) * 0.3), calc(var(--fx-rise) * 0.28)) scale(1) rotate(var(--fx-rot)); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--fx-dx)), var(--fx-rise)) scale(0.9) rotate(calc(var(--fx-rot) * -1)); }
+}
+.stinky-fx-float {
+  opacity: 0;
+  animation-name: stinky-fx-float;
+  animation-timing-function: cubic-bezier(0.22, 0.8, 0.3, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+@keyframes stinky-fx-still {
+  0%, 100% { opacity: 0; }
+  15%, 80% { opacity: 1; }
+}
+.stinky-fx-still {
+  transform: translate(-50%, -40%);
+  animation: stinky-fx-still 2600ms linear forwards;
+}

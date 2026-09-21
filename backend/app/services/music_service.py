@@ -149,9 +149,7 @@ async def _lastfm_track_search(
         )
         resp.raise_for_status()
         data = resp.json()
-        matches = (
-            data.get("results", {}).get("trackmatches", {}).get("track", [])
-        )
+        matches = data.get("results", {}).get("trackmatches", {}).get("track", [])
         if isinstance(matches, dict):
             matches = [matches]
         if not matches:
@@ -404,21 +402,23 @@ async def enrich_song(query: str) -> SongContext | None:
                 first = artist_credits[0]
                 if isinstance(first, dict):
                     resolved_artist = first.get("name") or (
-                        first.get("artist", {}).get("name") if isinstance(first.get("artist"), dict) else None
+                        first.get("artist", {}).get("name")
+                        if isinstance(first.get("artist"), dict)
+                        else None
                     )
             releases = mb.get("releases") or []
             first_release = releases[0] if releases else {}
             mb_tags = mb.get("tags") or []
-            genre_names = [
-                t.get("name") for t in mb_tags if isinstance(t, dict) and t.get("name")
-            ]
+            genre_names = [t.get("name") for t in mb_tags if isinstance(t, dict) and t.get("name")]
 
             ctx = SongContext(
                 query=query,
                 artist=resolved_artist or artist,
                 track=mb.get("title") or track,
                 album=first_release.get("title") if isinstance(first_release, dict) else None,
-                year=_extract_year(first_release.get("date")) if isinstance(first_release, dict) else None,
+                year=_extract_year(first_release.get("date"))
+                if isinstance(first_release, dict)
+                else None,
                 genres=genre_names[:4],
                 tags=[],
                 source="musicbrainz",

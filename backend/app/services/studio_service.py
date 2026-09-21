@@ -446,9 +446,7 @@ class StudioService:
             if _layouts_have_positions(layouts):
                 layout_by_id = {lo.item_id: lo for lo in layouts or []}
                 by_id = {item.id: item for item in new_items}
-                ordered = [
-                    by_id[lo.item_id] for lo in layouts or [] if lo.item_id in by_id
-                ]
+                ordered = [by_id[lo.item_id] for lo in layouts or [] if lo.item_id in by_id]
                 layouts_ordered: list[ItemLayoutInput | None] = [
                     layout_by_id[item.id] for item in ordered
                 ]

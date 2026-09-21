@@ -687,10 +687,7 @@ class RecommendationService:
 
         # Determine cache eligibility before auto-merge
         use_cache = (
-            not exclude_items
-            and not include_items
-            and not single_outfit
-            and song_context is None
+            not exclude_items and not include_items and not single_outfit and song_context is None
         )
 
         # Auto-exclude today's rejected items for this occasion
@@ -837,9 +834,7 @@ class RecommendationService:
             body_measurements=getattr(user, "body_measurements", None),
         )
 
-        song_context_text = (
-            format_song_context_for_prompt(song_context) if song_context else ""
-        )
+        song_context_text = format_song_context_for_prompt(song_context) if song_context else ""
 
         prompt = RECOMMENDATION_PROMPT.format(
             occasion=occasion,

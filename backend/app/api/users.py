@@ -97,9 +97,7 @@ async def update_profile(
         await db.flush()
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="username_taken"
-        ) from None
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username_taken") from None
     await db.refresh(current_user)
     await db.commit()
 

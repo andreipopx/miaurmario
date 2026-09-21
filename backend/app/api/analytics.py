@@ -337,9 +337,7 @@ async def get_analytics(
                     f"Tu armario tira mucho al {top_color} ({color_distribution[0].percentage}%). Prueba a variar la paleta."
                 )
             elif len(color_distribution) <= 3 and ready_items > 10:
-                insights.append(
-                    "Tu armario tiene poca variedad de color. Explora nuevos tonos."
-                )
+                insights.append("Tu armario tiene poca variedad de color. Explora nuevos tonos.")
 
         # Type insights
         if type_distribution:
@@ -367,9 +365,7 @@ async def get_analytics(
         # Outfit insights
         if acceptance_rate is not None:
             if acceptance_rate > 80:
-                insights.append(
-                    f"¡Buen ojo! Aceptas el {acceptance_rate:.0f}% de las sugerencias."
-                )
+                insights.append(f"¡Buen ojo! Aceptas el {acceptance_rate:.0f}% de las sugerencias.")
             elif acceptance_rate < 50:
                 insights.append(
                     "Rechazas muchas sugerencias. Prueba a ajustar tus preferencias de estilo."

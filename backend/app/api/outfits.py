@@ -1039,9 +1039,9 @@ class StudioCreateRequest(BaseModel):
     items: list[UUID] = Field(min_length=1, max_length=20)
     # When present, `items_layout` takes precedence and carries the canvas positions.
     # `items` still travels as a plain UUID list for older clients / analytics.
-    items_layout: Annotated[
-        list[StudioItemLayout] | None, Field(min_length=1, max_length=20)
-    ] = None
+    items_layout: Annotated[list[StudioItemLayout] | None, Field(min_length=1, max_length=20)] = (
+        None
+    )
     occasion: str = Field(max_length=50)
     name: Annotated[str | None, Field(max_length=100)] = None
     scheduled_for: date | None = None
@@ -1086,9 +1086,9 @@ class PatchOutfitRequest(BaseModel):
     name: Annotated[str | None, Field(max_length=100)] = None
     items: Annotated[list[UUID] | None, Field(min_length=1, max_length=20)] = None
     # When present, `items_layout` takes precedence and carries the canvas positions.
-    items_layout: Annotated[
-        list[StudioItemLayout] | None, Field(min_length=1, max_length=20)
-    ] = None
+    items_layout: Annotated[list[StudioItemLayout] | None, Field(min_length=1, max_length=20)] = (
+        None
+    )
 
 
 def _to_service_layout(lo: "StudioItemLayout") -> ItemLayoutInput:

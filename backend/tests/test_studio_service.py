@@ -469,9 +469,7 @@ async def test_create_from_scratch_persists_layout_when_positions_present(
 
 
 @pytest.mark.asyncio
-async def test_create_from_scratch_ignores_empty_layout(
-    db_session, studio_user, wardrobe_items
-):
+async def test_create_from_scratch_ignores_empty_layout(db_session, studio_user, wardrobe_items):
     """A layout list where every entry lacks pos_x/pos_y must fall back to
     canonical role ordering — the client is telling us 'add these items, no
     specific arrangement'."""
@@ -506,9 +504,7 @@ async def test_create_from_scratch_ignores_empty_layout(
 
 
 @pytest.mark.asyncio
-async def test_patch_outfit_updates_layout_only(
-    db_session, studio_user, wardrobe_items
-):
+async def test_patch_outfit_updates_layout_only(db_session, studio_user, wardrobe_items):
     """A layouts-only patch (no `items` list) must reposition the existing
     items without changing the set — used when the user drags things around
     without adding/removing anything."""
@@ -545,9 +541,7 @@ async def test_patch_outfit_updates_layout_only(
 
 
 @pytest.mark.asyncio
-async def test_legacy_outfits_still_have_null_layout(
-    db_session, studio_user, wardrobe_items
-):
+async def test_legacy_outfits_still_have_null_layout(db_session, studio_user, wardrobe_items):
     """The migration must default pos_x/pos_y to NULL for outfits created
     without a layout — that's how the detail page decides to render the
     classic grid instead of the canvas."""

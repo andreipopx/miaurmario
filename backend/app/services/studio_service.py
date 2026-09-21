@@ -169,6 +169,8 @@ class StudioService:
         mark_worn: bool,
         source_item_id: UUID | None,
         layouts: list[ItemLayoutInput] | None = None,
+        source: OutfitSource = OutfitSource.manual,
+        synthetic_feedback: bool = True,
     ) -> Outfit:
         items = await self._validate_item_ownership(user.id, item_ids)
 
@@ -192,7 +194,7 @@ class StudioService:
             user_id=user.id,
             occasion=occasion,
             scheduled_for=scheduled_for,
-            source=OutfitSource.manual,
+            source=source,
             status=OutfitStatus.pending,
             name=name,
             source_item_id=source_item_id,
@@ -214,10 +216,11 @@ class StudioService:
                 )
             )
 
-        feedback = self.learning.create_synthetic_feedback(
-            outfit_id=outfit.id, accepted=True, worn_at=effective_worn
-        )
-        self.db.add(feedback)
+        if synthetic_feedback:
+            feedback = self.learning.create_synthetic_feedback(
+                outfit_id=outfit.id, accepted=True, worn_at=effective_worn
+            )
+            self.db.add(feedback)
 
         if mark_worn and effective_worn is not None:
             await self._apply_wear_tracking(user.id, [i.id for i in ordered], effective_worn)

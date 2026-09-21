@@ -18,6 +18,7 @@ import {
   HeartHandshake,
   Loader2,
   MapPin,
+  MessageCircle,
   Music,
   RefreshCw,
   Shirt,
@@ -38,6 +39,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { POP_BG, type PopColor } from '@/components/chip';
 import { StinkyTip } from '@/components/stinky-tip';
+import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { Stinky } from '@/components/stinky/stinky';
 
 // -- Section header -------------------------------------------------------------
@@ -288,6 +290,18 @@ function TodayLook() {
           </Button>
         )}
       </div>
+
+      <Link
+        href="/dashboard/stinky"
+        className="flex min-h-[64px] items-center gap-3 rounded-lg bg-signature-soft p-2.5 pr-4 transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <StinkyAvatar size={44} className="bg-background" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-bold leading-tight">{t('chatWithStinky')}</span>
+          <span className="block truncate text-[13px] text-muted-foreground">{t('chatWithStinkyBody')}</span>
+        </span>
+        <MessageCircle className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+      </Link>
     </section>
   );
 }

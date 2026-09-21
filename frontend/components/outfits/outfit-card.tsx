@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import {
   BookmarkCheck,
   Layers,
+  MessageCircle,
   RefreshCw,
   Shirt,
   Sparkles,
@@ -27,6 +28,7 @@ type SourceBadgeKey =
   | 'badgeWorn'
   | 'badgeStudio'
   | 'badgePairing'
+  | 'badgeStinky'
   | 'badgeAi';
 
 type BadgeVariant = 'amber' | 'sky' | 'mint' | 'signature' | 'secondary';
@@ -58,6 +60,13 @@ function getSourceBadge(outfit: Outfit): {
     return {
       labelKey: 'badgeStudio',
       icon: <Shirt className="h-3 w-3" />,
+      variant: 'signature',
+    };
+  }
+  if (outfit.source === 'stinky_chat') {
+    return {
+      labelKey: 'badgeStinky',
+      icon: <MessageCircle className="h-3 w-3" />,
       variant: 'signature',
     };
   }

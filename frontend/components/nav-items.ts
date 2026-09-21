@@ -6,6 +6,7 @@ import {
   Home,
   Layers,
   LayoutGrid,
+  MessageCircle,
   Music,
   Pin,
   Settings,
@@ -33,6 +34,7 @@ export const DOCK_ITEMS: readonly NavItem[] = [
 /** Every section, for the desktop sidebar and the mobile profile menu. */
 export const PRIMARY_ITEMS: readonly NavItem[] = [
   ...DOCK_ITEMS,
+  { key: 'stinky', href: '/dashboard/stinky', icon: MessageCircle },
   { key: 'pairings', href: '/dashboard/pairings', icon: Layers },
   { key: 'pins', href: '/dashboard/pins', icon: Pin },
   { key: 'music', href: '/dashboard/music', icon: Music },

@@ -250,6 +250,7 @@
     "profileMenu": "Tu perfil y menú",
     "familySettings": "Gestionar familia",
     "viewProfile": "Tu perfil y ajustes",
+    "stinky": "Habla con Stinky",
     "music": "Música"
   },
   "dashboard": {
@@ -364,6 +365,8 @@
       "noLookTitle": "Aún no hay look para hoy",
       "noLookBody": "Stinky te propone uno en segundos con tu armario y el tiempo.",
       "defaultTip": "si dudas, un básico bien planchado nunca falla. Confía en mí, soy un gato.",
+      "chatWithStinky": "Pregúntale a Stinky",
+      "chatWithStinkyBody": "Tu estilista gatuno, con tu armario delante.",
       "openMusic": "Ver tu música"
     }
   },
@@ -1518,7 +1521,8 @@
       "scheduled": "Programado",
       "on_demand": "Al momento",
       "manual": "Manual",
-      "pairing": "Combinación"
+      "pairing": "Combinación",
+      "stinky_chat": "Stinky"
     },
     "didntWear": "No me lo puse",
     "woreInstead": "Me puse en su lugar:",
@@ -1673,7 +1677,8 @@
     "noOutfitsBodyGeneric": "Este miembro aún no ha recibido sugerencias de outfit. Vuelve pronto.",
     "starsLabel": "{count, plural, one {# estrella} other {# estrellas}}",
     "lookbook": "Lookbook",
-    "previewOutfit": "Ver el outfit"
+    "previewOutfit": "Ver el outfit",
+    "sourceStinky": "Stinky"
   },
   "pairingCard": {
     "toast": {
@@ -2060,7 +2065,8 @@
     "badgePairing": "Combinación",
     "badgeAi": "IA",
     "lookbookTemplate": "Plantilla del lookbook",
-    "titleFallback": "Outfit {occasion}"
+    "titleFallback": "Outfit {occasion}",
+    "badgeStinky": "Stinky"
   },
   "outfitCalendar": {
     "scheduled": "Programado",
@@ -2216,7 +2222,8 @@
       "feature": {
         "suggest": "El Estilista necesita IA para proponerte looks. Mientras tanto puedes crear y planificar outfits a mano.",
         "tagging": "Sin IA tus prendas se guardan sin etiquetar y puedes completar los detalles tú.",
-        "pairings": "Las combinaciones automáticas necesitan IA. Puedes crear outfits a mano cuando quieras."
+        "pairings": "Las combinaciones automáticas necesitan IA. Puedes crear outfits a mano cuando quieras.",
+        "chat": "Para charlar con Stinky hace falta IA. Actívala y te ayudo con tus looks, el tiempo y lo que te falta."
       },
       "cta": "Activar IA"
     },
@@ -2273,6 +2280,52 @@
       "user_uses_own_key": "Este usuario usa su propia clave; no hay regalo que quitar.",
       "user_not_found": "Usuario no encontrado."
     }
+  },
+  "stinkyChat": {
+    "title": "Stinky",
+    "subtitle": "Tu estilista gatuno",
+    "statusThinking": "Pensando…",
+    "statusTool": {
+      "get_wardrobe": "Mirando tu armario…",
+      "get_weather": "Mirando el cielo…",
+      "get_recent_outfits": "Repasando tus últimos looks…",
+      "get_listening_mood": "Escuchando tu música…",
+      "get_user_preferences": "Repasando tus gustos…",
+      "show_outfit": "Montando el look…",
+      "create_outfit": "Guardando el look…",
+      "suggest_outfit": "Preparando un outfit…",
+      "default": "Un momento…"
+    },
+    "emptyTitle": "¿En qué te ayudo?",
+    "emptyBody": "Pregúntame qué ponerte, qué te falta o cómo combinar esa prenda que nunca usas.",
+    "suggestion1": "¿Qué me pongo hoy?",
+    "suggestion2": "Tengo una boda en octubre",
+    "suggestion3": "¿Qué me falta para el otoño?",
+    "suggestion4": "Algo que pegue con lo que escucho",
+    "placeholder": "Escribe a Stinky…",
+    "send": "Enviar",
+    "stop": "Detener",
+    "newChat": "Nueva conversación",
+    "history": "Conversaciones",
+    "historyEmpty": "Aún no hay conversaciones.",
+    "untitled": "Sin título",
+    "deleteConversation": "Borrar conversación",
+    "deleted": "Conversación borrada",
+    "deleteError": "No se pudo borrar la conversación",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "view": "Ver",
+    "saveError": "No se pudo guardar el look",
+    "savedToast": "Look guardado en tus looks",
+    "cardProposed": "Propuesta de Stinky",
+    "cardCreated": "En tus looks",
+    "itemsMore": "+{count}",
+    "errorGeneric": "Stinky se ha distraído con un ovillo. Inténtalo de nuevo.",
+    "rateLimited": "Demasiados mensajes seguidos. Dale un respiro a Stinky.",
+    "offline": "Parece que no hay conexión.",
+    "loadError": "No se pudo cargar la conversación",
+    "tooLong": "Máximo {max} caracteres",
+    "disclaimer": "Stinky usa tu armario, el tiempo y tu música. Puede equivocarse."
   },
   "tagValues": {
     "colors": {

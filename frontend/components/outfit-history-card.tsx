@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Zap, Edit3, ThumbsUp, ThumbsDown, Clock, Eye, Star, ArrowRight, Shirt, Users, ExternalLink, Layers } from 'lucide-react';
+import { Calendar, Zap, Edit3, ThumbsUp, ThumbsDown, Clock, Eye, Star, ArrowRight, Shirt, Users, ExternalLink, Layers, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +46,7 @@ function SourceBadge({ source }: { source: OutfitSource }) {
     on_demand: { icon: Zap, variant: 'amber' },
     manual: { icon: Edit3, variant: 'signature' },
     pairing: { icon: Layers, variant: 'mint' },
+    stinky_chat: { icon: MessageCircle, variant: 'signature' },
   };
 
   const { icon: Icon, variant } = config[source] ?? config.on_demand;

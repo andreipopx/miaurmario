@@ -250,6 +250,7 @@
     "profileMenu": "Your profile and menu",
     "familySettings": "Manage family",
     "viewProfile": "Your profile and settings",
+    "stinky": "Chat with Stinky",
     "music": "Music"
   },
   "dashboard": {
@@ -364,6 +365,8 @@
       "noLookTitle": "No look for today yet",
       "noLookBody": "Stinky will put one together in seconds from your wardrobe and the weather.",
       "defaultTip": "when in doubt, a well-pressed basic never fails. Trust me, I'm a cat.",
+      "chatWithStinky": "Ask Stinky",
+      "chatWithStinkyBody": "Your feline stylist, with your wardrobe at hand.",
       "openMusic": "See your music"
     }
   },
@@ -1518,7 +1521,8 @@
       "scheduled": "Scheduled",
       "on_demand": "On demand",
       "manual": "Manual",
-      "pairing": "Pairing"
+      "pairing": "Pairing",
+      "stinky_chat": "Stinky"
     },
     "didntWear": "Didn't wear this",
     "woreInstead": "Wore instead:",
@@ -1673,7 +1677,8 @@
     "noOutfitsBodyGeneric": "This member hasn't received any outfit recommendations yet. Check back later.",
     "starsLabel": "{count, plural, one {# star} other {# stars}}",
     "lookbook": "Lookbook",
-    "previewOutfit": "View outfit"
+    "previewOutfit": "View outfit",
+    "sourceStinky": "Stinky"
   },
   "pairingCard": {
     "toast": {
@@ -2060,7 +2065,8 @@
     "badgePairing": "Pairing",
     "badgeAi": "AI",
     "lookbookTemplate": "Lookbook template",
-    "titleFallback": "{occasion} outfit"
+    "titleFallback": "{occasion} outfit",
+    "badgeStinky": "Stinky"
   },
   "outfitCalendar": {
     "scheduled": "Scheduled",
@@ -2216,7 +2222,8 @@
       "feature": {
         "suggest": "The Stylist needs AI to suggest looks. Meanwhile you can build and plan outfits by hand.",
         "tagging": "Without AI your clothes are saved untagged and you can fill in the details yourself.",
-        "pairings": "Automatic pairings need AI. You can build outfits by hand any time."
+        "pairings": "Automatic pairings need AI. You can build outfits by hand any time.",
+        "chat": "Chatting with Stinky needs AI. Turn it on and I'll help with your looks, the weather and what you're missing."
       },
       "cta": "Turn on AI"
     },
@@ -2273,6 +2280,52 @@
       "user_uses_own_key": "This user uses their own key; there's no gift to remove.",
       "user_not_found": "User not found."
     }
+  },
+  "stinkyChat": {
+    "title": "Stinky",
+    "subtitle": "Your feline stylist",
+    "statusThinking": "Thinking…",
+    "statusTool": {
+      "get_wardrobe": "Looking through your wardrobe…",
+      "get_weather": "Checking the sky…",
+      "get_recent_outfits": "Reviewing your latest looks…",
+      "get_listening_mood": "Listening to your music…",
+      "get_user_preferences": "Reviewing your taste…",
+      "show_outfit": "Putting the look together…",
+      "create_outfit": "Saving the look…",
+      "suggest_outfit": "Preparing an outfit…",
+      "default": "One moment…"
+    },
+    "emptyTitle": "How can I help?",
+    "emptyBody": "Ask me what to wear, what you're missing or how to style that piece you never use.",
+    "suggestion1": "What should I wear today?",
+    "suggestion2": "I have a wedding in October",
+    "suggestion3": "What am I missing for autumn?",
+    "suggestion4": "Something that matches what I'm listening to",
+    "placeholder": "Message Stinky…",
+    "send": "Send",
+    "stop": "Stop",
+    "newChat": "New conversation",
+    "history": "Conversations",
+    "historyEmpty": "No conversations yet.",
+    "untitled": "Untitled",
+    "deleteConversation": "Delete conversation",
+    "deleted": "Conversation deleted",
+    "deleteError": "Could not delete the conversation",
+    "save": "Save",
+    "saved": "Saved",
+    "view": "View",
+    "saveError": "Could not save the look",
+    "savedToast": "Look saved to your looks",
+    "cardProposed": "Stinky's pick",
+    "cardCreated": "In your looks",
+    "itemsMore": "+{count}",
+    "errorGeneric": "Stinky got distracted by a ball of yarn. Please try again.",
+    "rateLimited": "Too many messages in a row. Give Stinky a breather.",
+    "offline": "You seem to be offline.",
+    "loadError": "Could not load the conversation",
+    "tooLong": "Up to {max} characters",
+    "disclaimer": "Stinky uses your wardrobe, the weather and your music. It can make mistakes."
   },
   "tagValues": {
     "colors": {

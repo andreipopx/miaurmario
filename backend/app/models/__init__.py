@@ -1,3 +1,4 @@
+from app.models.chat import ChatConversation, ChatMessage
 from app.models.family import Family, FamilyInvite
 from app.models.item import ClothingItem, ItemHistory, ItemImage, WashHistory
 from app.models.learning import (
@@ -18,6 +19,8 @@ from app.models.user import User
 from app.models.user_ai_settings import UserAISettings
 
 __all__ = [
+    "ChatConversation",
+    "ChatMessage",
     "Family",
     "FamilyInvite",
     "User",

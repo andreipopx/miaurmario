@@ -78,8 +78,24 @@ export const stinkyAssets = (state: StinkyState, variant: StinkyVariant = 'light
 /** Neutral static head (vector) — identical to the first/last frame of every clip. */
 export const stinkyStaticSvg = (variant: StinkyVariant = 'light') => `${BASE}/stinky-head${suffix(variant)}.svg`
 
-/** Editable OneWorks definition (one per variant; mouth accents are animated parts inside the clips). */
-export const stinkyDefinitionUrl = (variant: StinkyVariant = 'light') => `${BASE}/stinky-head${suffix(variant)}.avatar.json`
+export type StinkyMouth = 'neutral' | 'open'
+
+/**
+ * Editable OneWorks definitions per variant. `neutral` has the pink ":3"; `open` replaces it with the open mouth
+ * (same everything else). Stinky only ever shows ONE mouth: happy/wave swap to `open` inside their mouth window.
+ */
+export const stinkyDefinitionUrl = (variant: StinkyVariant = 'light', mouth: StinkyMouth = 'neutral') =>
+  `${BASE}/stinky-head${mouth === 'open' ? '-open' : ''}${suffix(variant)}.avatar.json`
+
+/** Clip-time windows [from, to) in ms where the open mouth replaces the ":3" (pre-rendered assets use the same). */
+export const STINKY_MOUTH_OPEN_WINDOWS: Partial<Record<StinkyState, readonly [number, number]>> = {
+  happy: [300, 2950],
+  wave: [200, 1900],
+}
+export const stinkyMouthAt = (state: StinkyState, clipMs: number): StinkyMouth => {
+  const w = STINKY_MOUTH_OPEN_WINDOWS[state]
+  return w && clipMs >= w[0] && clipMs < w[1] ? 'open' : 'neutral'
+}
 
 export const STINKY_ANIMATIONS_URL = `${BASE}/stinky.animations.json`
 

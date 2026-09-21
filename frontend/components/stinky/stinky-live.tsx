@@ -32,6 +32,9 @@ import {
   STINKY_STATE_META,
   resolveStinkyState,
   stinkyDefinitionUrl,
+  STINKY_MOUTH_OPEN_WINDOWS,
+  stinkyMouthAt,
+  type StinkyMouth,
   type StinkyState,
   type StinkyVariant,
 } from './stinky-states'
@@ -42,17 +45,18 @@ export interface StinkyLiveProps extends StinkyProps {
   fps?: number
 }
 
-type Loaded = { definition: AvatarDefinition; library: AvatarAnimationLibrary }
+type Loaded = { definitions: Record<StinkyMouth, AvatarDefinition>; library: AvatarAnimationLibrary }
 const cache = new Map<string, Promise<unknown>>()
 const getJson = <T,>(url: string) => {
   if (!cache.has(url)) cache.set(url, fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(url)))))
   return cache.get(url) as Promise<T>
 }
-// One definition per variant; mouth accents (open mouth) are animated parts inside the clips.
+// Two definitions per variant (":3" and open mouth) — swapped inside happy/wave so only one mouth ever shows.
 const load = (variant: StinkyVariant) => Promise.all([
-  getJson<AvatarDefinition>(stinkyDefinitionUrl(variant)),
+  getJson<AvatarDefinition>(stinkyDefinitionUrl(variant, 'neutral')),
+  getJson<AvatarDefinition>(stinkyDefinitionUrl(variant, 'open')),
   getJson<AvatarAnimationLibrary>(STINKY_ANIMATIONS_URL),
-]).then(([definition, library]): Loaded => ({ definition, library }))
+]).then(([neutral, open, library]): Loaded => ({ definitions: { neutral, open }, library }))
 
 const looksLowEnd = () => {
   if (typeof navigator === 'undefined') return true
@@ -73,6 +77,11 @@ export default function StinkyLive(props: StinkyLiveProps) {
   const settle = settleTo == null ? null : resolveStinkyState(settleTo)
   const [shown, setShown] = useState<StinkyState>(requested)
   const hostRef = useRef<HTMLSpanElement>(null)
+  // happy/wave swap the ":3" for an open mouth: a second renderer with the open-mouth definition is stacked on top,
+  // both follow the same clock, and each tick shows exactly one of them (never two mouths).
+  const openAvatarRef = useRef<AvatarHandle>(null)
+  const neutralLayerRef = useRef<HTMLSpanElement>(null)
+  const openLayerRef = useRef<HTMLSpanElement>(null)
   const avatarRef = useRef<AvatarHandle>(null)
 
   useEffect(() => setShown(requested), [requested])
@@ -86,6 +95,8 @@ export default function StinkyLive(props: StinkyLiveProps) {
     () => (data?.library.groups.states?.clips[shown] as AvatarAnimationClip | undefined) ?? null,
     [data, shown],
   )
+
+  const hasOpenLayer = STINKY_MOUTH_OPEN_WINDOWS[shown] != null
 
   useEffect(() => {
     if (clip == null || reducedMotion || downgraded) return
@@ -111,10 +122,13 @@ export default function StinkyLive(props: StinkyLiveProps) {
       const avatar = avatarRef.current
       if (!avatar) return
       const now = performance.now()
+      const openAvatar = hasOpenLayer ? openAvatarRef.current : null
       if (!started) {
-        if (!host?.querySelector('svg')) return
-        avatar.play(clip, { playback: clip.playback, trackId: 'stinky' }).catch(() => setDowngraded(true))
-        avatar.pause('stinky')
+        if (!host?.querySelector('svg') || (hasOpenLayer && !openAvatar)) return
+        for (const a of openAvatar ? [avatar, openAvatar] : [avatar]) {
+          a.play(clip, { playback: clip.playback, trackId: 'stinky' }).catch(() => setDowngraded(true))
+          a.pause('stinky')
+        }
         started = true
         t0 = now
         lastFrame = now
@@ -133,10 +147,21 @@ export default function StinkyLive(props: StinkyLiveProps) {
       if (now - lastUpdate < 1000 / fps - 1) return
       lastUpdate = now
       const elapsed = now - t0
-      if (clip.playback === 'loop') {
-        avatar.seek(elapsed % clip.durationMs, 'stinky')
+      const clipMs = clip.playback === 'loop' ? elapsed % clip.durationMs : Math.min(elapsed, clip.durationMs)
+      if (!openAvatar) {
+        avatar.seek(clipMs, 'stinky')
       } else {
-        avatar.seek(Math.min(elapsed, clip.durationMs), 'stinky')
+        // Seek only the visible renderer, plus the hidden one when a mouth swap is within two updates
+        // (so it is already on the right frame when it becomes visible). Exactly one layer is visible.
+        const open = stinkyMouthAt(shown, clipMs) === 'open'
+        const window = STINKY_MOUTH_OPEN_WINDOWS[shown]!
+        const nearSwap = Math.min(Math.abs(clipMs - window[0]), Math.abs(clipMs - window[1])) <= 2 * (1000 / fps)
+        if (open || nearSwap) openAvatar.seek(clipMs, 'stinky')
+        if (!open || nearSwap) avatar.seek(clipMs, 'stinky')
+        if (openLayerRef.current) openLayerRef.current.style.visibility = open ? 'visible' : 'hidden'
+        if (neutralLayerRef.current) neutralLayerRef.current.style.visibility = open ? 'hidden' : 'visible'
+      }
+      if (clip.playback === 'once') {
         if (elapsed >= clip.durationMs) {
           finished = true
           onDone?.()
@@ -154,12 +179,14 @@ export default function StinkyLive(props: StinkyLiveProps) {
     if (io && host) io.observe(host)
     raf = requestAnimationFrame(tick)
     const avatarAtStart = avatarRef
+    const openAtStart = openAvatarRef
     return () => {
       cancelAnimationFrame(raf)
       io?.disconnect()
       avatarAtStart.current?.stop({ trackId: 'stinky' })
+      openAtStart.current?.stop({ trackId: 'stinky' })
     }
-  }, [clip, reducedMotion, downgraded, fps, settle, shown, onDone, requested])
+  }, [clip, reducedMotion, downgraded, fps, settle, shown, onDone, requested, hasOpenLayer])
 
   // Slit pupils: rewrite the SDK's (black) eye highlight into a vertical slit on every render.
   const live = !reducedMotion && !downgraded && data != null
@@ -199,7 +226,7 @@ export default function StinkyLive(props: StinkyLiveProps) {
     <span
       ref={hostRef}
       className={className}
-      style={{ display: 'inline-block', width: size, height: size, cursor: isInteractive ? 'pointer' : undefined }}
+      style={{ position: 'relative', display: 'inline-block', width: size, height: size, cursor: isInteractive ? 'pointer' : undefined }}
       role={isInteractive ? 'button' : decorative ? undefined : 'img'}
       tabIndex={isInteractive ? 0 : undefined}
       aria-label={isInteractive ? 'Acariciar a Stinky' : decorative ? undefined : label}
@@ -209,13 +236,26 @@ export default function StinkyLive(props: StinkyLiveProps) {
       data-stinky-state={shown}
       data-stinky-mode='live'
     >
-      <Avatar
-        ref={avatarRef}
-        definition={data.definition}
-        animationLibraries={[data.library]}
-        theme={variant}
-        style={{ width: '100%', height: '100%' }}
-      />
+      <span ref={neutralLayerRef} style={{ position: 'absolute', inset: 0 }}>
+        <Avatar
+          ref={avatarRef}
+          definition={data.definitions.neutral}
+          animationLibraries={[data.library]}
+          theme={variant}
+          style={{ width: '100%', height: '100%' }}
+        />
+      </span>
+      {hasOpenLayer ? (
+        <span ref={openLayerRef} style={{ position: 'absolute', inset: 0, visibility: 'hidden' }}>
+          <Avatar
+            ref={openAvatarRef}
+            definition={data.definitions.open}
+            animationLibraries={[data.library]}
+            theme={variant}
+            style={{ width: '100%', height: '100%' }}
+          />
+        </span>
+      ) : null}
     </span>
   )
 }

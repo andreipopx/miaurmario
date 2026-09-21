@@ -70,6 +70,9 @@ export interface Outfit {
   family_rating_count: number | null;
   is_starter_suggestion?: boolean;
   music_inspiration?: MusicInspiration | null;
+  /** Social layer: private (default) | friends | public. */
+  visibility?: 'private' | 'friends' | 'public';
+  shared_at?: string | null;
   created_at: string;
 }
 

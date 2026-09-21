@@ -249,7 +249,9 @@
     "primary": "Principal",
     "profileMenu": "Tu perfil y menú",
     "familySettings": "Gestionar familia",
-    "viewProfile": "Tu perfil y ajustes"
+    "viewProfile": "Tu perfil y ajustes",
+    "friends": "Amigos",
+    "newActivity": "{count, plural, one {# novedad} other {# novedades}}"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -2160,6 +2162,165 @@
       "cannot_deactivate_admin": "No puedes desactivar a un admin desde aquí.",
       "user_uses_own_key": "Este usuario usa su propia clave; no hay regalo que quitar.",
       "user_not_found": "Usuario no encontrado."
+    }
+  },
+  "social": {
+    "title": "Amigos",
+    "subtitle": "Los looks que comparten tus amigos y lo que opinan de los tuyos.",
+    "tabs": {
+      "feed": "Looks",
+      "friends": "Amigos",
+      "activity": "Actividad",
+      "pendingLabel": "{count, plural, one {# solicitud pendiente} other {# solicitudes pendientes}}",
+      "newLabel": "{count, plural, one {# novedad} other {# novedades}}"
+    },
+    "feed": {
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "cardLabel": "Looks de {name}",
+      "looksThatDay": "{count, plural, one {# look} other {# looks ese día}}",
+      "lookOf": "Look {n} de {total}",
+      "errorTitle": "No hemos podido cargar los looks",
+      "errorBody": "Revisa tu conexión e inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "emptyTitle": "Aún no hay looks por aquí",
+      "emptyBody": "Cuando tus amigos compartan lo que se ponen, aparecerá aquí. ¡Anímales!",
+      "noFriendsTitle": "Invita a tus amigos",
+      "noFriendsBody": "Comparte tu enlace y mirad juntos qué os ponéis cada día. Stinky se aburre solo.",
+      "loadMore": "Ver más"
+    },
+    "friends": {
+      "celebrate": "¡{name} y tú ya sois amigos!",
+      "searchLabel": "Buscar por nombre de usuario",
+      "searchPlaceholder": "Busca por @usuario",
+      "searchError": "No hemos podido buscar. Inténtalo en un momento.",
+      "noResults": "Nadie con el usuario «{q}».",
+      "incoming": "{count, plural, one {Solicitud de amistad} other {Solicitudes de amistad}}",
+      "yourFriends": "{count, plural, =0 {Tus amigos} one {Tus amigos (#)} other {Tus amigos (#)}}",
+      "noFriendsYet": "Todavía no tienes amigos aquí. Busca a alguien por su usuario o comparte tu enlace.",
+      "outgoing": "Solicitudes enviadas",
+      "blocked": "Bloqueados",
+      "unblock": "Desbloquear",
+      "unblocked": "Desbloqueado"
+    },
+    "activity": {
+      "emptyTitle": "Sin novedades",
+      "emptyBody": "Cuando alguien reaccione a los looks que compartes, lo verás aquí.",
+      "commented": "comentó",
+      "loved": "le encantó"
+    },
+    "reactions": {
+      "count": "{count, plural, one {# me encanta} other {# me encanta}}",
+      "error": "No se ha podido guardar. Inténtalo de nuevo.",
+      "commentSent": "Comentario enviado",
+      "love": "Me encanta",
+      "unlove": "Quitar me encanta",
+      "loveShort": "Me encanta",
+      "comment": "Comentar",
+      "commentShort": "Comentar",
+      "editComment": "Editar",
+      "commentTitle": "Comenta el look de {name}",
+      "commentHint": "Solo lo verá {name}... bueno, y Stinky. Tu comentario incluye un me encanta.",
+      "commentPlaceholder": "¡Qué combinación tan buena!",
+      "cancel": "Cancelar",
+      "send": "Enviar",
+      "commentedShort": "comentó",
+      "lovedShort": "le encantó"
+    },
+    "invite": {
+      "title": "Invita a tus amigos",
+      "body": "Comparte tu enlace: al abrirlo podrán añadirte en un toque.",
+      "cta": "Compartir mi enlace",
+      "shareText": "¡Añádeme en Miaurmario y compartimos looks!",
+      "copied": "Enlace copiado",
+      "copyFailed": "No se ha podido copiar. Tu enlace: {url}",
+      "setUsername": "Elige tu nombre de usuario"
+    },
+    "errors": {
+      "usernameRequired": "Primero elige tu nombre de usuario para que sepan quién eres.",
+      "alreadyFriends": "Ya sois amigos.",
+      "alreadyRequested": "Ya le has enviado una solicitud.",
+      "youBlocked": "Has bloqueado a esta persona. Desbloquéala primero.",
+      "self": "No puedes añadirte a ti.",
+      "notFound": "No hemos encontrado a esa persona.",
+      "tooMany": "Demasiados intentos. Espera un momento.",
+      "generic": "Algo ha fallado. Inténtalo de nuevo."
+    },
+    "actions": {
+      "add": "Añadir a tus amigos",
+      "addShort": "Añadir",
+      "requestSent": "Solicitud enviada",
+      "nowFriends": "¡Ahora {name} y tú sois amigos!",
+      "pending": "Pendiente",
+      "cancelRequestLabel": "Solicitud pendiente: toca para cancelarla",
+      "requestCancelled": "Solicitud cancelada",
+      "accept": "Aceptar",
+      "decline": "Rechazar",
+      "declineLabel": "Rechazar solicitud",
+      "remove": "Eliminar de amigos",
+      "confirmRemove": "¿Eliminar de tus amigos? Dejaréis de ver los looks del otro.",
+      "removed": "Eliminado de tus amigos"
+    },
+    "profile": {
+      "back": "Amigos",
+      "notFoundTitle": "No encontramos este perfil",
+      "notFoundBody": "Puede que el usuario haya cambiado o que no exista.",
+      "errorTitle": "No se ha podido cargar el perfil",
+      "friendCount": "{count, plural, one {# amigo} other {# amigos}}",
+      "block": "Bloquear",
+      "confirmBlock": "¿Bloquear a {name}? No podrá ver tus looks ni enviarte solicitudes.",
+      "blocked": "Usuario bloqueado",
+      "sharedLooks": "Looks compartidos",
+      "noLooksTitle": "Aún no ha compartido looks",
+      "noLooksBody": "Cuando {name} comparta lo que se pone, lo verás aquí.",
+      "notFriendsTitle": "Solo para amigos",
+      "notFriendsBody": "Añade a {name} para ver los looks que comparte con sus amigos.",
+      "loadMore": "Ver más",
+      "borrowSoon": "Pronto: pedir prestadas prendas a tus amigos."
+    },
+    "publicProfile": {
+      "loading": "Cargando perfil",
+      "notFoundTitle": "Este enlace no lleva a nadie",
+      "notFoundBody": "Puede que el usuario haya cambiado. Pídele el enlace de nuevo.",
+      "goHome": "Ir a Miaurmario",
+      "isMe": "Este es tu enlace. Compártelo para que te añadan.",
+      "alreadyFriends": "{name} y tú ya sois amigos.",
+      "seeLooks": "Ver sus looks",
+      "blockedByYou": "Has bloqueado a esta persona.",
+      "invite": "{name} te invita a compartir looks en Miaurmario.",
+      "goFriends": "Ir a Amigos"
+    },
+    "shareLook": {
+      "title": "¿Compartir con tus amigos?",
+      "body": "Enséñales tu look de hoy. Solo lo verán tus amigos.",
+      "cta": "Compartir con tus amigos",
+      "sharedTitle": "¡Compartido!",
+      "sharedBody": "Tus amigos ya pueden ver tu look de hoy.",
+      "seeFriends": "Ver Amigos",
+      "undo": "Deshacer",
+      "unshared": "Ya no se comparte",
+      "error": "No se ha podido compartir. Inténtalo de nuevo.",
+      "dismiss": "Ahora no",
+      "shareToggle": "Compartir con tus amigos"
+    },
+    "visibility": {
+      "title": "Quién puede verlo",
+      "hint": {
+        "private": "Solo tú.",
+        "friends": "Tus amigos lo ven en su pestaña Amigos.",
+        "public": "Cualquiera con tu enlace de perfil que haya iniciado sesión."
+      },
+      "option": {
+        "private": "Solo yo",
+        "friends": "Amigos",
+        "public": "Público"
+      },
+      "toast": {
+        "private": "Ahora es privado",
+        "friends": "Compartido con tus amigos",
+        "public": "Ahora es público"
+      },
+      "error": "No se ha podido cambiar. Inténtalo de nuevo."
     }
   }
 }

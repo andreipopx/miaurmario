@@ -284,7 +284,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
             <div
               role="toolbar"
               aria-label={t('toolbar.label')}
-              className="-mx-5 flex items-center gap-1.5 overflow-x-auto px-5 pb-0.5"
+              className="-mx-5 flex items-center gap-1.5 overflow-x-auto scrollbar-none px-5 pb-0.5"
             >
               <Button
                 variant="secondary"

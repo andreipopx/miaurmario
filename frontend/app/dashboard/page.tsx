@@ -365,7 +365,7 @@ function OutfitsSection() {
           </Button>
         </div>
       ) : (
-        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+        <div className="-mx-4 flex gap-3 overflow-x-auto scrollbar-none px-4 pb-1 sm:mx-0 sm:px-0">
           {outfits.map((o) => (
             <Link
               key={o.id}

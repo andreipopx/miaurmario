@@ -225,7 +225,7 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
           {/* Thumbnail strip */}
           {items.length > 1 && (
             <div className="border-t border-border px-5 py-3">
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 py-1">
+              <div className="-mx-1 flex gap-2 overflow-x-auto scrollbar-none px-1 py-1">
                 {items.map((item, index) => (
                   <button
                     key={item.id}

@@ -334,7 +334,7 @@ function OutfitsPageContent() {
 
       {view === 'list' && (
       <div className="flex flex-wrap items-center gap-3">
-        <div className="-mx-4 flex w-[calc(100%+2rem)] gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+        <div className="-mx-4 flex w-[calc(100%+2rem)] gap-2 overflow-x-auto scrollbar-none px-4 pb-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {CHIP_ORDER.map((c) => (
             <Chip
               key={c}

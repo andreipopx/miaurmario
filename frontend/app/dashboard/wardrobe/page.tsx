@@ -484,7 +484,7 @@ export default function WardrobePage() {
 
       {/* Category chips */}
       {typeChips.length > 0 && (
-        <div role="group" aria-label={t('categories')} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+        <div role="group" aria-label={t('categories')} className="-mx-4 flex gap-2 overflow-x-auto scrollbar-none px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
           <Chip
             active={typeFilter === 'all'}
             onClick={() => {

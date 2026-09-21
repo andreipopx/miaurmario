@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { EmptyState } from '@/components/empty-state';
 import {
   AlertDialog,
@@ -45,6 +46,7 @@ import { computeEditLoadPhase } from '@/lib/studio/edit-load';
 
 export default function StudioEditorPage() {
   const t = useTranslations('outfitNew');
+  const tSocial = useTranslations('social.shareLook');
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit') || undefined;
@@ -56,6 +58,7 @@ export default function StudioEditorPage() {
   const [editLoaded, setEditLoaded] = useState(false);
   const [wornConflictOpen, setWornConflictOpen] = useState(false);
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [shareWithFriends, setShareWithFriends] = useState(false);
 
   const createMutation = useCreateStudioOutfit();
   const patchMutation = usePatchOutfit();
@@ -257,6 +260,7 @@ export default function StudioEditorPage() {
           ? new Date().toISOString().slice(0, 10)
           : null,
         mark_worn: markWorn,
+        ...(shareWithFriends ? { visibility: 'friends' as const } : {}),
       });
       clearDraft();
       toast.success(markWorn ? t('toast.savedAndWorn') : t('toast.savedToLookbook'));
@@ -406,6 +410,16 @@ export default function StudioEditorPage() {
               )}
             </Button>
           </div>
+          {!isEditMode && (
+            <label className="mt-1.5 flex min-h-[32px] cursor-pointer items-center gap-2 text-xs font-semibold">
+              <Switch
+                checked={shareWithFriends}
+                onCheckedChange={setShareWithFriends}
+                aria-label={tSocial('shareToggle')}
+              />
+              {tSocial('shareToggle')}
+            </label>
+          )}
           {!canSave && !mutationPending && (
             <p className="mt-1 text-right text-xs text-muted-foreground">
               {state.items.length === 0 && state.occasion === null

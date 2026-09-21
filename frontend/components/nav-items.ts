@@ -10,6 +10,7 @@ import {
   Settings,
   Shirt,
   Sparkles,
+  UserRound,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -19,19 +20,25 @@ export interface NavItem {
   key: string;
   href: string;
   icon: LucideIcon;
+  /** Shows the social badge (pending friend requests + new reactions). */
+  socialBadge?: boolean;
 }
 
-/** The four tabs of the floating mobile dock. */
+const LOOKS_ITEM: NavItem = { key: 'looks', href: '/dashboard/outfits', icon: LayoutGrid };
+
+/** The four tabs of the floating mobile dock (Looks lives in the profile menu). */
 export const DOCK_ITEMS: readonly NavItem[] = [
   { key: 'today', href: '/dashboard', icon: Home },
   { key: 'wardrobe', href: '/dashboard/wardrobe', icon: Shirt },
   { key: 'stylist', href: '/dashboard/suggest', icon: Sparkles },
-  { key: 'looks', href: '/dashboard/outfits', icon: LayoutGrid },
+  { key: 'friends', href: '/dashboard/friends', icon: UserRound, socialBadge: true },
 ];
 
 /** Every section, for the desktop sidebar and the mobile profile menu. */
 export const PRIMARY_ITEMS: readonly NavItem[] = [
-  ...DOCK_ITEMS,
+  ...DOCK_ITEMS.slice(0, 3),
+  LOOKS_ITEM,
+  DOCK_ITEMS[3],
   { key: 'pairings', href: '/dashboard/pairings', icon: Layers },
   { key: 'pins', href: '/dashboard/pins', icon: Pin },
   { key: 'history', href: '/dashboard/history', icon: CalendarDays },

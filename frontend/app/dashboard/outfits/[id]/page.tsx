@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LineageCard } from '@/components/shared/lineage-card';
+import { OutfitSharingPanel } from '@/components/social/outfit-sharing-panel';
 import { StinkyTip } from '@/components/stinky-tip';
 import { CloneToLookbookDialog } from '@/components/shared/clone-to-lookbook-dialog';
 import { CanvasPreview } from '@/components/studio/canvas-panel';
@@ -243,6 +244,8 @@ export default function OutfitDetailPage() {
           {t('delete')}
         </Button>
       </div>
+
+      <OutfitSharingPanel outfitId={outfit.id} visibility={outfit.visibility ?? 'private'} />
 
       {isTemplate && wearInstancesData && wearInstancesData.total > 0 && (
         <Card className="border-0 bg-panel">

@@ -36,6 +36,9 @@ The Studio (`/dashboard/outfits/new`) got a drag-and-drop canvas: 3:4 editorial 
 ### El Estilista (backend prompt)
 - `backend/app/prompts/recommendation.txt` — rewritten as a Spanish fashion editor / personal stylist voice. References Iris van Herpen and Vivienne Westwood in the system prompt so the model matches the app's cultural register. Two-sentence editorial highlights, evocative Spanish headlines, tú (not usted). See notes in [`REBRAND-TODO.md`](frontend/REBRAND-TODO.md) about end-to-end validation.
 
+### Social layer (Amigos)
+Friends by username (`/friends`), per-outfit visibility (private default · friends · public), a friends feed grouped per friend and day (`/social/feed`: several looks on the same day show as a carousel), "me encanta" + comments (`OutfitRating` with `scope=friend`), in-app badge (`/friends/summary`, polled every 60s) and the share-invite page `/u/{username}`. The dock's 4th tab is now **Amigos**; **Looks** moved to the profile menu / desktop sidebar. Migration `social2609` (after `usrpwd2609`). Friends never get session access to someone else's image folder: item images of a shared look are reachable only through the signed URLs returned by endpoints that passed `can_view_outfit_socially`.
+
 ## Deployment
 
 The infra side (docker-compose, Caddy, `.env`) lives in a separate repo: [`andreipopx/pop-servicios`](https://github.com/andreipopx/pop-servicios). It is configured to consume `wardrowbe-frontend:local` (built from this fork) rather than `ghcr.io/anyesh/wardrowbe:frontend-latest`.

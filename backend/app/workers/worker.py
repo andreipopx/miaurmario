@@ -7,6 +7,7 @@ from sqlalchemy import update
 from app.config import get_settings
 from app.models.item import ClothingItem, ItemStatus
 from app.services.ai_service import AIService
+from app.workers.admin import delete_user_account
 from app.workers.db import close_db, get_db_session, init_db
 from app.workers.notifications import (
     check_scheduled_notifications,
@@ -71,6 +72,7 @@ class WorkerSettings:
         update_learning_profiles,
         import_pinterest_board,
         refresh_expiring_tokens,
+        delete_user_account,
     ]
 
     cron_jobs = [

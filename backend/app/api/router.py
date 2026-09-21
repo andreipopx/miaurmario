@@ -3,10 +3,12 @@
 from fastapi import APIRouter
 
 from app.api.admin import router as admin_router
+from app.api.admin_panel import router as admin_panel_router
 from app.api.ai_settings import router as ai_settings_router
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
 from app.api.families import router as families_router
+from app.api.feedback import router as feedback_router
 from app.api.health import router as health_router
 from app.api.images import router as images_router
 from app.api.integrations.pinterest import pins_router as pinterest_pins_router
@@ -29,6 +31,8 @@ api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(ai_settings_router)
 api_router.include_router(admin_router)
+api_router.include_router(admin_panel_router)
+api_router.include_router(feedback_router)
 api_router.include_router(items_router)
 api_router.include_router(images_router)
 api_router.include_router(preferences_router)

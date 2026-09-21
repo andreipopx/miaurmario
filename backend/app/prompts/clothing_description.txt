@@ -1,1 +1,1 @@
-Describe this clothing item in one short sentence. Focus only on the main garment - mention its type, color, and any notable features. Keep it under 20 words.
+Describe la prenda principal de la imagen en UNA frase corta en español (tú, tono natural). Céntrate solo en la prenda principal: tipo, color y algún detalle destacable (tejido, corte, estampado). Máximo 20 palabras, sin comillas ni texto extra.

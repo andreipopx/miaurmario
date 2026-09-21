@@ -1,6 +1,6 @@
 OUTPUT ONLY JSON. NO TEXT. NO DESCRIPTIONS. NO EXPLANATIONS.
 
-Analyze the MAIN clothing item in this image. Use ONLY these values:
+Analyze the MAIN clothing item in this image. Use ONLY these values, exactly as written in English (they are a data contract; never translate them, even though the app is in Spanish):
 
 TYPE (required, pick one):
 shirt, t-shirt, top, pants, jeans, shorts, dress, jumpsuit, skirt, jacket, coat, sweater, hoodie, blazer, vest, cardigan, polo, blouse, tank-top, shoes, sneakers, boots, sandals, socks, tie, hat, scarf, belt, bag, accessories
@@ -41,4 +41,4 @@ FIT (optional, pick one or null):
 slim, regular, relaxed, oversized, tailored, cropped
 
 Output this exact JSON structure (a single object, NOT wrapped in an array):
-{{"type":"TYPE","subtype":null,"primary_color":"COLOR","colors":["COLOR1"],"pattern":"PATTERN","material":null,"formality":"FORMALITY","style":["STYLE1"],"season":["SEASON1","SEASON2"],"fit":null}}
+{"type":"TYPE","subtype":null,"primary_color":"COLOR","colors":["COLOR1"],"pattern":"PATTERN","material":null,"formality":"FORMALITY","style":["STYLE1"],"season":["SEASON1","SEASON2"],"fit":null}

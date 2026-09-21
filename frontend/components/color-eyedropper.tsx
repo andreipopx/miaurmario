@@ -11,6 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { CLOTHING_COLORS } from '@/lib/types';
+import { nearestClothingColor } from '@/lib/colors';
+import { useColorLabel } from '@/lib/tag-labels';
 
 interface ColorEyedropperProps {
   imageUrl: string;
@@ -22,72 +24,18 @@ function rgbToHex(r: number, g: number, b: number): string {
   return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  return {
-    r: parseInt(hex.slice(1, 3), 16),
-    g: parseInt(hex.slice(3, 5), 16),
-    b: parseInt(hex.slice(5, 7), 16),
-  };
-}
-
-function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0;
-  const l = (max + min) / 2;
-
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-      case g: h = ((b - r) / d + 2) / 6; break;
-      case b: h = ((r - g) / d + 4) / 6; break;
-    }
-  }
-  return { h: h * 360, s, l };
-}
-
-function colorDistance(hex1: string, hex2: string): number {
-  const rgb1 = hexToRgb(hex1);
-  const rgb2 = hexToRgb(hex2);
-  const hsl1 = rgbToHsl(rgb1.r, rgb1.g, rgb1.b);
-  const hsl2 = rgbToHsl(rgb2.r, rgb2.g, rgb2.b);
-
-  const saturationPenalty = Math.abs(hsl1.s - hsl2.s) * 100;
-  let hueDiff = Math.abs(hsl1.h - hsl2.h);
-  if (hueDiff > 180) hueDiff = 360 - hueDiff;
-
-  const hueWeight = Math.min(hsl1.s, hsl2.s) * 2;
-  const hueDistance = hueDiff * hueWeight;
-  const rgbDistance = Math.sqrt(
-    (rgb1.r - rgb2.r) ** 2 +
-    (rgb1.g - rgb2.g) ** 2 +
-    (rgb1.b - rgb2.b) ** 2
-  );
-
-  return rgbDistance + saturationPenalty + hueDistance;
-}
-
 type ClothingColor = (typeof CLOTHING_COLORS)[number];
 
+// Snap to the canonical palette with the same perceptual (CIEDE2000) match
+// the colour-preference wheel uses.
 function findClosestColor(hex: string): ClothingColor {
-  let closestIndex = 0;
-  let minDistance = Infinity;
-
-  for (let i = 0; i < CLOTHING_COLORS.length; i++) {
-    const distance = colorDistance(hex, CLOTHING_COLORS[i].hex);
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestIndex = i;
-    }
-  }
-
-  return CLOTHING_COLORS[closestIndex];
+  const value = nearestClothingColor(hex);
+  return CLOTHING_COLORS.find((c) => c.value === value) ?? CLOTHING_COLORS[0];
 }
 
 export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedropperProps) {
   const t = useTranslations('color.eyedropper');
+  const colorLabel = useColorLabel();
   const [open, setOpen] = useState(false);
   const [pickedColor, setPickedColor] = useState<string | null>(null);
   const [matchedColor, setMatchedColor] = useState<ClothingColor | null>(null);
@@ -341,7 +289,7 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
                       className="h-10 w-10 rounded-full ring-1 ring-inset ring-black/10"
                       style={{ backgroundColor: matchedColor.hex }}
                     />
-                    <span className="text-xs font-bold">{matchedColor.name}</span>
+                    <span className="text-xs font-bold">{colorLabel(matchedColor.value)}</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -357,7 +305,7 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
                   </Button>
                   <Button onClick={handleConfirm}>
                     <Check className="h-4 w-4" strokeWidth={2} />
-                    {t('useName', { name: matchedColor.name })}
+                    {t('useName', { name: colorLabel(matchedColor.value) })}
                   </Button>
                 </div>
               </div>

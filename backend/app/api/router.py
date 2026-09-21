@@ -7,6 +7,7 @@ from app.api.ai_settings import router as ai_settings_router
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
 from app.api.families import router as families_router
+from app.api.geo import router as geo_router
 from app.api.health import router as health_router
 from app.api.images import router as images_router
 from app.api.integrations.pinterest import pins_router as pinterest_pins_router
@@ -34,6 +35,7 @@ api_router.include_router(images_router)
 api_router.include_router(preferences_router)
 api_router.include_router(families_router)
 api_router.include_router(weather_router)
+api_router.include_router(geo_router)
 api_router.include_router(outfits_router)
 api_router.include_router(pairings_router)
 api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])

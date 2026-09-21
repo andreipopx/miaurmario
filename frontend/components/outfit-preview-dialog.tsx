@@ -20,6 +20,8 @@ import { FamilyRatingForm, FamilyRatingsDisplay } from '@/components/family-rati
 import { toast } from 'sonner';
 import { useFormatter, useTranslations } from 'next-intl';
 import Image from 'next/image';
+import { useTagLabel } from '@/lib/tag-labels';
+import { clothingColorHex } from '@/lib/colors';
 
 interface OutfitPreviewDialogProps {
   outfit: Outfit;
@@ -32,6 +34,7 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
   const t = useTranslations('outfitPreview');
   const tc = useTranslations('common');
   const tOccasions = useTranslations('suggest.occasions');
+  const tagLabel = useTagLabel();
   const format = useFormatter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageKey, setImageKey] = useState(0); // Force image reload after rotation
@@ -169,13 +172,13 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
                   </Badge>
                 )}
                 {currentItem.primary_color && (
-                  <Badge variant="outline" className="gap-1.5 capitalize">
+                  <Badge variant="outline" className="gap-1.5">
                     <span
                       aria-hidden
                       className="h-2.5 w-2.5 rounded-full ring-1 ring-inset ring-black/10"
-                      style={{ backgroundColor: currentItem.primary_color }}
+                      style={{ backgroundColor: clothingColorHex(currentItem.primary_color) ?? currentItem.primary_color }}
                     />
-                    {currentItem.primary_color}
+                    {tagLabel('colors', currentItem.primary_color)}
                   </Badge>
                 )}
               </div>

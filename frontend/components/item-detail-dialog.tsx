@@ -66,6 +66,7 @@ import { Item, CLOTHING_TYPES, CLOTHING_COLORS } from '@/lib/types';
 import { ColorEyedropper } from '@/components/color-eyedropper';
 import { GeneratePairingsDialog } from '@/components/generate-pairings-dialog';
 import { useFeatures } from '@/lib/hooks/use-features';
+import { useTagLabel } from '@/lib/tag-labels';
 
 interface ItemDetailDialogProps {
   item: Item | null;
@@ -78,6 +79,7 @@ interface ItemDetailDialogProps {
 export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogProps) {
   const t = useTranslations('wardrobe.item');
   const tc = useTranslations('common');
+  const tagLabel = useTagLabel();
   const locale = useLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -252,7 +254,6 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   // Use signed URL from backend for better quality in detail view
   const imageUrl = item.image_url || item.image_path;
   const colorInfo = CLOTHING_COLORS.find((c) => c.value === item.primary_color);
-  const typeInfo = CLOTHING_TYPES.find((t) => t.value === item.type);
 
   // AI-generated tags
   const tags = item.tags || {};
@@ -268,7 +269,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
           <DialogHeader className="flex-shrink-0 space-y-3 px-5 pb-3 pt-4 text-left sm:text-left">
             <div className="flex items-center justify-between gap-3">
               <DialogTitle className="min-w-0 truncate pr-0 text-xl">
-                {item.name || typeInfo?.label || item.type}
+                {item.name || tagLabel('types', item.type)}
               </DialogTitle>
               <Button
                 variant="secondary"
@@ -611,7 +612,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       <SelectContent>
                         {CLOTHING_TYPES.map((ty) => (
                           <SelectItem key={ty.value} value={ty.value}>
-                            {ty.label}
+                            {tagLabel('types', ty.value)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -643,7 +644,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                                   className="h-3.5 w-3.5 rounded-full ring-1 ring-inset ring-black/10"
                                   style={{ backgroundColor: c.hex }}
                                 />
-                                {c.name}
+                                {tagLabel('colors', c.value)}
                               </div>
                             </SelectItem>
                           ))}
@@ -705,7 +706,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   <div className="space-y-2.5">
                     <div className="flex items-center gap-2 text-sm">
                       <Shirt className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
-                      <span className="font-bold">{typeInfo?.label || item.type}</span>
+                      <span className="font-bold">{tagLabel('types', item.type)}</span>
                       {item.subtype && (
                         <span className="text-muted-foreground">• {item.subtype}</span>
                       )}
@@ -723,7 +724,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                           className="h-4 w-4 rounded-full ring-1 ring-inset ring-black/10"
                           style={{ backgroundColor: colorInfo.hex }}
                         />
-                        <span>{colorInfo.name}</span>
+                        <span>{tagLabel('colors', colorInfo.value)}</span>
                       </div>
                     )}
                     {item.wear_count > 0 && (
@@ -932,42 +933,42 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       {hasAiTags && <div className="flex flex-wrap gap-1.5">
                         {tags.colors?.map((color) => (
                           <Badge key={color} variant="outline" className="border-0 bg-background text-xs font-semibold">
-                            {color}
+                            {tagLabel('colors', color)}
                           </Badge>
                         ))}
                         {tags.pattern && (
                           <Badge variant="outline" className="border-0 bg-background text-xs font-semibold">
-                            {tags.pattern}
+                            {tagLabel('patterns', tags.pattern)}
                           </Badge>
                         )}
                         {tags.material && (
                           <Badge variant="outline" className="border-0 bg-background text-xs font-semibold">
-                            {tags.material}
+                            {tagLabel('materials', tags.material)}
                           </Badge>
                         )}
                         {tags.style?.map((s) => (
                           <Badge key={s} variant="outline" className="border-0 bg-background text-xs font-semibold">
-                            {s}
+                            {tagLabel('styles', s)}
                           </Badge>
                         ))}
                         {tags.season?.map((s) => (
                           <Badge key={s} variant="outline" className="border-0 bg-background text-xs font-semibold">
-                            {s}
+                            {tagLabel('seasons', s)}
                           </Badge>
                         ))}
                         {tags.formality && (
                           <Badge variant="outline" className="border-0 bg-background text-xs font-semibold">
-                            {tags.formality}
+                            {tagLabel('formality', tags.formality)}
                           </Badge>
                         )}
                         {tags.fit && (
                           <Badge variant="outline" className="border-0 bg-background text-xs font-semibold">
-                            {t('ai.fitLabel', { fit: tags.fit })}
+                            {t('ai.fitLabel', { fit: tagLabel('fit', tags.fit) })}
                           </Badge>
                         )}
                         {tags.occasion?.map((o: string) => (
                           <Badge key={o} variant="outline" className="border-0 bg-background text-xs font-semibold">
-                            {o}
+                            {tagLabel('occasions', o)}
                           </Badge>
                         ))}
                         {tags.condition && (

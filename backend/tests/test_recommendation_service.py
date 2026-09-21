@@ -111,6 +111,7 @@ class TestPromptTemplate:
             condition="clear",
             precipitation_chance=10,
             preferences_text="",
+            style_profile_text="- Colores favoritos: negro (black)",
             items_text="[1] shirt | blue | cotton",
             mandatory_items_section="",
             song_context_text="",
@@ -131,6 +132,7 @@ class TestPromptTemplate:
                 condition="cloudy",
                 precipitation_chance=30,
                 preferences_text="",
+                style_profile_text="- Colores favoritos: negro (black)",
                 items_text="[1] shirt",
                 mandatory_items_section="",
                 song_context_text="",
@@ -330,8 +332,8 @@ class TestFormatPrefsOccasion:
             }
         }
         text = service._format_preferences_for_prompt(None, learned, None, None, occasion="work")
-        assert "For work, user prefers: blue, gray" in text
-        assert "Low success rate" in text
+        assert "Para work suele elegir: azul (blue), gris (gray)" in text
+        assert "convencido poco" in text
 
 
 class TestPromptPreRanking:
@@ -353,6 +355,7 @@ class TestSingleOutfitFormat:
             condition="clear",
             precipitation_chance=0,
             preferences_text="",
+            style_profile_text="- Colores favoritos: negro (black)",
             items_text="[1] shirt | blue | cotton",
             mandatory_items_section="",
             song_context_text="",

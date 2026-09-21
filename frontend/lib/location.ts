@@ -21,17 +21,6 @@ export interface ResolvedLocation {
   timezone?: string;
 }
 
-export interface ReverseGeocodeResponse {
-  address?: {
-    city?: string;
-    town?: string;
-    village?: string;
-    municipality?: string;
-    country?: string;
-  };
-  display_name?: string;
-}
-
 export const DEFAULT_NETWORK_LOCATION_URL = 'https://ipapi.co/json/';
 
 export function getNetworkLocationUrl(): string {
@@ -80,41 +69,4 @@ export function resolveNetworkLocation(
         ? timezoneId
         : fallbackTimezone,
   };
-}
-
-export function formatReverseGeocodedLocation(
-  data: ReverseGeocodeResponse
-): string | undefined {
-  const city =
-    data.address?.city ||
-    data.address?.town ||
-    data.address?.village ||
-    data.address?.municipality;
-  const country = data.address?.country;
-
-  if (city && country) return `${city}, ${country}`;
-  if (city) return city;
-  if (data.display_name) {
-    return data.display_name.split(',').slice(0, 2).join(',').trim();
-  }
-  return undefined;
-}
-
-export function getGeolocationFailureMessage(error: {
-  code?: number;
-  message?: string;
-}): string {
-  const reasons: Record<number, string> = {
-    1: 'Location access was denied.',
-    2: 'Location is currently unavailable.',
-    3: 'Location request timed out.',
-  };
-
-  if (typeof error.code === 'number' && reasons[error.code]) {
-    return reasons[error.code];
-  }
-  if (error.message) {
-    return `Failed to get exact location: ${error.message}`;
-  }
-  return 'Failed to get exact location.';
 }

@@ -60,6 +60,91 @@ class TestUserUpdate:
         assert float(data["location_lat"]) == pytest.approx(40.7128, rel=1e-4)
         assert float(data["location_lon"]) == pytest.approx(-74.0060, rel=1e-4)
 
+    @pytest.mark.asyncio
+    async def test_update_city_from_geocoding_result(
+        self, client: AsyncClient, test_user, auth_headers
+    ):
+        """The city picker saves name + coords + the city's IANA zone together."""
+        response = await client.patch(
+            "/api/v1/users/me",
+            json={
+                "location_name": "Madrid,  Comunidad de Madrid, España",
+                "location_lat": 40.4165,
+                "location_lon": -3.70256,
+                "timezone": "Europe/Madrid",
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["location_name"] == "Madrid, Comunidad de Madrid, España"
+        assert data["timezone"] == "Europe/Madrid"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "tz",
+        [
+            "Europe/Madrid",
+            "Atlantic/Canary",
+            "America/Argentina/Buenos_Aires",
+            "UTC",
+            "Asia/Kathmandu",
+        ],
+    )
+    async def test_accepts_any_iana_timezone(
+        self, client: AsyncClient, test_user, auth_headers, tz
+    ):
+        response = await client.patch(
+            "/api/v1/users/me", json={"timezone": tz}, headers=auth_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["timezone"] == tz
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("sent", "stored"),
+        [("Asia/Calcutta", "Asia/Kolkata"), ("Europe/Kiev", "Europe/Kyiv")],
+    )
+    async def test_legacy_browser_timezone_is_canonicalised(
+        self, client: AsyncClient, test_user, auth_headers, sent, stored
+    ):
+        response = await client.patch(
+            "/api/v1/users/me", json={"timezone": sent}, headers=auth_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["timezone"] == stored
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tz", ["Mars/Olympus", "Europe/Madrid ", "../etc/passwd", "", "GMT+2"])
+    async def test_rejects_invalid_timezone(self, client: AsyncClient, test_user, auth_headers, tz):
+        response = await client.patch(
+            "/api/v1/users/me", json={"timezone": tz}, headers=auth_headers
+        )
+        if tz == "Europe/Madrid ":
+            # Surrounding whitespace is trimmed, not an error.
+            assert response.status_code == 200
+            assert response.json()["timezone"] == "Europe/Madrid"
+        else:
+            assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_rejects_out_of_range_coordinates(
+        self, client: AsyncClient, test_user, auth_headers
+    ):
+        response = await client.patch(
+            "/api/v1/users/me", json={"location_lat": 91, "location_lon": 0}, headers=auth_headers
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_rejects_too_long_location_name(
+        self, client: AsyncClient, test_user, auth_headers
+    ):
+        response = await client.patch(
+            "/api/v1/users/me", json={"location_name": "x" * 101}, headers=auth_headers
+        )
+        assert response.status_code == 422
+
 
 class TestOnboarding:
     """Tests for onboarding completion endpoint."""

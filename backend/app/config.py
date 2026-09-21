@@ -8,6 +8,9 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_SECRET_KEY = "change-me-in-production"
 
+# Nominatim requires an identifying User-Agent with a contact URL.
+DEFAULT_GEOCODING_USER_AGENT = "Miaurmario/1.0 (+https://github.com/andreipopx/miaurmario)"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -245,7 +248,7 @@ class Settings(BaseSettings):
         return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
 
     def get_geocoding_user_agent(self) -> str:
-        return self.geocoding_user_agent or "Wardrowbe/1.0"
+        return self.geocoding_user_agent or DEFAULT_GEOCODING_USER_AGENT
 
 
 @lru_cache

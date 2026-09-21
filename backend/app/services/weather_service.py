@@ -7,6 +7,7 @@ import httpx
 import redis.asyncio as aioredis
 
 from app.config import get_settings
+from app.services.geocoding_service import GeocodingBusyError, wait_for_nominatim_slot
 from app.utils.redis_lock import get_redis
 
 logger = logging.getLogger(__name__)
@@ -190,6 +191,11 @@ class WeatherService:
         headers = {
             "User-Agent": settings.get_geocoding_user_agent(),
         }
+
+        try:
+            await wait_for_nominatim_slot()
+        except GeocodingBusyError as e:
+            raise GeocodingServiceError(f"Geocoding throttled for {query!r}") from e
 
         async with httpx.AsyncClient(
             timeout=10.0, follow_redirects=True, headers=headers

@@ -41,6 +41,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useColorLabel } from '@/lib/tag-labels';
 
 function StatCard({
   title,
@@ -149,6 +150,7 @@ const WEATHER_STYLE: Record<string, { icon: React.ComponentType<{ className?: st
 };
 
 function ColorPreferenceBar({ colorScore }: { colorScore: LearnedColorScore }) {
+  const colorLabel = useColorLabel();
   const bgColor = colorMap[colorScore.color.toLowerCase()] || 'bg-muted';
   const score = colorScore.score;
   const percentage = Math.abs(score) * 100;
@@ -159,7 +161,7 @@ function ColorPreferenceBar({ colorScore }: { colorScore: LearnedColorScore }) {
       <div aria-hidden className={cn('h-5 w-5 shrink-0 rounded-full', bgColor)} />
       <div className="flex-1">
         <div className="mb-1 flex justify-between gap-2 text-sm">
-          <span className="font-semibold capitalize">{colorScore.color}</span>
+          <span className="font-semibold">{colorLabel(colorScore.color)}</span>
           <span className="flex items-center gap-1 text-muted-foreground">
             {isPositive ? (
               <ThumbsUp className="h-3.5 w-3.5 text-success" strokeWidth={1.75} aria-hidden />

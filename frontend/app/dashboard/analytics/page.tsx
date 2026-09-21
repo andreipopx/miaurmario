@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { useColorLabel } from '@/lib/tag-labels';
 
 function StatCard({
   title,
@@ -91,6 +92,7 @@ function LoadingSkeleton() {
 }
 
 function ColorBar({ color, percentage }: { color: string; percentage: number }) {
+  const colorLabel = useColorLabel();
   // Garment colour swatches — these represent the clothes' actual colours, not UI tokens.
   const colorMap: Record<string, string> = {
     black: 'bg-gray-900',
@@ -127,7 +129,7 @@ function ColorBar({ color, percentage }: { color: string; percentage: number }) 
       />
       <div className="flex-1">
         <div className="mb-1 flex justify-between text-sm">
-          <span className="font-semibold capitalize">{color}</span>
+          <span className="font-semibold">{colorLabel(color)}</span>
           <span className="text-muted-foreground">{percentage.toFixed(1)}%</span>
         </div>
         <Progress value={percentage} className="h-2" />

@@ -14,8 +14,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt requirements-extras.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-extras.txt
 
-# Pre-download rembg model so first request is instant
-RUN python -c "from rembg import new_session; new_session()"
+# Bake the rembg model into the image so the first background removal after a
+# deploy does not download 176 MB. rembg looks in $U2NET_HOME (default
+# ~/.u2net, which would be /root for this build step but /home/appuser at
+# runtime), so pin it to a shared, world-readable path.
+ENV U2NET_HOME=/opt/u2net
+RUN mkdir -p "$U2NET_HOME" \
+    && python -c "from rembg import new_session; new_session('u2net')" \
+    && chmod -R a+rX "$U2NET_HOME"
 
 # Copy application code
 COPY . .

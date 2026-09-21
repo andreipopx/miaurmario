@@ -1733,5 +1733,32 @@
     "manageConnection": "Gestionar conexión",
     "previous": "Anterior",
     "next": "Siguiente"
+  },
+  "weatherConditions": {
+    "clear": "Despejado",
+    "mostlyClear": "Mayormente despejado",
+    "partlyCloudy": "Parcialmente nublado",
+    "cloudy": "Nublado",
+    "foggy": "Niebla",
+    "lightDrizzle": "Llovizna ligera",
+    "drizzle": "Llovizna",
+    "heavyDrizzle": "Llovizna intensa",
+    "freezingDrizzle": "Llovizna helada",
+    "lightRain": "Lluvia ligera",
+    "rain": "Lluvia",
+    "heavyRain": "Lluvia intensa",
+    "freezingRain": "Lluvia helada",
+    "lightSnow": "Nieve ligera",
+    "snow": "Nieve",
+    "heavySnow": "Nevada intensa",
+    "snowGrains": "Cinarra",
+    "lightShowers": "Chubascos ligeros",
+    "showers": "Chubascos",
+    "heavyShowers": "Chubascos fuertes",
+    "lightSnowShowers": "Chubascos de nieve ligeros",
+    "snowShowers": "Chubascos de nieve",
+    "thunderstorm": "Tormenta",
+    "thunderstormHail": "Tormenta con granizo",
+    "unknown": "Sin datos"
   }
 }

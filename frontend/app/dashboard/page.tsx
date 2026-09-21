@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
+import { useWeatherConditionLabel } from '@/lib/weather-condition';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Sparkles, ArrowRight, Cloud, Droplets, HeartHandshake, ChevronRight } from 'lucide-react';
@@ -53,11 +54,11 @@ function GoldRule() {
 
 function EditorialGreeting() {
   const t = useTranslations('dashboard.editorial.editorialGreeting');
-  const locale = useLocale();
+  const format = useFormatter();
   const now = new Date();
   const hour = now.getHours();
   const greeting = hour < 12 ? t('morning') : hour < 20 ? t('afternoon') : t('evening');
-  const formatted = now.toLocaleDateString(locale === 'es' ? 'es-ES' : 'en-US', {
+  const formatted = format.dateTime(now, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -75,6 +76,7 @@ function EditorialGreeting() {
 function OutfitOfTheDayHero() {
   const t = useTranslations('dashboard.editorial');
   const tSuggest = useTranslations('suggest');
+  const conditionLabel = useWeatherConditionLabel();
   const { data: pending, isLoading } = usePendingOutfits(1);
   const featured = pending?.outfits?.[0];
   const { data: weather } = useWeather();
@@ -136,7 +138,7 @@ function OutfitOfTheDayHero() {
               <span className="font-display text-3xl">
                 {displayValue(weather.temperature, unit)}{tempSymbol(unit)}
               </span>
-              <span className="text-sm text-muted-foreground capitalize">{weather.condition_label || weather.condition}</span>
+              <span className="text-sm text-muted-foreground capitalize">{conditionLabel(weather)}</span>
             </div>
             {weather.precipitation_chance > 0 && (
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -278,6 +280,7 @@ function OutfitsSection() {
 
 function LibrarySection() {
   const t = useTranslations('dashboard.editorial');
+  const format = useFormatter();
   const { data, isLoading } = useOutfits({ was_worn: true }, 1, 5);
   const items = data?.outfits ?? [];
 
@@ -310,7 +313,7 @@ function LibrarySection() {
                   <p className="font-display text-lg capitalize">{o.occasion}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {o.scheduled_for
-                      ? new Date(o.scheduled_for).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
+                      ? format.dateTime(new Date(o.scheduled_for + 'T00:00:00'), { day: 'numeric', month: 'long' })
                       : ''}
                   </p>
                 </div>

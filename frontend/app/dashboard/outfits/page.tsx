@@ -19,7 +19,7 @@ import {
   type OutfitFilters,
 } from '@/lib/hooks/use-outfits';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 
 interface MonthRef {
   year: number;
@@ -128,6 +128,7 @@ function chipToFilters(chip: FilterChip, search: string): OutfitFilters {
 
 function OutfitsPageContent() {
   const t = useTranslations('outfits');
+  const format = useFormatter();
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawFilter = (searchParams.get('filter') as FilterChip) || 'all';
@@ -467,7 +468,7 @@ function OutfitsPageContent() {
                 {selectedDate && (
                   <div className="border-b pb-3">
                     <h2 className="text-lg font-semibold">
-                      {formatReadableDate(selectedDate)}
+                      {format.dateTime(parseYmd(selectedDate), { weekday: 'short', month: 'short', day: 'numeric' })}
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       {t('outfitCount', { count: selectedDayOutfits.length })}
@@ -496,14 +497,6 @@ function OutfitsPageContent() {
 function parseYmd(dateKey: string): Date {
   const [y, m, d] = dateKey.split('-').map(Number);
   return new Date(y, m - 1, d);
-}
-
-function formatReadableDate(dateKey: string): string {
-  return parseYmd(dateKey).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
 }
 
 export default function OutfitsPage() {

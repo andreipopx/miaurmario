@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useFamily } from '@/lib/hooks/use-family';
 import { useFamilyOutfits, type Outfit, type OutfitSource } from '@/lib/hooks/use-outfits';
 import { FamilyRatingForm, FamilyRatingsDisplay } from '@/components/family-ratings';
@@ -82,6 +82,7 @@ function FeedOutfitCard({
   onPreview: () => void;
 }) {
   const t = useTranslations('familyFeed');
+  const format = useFormatter();
   const [showRatingForm, setShowRatingForm] = useState(false);
   const myRating = outfit.family_ratings?.find((r) => r.user_id === currentMemberId);
 
@@ -97,7 +98,7 @@ function FeedOutfitCard({
             </Badge>
           </div>
           <span className="text-xs text-muted-foreground">
-            {outfit.scheduled_for ? new Date(outfit.scheduled_for).toLocaleDateString(undefined, {
+            {outfit.scheduled_for ? format.dateTime(new Date(outfit.scheduled_for + 'T00:00:00'), {
               month: 'short',
               day: 'numeric',
               year: 'numeric',

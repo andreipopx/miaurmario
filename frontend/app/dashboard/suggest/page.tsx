@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
+import { useWeatherConditionLabel } from '@/lib/weather-condition';
 import {
   Briefcase,
   Shirt,
@@ -79,6 +80,7 @@ interface WeatherOverride {
 
 function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weather; isLoading: boolean; temperatureUnit: TempUnit }) {
   const t = useTranslations('suggest');
+  const conditionLabel = useWeatherConditionLabel();
 
   // Get weather-based outfit hint
   const getWeatherHint = (w: Weather): string => {
@@ -142,7 +144,7 @@ function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weathe
                 <span className="text-4xl font-semibold tracking-tight">{displayValue(weather.temperature, temperatureUnit)}</span>
                 <span className="text-lg text-muted-foreground">{temperatureUnit === 'fahrenheit' ? '°F' : '°C'}</span>
               </div>
-              <p className="text-sm text-muted-foreground capitalize">{weather.condition_label || weather.condition}</p>
+              <p className="text-sm text-muted-foreground capitalize">{conditionLabel(weather)}</p>
             </div>
           </div>
           <div className="text-right text-sm text-muted-foreground space-y-1">
@@ -307,6 +309,8 @@ function OutfitResult({
   onNewRequest: () => void;
 }) {
   const t = useTranslations('suggest');
+  const format = useFormatter();
+  const conditionLabel = useWeatherConditionLabel();
   return (
     <div className="space-y-6">
       {/* Header with occasion and new request */}
@@ -318,7 +322,7 @@ function OutfitResult({
           {outfit.scheduled_for && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <CalendarDays className="h-3 w-3" />
-              {new Date(outfit.scheduled_for + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+              {format.dateTime(new Date(outfit.scheduled_for + 'T00:00:00'), { weekday: 'short', month: 'short', day: 'numeric' })}
             </span>
           )}
         </div>
@@ -340,7 +344,7 @@ function OutfitResult({
             <span>{t('rainChanceShort', { pct: outfit.weather.precipitation_chance })}</span>
           </div>
           <Badge variant="outline" className="capitalize">
-            {outfit.weather.condition_label || outfit.weather.condition}
+            {conditionLabel(outfit.weather)}
           </Badge>
         </div>
       )}

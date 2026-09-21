@@ -1733,5 +1733,32 @@
     "manageConnection": "Manage connection",
     "previous": "Previous",
     "next": "Next"
+  },
+  "weatherConditions": {
+    "clear": "Clear",
+    "mostlyClear": "Mostly clear",
+    "partlyCloudy": "Partly cloudy",
+    "cloudy": "Cloudy",
+    "foggy": "Foggy",
+    "lightDrizzle": "Light drizzle",
+    "drizzle": "Drizzle",
+    "heavyDrizzle": "Heavy drizzle",
+    "freezingDrizzle": "Freezing drizzle",
+    "lightRain": "Light rain",
+    "rain": "Rain",
+    "heavyRain": "Heavy rain",
+    "freezingRain": "Freezing rain",
+    "lightSnow": "Light snow",
+    "snow": "Snow",
+    "heavySnow": "Heavy snow",
+    "snowGrains": "Snow grains",
+    "lightShowers": "Light showers",
+    "showers": "Showers",
+    "heavyShowers": "Heavy showers",
+    "lightSnowShowers": "Light snow showers",
+    "snowShowers": "Snow showers",
+    "thunderstorm": "Thunderstorm",
+    "thunderstormHail": "Thunderstorm with hail",
+    "unknown": "Unknown"
   }
 }

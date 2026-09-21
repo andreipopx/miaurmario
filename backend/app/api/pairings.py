@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.outfit import Outfit, OutfitSource
 from app.models.user import User
+from app.services.ai_access import AIAccessError, ai_error_detail
 from app.services.ai_service import AIDisabledError
 from app.services.pairing_service import (
     AIGenerationError,
@@ -233,6 +234,9 @@ async def generate_pairings(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         ) from None
+    except AIAccessError as e:
+        code, detail = ai_error_detail(e)
+        raise HTTPException(status_code=code, detail=detail) from None
     except AIDisabledError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

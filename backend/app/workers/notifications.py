@@ -13,6 +13,7 @@ from app.models.outfit import Outfit, OutfitSource, OutfitStatus
 from app.models.schedule import Schedule
 from app.models.user import User
 from app.schemas.notification import EmailConfig, ExpoPushConfig, NtfyConfig
+from app.services.ai_access import AIAccessError
 from app.services.ai_service import AIDisabledError
 from app.services.learning_service import LearningService
 from app.services.notification_providers import (
@@ -235,6 +236,11 @@ async def process_scheduled_notification(ctx: dict, schedule_id: str):
         )
         return {"status": "sent", "outfit_id": str(outfit.id)}
 
+    except AIAccessError as e:
+        # User has no AI (free plan), exhausted the platform cap, or a broken
+        # BYOK config: skip quietly, never retry.
+        logger.info(f"Skipping schedule {schedule_id}: {e.code}")
+        return {"status": "skipped", "reason": e.code}
     except AIDisabledError:
         # Internal text is off — defer to the external agent; skip, don't retry.
         logger.info(f"Skipping schedule {schedule_id}: internal AI text disabled")

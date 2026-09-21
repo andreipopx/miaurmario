@@ -359,7 +359,9 @@ class TestBulkCreateSkipAI:
         mock_redis.enqueue_job.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_default_queues_ai_tagging(self, client: AsyncClient, auth_headers):
+    async def test_default_queues_ai_tagging(
+        self, client: AsyncClient, auth_headers, platform_ai_user
+    ):
         files = [("images", ("shirt.jpg", _make_test_image_bytes(), "image/jpeg"))]
         with patch("app.api.items.create_pool", new_callable=AsyncMock) as mock_create_pool:
             mock_redis = AsyncMock()
@@ -379,7 +381,7 @@ class TestBulkCreateSkipAI:
 
     @pytest.mark.asyncio
     async def test_default_queues_persists_ai_job_id(
-        self, client: AsyncClient, auth_headers, db_session: AsyncSession
+        self, client: AsyncClient, auth_headers, db_session: AsyncSession, platform_ai_user
     ):
         files = [("images", ("shirt.jpg", _make_test_image_bytes(), "image/jpeg"))]
         with patch("app.api.items.create_pool", new_callable=AsyncMock) as mock_create_pool:

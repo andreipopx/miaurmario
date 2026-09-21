@@ -16,17 +16,18 @@ class TestAIEndpointSchemeValidation:
             headers=auth_headers,
         )
         assert response.status_code == 400
-        assert "HTTP" in response.json()["detail"]
+        assert "https" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_allows_localhost(self, client, auth_headers):
-        response = await client.post(
-            "/api/v1/users/me/preferences/test-ai-endpoint",
-            json={"url": "http://127.0.0.1:11434/v1"},
-            headers=auth_headers,
-        )
-        # Should not be rejected for being private — this is self-hosted OSS
-        assert response.status_code != 400 or "HTTP" not in response.json().get("detail", "")
+    async def test_rejects_localhost_and_lan(self, client, auth_headers):
+        # Public multi-user deployment: the legacy probe must not reach the LAN.
+        for url in ("http://127.0.0.1:11434/v1", "https://127.0.0.1/v1", "https://10.0.0.2/v1"):
+            response = await client.post(
+                "/api/v1/users/me/preferences/test-ai-endpoint",
+                json={"url": url},
+                headers=auth_headers,
+            )
+            assert response.status_code == 400, url
 
 
 class TestOccasionValidation:

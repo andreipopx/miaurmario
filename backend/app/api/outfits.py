@@ -22,6 +22,7 @@ from app.models.outfit import (
 )
 from app.models.user import User
 from app.schemas.item import DEFAULT_WASH_INTERVALS
+from app.services.ai_access import AIAccessError, ai_error_detail
 from app.services.ai_service import AIDisabledError
 from app.services.item_service import ItemService
 from app.services.learning_service import LearningService
@@ -482,6 +483,9 @@ async def suggest_outfit(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         ) from None
+    except AIAccessError as e:
+        code, detail = ai_error_detail(e)
+        raise HTTPException(status_code=code, detail=detail) from None
     except AIDisabledError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

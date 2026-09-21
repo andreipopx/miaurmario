@@ -876,30 +876,6 @@
       "avoidRepeatDays": "Evitar repetir prendas en (días)",
       "preferUnderused": "Preferir prendas menos usadas"
     },
-    "aiEndpoints": {
-      "title": "Endpoints de IA",
-      "description": "Configura los endpoints de IA para análisis de imágenes. Se prueban en orden de arriba a abajo.",
-      "empty": "No hay endpoints personalizados. Usando la configuración del servidor por defecto.",
-      "endpointN": "Endpoint {index}",
-      "active": "Activo",
-      "disabled": "Desactivado",
-      "connected": "Conectado",
-      "errorBadge": "Error",
-      "testConnection": "Probar conexión",
-      "modelsAvailable": "{count} modelos disponibles",
-      "vision": "Visión",
-      "text": "Texto",
-      "name": "Nombre",
-      "url": "URL",
-      "visionModel": "Modelo de visión",
-      "textModel": "Modelo de texto",
-      "addEndpoint": "Añadir endpoint",
-      "testFailed": "No se pudo probar el endpoint",
-      "moveUp": "Subir",
-      "moveDown": "Bajar",
-      "remove": "Eliminar endpoint",
-      "namePlaceholder": "p. ej., Ollama local"
-    },
     "integrations": {
       "title": "Integraciones",
       "description": "Pinterest para inspiración y Spotify como mood musical del Estilista.",
@@ -1979,6 +1955,161 @@
         "title": "Condiciones de uso",
         "p1": "Miaurmario se ofrece tal cual, sin garantías, y puede cambiar o dejar de estar disponible. Sube solo fotos que tengas derecho a usar y no uses la app para nada ilegal o que moleste a otras personas."
       }
+    }
+  },
+  "aiAccess": {
+    "title": "Inteligencia artificial",
+    "subtitle": "Elige cómo usa Miaurmario la IA para etiquetar tus prendas y proponerte looks.",
+    "backToSettings": "← Volver a ajustes",
+    "yes": "sí",
+    "no": "no",
+    "access": {
+      "none": "Sin IA",
+      "platform": "IA de Miaurmario (regalo del admin)",
+      "byok": "Tu propia clave"
+    },
+    "current": {
+      "title": "Tu acceso actual",
+      "description": "Qué IA se usa cuando pides algo a Stinky.",
+      "capabilities": "Visión: {vision} · Texto: {text}",
+      "explain": {
+        "none": "Ahora mismo no tienes IA. Todo lo manual sigue funcionando: subir prendas, etiquetarlas a mano, crear outfits y planificarlos. Añade tu propia clave abajo para activar las funciones inteligentes.",
+        "platform": "El admin te ha regalado acceso a la IA de Miaurmario. No necesitas hacer nada más.",
+        "byok": "Usamos tu propia clave de API solo para tus peticiones."
+      },
+      "usage": "Este mes: {requests} peticiones · {tokens} tokens",
+      "usageWithCap": "Este mes: {requests} de {cap} peticiones · {tokens} tokens",
+      "serverDisabled": "La IA está desactivada en este servidor por ahora."
+    },
+    "explainer": {
+      "title": "¿Para qué sirve la IA aquí?",
+      "tagging": "Etiquetar automáticamente las prendas que subes (tipo, color, tejido, temporada...).",
+      "suggest": "El Estilista: propuestas de outfit según el tiempo, la ocasión y tus gustos.",
+      "pairings": "Combinaciones: ideas de con qué combinar una prenda concreta.",
+      "withoutAi": "Sin IA puedes seguir usando la app entera de forma manual.",
+      "privacy": "Tu clave se guarda cifrada, nunca te la volvemos a mostrar (solo sus 4 últimos caracteres) y solo se usa para tus propias peticiones."
+    },
+    "form": {
+      "title": "Usa tu propia clave",
+      "description": "Cualquier proveedor compatible con la API de OpenAI. DeepSeek es barato y funciona bien para todo.",
+      "getDeepseekKey": "Consigue una clave de DeepSeek",
+      "getKeyFrom": "Consigue una clave de {provider}",
+      "provider": "Proveedor",
+      "custom": "Personalizado",
+      "baseUrl": "URL base (https)",
+      "apiKey": "Clave de API",
+      "keyPlaceholder": "sk-...",
+      "keySavedPlaceholder": "Guardada (••••{last4}) — escribe para cambiarla",
+      "keyHint": "Solo se envía al guardar o probar; no la mostramos nunca.",
+      "keyHintSaved": "Déjalo vacío para mantener la clave guardada.",
+      "visionModel": "Modelo de visión",
+      "textModel": "Modelo de texto",
+      "visionHint": "Para etiquetar fotos. Déjalo vacío si tu modelo no ve imágenes.",
+      "textHint": "Para el Estilista y las combinaciones.",
+      "optional": "Opcional",
+      "test": "Probar conexión",
+      "save": "Guardar y activar",
+      "update": "Guardar cambios",
+      "remove": "Quitar mi clave",
+      "saved": "Clave guardada. Tu IA ya está activa.",
+      "removed": "Clave eliminada.",
+      "saveError": "No se pudo guardar la configuración.",
+      "errors": {
+        "baseUrlRequired": "Indica la URL del proveedor.",
+        "httpsRequired": "La URL tiene que empezar por https://",
+        "invalidUrl": "Esa URL no parece válida.",
+        "keyRequired": "Pega tu clave de API.",
+        "modelRequired": "Indica al menos un modelo (visión o texto)."
+      }
+    },
+    "test": {
+      "text": "Texto",
+      "vision": "Visión",
+      "allOk": "¡Conexión correcta!",
+      "someFailed": "Algo no ha ido bien:",
+      "okLatency": "Responde bien ({ms} ms)",
+      "failed": "La prueba ha fallado."
+    },
+    "apiErrors": {
+      "ai_url_https_required": "La URL tiene que empezar por https://",
+      "ai_url_private_address": "Esa dirección apunta a una red privada o local y no está permitida.",
+      "ai_url_invalid_url": "Esa URL no parece válida.",
+      "ai_url_unresolvable": "No encontramos ese servidor. Revisa la URL.",
+      "ai_key_required": "Pega tu clave de API.",
+      "ai_model_required": "Indica al menos un modelo (visión o texto).",
+      "ai_encryption_unavailable": "El servidor no tiene configurado el cifrado, así que aún no puede guardar claves.",
+      "ai_quota_exceeded": "Has llegado al límite mensual de peticiones que te regaló el admin.",
+      "ai_key_unreadable": "No podemos leer tu clave guardada. Vuelve a introducirla.",
+      "ai_provider_blocked": "La URL de tu proveedor ya no está permitida. Revísala.",
+      "ai_capability_unavailable": "Tu configuración no tiene modelo para esta función."
+    },
+    "notice": {
+      "title": {
+        "ai_not_enabled": "Esta función usa IA",
+        "ai_quota_exceeded": "Has usado todas tus peticiones de IA de este mes",
+        "ai_capability_unavailable": "Tu IA no tiene modelo para esto",
+        "ai_key_unreadable": "Hay que volver a guardar tu clave",
+        "ai_provider_blocked": "Revisa la URL de tu proveedor de IA"
+      },
+      "feature": {
+        "suggest": "El Estilista necesita IA para proponerte looks. Mientras tanto puedes crear y planificar outfits a mano.",
+        "tagging": "Sin IA tus prendas se guardan sin etiquetar y puedes completar los detalles tú.",
+        "pairings": "Las combinaciones automáticas necesitan IA. Puedes crear outfits a mano cuando quieras."
+      },
+      "cta": "Activar IA"
+    },
+    "settingsCard": {
+      "title": "Inteligencia artificial",
+      "description": "Usa tu propia clave de API o revisa la IA que te ha regalado el admin.",
+      "cta": "Configurar IA"
+    },
+    "adminCard": {
+      "title": "Administración",
+      "description": "Gestiona usuarios y regala acceso a la IA de Miaurmario.",
+      "cta": "Panel de admin"
+    }
+  },
+  "admin": {
+    "title": "Usuarios",
+    "subtitle": "Regala IA, pon límites mensuales y activa o desactiva cuentas.",
+    "back": "← Volver a IA",
+    "searchPlaceholder": "Buscar por email, usuario o nombre",
+    "total": "{count, plural, one {# usuario} other {# usuarios}}",
+    "loadError": "No se pudieron cargar los usuarios.",
+    "saved": "Cambios guardados.",
+    "saveError": "No se pudo guardar.",
+    "never": "nunca",
+    "usage": "{requests} peticiones",
+    "usageWithCap": "{requests} / {cap}",
+    "grant": "Dar IA",
+    "grantByok": "Dar IA (ahora usa su propia clave)",
+    "grantAdmin": "Los admins siempre tienen IA",
+    "active": "Cuenta activa",
+    "saveCap": "Guardar límite",
+    "capPlaceholder": "Sin límite",
+    "forbiddenTitle": "Solo para admins",
+    "forbiddenBody": "No tienes permiso para ver esta página.",
+    "backHome": "Volver al inicio",
+    "access": {
+      "none": "Sin IA",
+      "platform": "IA regalada",
+      "byok": "Clave propia"
+    },
+    "badges": {
+      "admin": "Admin",
+      "inactive": "Inactiva"
+    },
+    "fields": {
+      "items": "Prendas",
+      "usage": "IA este mes",
+      "created": "Alta",
+      "lastLogin": "Último acceso",
+      "cap": "Límite mensual"
+    },
+    "errors": {
+      "cannot_deactivate_admin": "No puedes desactivar a un admin desde aquí.",
+      "user_uses_own_key": "Este usuario usa su propia clave; no hay regalo que quitar.",
+      "user_not_found": "Usuario no encontrado."
     }
   }
 }

@@ -1,5 +1,4 @@
 from typing import Annotated
-from urllib.parse import urlparse
 from uuid import UUID
 
 import httpx
@@ -9,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.schemas.preference import PreferenceResponse, PreferenceUpdate
+from app.services.ai_access import ProviderURLError, validate_provider_url
 from app.services.preference_service import PreferenceService
 from app.utils.auth import get_current_user
 
@@ -123,12 +123,13 @@ async def test_ai_endpoint(
             detail="URL is required",
         )
 
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only HTTP and HTTPS URLs are allowed",
-        )
+    # Legacy endpoint (the per-preference AI endpoints are no longer used; BYOK
+    # lives in /users/me/ai). Same SSRF guard as BYOK: https + public hosts only,
+    # so it can't be used to probe the LAN.
+    try:
+        url = await validate_provider_url(url)
+    except ProviderURLError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:

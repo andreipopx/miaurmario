@@ -4,6 +4,9 @@ import json
 import logging
 import math
 import re
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 from pathlib import Path
 from typing import Literal
 
@@ -236,29 +239,68 @@ class AIEndpointConfig:
     def __init__(
         self,
         url: str,
-        vision_model: str = "moondream",
-        text_model: str = "phi3:mini",
+        vision_model: str | None = "moondream",
+        text_model: str | None = "phi3:mini",
         name: str = "default",
         enabled: bool = True,
+        api_key: str | None = None,
+        follow_redirects: bool = True,
     ):
-        self.url = url
+        self.url = url.rstrip("/") if url else url
         self.vision_model = vision_model
         self.text_model = text_model
         self.name = name
         self.enabled = enabled
+        self.api_key = api_key
+        self.follow_redirects = follow_redirects
+
+
+@dataclass(frozen=True)
+class AIProviderConfig:
+    """A single OpenAI-compatible provider (platform env config or a user's BYOK).
+
+    ``api_key`` is a secret: never log it or include it in repr/errors.
+    """
+
+    base_url: str
+    api_key: str | None = dc_field(default=None, repr=False)
+    vision_model: str | None = None
+    text_model: str | None = None
+    name: str = "default"
+    # BYOK endpoints must not follow redirects (a 30x to a LAN address would
+    # bypass the SSRF check done on the configured host).
+    follow_redirects: bool = True
+
+    @classmethod
+    def platform(cls) -> "AIProviderConfig":
+        s = get_settings()
+        return cls(
+            base_url=s.ai_base_url,
+            api_key=s.ai_api_key,
+            vision_model=s.ai_vision_model,
+            text_model=s.ai_text_model,
+            name="default",
+        )
+
+
+UsageSink = Callable[[int, int], Awaitable[None]]
 
 
 class AIService:
-    """Service for AI-powered image analysis and text generation."""
+    """Service for AI-powered image analysis and text generation.
 
-    def __init__(self, endpoints: list[dict] | None = None):
+    One instance talks to exactly one provider: the platform key (default) or a
+    user's own key (``config``). Callers should obtain instances through
+    ``app.services.ai_access`` so per-user access rules and usage accounting
+    apply; constructing ``AIService()`` directly uses the platform key.
+    """
+
+    def __init__(
+        self,
+        config: AIProviderConfig | None = None,
+        usage_sink: UsageSink | None = None,
+    ):
         """
-        Initialize AI service with optional custom endpoints.
-
-        Args:
-            endpoints: List of endpoint configs from user preferences.
-                      If None or empty, uses default from settings.
-
         Raises:
             AIDisabledError: backstop when internal AI is disabled; call sites
                 should guard with require_internal_ai() first.
@@ -267,46 +309,88 @@ class AIService:
         if not self.settings.ai_enabled:
             raise AIDisabledError("Internal AI is disabled; defer to an external agent.")
         self.timeout = self.settings.ai_timeout
-        self.api_key = self.settings.ai_api_key
+        cfg = config or AIProviderConfig.platform()
+        self.config = cfg
+        self.api_key = cfg.api_key
+        self._usage_sink = usage_sink
 
-        # Build endpoint list
-        self._endpoints: list[AIEndpointConfig] = []
-
-        if endpoints:
-            for ep in endpoints:
-                if ep.get("enabled", True):
-                    self._endpoints.append(
-                        AIEndpointConfig(
-                            url=ep["url"],
-                            vision_model=ep.get("vision_model", "moondream"),
-                            text_model=ep.get("text_model", "phi3:mini"),
-                            name=ep.get("name", "custom"),
-                            enabled=True,
-                        )
-                    )
-
-        # Always add default endpoint as fallback (even if user has custom endpoints)
-        # This ensures we can fall back to in-house Ollama if user endpoints are unreachable
-        self._endpoints.append(
+        self._endpoints: list[AIEndpointConfig] = [
             AIEndpointConfig(
-                url=self.settings.ai_base_url,
-                vision_model=self.settings.ai_vision_model,
-                text_model=self.settings.ai_text_model,
-                name="default",
+                url=cfg.base_url,
+                vision_model=cfg.vision_model,
+                text_model=cfg.text_model,
+                name=cfg.name,
+                api_key=cfg.api_key,
+                follow_redirects=cfg.follow_redirects,
             )
-        )
+        ]
 
         # Legacy properties for backwards compatibility
         self.base_url = self._endpoints[0].url
         self.vision_model = self._endpoints[0].vision_model
         self.text_model = self._endpoints[0].text_model
 
-    def _get_headers(self) -> dict:
+    def _get_headers(self, endpoint: AIEndpointConfig | None = None) -> dict:
         """Get headers for AI API requests, including auth if configured."""
         headers = {"Content-Type": "application/json"}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
+        api_key = endpoint.api_key if endpoint is not None else self.api_key
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         return headers
+
+    async def _record_usage(self, data: dict) -> None:
+        """Report one successful completion (+ tokens when the provider sends them)."""
+        if self._usage_sink is None:
+            return
+        tokens = 0
+        usage = data.get("usage") if isinstance(data, dict) else None
+        if isinstance(usage, dict):
+            total = usage.get("total_tokens")
+            if isinstance(total, int):
+                tokens = total
+            else:
+                tokens = int(usage.get("prompt_tokens") or 0) + int(
+                    usage.get("completion_tokens") or 0
+                )
+        try:
+            await self._usage_sink(1, max(tokens, 0))
+        except Exception as e:  # accounting must never break the AI call
+            logger.warning(f"Failed to record AI usage: {type(e).__name__}")
+
+    @staticmethod
+    def _extract_content(data: dict, endpoint_name: str) -> tuple[str, dict]:
+        """Return (content, choice) or raise AIResponseError for empty/truncated output.
+
+        Reasoning models (e.g. DeepSeek) can spend the whole max_tokens budget on
+        reasoning and return ``content`` empty/null with finish_reason "length";
+        surface that as a clear error instead of a JSON-parse crash downstream.
+        """
+        try:
+            choice = data["choices"][0]
+        except (KeyError, IndexError, TypeError):
+            raise AIResponseError(
+                f"AI provider '{endpoint_name}' returned no choices", reason="no_choices"
+            ) from None
+        message = choice.get("message") or {}
+        content = message.get("content")
+        if isinstance(content, list):  # some providers return content parts
+            content = "".join(
+                p.get("text", "") for p in content if isinstance(p, dict) and p.get("text")
+            )
+        content = content or ""
+        if not content.strip():
+            finish_reason = choice.get("finish_reason")
+            if finish_reason == "length":
+                raise AIResponseError(
+                    "The AI model ran out of tokens before answering (finish_reason=length). "
+                    "Increase AI_MAX_TOKENS or use a non-reasoning model.",
+                    reason="truncated",
+                )
+            raise AIResponseError(
+                f"The AI model returned an empty response (finish_reason={finish_reason})",
+                reason="empty",
+            )
+        return content, choice
 
     def _preprocess_image(self, image_path: str | Path) -> str:
         """
@@ -446,13 +530,21 @@ class AIService:
         use_vision_model: bool = True,
         request_logprobs: bool = False,
     ) -> tuple[str | None, Exception | None, list | None]:
-        last_error = None
+        last_error: Exception | None = None
 
         for endpoint in self._endpoints:
             logger.info(f"Trying AI endpoint for {task_name}: {endpoint.name}")
             model = endpoint.vision_model if use_vision_model else endpoint.text_model
+            if not model:
+                last_error = AIResponseError(
+                    f"No {'vision' if use_vision_model else 'text'} model configured",
+                    reason="no_model",
+                )
+                continue
 
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
+            async with httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=endpoint.follow_redirects
+            ) as client:
                 for attempt in range(self.settings.ai_max_retries):
                     try:
                         request_body = {
@@ -467,14 +559,14 @@ class AIService:
 
                         response = await client.post(
                             f"{endpoint.url}/chat/completions",
-                            headers=self._get_headers(),
+                            headers=self._get_headers(endpoint),
                             json=request_body,
                         )
                         response.raise_for_status()
 
                         data = response.json()
-                        choice = data["choices"][0]
-                        content = choice["message"]["content"]
+                        await self._record_usage(data)
+                        content, choice = self._extract_content(data, endpoint.name)
                         logprobs_content = None
                         if request_logprobs:
                             lp = choice.get("logprobs")
@@ -487,14 +579,19 @@ class AIService:
                         )
                         return content, None, logprobs_content
 
+                    except AIResponseError as e:
+                        # Deterministic model-side failure: retrying burns tokens for nothing.
+                        last_error = e
+                        logger.warning(f"AI {task_name} via {endpoint.name}: {e}")
+                        break
                     except httpx.HTTPStatusError as e:
                         last_error = e
-                        logger.warning(f"HTTP error from {endpoint.name}: {e}")
+                        logger.warning(f"HTTP error from {endpoint.name}: {e.response.status_code}")
                         if attempt < self.settings.ai_max_retries - 1:
                             continue
                     except httpx.RequestError as e:
                         last_error = e
-                        logger.warning(f"Request error from {endpoint.name}: {e}")
+                        logger.warning(f"Request error from {endpoint.name}: {type(e).__name__}")
                         if attempt < self.settings.ai_max_retries - 1:
                             continue
 
@@ -564,10 +661,12 @@ class AIService:
 
         for endpoint in self._endpoints:
             try:
-                async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
+                async with httpx.AsyncClient(
+                    timeout=5, follow_redirects=endpoint.follow_redirects
+                ) as client:
                     # Try OpenAI-compatible /v1/models endpoint first
                     response = await client.get(
-                        f"{endpoint.url}/models", headers=self._get_headers()
+                        f"{endpoint.url}/models", headers=self._get_headers(endpoint)
                     )
                     if response.status_code == 200:
                         data = response.json()
@@ -638,17 +737,22 @@ class AIService:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        last_error = None
+        last_error: Exception | None = None
 
         for endpoint in self._endpoints:
+            if not endpoint.text_model:
+                last_error = AIResponseError("No text model configured", reason="no_model")
+                continue
             logger.info(f"Trying text generation via {endpoint.name}")
 
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
+            async with httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=endpoint.follow_redirects
+            ) as client:
                 for attempt in range(self.settings.ai_max_retries):
                     try:
                         response = await client.post(
                             f"{endpoint.url}/chat/completions",
-                            headers=self._get_headers(),
+                            headers=self._get_headers(endpoint),
                             json={
                                 "model": endpoint.text_model,
                                 "messages": messages,
@@ -660,8 +764,9 @@ class AIService:
                         response.raise_for_status()
 
                         data = response.json()
+                        await self._record_usage(data)
                         used_model = data.get("model", endpoint.text_model)
-                        content = data["choices"][0]["message"]["content"]
+                        content, _ = self._extract_content(data, endpoint.name)
                         logger.info(
                             f"Text generation successful via {endpoint.name} (model: {used_model})"
                         )
@@ -674,20 +779,32 @@ class AIService:
                             )
                         return content
 
+                    except AIResponseError as e:
+                        last_error = e
+                        logger.warning(f"Text generation via {endpoint.name}: {e}")
+                        break
                     except httpx.HTTPStatusError as e:
                         last_error = e
-                        logger.warning(f"HTTP error from {endpoint.name}: {e}")
+                        logger.warning(f"HTTP error from {endpoint.name}: {e.response.status_code}")
                         if attempt < self.settings.ai_max_retries - 1:
                             continue
                     except httpx.RequestError as e:
                         last_error = e
-                        logger.warning(f"Request error from {endpoint.name}: {e}")
+                        logger.warning(f"Request error from {endpoint.name}: {type(e).__name__}")
                         if attempt < self.settings.ai_max_retries - 1:
                             continue
 
         if last_error:
             raise last_error
         raise RuntimeError("Failed to generate text - no endpoints available")
+
+
+class AIResponseError(RuntimeError):
+    """The provider answered, but the answer is unusable (empty, truncated, no choices)."""
+
+    def __init__(self, message: str, reason: str = "invalid"):
+        super().__init__(message)
+        self.reason = reason
 
 
 class AIDisabledError(RuntimeError):

@@ -52,7 +52,9 @@ class TestTaggingDefaults:
 
 class TestCreateGating:
     @pytest.mark.asyncio
-    async def test_default_enqueues_and_stays_pending(self, client: AsyncClient, auth_headers):
+    async def test_default_enqueues_and_stays_pending(
+        self, client: AsyncClient, auth_headers, platform_ai_user
+    ):
         with patch("app.api.items.create_pool", new_callable=AsyncMock) as mock_create_pool:
             mock_redis = AsyncMock()
             mock_redis.enqueue_job.return_value.job_id = "job-1"
@@ -146,7 +148,9 @@ class TestBulkCreateGating:
         mock_create_pool.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_default_queues_and_stays_pending(self, client: AsyncClient, auth_headers):
+    async def test_default_queues_and_stays_pending(
+        self, client: AsyncClient, auth_headers, platform_ai_user
+    ):
         files = [("images", ("shirt.jpg", _make_test_image_bytes(), "image/jpeg"))]
         with patch("app.api.items.create_pool", new_callable=AsyncMock) as mock_create_pool:
             mock_redis = AsyncMock()
@@ -436,7 +440,9 @@ class TestTagsToColumnsProjection:
 
 class TestWorkerTaggingOrigin:
     @pytest.mark.asyncio
-    async def test_happy_path_stamps_auto(self, db_session: AsyncSession, test_user, monkeypatch):
+    async def test_happy_path_stamps_auto(
+        self, db_session: AsyncSession, test_user, platform_ai_user, monkeypatch
+    ):
         item = ClothingItem(
             user_id=test_user.id,
             type="unknown",
@@ -474,7 +480,7 @@ class TestWorkerTaggingOrigin:
 
     @pytest.mark.asyncio
     async def test_manual_origin_survives_late_worker_completion(
-        self, db_session: AsyncSession, test_user, monkeypatch
+        self, db_session: AsyncSession, test_user, platform_ai_user, monkeypatch
     ):
         manual_tagged_at = datetime.now(UTC) - timedelta(minutes=5)
         item = ClothingItem(

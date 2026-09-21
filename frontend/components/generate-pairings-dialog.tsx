@@ -15,6 +15,9 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Stinky } from '@/components/stinky/stinky';
 import { toast } from 'sonner';
+import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
+import { getAiAccessErrorCode } from '@/lib/ai-access';
+import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useTranslations } from 'next-intl';
 import { useGeneratePairings } from '@/lib/hooks/use-pairings';
 import { Item, Pairing } from '@/lib/types';
@@ -38,6 +41,11 @@ export function GeneratePairingsDialog({
   const [numPairings, setNumPairings] = useState(3);
   const [generatedPairings, setGeneratedPairings] = useState<Pairing[] | null>(null);
   const generatePairings = useGeneratePairings();
+  const { data: aiStatus } = useAIStatus();
+  const [aiBlocked, setAiBlocked] = useState<string | null>(null);
+  const noTextAi = Boolean(
+    aiStatus && aiStatus.server_ai_enabled && !aiStatus.capabilities.text
+  );
   const router = useRouter();
 
   const handleGenerate = async () => {
@@ -51,6 +59,11 @@ export function GeneratePairingsDialog({
       setGeneratedPairings(result.pairings);
       toast.success(t('successToast', { count: result.generated }));
     } catch (error) {
+      const aiCode = getAiAccessErrorCode(error);
+      if (aiCode) {
+        setAiBlocked(aiCode);
+        return;
+      }
       const message = error instanceof Error ? error.message : t('errorToast');
       toast.error(message);
     }
@@ -65,6 +78,7 @@ export function GeneratePairingsDialog({
   const handleClose = () => {
     onOpenChange(false);
     setGeneratedPairings(null);
+    setAiBlocked(null);
   };
 
   if (!item) return null;
@@ -131,6 +145,10 @@ export function GeneratePairingsDialog({
                 {t('helpMore')}
               </p>
             </div>
+
+            {(aiBlocked || noTextAi) && (
+              <AIUnavailableNotice feature="pairings" reason={aiBlocked ?? aiStatus?.blocked_reason} />
+            )}
           </div>
         ) : (
           // Success state
@@ -186,7 +204,7 @@ export function GeneratePairingsDialog({
               </Button>
               <Button
                 onClick={handleGenerate}
-                disabled={generatePairings.isPending}
+                disabled={generatePairings.isPending || noTextAi || Boolean(aiBlocked)}
                 aria-busy={generatePairings.isPending}
               >
                 {generatePairings.isPending ? (

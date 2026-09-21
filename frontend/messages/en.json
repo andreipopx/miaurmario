@@ -876,30 +876,6 @@
       "avoidRepeatDays": "Avoid Repeat Items Within (days)",
       "preferUnderused": "Prefer Underused Items"
     },
-    "aiEndpoints": {
-      "title": "AI Endpoints",
-      "description": "Configure AI endpoints for image analysis. Endpoints are tried in order from top to bottom.",
-      "empty": "No custom endpoints configured. Using default server settings.",
-      "endpointN": "Endpoint {index}",
-      "active": "Active",
-      "disabled": "Disabled",
-      "connected": "Connected",
-      "errorBadge": "Error",
-      "testConnection": "Test Connection",
-      "modelsAvailable": "{count} models available",
-      "vision": "Vision",
-      "text": "Text",
-      "name": "Name",
-      "url": "URL",
-      "visionModel": "Vision Model",
-      "textModel": "Text Model",
-      "addEndpoint": "Add Endpoint",
-      "testFailed": "Failed to test endpoint",
-      "moveUp": "Move up",
-      "moveDown": "Move down",
-      "remove": "Remove endpoint",
-      "namePlaceholder": "e.g., Local Ollama"
-    },
     "integrations": {
       "title": "Integrations",
       "description": "Pinterest for inspiration and Spotify as the Stylist's musical mood.",
@@ -1979,6 +1955,161 @@
         "title": "Terms of use",
         "p1": "Miaurmario is provided as is, without warranties, and may change or stop being available. Only upload photos you have the right to use, and don't use the app for anything illegal or that bothers other people."
       }
+    }
+  },
+  "aiAccess": {
+    "title": "Artificial intelligence",
+    "subtitle": "Choose how Miaurmario uses AI to tag your clothes and suggest looks.",
+    "backToSettings": "← Back to settings",
+    "yes": "yes",
+    "no": "no",
+    "access": {
+      "none": "No AI",
+      "platform": "Miaurmario AI (gift from the admin)",
+      "byok": "Your own key"
+    },
+    "current": {
+      "title": "Your current access",
+      "description": "Which AI is used when you ask Stinky for something.",
+      "capabilities": "Vision: {vision} · Text: {text}",
+      "explain": {
+        "none": "You don't have AI right now. Everything manual still works: uploading clothes, tagging them yourself, building and planning outfits. Add your own key below to turn on the smart features.",
+        "platform": "The admin gifted you access to Miaurmario's AI. Nothing else to do.",
+        "byok": "We use your own API key, only for your requests."
+      },
+      "usage": "This month: {requests} requests · {tokens} tokens",
+      "usageWithCap": "This month: {requests} of {cap} requests · {tokens} tokens",
+      "serverDisabled": "AI is currently disabled on this server."
+    },
+    "explainer": {
+      "title": "What is AI used for here?",
+      "tagging": "Automatically tagging the clothes you upload (type, colour, fabric, season...).",
+      "suggest": "The Stylist: outfit ideas based on the weather, the occasion and your taste.",
+      "pairings": "Pairings: ideas for what to wear with a specific piece.",
+      "withoutAi": "Without AI you can still use the whole app manually.",
+      "privacy": "Your key is stored encrypted, never shown again (only its last 4 characters) and only used for your own requests."
+    },
+    "form": {
+      "title": "Use your own key",
+      "description": "Any OpenAI-compatible provider. DeepSeek is cheap and works well for everything.",
+      "getDeepseekKey": "Get a DeepSeek key",
+      "getKeyFrom": "Get a {provider} key",
+      "provider": "Provider",
+      "custom": "Custom",
+      "baseUrl": "Base URL (https)",
+      "apiKey": "API key",
+      "keyPlaceholder": "sk-...",
+      "keySavedPlaceholder": "Saved (••••{last4}) — type to replace it",
+      "keyHint": "Only sent when saving or testing; we never show it.",
+      "keyHintSaved": "Leave empty to keep the saved key.",
+      "visionModel": "Vision model",
+      "textModel": "Text model",
+      "visionHint": "For tagging photos. Leave empty if your model can't see images.",
+      "textHint": "For the Stylist and pairings.",
+      "optional": "Optional",
+      "test": "Test connection",
+      "save": "Save and activate",
+      "update": "Save changes",
+      "remove": "Remove my key",
+      "saved": "Key saved. Your AI is active.",
+      "removed": "Key removed.",
+      "saveError": "Could not save the configuration.",
+      "errors": {
+        "baseUrlRequired": "Enter the provider URL.",
+        "httpsRequired": "The URL must start with https://",
+        "invalidUrl": "That URL doesn't look valid.",
+        "keyRequired": "Paste your API key.",
+        "modelRequired": "Enter at least one model (vision or text)."
+      }
+    },
+    "test": {
+      "text": "Text",
+      "vision": "Vision",
+      "allOk": "Connection works!",
+      "someFailed": "Something went wrong:",
+      "okLatency": "Responding fine ({ms} ms)",
+      "failed": "The test failed."
+    },
+    "apiErrors": {
+      "ai_url_https_required": "The URL must start with https://",
+      "ai_url_private_address": "That address points to a private or local network and isn't allowed.",
+      "ai_url_invalid_url": "That URL doesn't look valid.",
+      "ai_url_unresolvable": "We couldn't find that server. Check the URL.",
+      "ai_key_required": "Paste your API key.",
+      "ai_model_required": "Enter at least one model (vision or text).",
+      "ai_encryption_unavailable": "The server has no encryption key configured, so it can't store keys yet.",
+      "ai_quota_exceeded": "You've reached the monthly request limit the admin gave you.",
+      "ai_key_unreadable": "We can't read your saved key. Please enter it again.",
+      "ai_provider_blocked": "Your provider URL is no longer allowed. Please check it.",
+      "ai_capability_unavailable": "Your configuration has no model for this feature."
+    },
+    "notice": {
+      "title": {
+        "ai_not_enabled": "This feature uses AI",
+        "ai_quota_exceeded": "You've used all your AI requests this month",
+        "ai_capability_unavailable": "Your AI has no model for this",
+        "ai_key_unreadable": "Your key needs to be saved again",
+        "ai_provider_blocked": "Check your AI provider URL"
+      },
+      "feature": {
+        "suggest": "The Stylist needs AI to suggest looks. Meanwhile you can build and plan outfits by hand.",
+        "tagging": "Without AI your clothes are saved untagged and you can fill in the details yourself.",
+        "pairings": "Automatic pairings need AI. You can build outfits by hand any time."
+      },
+      "cta": "Turn on AI"
+    },
+    "settingsCard": {
+      "title": "Artificial intelligence",
+      "description": "Use your own API key or check the AI the admin gifted you.",
+      "cta": "Set up AI"
+    },
+    "adminCard": {
+      "title": "Administration",
+      "description": "Manage users and gift access to Miaurmario's AI.",
+      "cta": "Admin panel"
+    }
+  },
+  "admin": {
+    "title": "Users",
+    "subtitle": "Gift AI, set monthly limits and enable or disable accounts.",
+    "back": "← Back to AI",
+    "searchPlaceholder": "Search by email, username or name",
+    "total": "{count, plural, one {# user} other {# users}}",
+    "loadError": "Could not load users.",
+    "saved": "Changes saved.",
+    "saveError": "Could not save.",
+    "never": "never",
+    "usage": "{requests} requests",
+    "usageWithCap": "{requests} / {cap}",
+    "grant": "Give AI",
+    "grantByok": "Give AI (currently uses their own key)",
+    "grantAdmin": "Admins always have AI",
+    "active": "Account active",
+    "saveCap": "Save limit",
+    "capPlaceholder": "No limit",
+    "forbiddenTitle": "Admins only",
+    "forbiddenBody": "You don't have permission to see this page.",
+    "backHome": "Back home",
+    "access": {
+      "none": "No AI",
+      "platform": "Gifted AI",
+      "byok": "Own key"
+    },
+    "badges": {
+      "admin": "Admin",
+      "inactive": "Inactive"
+    },
+    "fields": {
+      "items": "Items",
+      "usage": "AI this month",
+      "created": "Joined",
+      "lastLogin": "Last login",
+      "cap": "Monthly limit"
+    },
+    "errors": {
+      "cannot_deactivate_admin": "You can't deactivate an admin from here.",
+      "user_uses_own_key": "This user uses their own key; there's no gift to remove.",
+      "user_not_found": "User not found."
     }
   }
 }

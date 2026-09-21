@@ -14,6 +14,7 @@ from app.models.preference import UserPreference
 from app.models.schedule import Schedule
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
+from app.models.user_ai_settings import UserAISettings
 
 __all__ = [
     "Family",
@@ -39,4 +40,5 @@ __all__ = [
     "PinterestConnection",
     "PinterestPin",
     "SpotifyConnection",
+    "UserAISettings",
 ]

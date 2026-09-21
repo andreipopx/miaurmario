@@ -44,6 +44,9 @@ import { useWeather, Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
 import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
 import { cn } from '@/lib/utils';
+import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
+import { getAiAccessErrorCode } from '@/lib/ai-access';
+import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { TempUnit, formatTemp, displayValue, toF, toCelsius } from '@/lib/temperature';
 import { Input } from '@/components/ui/input';
 import { Chip } from '@/components/chip';
@@ -414,6 +417,11 @@ export default function SuggestPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAccepting, setIsAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [aiBlocked, setAiBlocked] = useState<string | null>(null);
+  const { data: aiStatus } = useAIStatus();
+  const noTextAi = Boolean(
+    aiStatus && aiStatus.server_ai_enabled && !aiStatus.capabilities.text
+  );
 
   useEffect(() => {
     if (prefs?.default_occasion && !occasionInitialized && !selectedOccasion) {
@@ -432,6 +440,7 @@ export default function SuggestPage() {
     setIsGenerating(true);
     setError(null);
     setAccepted(false);
+    setAiBlocked(null);
 
     try {
       const request: SuggestRequest = {
@@ -456,7 +465,10 @@ export default function SuggestPage() {
       const result = await api.post<Outfit>('/outfits/suggest', request);
       setOutfit(result);
     } catch (err) {
-      if (err instanceof ApiError) {
+      const aiCode = getAiAccessErrorCode(err);
+      if (aiCode) {
+        setAiBlocked(aiCode);
+      } else if (err instanceof ApiError) {
         setError(err.message);
       } else {
         setError(t('generateError'));
@@ -577,7 +589,9 @@ export default function SuggestPage() {
         </StinkyHero>
       ) : (
         <div className="space-y-6">
-          {error ? (
+          {aiBlocked || noTextAi ? (
+            <AIUnavailableNotice feature="suggest" reason={aiBlocked ?? aiStatus?.blocked_reason} />
+          ) : error ? (
             <StinkyHero state="sad" title={t('errorTitle')} body={error} />
           ) : (
             <StinkyHero
@@ -620,7 +634,7 @@ export default function SuggestPage() {
             )}
           </div>
 
-          <Button size="lg" className="w-full" onClick={handleGenerate} disabled={!selectedOccasion}>
+          <Button size="lg" className="w-full" onClick={handleGenerate} disabled={!selectedOccasion || noTextAi}>
             <Sparkles className="h-5 w-5" strokeWidth={2} aria-hidden />
             {error ? t('tryAgain') : t('getSuggestion')}
           </Button>

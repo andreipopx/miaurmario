@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AlertTriangle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { OccasionChips } from '@/components/shared/occasion-chips';
 import { Stinky } from '@/components/stinky/stinky';
 import { api, getErrorMessage } from '@/lib/api';
+import { getAiAccessErrorCode } from '@/lib/ai-access';
 import { ITEM_ROLE } from '@/lib/studio/canonical-order';
 import { mergeAiAssist } from '@/lib/studio/ai-assist-merge';
 import type { StudioItem } from '@/lib/studio/editor-state';
@@ -78,6 +80,8 @@ export function DetailsPanel({
   onAiMerge,
 }: DetailsPanelProps) {
   const t = useTranslations('detailsPanel');
+  const tAi = useTranslations('aiAccess.notice');
+  const router = useRouter();
   const [aiLoading, setAiLoading] = useState(false);
   const warnings = computeWarnings(items);
 
@@ -108,7 +112,15 @@ export function DetailsPanel({
         toast.info(t('aiNoNew'));
       }
     } catch (error) {
-      toast.error(getErrorMessage(error, t('aiFailed')));
+      const aiCode = getAiAccessErrorCode(error);
+      if (aiCode) {
+        toast.info(tAi(`title.${aiCode}`), {
+          description: tAi('feature.suggest'),
+          action: { label: tAi('cta'), onClick: () => router.push('/dashboard/settings/ai') },
+        });
+      } else {
+        toast.error(getErrorMessage(error, t('aiFailed')));
+      }
     } finally {
       setAiLoading(false);
     }

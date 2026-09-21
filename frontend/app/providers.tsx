@@ -7,6 +7,7 @@ import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/auth-provider';
 import { ApiError, NetworkError } from '@/lib/api';
+import { getAiAccessErrorCode } from '@/lib/ai-access';
 
 // Queries that expect a 404 as a legitimate "not configured yet" state
 // (e.g. user has no family, no location set) should tag themselves with
@@ -31,6 +32,9 @@ function handleQueryError(error: unknown, query: Query<unknown, unknown, unknown
 }
 
 function handleMutationError(error: unknown) {
+  // "No AI for this account" is shown as a friendly inline notice where the
+  // feature lives, never as a red toast.
+  if (getAiAccessErrorCode(error)) return;
   if (error instanceof NetworkError) {
     toast.error(error.message);
   } else if (error instanceof ApiError) {

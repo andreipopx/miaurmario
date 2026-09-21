@@ -20,7 +20,7 @@ interface AIUnavailableNoticeProps {
   /** Backend code (ai_not_enabled, ai_quota_exceeded, ...). Defaults to ai_not_enabled. */
   reason?: string | null;
   /** Which feature is affected, to tailor the sentence. */
-  feature: 'suggest' | 'tagging' | 'pairings';
+  feature: 'suggest' | 'tagging' | 'pairings' | 'chat';
   className?: string;
 }
 

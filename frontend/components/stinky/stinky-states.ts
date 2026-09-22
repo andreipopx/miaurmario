@@ -7,7 +7,7 @@
  * any other without a visible jump.
  */
 
-export const STINKY_STATES = ['idle', 'thinking', 'happy', 'wave', 'sleepy', 'sad', 'purr'] as const
+export const STINKY_STATES = ['idle', 'thinking', 'happy', 'wave', 'sleepy', 'sad', 'purr', 'bite'] as const
 export type StinkyState = (typeof STINKY_STATES)[number]
 
 /** Former/extra state names, mapped onto a shipped state. */
@@ -22,6 +22,8 @@ export const STINKY_STATE_ALIASES = {
   empty: 'sleepy',
   hello: 'wave',
   pet: 'purr',
+  nibble: 'bite',
+  chomp: 'bite',
 } as const satisfies Record<string, StinkyState>
 export type StinkyStateAlias = keyof typeof STINKY_STATE_ALIASES
 export type StinkyStateInput = StinkyState | StinkyStateAlias
@@ -48,17 +50,19 @@ export const STINKY_STATE_META: Readonly<Record<StinkyState, StinkyStateMeta>> =
   sleepy: { durationMs: 3350, playback: 'loop', use: 'Empty states' },
   sad: { durationMs: 3350, playback: 'once', use: 'Errors' },
   purr: { durationMs: 2600, playback: 'once', use: 'User pets Stinky (tap/click)' },
+  bite: { durationMs: 1500, playback: 'once', use: 'User pets Stinky: playful nibble (alternative to purr)' },
 }
 
 /** Most likely next clip(s) for each state — preloaded so switching never flashes. */
 export const STINKY_LIKELY_NEXT: Readonly<Record<StinkyState, readonly StinkyState[]>> = {
-  idle: ['purr', 'thinking'],
+  idle: ['purr', 'bite', 'thinking'],
   thinking: ['happy', 'sad'],
   happy: ['idle'],
   wave: ['idle'],
   sleepy: ['idle'],
   sad: ['idle'],
   purr: ['idle'],
+  bite: ['idle'],
 }
 
 export type StinkyVariant = 'light' | 'dark'
@@ -66,38 +70,61 @@ export type StinkyVariant = 'light' | 'dark'
 const BASE = '/brand/stinky/head'
 const suffix = (variant: StinkyVariant) => (variant === 'dark' ? '-dark' : '')
 
+/**
+ * Cache-busting: every Stinky asset URL carries the build id, so each deploy bypasses stale copies in the
+ * browser HTTP cache, Cloudflare and older service-worker caches (asset file names never change).
+ * Preloads, blob fetches and fallbacks all go through these helpers, so they share the exact same URL.
+ */
+export const STINKY_ASSET_VERSION = process.env.NEXT_PUBLIC_BUILD_ID || ''
+export const withStinkyVersion = (url: string) =>
+  STINKY_ASSET_VERSION ? `${url}${url.includes('?') ? '&' : '?'}v=${encodeURIComponent(STINKY_ASSET_VERSION)}` : url
+
 export const stinkyAssets = (state: StinkyState, variant: StinkyVariant = 'light') => ({
   /** Animated WebP with alpha, 512px, infinite loop. */
-  webp: `${BASE}/anim/stinky-${state}${suffix(variant)}.webp`,
+  webp: withStinkyVersion(`${BASE}/anim/stinky-${state}${suffix(variant)}.webp`),
   /** Representative still frame of the state (vector). */
-  poster: `${BASE}/poster/stinky-${state}${suffix(variant)}.svg`,
+  poster: withStinkyVersion(`${BASE}/poster/stinky-${state}${suffix(variant)}.svg`),
   /** Same still frame as PNG (512px) — fallback when animated WebP is unsupported. */
-  posterPng: `${BASE}/poster/stinky-${state}${suffix(variant)}.png`,
+  posterPng: withStinkyVersion(`${BASE}/poster/stinky-${state}${suffix(variant)}.png`),
 })
 
 /** Neutral static head (vector) — identical to the first/last frame of every clip. */
-export const stinkyStaticSvg = (variant: StinkyVariant = 'light') => `${BASE}/stinky-head${suffix(variant)}.svg`
+export const stinkyStaticSvg = (variant: StinkyVariant = 'light') => withStinkyVersion(`${BASE}/stinky-head${suffix(variant)}.svg`)
 
-export type StinkyMouth = 'neutral' | 'open'
+export type StinkyMouth = 'neutral' | 'open' | 'bite' | 'bite-half'
 
 /**
- * Editable OneWorks definitions per variant. `neutral` has the pink ":3"; `open` replaces it with the open mouth
- * (same everything else). Stinky only ever shows ONE mouth: happy/wave swap to `open` inside their mouth window.
+ * Editable OneWorks definitions per variant and mouth. `neutral` has the pink ":3"; the others replace it
+ * (open mouth; bite = open mouth with two fangs; bite-half = half-closed "ñam"). Everything else is identical.
  */
 export const stinkyDefinitionUrl = (variant: StinkyVariant = 'light', mouth: StinkyMouth = 'neutral') =>
-  `${BASE}/stinky-head${mouth === 'open' ? '-open' : ''}${suffix(variant)}.avatar.json`
+  withStinkyVersion(`${BASE}/stinky-head${mouth === 'neutral' ? '' : `-${mouth}`}${suffix(variant)}.avatar.json`)
 
-/** Clip-time windows [from, to) in ms where the open mouth replaces the ":3" (pre-rendered assets use the same). */
-export const STINKY_MOUTH_OPEN_WINDOWS: Partial<Record<StinkyState, readonly [number, number]>> = {
-  happy: [300, 2950],
-  wave: [200, 1900],
+/**
+ * Mouth timeline per clip: [fromMs, toMs, mouth]; outside every segment the mouth is the ":3".
+ * Stinky only ever shows ONE mouth — the pre-rendered WebPs were assembled with exactly this timeline.
+ */
+export const STINKY_MOUTH_TIMELINE: Partial<Record<StinkyState, ReadonlyArray<readonly [number, number, StinkyMouth]>>> = {
+  happy: [[300, 2950, 'open']],
+  wave: [[200, 1900, 'open']],
+  bite: [[120, 470, 'bite'], [470, 570, 'bite-half'], [570, 800, 'bite'], [800, 900, 'bite-half'], [900, 1150, 'bite']],
 }
-export const stinkyMouthAt = (state: StinkyState, clipMs: number): StinkyMouth => {
-  const w = STINKY_MOUTH_OPEN_WINDOWS[state]
-  return w && clipMs >= w[0] && clipMs < w[1] ? 'open' : 'neutral'
-}
+export const stinkyMouthAt = (state: StinkyState, clipMs: number): StinkyMouth =>
+  STINKY_MOUTH_TIMELINE[state]?.find(([from, to]) => clipMs >= from && clipMs < to)?.[2] ?? 'neutral'
+/** Mouths (other than the ":3") a clip needs. */
+export const stinkyClipMouths = (state: StinkyState): StinkyMouth[] =>
+  Array.from(new Set((STINKY_MOUTH_TIMELINE[state] ?? []).map(([, , m]) => m)))
 
-export const STINKY_ANIMATIONS_URL = `${BASE}/stinky.animations.json`
+/**
+ * Bite lean-in toward the camera (overall scale, which the 3D scene cannot animate): baked into the bite WebPs,
+ * applied by StinkyLive as a CSS transform with the same timing. [ms, scale]; pivot 50% / 51%.
+ */
+export const STINKY_BITE_LEAN: ReadonlyArray<readonly [number, number]> = [
+  [0, 1], [60, 1], [260, 1.07], [430, 1.07], [520, 1.082], [610, 1.07], [780, 1.07], [870, 1.082], [960, 1.07],
+  [1100, 1.07], [1340, 1], [1500, 1],
+]
+
+export const STINKY_ANIMATIONS_URL = withStinkyVersion(`${BASE}/stinky.animations.json`)
 
 /** Window (ms) of the purr clip in which the pre-rendered frames vibrate; the live renderer mirrors it. */
 export const STINKY_PURR_VIBRATION = { fromMs: 800, toMs: 1950 } as const

@@ -8,7 +8,7 @@ import { signOut } from 'next-auth/react';
 import { LogOut, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { NavRow } from '@/components/sidebar';
 import { ProfileMenuExtras } from '@/components/profile-menu-extras';
 import { useSwipeDismiss } from '@/lib/native/use-swipe-dismiss';
@@ -76,7 +76,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
               onClick={onClose}
               className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <StinkyAvatar size={52} className="bg-background" />
+              <ProfileAvatar size={52} className="bg-background" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-base font-bold">{user?.display_name || tCommon('user')}</span>
                 <span className="block truncate text-sm text-muted-foreground">{tNav('viewProfile')}</span>

@@ -12,6 +12,8 @@ export interface PublicUser {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  /** 128px version of the photo (lists); falls back to avatar_url. */
+  avatar_thumb_url?: string | null;
   bio: string | null;
 }
 

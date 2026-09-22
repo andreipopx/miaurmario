@@ -6,7 +6,7 @@ import { Bell } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { Wordmark } from '@/components/brand/wordmark';
 import { BackButton } from '@/components/native/back-button';
 import { needsAppBack } from '@/lib/native/navigation';
@@ -20,7 +20,7 @@ const iconButton =
   'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 /**
- * Mobile: Stinky avatar (opens the profile menu) · greeting or wordmark · bell.
+ * Mobile: profile avatar (photo or Stinky; opens the profile menu) · greeting or wordmark · bell.
  * Desktop: the sidebar carries the logo; the header keeps greeting + bell + avatar (→ Ajustes).
  */
 export function Header({ onMenuClick }: HeaderProps) {
@@ -51,7 +51,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             aria-label={tNav('profileMenu')}
             className="pressable shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:hidden"
           >
-            <StinkyAvatar size={44} />
+            <ProfileAvatar size={44} />
           </button>
         )}
 
@@ -75,7 +75,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           aria-label={tNav('settings')}
           className="hidden shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:block"
         >
-          <StinkyAvatar size={44} />
+          <ProfileAvatar size={44} />
         </Link>
       </div>
     </header>

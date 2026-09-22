@@ -1,7 +1,8 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element -- avatars may be external (OIDC) URLs */
+/* eslint-disable @next/next/no-img-element -- signed API URLs / external (OIDC) avatars */
 
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { POP_BG, popColorAt } from '@/components/chip';
 import type { PublicUser } from '@/lib/hooks/use-social';
@@ -20,29 +21,54 @@ export function initialsFor(user: Pick<PublicUser, 'display_name' | 'username'>)
   return letters.toUpperCase();
 }
 
-/** A friend's avatar: their picture, or their initial on a pop-colour circle. */
+type AvatarUser = Pick<PublicUser, 'display_name' | 'username' | 'avatar_url'> & {
+  avatar_thumb_url?: string | null;
+};
+
+/** Small sizes use the 128px thumb; big ones (profile header) the 512px photo. */
+export function avatarSrcFor(user: AvatarUser, size: number): string | null {
+  if (size <= 64) return user.avatar_thumb_url || user.avatar_url || null;
+  return user.avatar_url || user.avatar_thumb_url || null;
+}
+
+/** A person's avatar: their photo, or their initial on a pop-colour circle. */
 export function PersonAvatar({
   user,
   size = 40,
   className,
 }: {
-  user: Pick<PublicUser, 'display_name' | 'username' | 'avatar_url'>;
+  user: AvatarUser;
   size?: number;
   className?: string;
 }) {
+  const src = avatarSrcFor(user, size);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  const showPhoto = !!src && !failed;
   const color = popColorAt(colorIndexFor(user.username || user.display_name));
   return (
     <span
       aria-hidden
       className={cn(
         'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-extrabold text-pop-foreground',
-        !user.avatar_url && POP_BG[color],
+        showPhoto ? 'bg-panel' : POP_BG[color],
         className
       )}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
     >
-      {user.avatar_url ? (
-        <img src={user.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+      {showPhoto ? (
+        <img
+          src={src}
+          alt=""
+          width={size}
+          height={size}
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onError={() => setFailed(true)}
+          className="h-full w-full select-none object-cover"
+          referrerPolicy="no-referrer"
+        />
       ) : (
         initialsFor(user)
       )}

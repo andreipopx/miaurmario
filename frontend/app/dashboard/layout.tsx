@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Sidebar } from '@/components/sidebar';
 import { MobileSidebar } from '@/components/mobile-sidebar';
@@ -13,6 +13,10 @@ import { AnnouncementBanner } from '@/components/announcement-banner';
 import { LightboxProvider } from '@/lib/lightbox-context';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTranslations } from 'next-intl';
+import { PullToRefresh } from '@/components/native/pull-to-refresh';
+
+/** Screens with pull-to-refresh (feeds and lists that change under you). */
+const PULL_TO_REFRESH = new Set(['/dashboard', '/dashboard/wardrobe', '/dashboard/friends', '/dashboard/music']);
 
 export default function DashboardLayout({
   children,
@@ -20,6 +24,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const t = useTranslations('common');
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -69,6 +74,7 @@ export default function DashboardLayout({
           </main>
         </div>
         <MobileNav />
+        {pathname && PULL_TO_REFRESH.has(pathname) && <PullToRefresh key={pathname} />}
         <OfflineIndicator />
         <ImageLightbox />
       </div>

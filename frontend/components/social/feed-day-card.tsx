@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
+import { TransitionLink } from '@/components/native/transition-link';
 import { useFormatter, useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { dayKind, parseLocalDay } from '@/lib/social';
@@ -66,15 +67,15 @@ export function FeedDayCard({ group }: { group: FeedDayGroup }) {
   return (
     <article className="rounded-lg border border-border bg-card p-3.5 sm:p-4" aria-label={t('cardLabel', { name: '@' + group.author.username })}>
       <header className="flex items-center gap-3">
-        <Link
+        <TransitionLink
           href={`/dashboard/friends/${encodeURIComponent(group.author.username)}`}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="pressable flex min-w-0 flex-1 items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <PersonAvatar user={group.author} size={44} />
           <span className="min-w-0">
             <span className="block truncate text-[15px] font-bold">@{group.author.username}</span>
           </span>
-        </Link>
+        </TransitionLink>
         <span className="shrink-0 rounded-full bg-panel px-3 py-1 text-xs font-semibold first-letter:uppercase">
           {dayLabel(group.day)}
         </span>
@@ -97,7 +98,7 @@ export function FeedDayCard({ group }: { group: FeedDayGroup }) {
         {group.outfits.map((outfit, i) => (
           <div
             key={outfit.id}
-            className={cn(many && 'w-[82%] shrink-0 snap-center sm:w-[60%]')}
+            className={cn(many && 'w-[82%] shrink-0 snap-center snap-always sm:w-[60%]')}
             aria-label={many ? t('lookOf', { n: i + 1, total: group.outfits.length }) : undefined}
           >
             <SocialOutfitTile outfit={outfit} />

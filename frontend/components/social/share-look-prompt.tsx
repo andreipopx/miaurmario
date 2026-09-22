@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Loader2, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Stinky } from '@/components/stinky/stinky';
+import { LazyStinky } from '@/components/native/lazy-stinky';
 import { useShareOutfit, useUnshareOutfit } from '@/lib/hooks/use-social';
 
 /**
@@ -32,7 +32,7 @@ export function ShareLookPrompt({
       aria-labelledby="share-look-title"
       className="relative flex items-center gap-3 rounded-lg bg-signature-soft p-3.5 pr-12"
     >
-      <Stinky state={shared ? 'happy' : 'idle'} size={64} label="" className="shrink-0" />
+      <LazyStinky state={shared ? 'happy' : 'idle'} size={64} label="" className="shrink-0" />
       <div className="min-w-0 flex-1">
         <h2 id="share-look-title" className="text-[15px] font-bold">
           {shared ? t('sharedTitle') : t('title')}

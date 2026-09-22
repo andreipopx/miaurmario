@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { NavRow } from '@/components/sidebar';
 import { ProfileMenuExtras } from '@/components/profile-menu-extras';
+import { useSwipeDismiss } from '@/lib/native/use-swipe-dismiss';
 import { PRIMARY_ITEMS, SECONDARY_ITEMS, isActivePath, isSecondaryActive } from '@/components/nav-items';
 
 interface MobileSidebarProps {
@@ -28,6 +29,9 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
   const tNav = useTranslations('nav');
   const tCommon = useTranslations('common');
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [panel, setPanel] = useState<HTMLDivElement | null>(null);
+  // Swipe the drawer back to the left to close it, like a native side menu.
+  useSwipeDismiss(panel, { direction: 'left', onDismiss: onClose, enabled: open });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -55,6 +59,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
       />
 
       <div
+        ref={setPanel}
         role="dialog"
         aria-modal="true"
         aria-label={tNav('profileMenu')}
@@ -62,9 +67,9 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
           'fixed inset-y-2 left-2 z-[70] w-80 max-w-[calc(100vw-1rem)] rounded-lg bg-popover shadow-[0_20px_60px_rgba(0,0,0,0.25)] transition-[transform,visibility] duration-300 ease-out',
           open ? 'visible translate-x-0' : 'invisible -translate-x-[110%]'
         )}
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="flex h-full flex-col overflow-y-auto p-4">
+        <div className="flex h-full flex-col overflow-y-auto overscroll-contain p-4">
           <div className="flex items-center gap-3 rounded-lg bg-panel p-3">
             <Link
               href="/dashboard/settings"

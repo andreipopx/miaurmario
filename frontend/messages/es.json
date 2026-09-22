@@ -2943,6 +2943,7 @@
     }
   },
   "pwa": {
+    "refreshing": "Actualizando…",
     "updateAvailable": "Hay una versión nueva de Miaurmario",
     "update": "Actualizar"
   }

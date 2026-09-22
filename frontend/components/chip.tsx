@@ -38,7 +38,7 @@ export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
         type="button"
         aria-pressed={active}
         className={cn(
-          'inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm transition-colors duration-150',
+          'inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm transition-[background-color,color,transform,filter] duration-150 active:scale-[0.97] active:brightness-95',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50',
           active
             ? popActive

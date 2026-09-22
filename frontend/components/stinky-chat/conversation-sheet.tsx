@@ -47,13 +47,8 @@ export function ConversationSheet({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          'max-sm:bottom-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none max-sm:translate-y-0 max-sm:rounded-b-none',
-          'max-h-[80dvh] gap-3 p-4 sm:p-6'
-        )}
-        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
-      >
+      {/* DialogContent is already a swipe-to-close bottom sheet on phones. */}
+      <DialogContent className="max-h-[80dvh] gap-3 p-4 max-sm:pt-7 sm:p-6">
         <DialogTitle>{t('history')}</DialogTitle>
         <DialogDescription className="sr-only">{t('subtitle')}</DialogDescription>
         <button
@@ -71,7 +66,7 @@ export function ConversationSheet({
         ) : conversations.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">{t('historyEmpty')}</p>
         ) : (
-          <ul className="-mx-1 space-y-1 overflow-y-auto">
+          <ul className="-mx-1 space-y-1 overflow-y-auto overscroll-contain">
             {conversations.map((c) => (
               <li key={c.id} className="flex items-center gap-1">
                 <button

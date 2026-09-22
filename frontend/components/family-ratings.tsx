@@ -83,7 +83,7 @@ export function FamilyRatingForm({ outfitId, existingRating, onSuccess }: Family
         onChange={(e) => setComment(e.target.value)}
         rows={2}
         maxLength={500}
-        className="resize-none rounded-lg text-sm"
+        className="resize-none rounded-lg text-base sm:text-sm"
       />
       <Button
         onClick={handleSubmit}

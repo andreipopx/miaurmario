@@ -77,7 +77,7 @@ function DraggableCanvasItem({
         onSelect(item.id);
       }}
       className={cn(
-        'select-none outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel',
+        'no-callout select-none outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel',
         'w-[26%] max-w-[140px] aspect-square',
         'rounded-tile bg-transparent',
         isSelected && 'ring-2 ring-signature ring-offset-2 ring-offset-panel',
@@ -159,7 +159,7 @@ export function CanvasPanel({
     return (
       <div
         className={cn(
-          'relative mx-auto aspect-[3/4] w-full max-w-md rounded-lg',
+          'no-callout relative mx-auto aspect-[3/4] w-full max-w-md rounded-lg',
           'bg-panel border-2 border-dashed border-border',
           'flex items-center justify-center p-8'
         )}
@@ -180,8 +180,10 @@ export function CanvasPanel({
         <div
           ref={canvasRef}
           onClick={() => setSelectedId(null)}
+          data-no-swipe
+          data-no-ptr
           className={cn(
-            'relative aspect-[3/4] w-full overflow-hidden rounded-lg',
+            'no-callout relative aspect-[3/4] w-full overflow-hidden rounded-lg',
             'bg-panel'
           )}
         >

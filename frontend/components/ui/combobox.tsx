@@ -136,7 +136,7 @@ export function Combobox({
         }}
         onKeyDown={onKeyDown}
         className={cn(
-          'flex h-12 w-full rounded-full border-[1.5px] border-input bg-background py-2 pl-11 pr-11 text-[15px] text-foreground',
+          'flex h-12 w-full rounded-full border-[1.5px] border-input bg-background py-2 pl-11 pr-11 text-base text-foreground sm:text-[15px]',
           'placeholder:text-muted-foreground transition-[border-color,box-shadow] duration-150',
           'focus-visible:outline-none focus-visible:border-foreground focus-visible:ring-4 focus-visible:ring-signature/40'
         )}

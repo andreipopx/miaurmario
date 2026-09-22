@@ -78,7 +78,7 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col overflow-hidden p-0 [&>button]:hidden">
+      <DialogContent className="flex max-h-[90dvh] max-w-lg flex-col overflow-hidden p-0 [&>button]:hidden">
         {/* Header - sticky */}
         <div className="flex flex-shrink-0 items-center justify-between px-5 pb-3 pt-4">
           <div className="min-w-0">

@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { Wordmark } from '@/components/brand/wordmark';
+import { BackButton } from '@/components/native/back-button';
+import { needsAppBack } from '@/lib/native/navigation';
 
 interface HeaderProps {
   /** Opens the profile/menu sheet (mobile). */
@@ -30,22 +32,28 @@ export function Header({ onMenuClick }: HeaderProps) {
   const firstName = user?.display_name?.trim().split(/\s+/)[0];
   const greeting = firstName ? t('greeting', { name: firstName }) : t('greetingAnon');
   const isHome = pathname === '/dashboard';
+  // Screens outside the dock tabs get an in-app back button (iOS standalone has none).
+  const showBack = needsAppBack(pathname ?? '/dashboard');
 
   return (
     <header
-      className="sticky top-0 z-40 bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/75"
+      className="app-header sticky top-0 z-40 bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/75"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:h-20 lg:px-10">
-        {/* Mobile: avatar opens the profile menu */}
-        <button
-          type="button"
-          onClick={onMenuClick}
-          aria-label={tNav('profileMenu')}
-          className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:hidden"
-        >
-          <StinkyAvatar size={44} />
-        </button>
+        {/* Mobile: back on non-tab screens, otherwise the avatar opens the profile menu */}
+        {showBack ? (
+          <BackButton className="lg:hidden" />
+        ) : (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label={tNav('profileMenu')}
+            className="pressable shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:hidden"
+          >
+            <StinkyAvatar size={44} />
+          </button>
+        )}
 
         <div className={cn('flex min-w-0 flex-1 items-center justify-center lg:justify-start')}>
           {isHome ? (
@@ -57,7 +65,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           )}
         </div>
 
-        <Link href="/dashboard/notifications" aria-label={tNav('notifications')} className={iconButton}>
+        <Link href="/dashboard/notifications" aria-label={tNav('notifications')} className={cn(iconButton, 'pressable')}>
           <Bell className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
         </Link>
 

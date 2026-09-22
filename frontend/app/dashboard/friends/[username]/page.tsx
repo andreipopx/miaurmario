@@ -10,7 +10,8 @@ import { ApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
-import { Stinky } from '@/components/stinky/stinky';
+import { LazyStinky } from '@/components/native/lazy-stinky';
+import { LoadMoreSentinel } from '@/components/native/load-more-sentinel';
 import { PersonAvatar } from '@/components/social/person-avatar';
 import { RelationActions, useFriendErrorMessage } from '@/components/social/relation-actions';
 import { SocialOutfitTile, useDayLabel } from '@/components/social/feed-day-card';
@@ -30,7 +31,7 @@ export default function FriendProfilePage() {
   const [justAccepted, setJustAccepted] = useState(false);
 
   const back = (
-    <Button variant="ghost" size="sm" asChild className="-ml-2 h-11">
+    <Button variant="ghost" size="sm" asChild className="-ml-2 h-11 max-lg:hidden">
       <Link href="/dashboard/friends">
         <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
         {t('back')}
@@ -84,7 +85,7 @@ export default function FriendProfilePage() {
           <PersonAvatar user={user} size={96} className="mx-auto" />
           {justAccepted && (
             <span className="absolute -bottom-3 -right-8">
-              <Stinky state="happy" size={64} label="" />
+              <LazyStinky state="happy" size={64} label="" />
             </span>
           )}
         </div>
@@ -144,7 +145,11 @@ export default function FriendProfilePage() {
           </ul>
         )}
         {outfits.hasNextPage && (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center">
+            <LoadMoreSentinel
+              enabled={!outfits.isFetchingNextPage}
+              onVisible={() => void outfits.fetchNextPage()}
+            />
             <Button variant="secondary" onClick={() => outfits.fetchNextPage()} disabled={outfits.isFetchingNextPage}>
               {outfits.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               {t('loadMore')}

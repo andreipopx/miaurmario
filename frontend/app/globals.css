@@ -173,17 +173,147 @@
   }
 }
 
-/* Prevent iOS Safari zoom on input focus (requires 16px minimum) */
-@media screen and (max-width: 768px) {
-  input,
+/*
+ * iOS Safari zooms into any focused field under 16px. Phones and tablets (any
+ * coarse pointer, incl. iPad at 1024px) always get 16px; desktop keeps the
+ * tighter 15px from the components.
+ */
+@media screen and (max-width: 1024px), (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
   textarea,
-  select {
+  select,
+  [contenteditable='true'] {
     font-size: 16px !important;
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * Native feel (installed PWA on iOS standalone + Android/Huawei Chromium).
+ * ------------------------------------------------------------------------- */
 html {
+  /* No double-tap-to-zoom delay; no grey flash on tap (we draw our own :active). */
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  /* The app shell never rubber-bands or pull-to-reloads as a whole (we ship our
+     own pull-to-refresh); horizontal overscroll never triggers back/forward. */
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
+}
+
+/* Inner scrollers keep their bounce but never chain into the page. */
+[role='dialog'],
+[role='alertdialog'],
+[role='listbox'],
+[data-radix-scroll-area-viewport],
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+/* Horizontal chip rows / carousels: swiping them never navigates back. */
+.overflow-x-auto,
+.snap-x {
+  overscroll-behavior-x: contain;
+}
+
+/* Long-press must not open the "save image" sheet or start a text selection on
+   pictures and things you drag, pet or press-and-hold. Text stays selectable. */
+img,
+svg,
+canvas,
+video,
+.no-callout {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+img,
+canvas,
+.no-callout {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Press feedback: the same quick "squish" on every tappable surface. In the
+   components layer so an element's own transition-* utilities still win. */
+@layer components {
+  .pressable {
+    transition-property: transform, filter, background-color, color, box-shadow, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  .pressable:active {
+    transform: scale(0.97);
+    filter: brightness(0.95);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pressable:active {
+      transform: none;
+    }
+  }
+}
+
+/* The dock and its fade step aside while the on-screen keyboard is up
+   (html[data-keyboard] is set by components/native/native-shell.tsx). */
+html[data-keyboard='open'] [data-dock] {
+  display: none;
+}
+
+/* Full-height screens: the dynamic viewport tracks iOS/Android browser chrome
+   (100vh is taller than the visible area there). Falls back to vh. */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+  .h-screen {
+    height: 100dvh;
+  }
+  .max-h-screen {
+    max-height: 100dvh;
+  }
+}
+
+/* Safe areas (viewport-fit=cover): notch / Dynamic Island on top, home indicator below. */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* View Transitions (same-document; Chromium 111+, Safari 18+): a quick
+   cross-fade for tab switches and list → detail. Skipped for reduced motion. */
+@keyframes vt-fade-out {
+  to { opacity: 0; }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+::view-transition-old(root) {
+  animation: 120ms cubic-bezier(0.4, 0, 1, 1) both vt-fade-out;
+}
+::view-transition-new(root) {
+  animation: 180ms cubic-bezier(0, 0, 0.2, 1) 40ms both vt-fade-in;
+}
+/* The dock and header stay put while the page underneath changes. */
+[data-dock-nav] {
+  view-transition-name: dock;
+}
+.app-header {
+  view-transition-name: app-header;
+}
+::view-transition-group(dock),
+::view-transition-group(app-header) {
+  animation-duration: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 /* Sonner toasts — Stinky pop */

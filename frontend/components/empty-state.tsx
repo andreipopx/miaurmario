@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Stinky } from '@/components/stinky/stinky';
+import { LazyStinky } from '@/components/native/lazy-stinky';
 import type { StinkyStateInput } from '@/components/stinky/stinky-states';
 
 /**
@@ -30,7 +30,7 @@ export function EmptyState({
         className="flex items-center justify-center rounded-full bg-signature-soft"
         style={{ width: circle, height: circle }}
       >
-        <Stinky state={state} size={Math.round(circle * 0.85)} label="" />
+        <LazyStinky state={state} size={Math.round(circle * 0.85)} label="" />
       </div>
       <h2 className="mt-5 text-xl font-extrabold tracking-tight">{title}</h2>
       {description && (

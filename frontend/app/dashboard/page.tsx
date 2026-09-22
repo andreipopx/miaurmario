@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { TransitionLink } from '@/components/native/transition-link';
 import Image from 'next/image';
 import { useFormatter, useTranslations } from 'next-intl';
 import { addDays, isSameDay, startOfWeek } from 'date-fns';
@@ -40,7 +41,7 @@ import { Button } from '@/components/ui/button';
 import { POP_BG, type PopColor } from '@/components/chip';
 import { StinkyTip } from '@/components/stinky-tip';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
-import { Stinky } from '@/components/stinky/stinky';
+import { LazyStinky } from '@/components/native/lazy-stinky';
 import { ShareLookPrompt } from '@/components/social/share-look-prompt';
 
 // -- Section header -------------------------------------------------------------
@@ -81,7 +82,7 @@ function QuickActions() {
           href={href}
           className={cn(
             POP_BG[color],
-            'flex h-[84px] flex-col items-center justify-center gap-1.5 rounded-quick px-1 text-center text-pop-foreground transition-transform duration-150 hover:-translate-y-0.5 active:scale-[0.97] sm:h-24',
+            'flex h-[84px] flex-col items-center justify-center gap-1.5 rounded-quick px-1 text-center text-pop-foreground transition-transform duration-150 hover:-translate-y-0.5 active:scale-[0.97] active:brightness-95 sm:h-24',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
           )}
         >
@@ -246,11 +247,11 @@ function TodayLook() {
           <Skeleton className="mt-3 h-[220px] w-full bg-background/60" />
         ) : featured ? (
           <>
-            <Link
+            <TransitionLink
               href={`/dashboard/outfits/${featured.id}`}
               aria-label={t('viewLook')}
               className={cn(
-                'mt-2 grid h-[208px] gap-2 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-[280px]',
+                'pressable mt-2 grid h-[208px] gap-2 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-[280px]',
                 items.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
                 items.length > 2 ? 'grid-rows-2' : 'grid-rows-1'
               )}
@@ -272,13 +273,13 @@ function TodayLook() {
                   )}
                 </div>
               ))}
-            </Link>
+            </TransitionLink>
             <StinkyTip className="mt-3" clamp>{tip || t('defaultTip')}</StinkyTip>
           </>
         ) : (
           <div className="flex flex-col items-center px-4 pb-4 pt-6 text-center">
             <div className="flex h-32 w-32 items-center justify-center rounded-full bg-signature-soft">
-              <Stinky state="idle" size={112} label="" />
+              <LazyStinky state="idle" size={112} label="" />
             </div>
             <p className="mt-4 text-lg font-extrabold tracking-tight">{t('noLookTitle')}</p>
             <p className="mt-1 max-w-xs text-sm text-muted-foreground">{t('noLookBody')}</p>
@@ -399,10 +400,10 @@ function OutfitsSection() {
       ) : (
         <div className="-mx-4 flex gap-3 overflow-x-auto scrollbar-none px-4 pb-1 sm:mx-0 sm:px-0">
           {outfits.map((o) => (
-            <Link
+            <TransitionLink
               key={o.id}
               href={`/dashboard/outfits/${o.id}`}
-              className="group w-32 flex-shrink-0 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
+              className="pressable group w-32 flex-shrink-0 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
             >
               <div className="grid aspect-[4/5] grid-cols-2 grid-rows-2 gap-1 overflow-hidden rounded-tile bg-panel p-1.5">
                 {o.items.slice(0, 4).map((item) => (
@@ -420,7 +421,7 @@ function OutfitsSection() {
                 ))}
               </div>
               <p className="mt-1.5 px-1 text-sm font-semibold capitalize">{o.occasion}</p>
-            </Link>
+            </TransitionLink>
           ))}
         </div>
       )}
@@ -454,9 +455,9 @@ function LibrarySection() {
         <ul className="space-y-2">
           {items.map((o) => (
             <li key={o.id}>
-              <Link
+              <TransitionLink
                 href={`/dashboard/outfits/${o.id}`}
-                className="flex min-h-[56px] items-center justify-between rounded-2xl bg-panel px-4 py-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="pressable flex min-h-[56px] items-center justify-between rounded-2xl bg-panel px-4 py-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div>
                   <p className="text-[15px] font-bold capitalize">{o.occasion}</p>
@@ -467,7 +468,7 @@ function LibrarySection() {
                   )}
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} aria-hidden />
-              </Link>
+              </TransitionLink>
             </li>
           ))}
         </ul>

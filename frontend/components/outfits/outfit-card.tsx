@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { TransitionLink } from '@/components/native/transition-link';
 import Image from 'next/image';
 import { formatDistanceToNow, parseISO, type Locale } from 'date-fns';
 import { useTranslations } from 'next-intl';
@@ -182,11 +183,11 @@ export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
 
   if (onClick) return content;
   return (
-    <Link
+    <TransitionLink
       href={`/dashboard/outfits/${outfit.id}`}
-      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="pressable block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       {content}
-    </Link>
+    </TransitionLink>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { TransitionLink } from '@/components/native/transition-link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
@@ -23,9 +23,12 @@ export function MobileNav() {
       {/* Fade so content scrolling under the dock stays legible. */}
       <div
         aria-hidden
+        data-dock
         className="pointer-events-none fixed inset-x-0 bottom-0 z-40 h-28 bg-gradient-to-b from-transparent to-background/90 lg:hidden"
       />
       <nav
+        data-dock
+        data-dock-nav
         aria-label={t('primary')}
         className="glass-dock fixed inset-x-4 z-50 mx-auto flex h-16 max-w-md items-center justify-between rounded-[32px] p-2 lg:hidden"
         style={{ bottom: 'calc(24px + env(safe-area-inset-bottom))' }}
@@ -36,13 +39,13 @@ export function MobileNav() {
           const badge = item.socialBadge ? socialCount : 0;
           const label = badge > 0 ? `${t(item.key)} · ${t('newActivity', { count: badge })}` : t(item.key);
           return (
-            <Link
+            <TransitionLink
               key={item.href}
               href={item.href}
               aria-current={active ? 'page' : undefined}
               aria-label={active ? undefined : label}
               className={cn(
-                'flex h-12 items-center justify-center rounded-full transition-[background-color,padding,width] duration-200 ease-pop',
+                'pressable flex h-12 items-center justify-center rounded-full transition-[background-color,padding,width,transform] duration-200 ease-pop',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 active
                   ? 'gap-2 bg-signature px-4 text-signature-foreground'
@@ -64,7 +67,7 @@ export function MobileNav() {
                 )}
               </span>
               {active && <span className="text-sm font-bold">{t(item.key)}</span>}
-            </Link>
+            </TransitionLink>
           );
         })}
       </nav>

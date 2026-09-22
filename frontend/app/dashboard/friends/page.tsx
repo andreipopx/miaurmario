@@ -14,7 +14,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Stinky } from '@/components/stinky/stinky';
+import { LazyStinky } from '@/components/native/lazy-stinky';
+import { LoadMoreSentinel } from '@/components/native/load-more-sentinel';
 import { FeedDayCard } from '@/components/social/feed-day-card';
 import { InviteCard, ShareProfileButton } from '@/components/social/invite-card';
 import { PersonAvatar } from '@/components/social/person-avatar';
@@ -56,7 +57,7 @@ function Celebration({ name, onDone }: { name: string; onDone: () => void }) {
   }, [onDone]);
   return (
     <div role="status" className="flex items-center gap-3 rounded-lg bg-signature-soft p-3">
-      <Stinky state="happy" size={64} label="" />
+      <LazyStinky state="happy" size={64} label="" />
       <p className="text-[15px] font-bold">{t('celebrate', { name })}</p>
     </div>
   );
@@ -97,7 +98,11 @@ function FeedTab({ hasFriends }: { hasFriends: boolean }) {
         <FeedDayCard key={`${g.author.username}-${g.day}`} group={g} />
       ))}
       {feed.hasNextPage && (
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center">
+          <LoadMoreSentinel
+            enabled={!feed.isFetchingNextPage}
+            onVisible={() => void feed.fetchNextPage()}
+          />
           <Button variant="secondary" onClick={() => feed.fetchNextPage()} disabled={feed.isFetchingNextPage}>
             {feed.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {t('loadMore')}

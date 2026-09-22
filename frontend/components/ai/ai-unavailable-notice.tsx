@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Stinky } from '@/components/stinky/stinky';
+import { LazyStinky } from '@/components/native/lazy-stinky';
 import { cn } from '@/lib/utils';
 
 const KNOWN_REASONS = new Set([
@@ -41,7 +41,7 @@ export function AIUnavailableNotice({ reason, feature, className }: AIUnavailabl
         aria-hidden
         className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-signature-soft"
       >
-        <Stinky state="sleepy" size={48} label="" />
+        <LazyStinky state="sleepy" size={48} label="" />
       </div>
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-[15px] font-bold leading-snug">{t(`title.${key}`)}</p>

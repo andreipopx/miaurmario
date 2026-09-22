@@ -31,6 +31,7 @@ import {
   type ChatOutfitCard,
 } from '@/lib/stinky-chat';
 import { cn } from '@/lib/utils';
+import { useKeyboard } from '@/lib/native/keyboard';
 
 type Mood = 'idle' | 'thinking' | 'happy';
 
@@ -139,27 +140,6 @@ function Bubble({
   );
 }
 
-/** Keyboard inset on iOS/Android (visual viewport shrinks when the keyboard opens). */
-function useKeyboardInset() {
-  const [inset, setInset] = useState(0);
-  useEffect(() => {
-    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
-    if (!vv) return;
-    const update = () => {
-      const value = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setInset(value > 80 ? value : 0);
-    };
-    update();
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
-    return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-    };
-  }, []);
-  return inset;
-}
-
 // -- Page ---------------------------------------------------------------------------------
 
 function StinkyChat() {
@@ -184,7 +164,8 @@ function StinkyChat() {
   const loadedIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const keyboardInset = useKeyboardInset();
+  // iOS/Android keyboard: lift the composer onto the keyboard (the dock hides meanwhile).
+  const keyboard = useKeyboard();
 
   const aiStatus = useAIStatus();
   const conversation = useStinkyConversation(cParam);
@@ -218,10 +199,10 @@ function StinkyChat() {
   // Stop streaming when leaving the page.
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  // Keep the newest message in view.
+  // Keep the newest message in view (also when the keyboard opens and the room shrinks).
   useLayoutEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
-  }, [messages, statusLabel]);
+  }, [messages, statusLabel, keyboard.open]);
 
   const toolLabel = useCallback(
     (tool?: string) => (tool && TOOL_KEYS.has(tool) ? t(`statusTool.${tool}` as never) : t('statusTool.default')),
@@ -412,7 +393,7 @@ function StinkyChat() {
       {/* Chat header: fixed under the app header (<main> clips overflow, so sticky can't work). */}
       <div className="fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-30 bg-background/95 lg:left-64 lg:top-20">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-0">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-signature-soft">
+          <div className="no-callout flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-signature-soft">
             <Stinky
               state={mood}
               size={52}
@@ -503,9 +484,9 @@ function StinkyChat() {
         <div
           className={cn(
             'fixed inset-x-0 z-[45] px-4 lg:left-64',
-            keyboardInset === 0 && 'bottom-[calc(100px+env(safe-area-inset-bottom))] lg:bottom-6'
+            !keyboard.open && 'bottom-[calc(100px+env(safe-area-inset-bottom))] lg:bottom-6'
           )}
-          style={keyboardInset > 0 ? { bottom: keyboardInset + 8 } : undefined}
+          style={keyboard.open ? { bottom: keyboard.inset + 8 } : undefined}
         >
           <form
             onSubmit={(e) => {

@@ -99,7 +99,8 @@ export default function OutfitDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      {/* Mobile uses the header's back button. */}
+      <div className="flex items-center justify-between gap-4 max-lg:hidden">
         <Button variant="ghost" size="sm" asChild className="-ml-2 h-11">
           <Link href="/dashboard/outfits">
             <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />

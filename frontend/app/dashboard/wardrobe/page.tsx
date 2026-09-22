@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { memo, useCallback, useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Plus, Search, Heart, Loader2, AlertCircle, RefreshCw, Droplets, ArrowUpDown, SlidersHorizontal, X, Shirt } from 'lucide-react';
@@ -15,8 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AddItemDialog } from '@/components/add-item-dialog';
-import { ItemDetailDialog } from '@/components/item-detail-dialog';
+// Heavy dialogs (uploader, detail editor, colour tools) load in their own chunks after the grid.
+const AddItemDialog = dynamic(() => import('@/components/add-item-dialog').then((m) => m.AddItemDialog), { ssr: false });
+const ItemDetailDialog = dynamic(() => import('@/components/item-detail-dialog').then((m) => m.ItemDetailDialog), {
+  ssr: false,
+});
 import { BulkActionToolbar, BulkSelection } from '@/components/bulk-action-toolbar';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
@@ -43,13 +47,13 @@ const SORT_OPTIONS = [
   { labelKey: 'nameDesc', value: 'name', order: 'desc' as const },
 ] as const;
 
-function ItemCard({
+const ItemCard = memo(function ItemCard({
   item,
   selected,
   onSelect,
   onRetry,
   onCancelAnalysis,
-  onClick,
+  onOpen,
   userTimezone,
 }: {
   item: Item;
@@ -57,9 +61,10 @@ function ItemCard({
   onSelect: (id: string, checked: boolean) => void;
   onRetry?: (id: string) => void;
   onCancelAnalysis?: (id: string) => void;
-  onClick?: () => void;
+  onOpen: (id: string) => void;
   userTimezone: string;
 }) {
+  const onClick = () => onOpen(item.id);
   const t = useTranslations('wardrobe');
   const tCommon = useTranslations('common');
   const typeLabel = useClothingTypeLabel();
@@ -83,7 +88,7 @@ function ItemCard({
           onClick={onClick}
           aria-label={name}
           className={cn(
-            'relative block aspect-square w-full overflow-hidden rounded-tile bg-panel transition-shadow',
+            'no-callout pressable relative block aspect-square w-full overflow-hidden rounded-tile bg-panel transition-shadow',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             selected && 'ring-[3px] ring-signature'
           )}
@@ -192,7 +197,7 @@ function ItemCard({
       </div>
     </article>
   );
-}
+});
 
 function ItemCardSkeleton() {
   return (
@@ -307,15 +312,13 @@ export default function WardrobePage() {
     setSelection({ mode: 'none', selectedIds: new Set(), excludedIds: new Set() });
   }, [search, typeFilter, needsWash, favoriteFilter, sortIndex]);
 
-  const handleRetry = (itemId: string) => {
-    reanalyze.mutate(itemId);
-  };
+  const { mutate: reanalyzeItem } = reanalyze;
+  const { mutate: cancelItemAnalysis } = cancelAnalysis;
+  const handleRetry = useCallback((itemId: string) => reanalyzeItem(itemId), [reanalyzeItem]);
+  const handleCancelAnalysis = useCallback((itemId: string) => cancelItemAnalysis(itemId), [cancelItemAnalysis]);
+  const handleOpen = useCallback((itemId: string) => setDetailItemId(itemId), []);
 
-  const handleCancelAnalysis = (itemId: string) => {
-    cancelAnalysis.mutate(itemId);
-  };
-
-  const handleSelect = (id: string, checked: boolean) => {
+  const handleSelect = useCallback((id: string, checked: boolean) => {
     setSelection((prev) => {
       if (prev.mode === 'all') {
         // In "select all" mode, toggle exclusion
@@ -337,7 +340,7 @@ export default function WardrobePage() {
         return { mode: next.size > 0 ? 'some' : 'none', selectedIds: next, excludedIds: new Set() };
       }
     });
-  };
+  }, []);
 
   const handleSelectPage = () => {
     setSelection((prev) => {
@@ -657,7 +660,7 @@ export default function WardrobePage() {
                 onSelect={handleSelect}
                 onRetry={handleRetry}
                 onCancelAnalysis={handleCancelAnalysis}
-                onClick={() => setDetailItemId(item.id)}
+                onOpen={handleOpen}
                 userTimezone={userTimezone}
               />
             );

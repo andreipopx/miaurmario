@@ -114,6 +114,20 @@ def enqueued_social_notifications(monkeypatch) -> list[tuple[str, Any]]:
     return calls
 
 
+@pytest.fixture(autouse=True)
+def enqueued_waitlist_notifications(monkeypatch) -> list[Any]:
+    """Record waitlist admin alerts instead of pushing them to the real arq queue."""
+    from app.services import notification_queue
+
+    calls: list[Any] = []
+
+    async def fake_enqueue(request_id):
+        calls.append(request_id)
+
+    monkeypatch.setattr(notification_queue, "enqueue_waitlist_admin_notification", fake_enqueue)
+    return calls
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def _clear_rate_limits():
     settings = get_settings()

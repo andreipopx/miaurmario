@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.admin import WaitlistRequest
+from app.services import notification_queue
 from app.services.user_service import UserService
 from app.utils.rate_limit import check_rate_limit, rate_limit_by_ip
 
@@ -57,7 +58,7 @@ async def join_waitlist(
     if await UserService(db).get_by_email(email_l) is not None:
         return WaitlistAccepted()  # already has an account: say nothing, store nothing
 
-    await db.execute(
+    result = await db.execute(
         insert(WaitlistRequest)
         .values(
             email=email_l,
@@ -66,6 +67,10 @@ async def join_waitlist(
             locale=payload.locale or "es",
         )
         .on_conflict_do_nothing(index_elements=[WaitlistRequest.email])
+        .returning(WaitlistRequest.id)
     )
+    new_id = result.scalar_one_or_none()
     await db.commit()
+    if new_id is not None:  # only brand-new requests ping the admins
+        await notification_queue.enqueue_waitlist_admin_notification(new_id)
     return WaitlistAccepted()

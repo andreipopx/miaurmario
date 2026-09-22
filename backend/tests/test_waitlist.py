@@ -226,3 +226,53 @@ def test_approved_email_template_es_and_en():
     en = render_waitlist_approved_email(invite_url="https://x.test/login?invite=ABC", locale="en")
     assert "You're in" in en.subject
     assert "14 days" in en.text
+
+
+class TestAdminAlert:
+    async def test_only_new_requests_alert_the_admins(
+        self, client, db_session, test_user, enqueued_waitlist_notifications
+    ):
+        email = _email()
+        assert (await client.post(JOIN_URL, json={"email": email})).status_code == 202
+        assert (await client.post(JOIN_URL, json={"email": email})).status_code == 202
+        assert (await client.post(JOIN_URL, json={"email": test_user.email})).status_code == 202
+
+        rows = await _requests(db_session, email)
+        assert enqueued_waitlist_notifications == [rows[0].id]
+
+    async def test_emails_every_admin_address(self, db_session, monkeypatch):
+        from app.services import event_notifications as ev
+
+        email = _email()
+        req = WaitlistRequest(email=email, name="Lucía", message="¡Quiero probarlo!")
+        db_session.add(req)
+        await db_session.flush()
+        monkeypatch.setattr(ev.get_settings(), "admin_emails", "boss@example.com, hola@example.com")
+        send = AsyncMock()
+        monkeypatch.setattr(ev, "send_email", send)
+
+        result = await ev.notify_admins_of_waitlist_request(db_session, req.id)
+
+        assert result["status"] == "sent"
+        assert sorted(c.args[0] for c in send.await_args_list) == [
+            "boss@example.com",
+            "hola@example.com",
+        ]
+        rendered = send.await_args_list[0].args[1]
+        assert rendered.subject == "Lucía quiere entrar en Miaurmario"
+        assert "/dashboard/admin?tab=signup" in rendered.text
+        assert "¡Quiero probarlo!" in rendered.text
+
+    async def test_decided_requests_are_not_announced(self, db_session, monkeypatch):
+        from app.services import event_notifications as ev
+
+        req = WaitlistRequest(email=_email(), status="approved")
+        db_session.add(req)
+        await db_session.flush()
+        send = AsyncMock()
+        monkeypatch.setattr(ev, "send_email", send)
+
+        result = await ev.notify_admins_of_waitlist_request(db_session, req.id)
+
+        assert result == {"status": "skipped", "reason": "not_pending"}
+        send.assert_not_awaited()

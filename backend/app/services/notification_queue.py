@@ -27,3 +27,19 @@ async def enqueue_social_notification(event: str, friendship_id: UUID) -> None:
             await redis.aclose()
     except Exception as exc:
         logger.warning("Could not enqueue %s notification for %s: %s", event, friendship_id, exc)
+
+
+async def enqueue_waitlist_admin_notification(request_id: UUID) -> None:
+    try:
+        redis = await create_pool(get_redis_settings())
+        try:
+            await redis.enqueue_job(
+                "send_waitlist_admin_notification",
+                str(request_id),
+                _queue_name=QUEUE_NAME,
+                _job_id=f"waitlist-admin:{request_id}",
+            )
+        finally:
+            await redis.aclose()
+    except Exception as exc:
+        logger.warning("Could not enqueue waitlist admin notification %s: %s", request_id, exc)

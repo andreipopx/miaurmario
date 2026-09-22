@@ -16,7 +16,11 @@ from app.models.user import User
 from app.schemas.notification import EmailConfig, ExpoPushConfig, NtfyConfig
 from app.services.ai_access import AIAccessError
 from app.services.ai_service import AIDisabledError
-from app.services.event_notifications import default_channels_for, notify_friendship_event
+from app.services.event_notifications import (
+    default_channels_for,
+    notify_admins_of_waitlist_request,
+    notify_friendship_event,
+)
 from app.services.learning_service import LearningService
 from app.services.notification_providers import (
     EmailProvider,
@@ -76,6 +80,22 @@ async def send_notification(ctx: dict, user_id: str, outfit_id: str):
 
     except Exception:
         logger.exception(f"Failed to send notification for outfit {outfit_id}")
+        await db.rollback()
+        raise
+    finally:
+        await db.close()
+
+
+async def send_waitlist_admin_notification(ctx: dict, request_id: str) -> dict:
+    """New waitlist request -> email (and push) to the site admins."""
+    db = get_db_session(ctx)
+    try:
+        result = await notify_admins_of_waitlist_request(db, uuid.UUID(request_id))
+        await db.commit()
+        logger.info("Waitlist admin notification for %s: %s", request_id, result)
+        return result
+    except Exception:
+        logger.exception("Failed to notify admins of waitlist request %s", request_id)
         await db.rollback()
         raise
     finally:

@@ -276,3 +276,66 @@ async def notify_friendship_event(db: AsyncSession, event: str, friendship_id: U
     await db.flush()
     sent = [r.channel for r in results if r.success]
     return {"status": "sent" if sent else "no_channel", "channels": sent}
+
+
+async def notify_admins_of_waitlist_request(db: AsyncSession, request_id: UUID) -> dict:
+    """Email every ADMIN_EMAILS address (+ Web Push to admin accounts) about a new
+    waitlist request, so the owner doesn't have to check the admin panel."""
+    from sqlalchemy import func
+
+    from app.models.admin import WaitlistRequest
+    from app.utils.email_templates import render_waitlist_admin_email
+
+    req = await db.get(WaitlistRequest, request_id)
+    if req is None or req.status != "pending":
+        return {"status": "skipped", "reason": "not_pending"}
+
+    admins = sorted(get_settings().admin_email_set())
+    if not admins:
+        return {"status": "skipped", "reason": "no_admins"}
+
+    pending = (
+        await db.execute(
+            select(func.count())
+            .select_from(WaitlistRequest)
+            .where(WaitlistRequest.status == "pending")
+        )
+    ).scalar_one()
+    origin = public_origin()
+    cta_url = f"{origin}/dashboard/admin?tab=signup"
+    email = render_waitlist_admin_email(
+        email=req.email,
+        name=req.name,
+        message=req.message,
+        pending=pending,
+        cta_url=cta_url,
+        origin=origin,
+    )
+    who = req.name or req.email
+    sent: list[str] = []
+    for address in admins:
+        try:
+            await send_email(address, email)
+            sent.append(f"email:{address}")
+        except Exception as exc:
+            logger.warning("Waitlist admin email to %s failed: %s", address, exc)
+
+    if push_available():
+        admin_users = (
+            await db.execute(select(User).where(func.lower(User.email).in_(admins)))
+        ).scalars()
+        for admin in admin_users:
+            result = await send_web_push(
+                db,
+                admin.id,
+                PushPayload(
+                    title="Nueva solicitud de acceso",
+                    body=f"{who} quiere entrar en Miaurmario",
+                    url="/dashboard/admin?tab=signup",
+                    tag="waitlist",
+                ),
+            )
+            if getattr(result, "sent", 0):
+                sent.append(f"push:{admin.id}")
+    await db.flush()
+    return {"status": "sent" if sent else "no_channel", "channels": sent}

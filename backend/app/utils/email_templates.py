@@ -738,3 +738,49 @@ def render_waitlist_approved_email(
         _text_footer(loc, origin),
     )
     return RenderedEmail(subject=c["subject"], html=html, text=text)
+
+
+# --------------------------------------------------------------------------- #
+# Waitlist: heads-up for site admins (Spanish only; admins are the owner)
+# --------------------------------------------------------------------------- #
+
+
+def render_waitlist_admin_email(
+    *,
+    email: str,
+    name: str | None,
+    message: str | None,
+    pending: int,
+    cta_url: str,
+    origin: str | None = None,
+) -> RenderedEmail:
+    who = name.strip() if name and name.strip() else email
+    subject = f"{who} quiere entrar en Miaurmario"
+    heading = "Nueva solicitud en la lista de espera"
+    lines = [f"<strong>{escape(who)}</strong> ({escape(email)}) ha pedido acceso a la beta."]
+    if message:
+        lines.append(f"«{escape(message)}»")
+    pending_line = (
+        "Es la única solicitud pendiente."
+        if pending <= 1
+        else f"Tienes {pending} solicitudes pendientes."
+    )
+    body = "".join(_p(line) for line in lines) + _p(escape(pending_line))
+    html = _layout(
+        locale="es",
+        title=subject,
+        preheader=f"{who} ha pedido acceso. {pending_line}",
+        heading=heading,
+        body_html=body,
+        cta_label="Revisar solicitudes",
+        cta_url=cta_url,
+        origin=origin,
+    )
+    text = _text(
+        heading,
+        f"{who} ({email}) ha pedido acceso a la beta.",
+        f"«{message}»" if message else "",
+        pending_line,
+        f"Revisar solicitudes: {cta_url}",
+    )
+    return RenderedEmail(subject=subject, html=html, text=text)

@@ -272,14 +272,19 @@
     "primary": "Principal",
     "profileMenu": "Tu perfil y menú",
     "familySettings": "Gestionar familia",
-    "viewProfile": "Tu perfil y ajustes",
+    "viewProfile": "Ver tu perfil",
     "sendFeedback": "Enviar sugerencia o fallo",
     "admin": "Admin",
     "adminBadge": "{count, plural, one {# aviso pendiente} other {# avisos pendientes}}",
     "friends": "Amigos",
     "newActivity": "{count, plural, one {# novedad} other {# novedades}}",
     "stinky": "Habla con Stinky",
-    "music": "Música"
+    "music": "Música",
+    "inspo": "Inspiración",
+    "stinkyShort": "Stinky",
+    "garments": "Prendas",
+    "integrations": "Integraciones",
+    "general": "General"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",

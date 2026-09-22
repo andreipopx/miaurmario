@@ -14,6 +14,7 @@ import { LightboxProvider } from '@/lib/lightbox-context';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTranslations } from 'next-intl';
 import { PullToRefresh } from '@/components/native/pull-to-refresh';
+import { SectionTabs } from '@/components/section-tabs';
 
 /** Screens with pull-to-refresh (feeds and lists that change under you). */
 const PULL_TO_REFRESH = new Set(['/dashboard', '/dashboard/wardrobe', '/dashboard/friends', '/dashboard/music']);
@@ -70,6 +71,7 @@ export default function DashboardLayout({
           {/* pb-dock reserves room for the floating mobile dock so it never covers content. */}
           <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
             <AnnouncementBanner />
+            <SectionTabs />
             {children}
           </main>
         </div>

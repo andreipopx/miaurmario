@@ -21,7 +21,7 @@ const iconButton =
   'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 /**
- * Mobile: Stinky avatar (opens the profile menu) · greeting or wordmark · bell.
+ * Mobile: profile avatar (photo or Stinky; opens the profile menu) · greeting or wordmark · bell.
  * Desktop: the sidebar carries the logo; the header keeps greeting + bell + avatar (→ profile menu).
  */
 export function Header({ onMenuClick }: HeaderProps) {

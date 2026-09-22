@@ -13,7 +13,7 @@ interface MobileSidebarProps {
 }
 
 /**
- * Mobile profile menu, opened from the Stinky avatar in the header. Short on purpose:
+ * Mobile profile menu, opened from the profile avatar (photo or Stinky) in the header. Short on purpose:
  * profile, Ajustes, Admin (site admins), feedback and sign out — sections live in the dock.
  */
 export function MobileSidebar({ open, onClose }: MobileSidebarProps) {

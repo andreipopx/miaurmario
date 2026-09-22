@@ -179,3 +179,87 @@ class TestGetProvider:
     def test_is_abstract(self):
         with pytest.raises(TypeError):
             BackgroundRemovalProvider()
+
+
+class TestWarmUp:
+    def setup_method(self):
+        import app.services.background_removal as mod
+
+        mod._provider = None
+
+    def teardown_method(self):
+        import app.services.background_removal as mod
+
+        mod._provider = None
+
+    @staticmethod
+    def _settings(provider="rembg", preload=True):
+        settings = MagicMock()
+        settings.bg_removal_provider = provider
+        settings.bg_removal_model = "u2net"
+        settings.bg_removal_preload = preload
+        settings.bg_removal_url = "http://bg:5000"
+        settings.bg_removal_api_key = None
+        return settings
+
+    def test_preloads_rembg_session_in_background_thread(self):
+        from app.services.background_removal import start_warm_up
+
+        mock_new_session = MagicMock(return_value="fake-session")
+        with (
+            patch("app.services.background_removal.get_settings", return_value=self._settings()),
+            patch.dict("sys.modules", {"rembg": MagicMock(new_session=mock_new_session)}),
+        ):
+            thread = start_warm_up()
+            assert thread is not None
+            assert thread.daemon
+            thread.join(timeout=5)
+            provider = get_provider()
+
+        mock_new_session.assert_called_once_with("u2net")
+        assert provider._session == "fake-session"
+
+    def test_warm_session_is_reused_by_first_removal(self):
+        from app.services.background_removal import start_warm_up
+
+        mock_new_session = MagicMock(return_value="fake-session")
+        mock_remove = MagicMock(return_value=_make_rgba_image())
+        with (
+            patch("app.services.background_removal.get_settings", return_value=self._settings()),
+            patch.dict(
+                "sys.modules",
+                {"rembg": MagicMock(new_session=mock_new_session, remove=mock_remove)},
+            ),
+        ):
+            start_warm_up().join(timeout=5)
+            get_provider().remove(_make_rgb_image())
+
+        mock_new_session.assert_called_once()
+
+    def test_disabled_preload_does_nothing(self):
+        from app.services.background_removal import start_warm_up
+
+        with patch(
+            "app.services.background_removal.get_settings",
+            return_value=self._settings(preload=False),
+        ):
+            assert start_warm_up() is None
+
+    def test_http_provider_is_not_preloaded(self):
+        from app.services.background_removal import start_warm_up
+
+        with patch(
+            "app.services.background_removal.get_settings",
+            return_value=self._settings(provider="http"),
+        ):
+            assert start_warm_up() is None
+
+    def test_warm_up_failure_is_swallowed(self):
+        from app.services.background_removal import _warm_up
+
+        broken = MagicMock(new_session=MagicMock(side_effect=RuntimeError("no model")))
+        with (
+            patch("app.services.background_removal.get_settings", return_value=self._settings()),
+            patch.dict("sys.modules", {"rembg": broken}),
+        ):
+            _warm_up()  # must not raise

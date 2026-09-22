@@ -14,6 +14,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from app.api.router import api_router
 from app.config import get_settings
 from app.database import engine
+from app.services.background_removal import start_warm_up as start_bg_removal_warm_up
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -69,6 +70,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if warning:
         logger.error("Configuration: %s", warning)
     logger.info("Auth mode: %s", settings.get_auth_mode())
+    # Non-blocking: rembg's cold import takes ~40s; do it off the event loop so startup
+    # and /health stay instant.
+    start_bg_removal_warm_up()
     yield
     await engine.dispose()
 

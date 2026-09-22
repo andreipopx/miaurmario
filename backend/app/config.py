@@ -135,6 +135,8 @@ class Settings(BaseSettings):
     bg_removal_model: str = Field(default="u2net")  # rembg model name
     bg_removal_url: str | None = Field(default=None)  # URL for http provider (e.g. withoutbg)
     bg_removal_api_key: str | None = Field(default=None)  # API key for http provider
+    # Import rembg + create the model session in a background thread at API startup.
+    bg_removal_preload: bool = Field(default=True)
 
     # Security headers
     security_headers_enabled: bool = True

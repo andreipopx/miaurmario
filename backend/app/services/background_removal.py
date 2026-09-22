@@ -1,4 +1,6 @@
 import logging
+import threading
+import time
 from abc import ABC, abstractmethod
 from io import BytesIO
 
@@ -20,13 +22,21 @@ class RembgProvider(BackgroundRemovalProvider):
     def __init__(self, model: str = "u2net"):
         self.model = model
         self._session = None
+        # Guards the one-time load so the startup warm-up and a first request never both
+        # pay the ~40s rembg import + ONNX session creation.
+        self._lock = threading.Lock()
 
     def _get_session(self):
         if self._session is None:
-            from rembg import new_session
+            with self._lock:
+                if self._session is None:
+                    from rembg import new_session
 
-            self._session = new_session(self.model)
+                    self._session = new_session(self.model)
         return self._session
+
+    def warm_up(self) -> None:
+        self._get_session()
 
     def remove(self, image: Image.Image) -> Image.Image:
         from rembg import remove
@@ -80,3 +90,34 @@ def get_provider() -> BackgroundRemovalProvider:
         raise ValueError(f"Unknown BG_REMOVAL_PROVIDER: {provider_type}. Use 'rembg' or 'http'.")
 
     return _provider
+
+
+def _warm_up() -> None:
+    started = time.monotonic()
+    try:
+        provider = get_provider()
+        if isinstance(provider, RembgProvider):
+            provider.warm_up()
+            logger.info(
+                "Background removal: rembg '%s' session ready in %.1fs",
+                provider.model,
+                time.monotonic() - started,
+            )
+    except ImportError:
+        logger.info("Background removal: rembg not installed, skipping warm-up")
+    except Exception:
+        logger.warning("Background removal: warm-up failed", exc_info=True)
+
+
+def start_warm_up() -> threading.Thread | None:
+    """Load rembg + its model session in a daemon thread so the first removal after a
+    deploy doesn't pay the cold import. Never blocks startup (or health checks)."""
+    settings = get_settings()
+    if not settings.bg_removal_preload or settings.bg_removal_provider != "rembg":
+        return None
+    logger.info(
+        "Background removal: warming up rembg '%s' in the background", settings.bg_removal_model
+    )
+    thread = threading.Thread(target=_warm_up, name="rembg-warmup", daemon=True)
+    thread.start()
+    return thread

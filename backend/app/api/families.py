@@ -25,6 +25,7 @@ from app.schemas.family import (
     UpdateMemberRoleRequest,
 )
 from app.schemas.notification import EmailConfig
+from app.services.avatar_service import avatar_thumb_url
 from app.services.family_service import FamilyService
 from app.services.notification_providers import EmailProvider, build_family_invite_email
 from app.utils.auth import get_current_user
@@ -82,7 +83,7 @@ async def get_my_family(
                 id=m.id,
                 display_name=m.display_name,
                 email=m.email,
-                avatar_url=m.avatar_url,
+                avatar_url=avatar_thumb_url(m),
                 role=m.role,
                 created_at=m.created_at,
             )
@@ -157,7 +158,7 @@ async def update_family(
                 id=m.id,
                 display_name=m.display_name,
                 email=m.email,
-                avatar_url=m.avatar_url,
+                avatar_url=avatar_thumb_url(m),
                 role=m.role,
                 created_at=m.created_at,
             )
@@ -404,7 +405,7 @@ async def update_member_role(
         id=member.id,
         display_name=member.display_name,
         email=member.email,
-        avatar_url=member.avatar_url,
+        avatar_url=avatar_thumb_url(member),
         role=member.role,
         created_at=member.created_at,
     )

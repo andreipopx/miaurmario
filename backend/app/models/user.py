@@ -36,6 +36,9 @@ class User(Base):
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
+    # Uploaded profile photo (512px WebP) and its 128px thumb, relative to STORAGE_PATH.
+    avatar_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    avatar_thumb_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20), default="member")
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")
 

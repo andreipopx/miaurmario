@@ -3,13 +3,25 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
+from app.services.avatar_service import (
+    ALLOWED_AVATAR_MIME_TYPES,
+    MAX_AVATAR_BYTES,
+    AvatarError,
+    CropBox,
+    avatar_thumb_url,
+    avatar_url,
+    delete_avatar_files,
+    render_avatar,
+    store_avatar,
+)
 from app.services.user_service import UserService
 from app.utils.auth import get_current_user
 from app.utils.passwords import (
@@ -38,6 +50,9 @@ class UserProfileResponse(BaseModel):
     bio: str | None = None
     display_name: str
     avatar_url: str | None = None
+    avatar_thumb_url: str | None = None
+    # True when the avatar is a photo the user uploaded (can be removed).
+    has_avatar_photo: bool = False
     timezone: str
     location_lat: float | None = None
     location_lon: float | None = None
@@ -158,7 +173,9 @@ def _user_response(user: User) -> UserProfileResponse:
         username=user.username,
         bio=user.bio,
         display_name=user.display_name,
-        avatar_url=user.avatar_url,
+        avatar_url=avatar_url(user),
+        avatar_thumb_url=avatar_thumb_url(user),
+        has_avatar_photo=bool(user.avatar_path),
         timezone=user.timezone,
         location_lat=float(user.location_lat) if user.location_lat else None,
         location_lon=float(user.location_lon) if user.location_lon else None,
@@ -170,6 +187,72 @@ def _user_response(user: User) -> UserProfileResponse:
         has_password=bool(user.password_hash),
         password_updated_at=user.password_updated_at,
     )
+
+
+@router.put("/avatar", response_model=UserProfileResponse)
+async def upload_avatar(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    image: UploadFile = File(...),
+    crop_x: float | None = Form(None, ge=0),
+    crop_y: float | None = Form(None, ge=0),
+    crop_size: float | None = Form(None, gt=0),
+) -> UserProfileResponse:
+    """Set (or replace) the profile photo.
+
+    The crop square is in pixels of the upright (EXIF-rotated) image; without
+    it the centred square is used. Stored as a 512px WebP + 128px thumb with
+    all metadata stripped. Error details: unsupported_image_type,
+    image_too_large, invalid_image.
+    """
+    await rate_limit_by_user(current_user.id, "avatar_upload", 20, 3600)
+
+    if (image.content_type or "").lower() not in ALLOWED_AVATAR_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="unsupported_image_type"
+        )
+    content = await image.read(MAX_AVATAR_BYTES + 1)
+    if len(content) > MAX_AVATAR_BYTES:
+        raise HTTPException(status_code=413, detail="image_too_large")
+
+    crop = None
+    if crop_x is not None and crop_y is not None and crop_size is not None:
+        crop = CropBox(x=crop_x, y=crop_y, size=crop_size)
+    try:
+        full, thumb = await run_in_threadpool(render_avatar, content, crop)
+    except AvatarError as e:
+        code = 413 if e.code == "image_too_large" else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=code, detail=e.code) from None
+
+    old = (current_user.avatar_path, current_user.avatar_thumb_path)
+    new_full, new_thumb = await run_in_threadpool(store_avatar, current_user.id, full, thumb)
+    current_user.avatar_path = new_full
+    current_user.avatar_thumb_path = new_thumb
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        delete_avatar_files(new_full, new_thumb)
+        raise
+    delete_avatar_files(*old)
+    await db.refresh(current_user)
+    return _user_response(current_user)
+
+
+@router.delete("/avatar", response_model=UserProfileResponse)
+async def delete_avatar(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> UserProfileResponse:
+    """Remove the uploaded profile photo (idempotent); initials are shown again."""
+    old = (current_user.avatar_path, current_user.avatar_thumb_path)
+    if any(old):
+        current_user.avatar_path = None
+        current_user.avatar_thumb_path = None
+        await db.commit()
+        delete_avatar_files(*old)
+        await db.refresh(current_user)
+    return _user_response(current_user)
 
 
 class PasswordSetRequest(BaseModel):

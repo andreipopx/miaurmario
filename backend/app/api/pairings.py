@@ -13,6 +13,7 @@ from app.models.outfit import Outfit, OutfitSource, RatingScope
 from app.models.user import User
 from app.services.ai_access import AIAccessError, ai_error_detail
 from app.services.ai_service import AIDisabledError
+from app.services.avatar_service import avatar_thumb_url
 from app.services.pairing_service import (
     AIGenerationError,
     InsufficientItemsError,
@@ -190,7 +191,7 @@ def pairing_to_response(outfit: Outfit) -> PairingResponse:
                 user_display_name=(r.user.display_name or r.user.username or "Unknown")
                 if r.user
                 else "Unknown",
-                user_avatar_url=r.user.avatar_url if r.user else None,
+                user_avatar_url=avatar_thumb_url(r.user),
                 rating=r.rating,
                 comment=r.comment,
                 created_at=r.created_at,

@@ -28,6 +28,7 @@ from app.services.access_control import (
     can_view_outfit_socially,
     get_friendship_between,
 )
+from app.services.avatar_service import avatar_thumb_url, avatar_url
 from app.services.friendship_service import (
     FriendshipError,
     FriendshipService,
@@ -67,6 +68,7 @@ class PublicUser(BaseModel):
     username: str
     display_name: str
     avatar_url: str | None = None
+    avatar_thumb_url: str | None = None
     bio: str | None = None
 
 
@@ -76,7 +78,9 @@ def public_user(user: User) -> PublicUser:
         # Social surfaces show only the @handle: display_name defaulted to the
         # email's local part, which must never leak to other users.
         display_name=user.username or "",
-        avatar_url=user.avatar_url,
+        # Signed like item photos: whoever may see this profile card may see the photo.
+        avatar_url=avatar_url(user),
+        avatar_thumb_url=avatar_thumb_url(user),
         bio=user.bio,
     )
 

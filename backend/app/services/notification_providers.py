@@ -171,6 +171,7 @@ class EmailMessage:
     subject: str
     html_body: str
     text_body: str = ""
+    headers: dict[str, str] = field(default_factory=dict)
 
 
 class EmailProvider:
@@ -201,6 +202,8 @@ class EmailProvider:
             msg["Subject"] = message.subject
             msg["From"] = f"{self.from_name} <{self.from_email}>"
             msg["To"] = message.to
+            for name, value in message.headers.items():
+                msg[name] = value
 
             if message.text_body:
                 msg.attach(MIMEText(message.text_body, "plain"))

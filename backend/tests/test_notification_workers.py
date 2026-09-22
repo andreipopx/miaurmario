@@ -282,8 +282,12 @@ class TestProcessScheduledNotification:
 
     @pytest.mark.asyncio
     async def test_no_enabled_channels_returns_skipped(
-        self, db_session: AsyncSession, schedule_user: User
+        self, db_session: AsyncSession, schedule_user: User, monkeypatch
     ):
+        # No legacy channel and no email transport (the default channel) either.
+        from app.services import event_notifications
+
+        monkeypatch.setattr(event_notifications, "email_delivery_available", lambda: False)
         schedule = _make_due_schedule(schedule_user)
         db_session.add(schedule)
         await db_session.commit()

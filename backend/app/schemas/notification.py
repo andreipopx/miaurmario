@@ -1,9 +1,11 @@
+import ipaddress
 import re
 from datetime import datetime
 from typing import Literal
+from urllib.parse import urlparse
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # Channel-specific configurations
@@ -218,3 +220,93 @@ class TestNotificationResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+# Default channels (account email + Web Push) ---------------------------------
+
+
+class EventToggles(BaseModel):
+    friend_request: bool = True
+    friend_accepted: bool = True
+    daily_outfit: bool = True
+
+
+class EventTogglesPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    friend_request: bool | None = None
+    friend_accepted: bool | None = None
+    daily_outfit: bool | None = None
+
+
+class NotificationPreferencesResponse(BaseModel):
+    email: EventToggles
+    push: EventToggles
+    email_address: str
+    email_available: bool
+    push_available: bool
+    vapid_public_key: str | None = None
+    push_devices: int = 0
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EventTogglesPatch | None = None
+    push: EventTogglesPatch | None = None
+
+
+class PushKeys(BaseModel):
+    p256dh: str = Field(min_length=16, max_length=255)
+    auth: str = Field(min_length=8, max_length=255)
+
+
+_BLOCKED_PUSH_HOSTS = {"localhost"}
+
+
+class PushSubscribeRequest(BaseModel):
+    endpoint: str = Field(max_length=2048)
+    keys: PushKeys
+    user_agent: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("endpoint")
+    @classmethod
+    def validate_endpoint(cls, v: str) -> str:
+        # The worker POSTs to this URL: only public HTTPS push services, never
+        # an internal host (docker service names have no dot, IPs are refused).
+        parsed = urlparse(v)
+        host = (parsed.hostname or "").lower()
+        if parsed.scheme != "https" or not host or "." not in host:
+            raise ValueError("Invalid push endpoint")
+        if host in _BLOCKED_PUSH_HOSTS or host.endswith((".local", ".internal", ".home")):
+            raise ValueError("Invalid push endpoint")
+        try:
+            ipaddress.ip_address(host.strip("[]"))
+        except ValueError:
+            pass
+        else:
+            raise ValueError("Invalid push endpoint")
+        if parsed.port not in (None, 443):
+            raise ValueError("Invalid push endpoint")
+        return v
+
+
+class PushUnsubscribeRequest(BaseModel):
+    endpoint: str = Field(max_length=2048)
+
+
+class PushTestResponse(BaseModel):
+    sent: int
+    removed: int
+    failed: int
+
+
+class UnsubscribeRequest(BaseModel):
+    token: str | None = Field(default=None, max_length=512)
+    all: bool = False
+    resubscribe: bool = False
+
+
+class UnsubscribeResponse(BaseModel):
+    scope: str
+    subscribed: bool

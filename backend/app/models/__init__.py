@@ -18,7 +18,12 @@ from app.models.learning import (
 )
 from app.models.magic_link import MagicLinkToken
 from app.models.music import ListeningEvent, ListeningMood
-from app.models.notification import Notification, NotificationSettings
+from app.models.notification import (
+    Notification,
+    NotificationPreference,
+    NotificationSettings,
+    PushSubscription,
+)
 from app.models.outfit import (
     FamilyOutfitRating,
     Outfit,
@@ -56,6 +61,8 @@ __all__ = [
     "StyleInsight",
     "MagicLinkToken",
     "NotificationSettings",
+    "NotificationPreference",
+    "PushSubscription",
     "Schedule",
     "ClothingItem",
     "ItemHistory",

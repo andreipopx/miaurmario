@@ -100,6 +100,20 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def enqueued_social_notifications(monkeypatch) -> list[tuple[str, Any]]:
+    """Never push jobs to the real arq queue from API tests; record them instead."""
+    from app.services import notification_queue
+
+    calls: list[tuple[str, Any]] = []
+
+    async def fake_enqueue(event, friendship_id):
+        calls.append((event, friendship_id))
+
+    monkeypatch.setattr(notification_queue, "enqueue_social_notification", fake_enqueue)
+    return calls
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def _clear_rate_limits():
     settings = get_settings()

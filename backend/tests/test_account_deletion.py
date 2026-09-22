@@ -25,6 +25,7 @@ from app.models.friendship import Friendship, FriendshipStatus
 from app.models.item import ClothingItem, WashHistory
 from app.models.magic_link import MagicLinkToken
 from app.models.music import ListeningEvent, ListeningMood
+from app.models.notification import NotificationPreference, PushSubscription
 from app.models.outfit import Outfit, OutfitRating, OutfitSource, OutfitVisibility, RatingScope
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
@@ -104,6 +105,16 @@ async def _populate(db: AsyncSession, user: User, other: User) -> None:
             screenshot_path=f"{user.id}/feedback/s.png",
         )
     )
+    # Web Push device + notification switches
+    db.add(
+        PushSubscription(
+            user_id=user.id,
+            endpoint=f"https://fcm.googleapis.com/fcm/send/{uuid.uuid4().hex}",
+            p256dh="p" * 20,
+            auth="a" * 10,
+        )
+    )
+    db.add(NotificationPreference(user_id=user.id, email_daily_outfit=False))
     await db.commit()
 
 
@@ -203,6 +214,8 @@ class TestJob:
         assert deletion.summary["files_deleted"] == 2
         assert deletion.summary["families_reassigned"] == 1
         assert deletion.summary["tables"]["clothing_items.user_id"] == 1
+        assert deletion.summary["tables"]["push_subscriptions.user_id"] == 1
+        assert deletion.summary["tables"]["notification_preferences.user_id"] == 1
 
         # No row anywhere still points at the user.
         fks = (

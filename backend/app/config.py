@@ -111,6 +111,14 @@ class Settings(BaseSettings):
 
     # Music enrichment (Stylist mood input)
     lastfm_api_key: str | None = Field(default=None)
+    # Last.fm as a per-user music source (Música tab). The secret is only
+    # needed for the optional web-auth flow (auth.getSession).
+    lastfm_api_secret: str | None = Field(default=None)
+    lastfm_callback_url: str = Field(
+        default="https://miaurmario.andreipop.org/api/v1/integrations/lastfm/callback"
+    )
+    # Shared token bucket (API + worker). Last.fm allows ~5 req/s per IP.
+    lastfm_requests_per_second: float = Field(default=4.0, gt=0, le=5)
     # Música tab: let users with AI access refine the heuristic daily mood with
     # one small batched LLM call per day (counts towards their AI usage).
     music_mood_ai_enabled: bool = Field(default=True)

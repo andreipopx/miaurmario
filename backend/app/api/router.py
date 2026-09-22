@@ -12,6 +12,7 @@ from app.api.feedback import router as feedback_router
 from app.api.geo import router as geo_router
 from app.api.health import router as health_router
 from app.api.images import router as images_router
+from app.api.integrations.lastfm import router as lastfm_router
 from app.api.integrations.pinterest import pins_router as pinterest_pins_router
 from app.api.integrations.pinterest import router as pinterest_router
 from app.api.integrations.spotify import router as spotify_router
@@ -52,6 +53,7 @@ api_router.include_router(learning_router)
 api_router.include_router(pinterest_router)
 api_router.include_router(pinterest_pins_router)
 api_router.include_router(spotify_router)
+api_router.include_router(lastfm_router)
 api_router.include_router(music_router)
 api_router.include_router(stinky_router)
 api_router.include_router(friends_router)

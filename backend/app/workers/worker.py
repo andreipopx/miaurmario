@@ -9,7 +9,11 @@ from app.models.item import ClothingItem, ItemStatus
 from app.services.ai_service import AIService
 from app.workers.admin import delete_user_account
 from app.workers.db import close_db, get_db_session, init_db
-from app.workers.music import sync_listening_history_job
+from app.workers.music import (
+    sync_lastfm_history_job,
+    sync_lastfm_user_job,
+    sync_listening_history_job,
+)
 from app.workers.notifications import (
     check_scheduled_notifications,
     check_wash_reminders,
@@ -74,6 +78,8 @@ class WorkerSettings:
         import_pinterest_board,
         refresh_expiring_tokens,
         sync_listening_history_job,
+        sync_lastfm_history_job,
+        sync_lastfm_user_job,
         delete_user_account,
     ]
 
@@ -85,6 +91,7 @@ class WorkerSettings:
         cron(recover_stale_processing_items, minute={0, 15, 30, 45}),
         cron(refresh_expiring_tokens, minute=0, hour={3}),
         cron(sync_listening_history_job, minute={7, 37}),
+        cron(sync_lastfm_history_job, minute={2, 17, 32, 47}),
     ]
 
     on_startup = startup

@@ -612,12 +612,13 @@ class TestMusicAPI:
         no_music_cache,
     ):
         resp = await client.get("/api/v1/music/now-playing", headers=auth_headers)
-        assert resp.json() == {"connected": False, "track": None}
+        assert resp.json() == {"connected": False, "source": None, "track": None}
         db_session.add(_connection(test_user.id))
         await db_session.commit()
         mock_http(_spotify_api_handler())
         resp = await client.get("/api/v1/music/now-playing", headers=auth_headers)
         assert resp.json()["track"]["track_id"] == "np1"
+        assert resp.json()["source"] == "spotify"
 
 
 class TestSongTrackId:

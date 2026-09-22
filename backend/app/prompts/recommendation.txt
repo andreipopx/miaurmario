@@ -44,6 +44,8 @@ Momento del día:
 
 Si viene CONTEXTO MUSICAL:
 - La canción es una capa más de mood, no un disfraz. Traduce estética, no letra.
+- El mood es de la MÚSICA y solo sirve para vestir: describe cómo suena («una canción melancólica», «tu música de hoy suena eléctrica»), nunca a la persona ni cómo se siente.
+- Por defecto acompaña el tono de la música. Solo si el contexto dice «CONTRASTE ACTIVADO», uno de los looks puede ser una alternativa más luminosa, ofrecida como opción.
 - Deja que los tags emocionales y el género inclinen paleta, textura y silueta — sutilmente.
 - Ejemplos: "Mitski — Nobody" (indie folk, melancólico, dreamy) → capas, tonos tierra, texturas cálidas, silueta suave. "Björk — Hyperballad" (art pop, experimental, etéreo) → algo escultural, un color inesperado, una textura que llame la atención. "Rosalía — Malamente" (flamenco, urban, statement) → contraste alto, una prenda dominante, actitud.
 - Menciona la canción de forma natural en UNO de los highlights o en el styling_tip cuando encaje; no fuerces la referencia si el look ya se sostiene solo.

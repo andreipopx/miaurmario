@@ -10,6 +10,7 @@ from app.models.chat import ChatConversation, ChatMessage
 from app.models.family import Family, FamilyInvite
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.item import ClothingItem, ItemHistory, ItemImage, WashHistory
+from app.models.lastfm import LastfmConnection
 from app.models.learning import (
     ItemPairScore,
     OutfitPerformance,
@@ -69,6 +70,7 @@ __all__ = [
     "OutfitItem",
     "UserFeedback",
     "Notification",
+    "LastfmConnection",
     "ListeningEvent",
     "ListeningMood",
     "PinterestConnection",

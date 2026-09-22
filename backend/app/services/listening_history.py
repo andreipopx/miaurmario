@@ -27,6 +27,7 @@ from app.integrations.spotify.client import SpotifyAPIError, SpotifyClient
 from app.models.music import ListeningEvent
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
+from app.services.listening_dedupe import drop_cross_source_duplicates
 from app.services.listening_mood import local_day, recompute_days, user_zone
 from app.services.music_service import _extract_year
 
@@ -208,6 +209,8 @@ async def sync_listening_history(
             break
         cursor = newest
 
+    # Same play already imported from Last.fm (Spotify → Last.fm scrobbling)?
+    plays = await drop_cross_source_duplicates(db, connection.user_id, plays, "spotify")
     if plays:
         genres = await artist_genres(
             db,

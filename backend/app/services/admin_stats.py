@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.models.admin import AdminAuditLog
 from app.models.item import ClothingItem
+from app.models.lastfm import LastfmConnection
 from app.models.outfit import Outfit
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
@@ -299,6 +300,13 @@ async def system_status(db: AsyncSession) -> dict[str, Any]:
             "configured": bool(settings.spotify_client_id and settings.spotify_client_secret),
             "connected_users": spotify_users,
             "dev_mode_slots": settings.spotify_dev_mode_slots,
+        },
+        # Aggregate count only (no per-user listening data in the admin panel).
+        "lastfm": {
+            "configured": bool(settings.lastfm_api_key),
+            "connected_users": int(
+                (await db.execute(select(func.count(LastfmConnection.user_id)))).scalar_one()
+            ),
         },
         "pinterest": {
             "configured": bool(settings.pinterest_client_id and settings.pinterest_client_secret)

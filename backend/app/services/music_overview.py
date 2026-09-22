@@ -8,6 +8,7 @@ import re
 from collections import Counter
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, Literal
+from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -25,8 +26,10 @@ from app.services.listening_mood import (
     local_day_bounds,
     mood_color,
     mood_key,
+    mood_sounds,
     one_liner_for,
     recompute_days,
+    talks_about_person,
 )
 from app.utils.signed_urls import sign_image_url
 
@@ -164,6 +167,16 @@ async def spotify_tops(
 # --- Local history -------------------------------------------------------------------------
 
 
+def track_url(source: str | None, track_id: str | None, artist: str | None, name: str | None):
+    if source == "spotify" and track_id:
+        return f"https://open.spotify.com/track/{track_id}"
+    if source == "lastfm" and artist and name:
+        return (
+            f"https://www.last.fm/music/{quote_plus(artist, safe='')}/_/{quote_plus(name, safe='')}"
+        )
+    return None
+
+
 def event_payload(ev: ListeningEvent) -> dict[str, Any]:
     return {
         "id": str(ev.id),
@@ -176,7 +189,7 @@ def event_payload(ev: ListeningEvent) -> dict[str, Any]:
         "played_at": ev.played_at.isoformat(),
         "source": ev.source,
         "genres": list(ev.genres or [])[:3],
-        "url": f"https://open.spotify.com/track/{ev.track_id}" if ev.source == "spotify" else None,
+        "url": track_url(ev.source, ev.track_id, ev.artist_name, ev.track_name),
     }
 
 
@@ -213,6 +226,7 @@ async def history_tops(
                 func.max(ListeningEvent.album),
                 func.max(ListeningEvent.image_url),
                 plays,
+                func.max(ListeningEvent.source),
             )
             .where(*base)
             .group_by(ListeningEvent.track_id)
@@ -233,10 +247,10 @@ async def history_tops(
                 "album": album,
                 "image_url": img,
                 "duration_ms": None,
-                "url": f"https://open.spotify.com/track/{tid}",
+                "url": track_url(source, tid, artist, name),
                 "plays": n,
             }
-            for tid, name, artist, album, img, n in track_rows
+            for tid, name, artist, album, img, n, source in track_rows
         ],
     }
 
@@ -244,6 +258,12 @@ async def history_tops(
 def mood_payload(row: ListeningMood) -> dict[str, Any]:
     labels = list(row.moods or [])
     key = mood_key(labels[0] if labels else None)
+    artist = (row.dominant_artists or [None])[0]
+    # Heuristic lines are rendered from the current copy (older rows stored a
+    # previous wording); AI lines are kept unless they talk about the person.
+    one_liner = row.one_liner if row.method == "ai" else None
+    if not one_liner or talks_about_person(one_liner):
+        one_liner = one_liner_for(key, artist)
     return {
         "date": row.day.isoformat(),
         "moods": labels,
@@ -256,7 +276,8 @@ def mood_payload(row: ListeningMood) -> dict[str, Any]:
         "track_count": row.track_count,
         "minutes": round((row.listened_ms or 0) / 60000),
         "dominant_artists": list(row.dominant_artists or []),
-        "one_liner": row.one_liner or one_liner_for(key, (row.dominant_artists or [None])[0]),
+        "one_liner": one_liner,
+        "sounds": [mood_sounds(m) for m in labels],
         "method": row.method,
     }
 

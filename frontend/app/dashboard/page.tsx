@@ -1,12 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { TransitionLink } from '@/components/native/transition-link';
 import Image from 'next/image';
 import { useFormatter, useTranslations } from 'next-intl';
 import { addDays, isSameDay, startOfWeek } from 'date-fns';
-import { toast } from 'sonner';
 import {
   BarChart3,
   CalendarDays,
@@ -31,7 +30,7 @@ import { useWeatherConditionLabel } from '@/lib/weather-condition';
 import { useWeather, type Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
 import { useItems } from '@/lib/hooks/use-items';
-import { useAcceptOutfit, useOutfits, usePendingOutfits } from '@/lib/hooks/use-outfits';
+import { useOutfits } from '@/lib/hooks/use-outfits';
 import { useFamily } from '@/lib/hooks/use-family';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { displayValue, tempSymbol, TempUnit } from '@/lib/temperature';
@@ -39,10 +38,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { POP_BG, type PopColor } from '@/components/chip';
-import { StinkyTip } from '@/components/stinky-tip';
-import { StinkyAvatar } from '@/components/brand/stinky-avatar';
-import { LazyStinky } from '@/components/native/lazy-stinky';
-import { ShareLookPrompt } from '@/components/social/share-look-prompt';
+import { DayMoments } from '@/components/today/day-moments';
 
 // -- Section header -------------------------------------------------------------
 
@@ -185,138 +181,6 @@ function WeekStrip() {
           );
         })}
       </ol>
-    </section>
-  );
-}
-
-// -- Today's look -------------------------------------------------------------------
-
-function TodayLook() {
-  const t = useTranslations('dashboard.today');
-  const tPending = useTranslations('dashboard.pending');
-  const { data: pending, isLoading } = usePendingOutfits(1);
-  const accept = useAcceptOutfit();
-  const featured = pending?.outfits?.[0];
-  // After "Me lo pongo", offer to share that look with friends.
-  const [justAccepted, setJustAccepted] = useState<{ id: string; shared: boolean } | null>(null);
-
-  const onAccept = () => {
-    if (!featured) return;
-    accept.mutate(featured.id, {
-      onSuccess: (outfit) => {
-        toast.success(tPending('acceptedToast'));
-        setJustAccepted({ id: outfit.id, shared: !!outfit.visibility && outfit.visibility !== 'private' });
-      },
-      onError: () => toast.error(tPending('acceptError')),
-    });
-  };
-
-  const tip = featured?.style_notes || featured?.reasoning;
-  const music = featured?.music_inspiration;
-  const musicLabel = music ? music.track || music.artist || music.label : null;
-  const items = featured?.items.slice(0, 4) ?? [];
-
-  return (
-    <section aria-labelledby="today-look-title" className="space-y-3">
-      {justAccepted && (
-        <ShareLookPrompt
-          key={justAccepted.id}
-          outfitId={justAccepted.id}
-          alreadyShared={justAccepted.shared}
-          onDismiss={() => setJustAccepted(null)}
-        />
-      )}
-      <div className="rounded-lg bg-panel p-3.5 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="today-look-title" className="text-[15px] font-bold sm:text-lg">
-            {t('lookTitle')}
-          </h2>
-          {musicLabel && (
-            <Link
-              href="/dashboard/music"
-              aria-label={`${musicLabel} · ${t('openMusic')}`}
-              className="inline-flex h-[26px] max-w-[60%] items-center gap-1.5 rounded-full bg-background px-2.5 text-xs font-semibold transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Music className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-              <span className="truncate">{musicLabel}</span>
-            </Link>
-          )}
-        </div>
-
-        {isLoading ? (
-          <Skeleton className="mt-3 h-[220px] w-full bg-background/60" />
-        ) : featured ? (
-          <>
-            <TransitionLink
-              href={`/dashboard/outfits/${featured.id}`}
-              aria-label={t('viewLook')}
-              className={cn(
-                'pressable mt-2 grid h-[208px] gap-2 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-[280px]',
-                items.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
-                items.length > 2 ? 'grid-rows-2' : 'grid-rows-1'
-              )}
-            >
-              {items.map((item) => (
-                <div key={item.id} className="relative min-h-0">
-                  {item.thumbnail_url ? (
-                    <Image
-                      src={item.thumbnail_url}
-                      alt={item.name || item.type}
-                      fill
-                      className="object-contain p-1 mix-blend-multiply dark:mix-blend-normal"
-                      sizes="(max-width: 1024px) 45vw, 25vw"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center rounded-tile bg-background/60">
-                      <Shirt className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </TransitionLink>
-            <StinkyTip className="mt-3" clamp>{tip || t('defaultTip')}</StinkyTip>
-          </>
-        ) : (
-          <div className="flex flex-col items-center px-4 pb-4 pt-6 text-center">
-            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-signature-soft">
-              <LazyStinky state="idle" size={112} label="" />
-            </div>
-            <p className="mt-4 text-lg font-extrabold tracking-tight">{t('noLookTitle')}</p>
-            <p className="mt-1 max-w-xs text-sm text-muted-foreground">{t('noLookBody')}</p>
-          </div>
-        )}
-      </div>
-
-      <div className="flex gap-2.5">
-        <Button asChild variant="secondary" size="lg" className="flex-1">
-          <Link href="/dashboard/suggest">
-            {featured ? <RefreshCw className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden /> : <Sparkles className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />}
-            {featured ? t('anotherIdea') : t('askStinky')}
-          </Link>
-        </Button>
-        {featured && (
-          <Button size="lg" className="flex-1" onClick={onAccept} disabled={accept.isPending}>
-            {accept.isPending ? (
-              <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
-            ) : (
-              <Check className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-            )}
-            {t('wearIt')}
-          </Button>
-        )}
-      </div>
-
-      <Link
-        href="/dashboard/stinky"
-        className="flex min-h-[64px] items-center gap-3 rounded-lg bg-signature-soft p-2.5 pr-4 transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <StinkyAvatar size={44} className="bg-background" />
-        <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold leading-tight">{t('chatWithStinky')}</span>
-          <span className="block truncate text-[13px] text-muted-foreground">{t('chatWithStinkyBody')}</span>
-        </span>
-        <MessageCircle className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-      </Link>
     </section>
   );
 }
@@ -519,7 +383,7 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
         <div className="space-y-5">
           <WeekStrip />
-          <TodayLook />
+          <DayMoments />
         </div>
         <div className="space-y-6 lg:space-y-8">
           <WardrobeSection />

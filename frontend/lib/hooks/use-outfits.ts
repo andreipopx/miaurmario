@@ -73,6 +73,11 @@ export interface Outfit {
   /** Social layer: private (default) | friends | public. */
   visibility?: 'private' | 'friends' | 'public';
   shared_at?: string | null;
+  /** Day moment ("Momentos del día"): order 0 with no label = the day's default look. */
+  moment_order?: number;
+  moment_label?: string | null;
+  moment_time?: string | null;
+  transition_from_outfit_id?: string | null;
   created_at: string;
 }
 

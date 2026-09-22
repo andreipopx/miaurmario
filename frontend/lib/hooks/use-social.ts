@@ -76,6 +76,10 @@ export interface SocialOutfit {
   shared_at: string | null;
   day: string | null;
   worn_order_at: string | null;
+  /** Day moment: which look of the day this is (label/time optional). */
+  moment_order?: number;
+  moment_label?: string | null;
+  moment_time?: string | null;
   items: SocialOutfitItem[];
   reaction_count: number;
   comment_count: number;

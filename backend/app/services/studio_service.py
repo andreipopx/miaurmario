@@ -273,6 +273,10 @@ class StudioService:
             status=OutfitStatus.pending,
             replaces_outfit_id=original.id,
             name=f"{occasion_label} (wore instead)",
+            # Same slot of the day as the look it replaces.
+            moment_order=original.moment_order or 0,
+            moment_label=original.moment_label,
+            moment_time=original.moment_time,
         )
         self.db.add(replacement)
         await self.db.flush()

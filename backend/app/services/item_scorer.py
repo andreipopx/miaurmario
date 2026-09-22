@@ -280,8 +280,11 @@ def score_items(
     good_pairs: dict[UUID, list[UUID]],
     recently_worn_dates: dict[UUID, date],
     mandatory_item_ids: set[UUID] | None = None,
+    min_items: int = MIN_ITEMS_FOR_SCORING,
 ) -> list[ScoredItem]:
-    if len(items) < MIN_ITEMS_FOR_SCORING:
+    # Small wardrobes go unscored to the AI, which judges them better as a whole;
+    # the non-AI composer passes min_items=0 to always get real scores.
+    if len(items) < min_items:
         scored = [ScoredItem(item=item) for item in items]
         return _sort_mandatory_first(scored, mandatory_item_ids)
 

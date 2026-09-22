@@ -7,6 +7,7 @@ from app.api.admin_panel import router as admin_panel_router
 from app.api.ai_settings import router as ai_settings_router
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
+from app.api.days import router as days_router
 from app.api.families import router as families_router
 from app.api.feedback import router as feedback_router
 from app.api.geo import router as geo_router
@@ -46,6 +47,7 @@ api_router.include_router(families_router)
 api_router.include_router(weather_router)
 api_router.include_router(geo_router)
 api_router.include_router(outfits_router)
+api_router.include_router(days_router)
 api_router.include_router(pairings_router)
 api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(analytics_router)

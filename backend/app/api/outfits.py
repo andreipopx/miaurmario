@@ -1,5 +1,5 @@
 import logging
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 from typing import Annotated, Literal
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -246,6 +246,11 @@ class OutfitResponse(BaseModel):
     music_inspiration: MusicInspiration | None = None
     visibility: OutfitVisibility = OutfitVisibility.private
     shared_at: datetime | None = None
+    # Day moment ("Momentos del día"); order 0 with no label = the day's default look.
+    moment_order: int = 0
+    moment_label: str | None = None
+    moment_time: time | None = None
+    transition_from_outfit_id: UUID | None = None
     created_at: datetime
 
 
@@ -452,6 +457,10 @@ def outfit_to_response(
         music_inspiration=music_inspiration,
         visibility=outfit.visibility or OutfitVisibility.private,
         shared_at=outfit.shared_at,
+        moment_order=outfit.moment_order or 0,
+        moment_label=outfit.moment_label,
+        moment_time=outfit.moment_time,
+        transition_from_outfit_id=outfit.transition_from_outfit_id,
         created_at=outfit.created_at,
     )
 
@@ -786,8 +795,28 @@ async def submit_feedback(
     if request.worn and not feedback.worn_at:
         user_today = get_user_today(current_user)
         feedback.worn_at = user_today
+        # Day moments: a piece carried over from this morning's look into the evening
+        # one (a transition) is one wear, not two.
+        already_worn_today = set(
+            (
+                await db.execute(
+                    select(OutfitItem.item_id)
+                    .join(Outfit, Outfit.id == OutfitItem.outfit_id)
+                    .join(UserFeedback, UserFeedback.outfit_id == Outfit.id)
+                    .where(
+                        Outfit.user_id == current_user.id,
+                        Outfit.id != outfit.id,
+                        UserFeedback.worn_at == user_today,
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
         for outfit_item in outfit.items:
             item = outfit_item.item
+            if item.id in already_worn_today:
+                continue
             effective_interval = (
                 item.wash_interval
                 if item.wash_interval is not None

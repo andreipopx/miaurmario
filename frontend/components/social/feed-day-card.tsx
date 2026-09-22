@@ -6,6 +6,7 @@ import { TransitionLink } from '@/components/native/transition-link';
 import { useFormatter, useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { dayKind, parseLocalDay } from '@/lib/social';
+import { shortTime } from '@/lib/day-moments';
 import type { FeedDayGroup, SocialOutfit } from '@/lib/hooks/use-social';
 import { PersonAvatar } from '@/components/social/person-avatar';
 import { OutfitComposition } from '@/components/social/outfit-composition';
@@ -30,8 +31,15 @@ function useOccasionLabel() {
 
 export function SocialOutfitTile({ outfit, compact = false }: { outfit: SocialOutfit; compact?: boolean }) {
   const occasion = useOccasionLabel();
+  // Day moment ("Mañana · 09:00") when the author planned several looks that day.
+  const moment = [outfit.moment_label, shortTime(outfit.moment_time)].filter(Boolean).join(' · ');
   return (
     <figure className="space-y-2">
+      {moment && (
+        <span className="inline-flex max-w-full rounded-full bg-panel px-3 py-1 text-xs font-semibold first-letter:uppercase">
+          <span className="truncate">{moment}</span>
+        </span>
+      )}
       <OutfitComposition items={outfit.items} />
       <figcaption className={cn('px-1', compact ? 'space-y-0' : 'flex items-start justify-between gap-2')}>
         <span className="block min-w-0">
@@ -49,7 +57,7 @@ export function SocialOutfitTile({ outfit, compact = false }: { outfit: SocialOu
 
 /**
  * One friend's shared looks for one day. Several looks (e.g. morning work +
- * evening date) scroll horizontally in the order they were worn.
+ * evening date) scroll horizontally in day-moment order, then as worn.
  */
 export function FeedDayCard({ group }: { group: FeedDayGroup }) {
   const t = useTranslations('social.feed');

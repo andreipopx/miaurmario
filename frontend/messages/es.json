@@ -971,6 +971,12 @@
         "rateLimited": "Demasiados intentos. Espera unos minutos.",
         "generic": "No hemos podido guardar la contraseña. Inténtalo de nuevo."
       }
+    },
+    "notificationsCard": {
+      "title": "Notificaciones y app",
+      "description": "Qué te avisamos por email y en el móvil, y cómo instalar Miaurmario.",
+      "manage": "Notificaciones",
+      "install": "Instala Miaurmario"
     }
   },
   "invite": {
@@ -1075,7 +1081,7 @@
   "notifications": {
     "title": "Notificaciones",
     "subtitle": "Decide cómo y cuándo quieres que Miaurmario te avise",
-    "pageSubtitle": "Configura cómo y cuándo recibes recomendaciones de conjuntos",
+    "pageSubtitle": "Elige qué te avisamos y por dónde",
     "channelsTitle": "Canales",
     "channelsSubtitle": "Dónde se entregan las notificaciones",
     "schedulesTitle": "Horarios",
@@ -1083,12 +1089,12 @@
     "empty": "Aún no has configurado notificaciones.",
     "addChannelCta": "Añadir un canal",
     "addScheduleCta": "Añadir un horario",
-    "channelsCardTitle": "Canales de notificación",
+    "channelsCardTitle": "Canales avanzados",
     "channelsCardDescription": "Añade canales para recibir tus recomendaciones diarias de conjuntos",
     "channelsEmptyTitle": "No hay canales de notificación configurados",
     "channelsEmptyHint": "Añade un canal para empezar a recibir sugerencias de conjuntos",
-    "schedulesCardTitle": "Horario de entrega",
-    "schedulesCardDescription": "Elige cuándo quieres recibir recomendaciones de conjuntos cada día",
+    "schedulesCardTitle": "Look del día",
+    "schedulesCardDescription": "Cuándo te preparamos el look (te llega por los canales de arriba)",
     "schedulesEmptyTitle": "No hay horarios configurados",
     "schedulesEmptyHint": "Añade un horario para recibir sugerencias diarias",
     "testButton": "Probar",
@@ -1175,6 +1181,59 @@
       "scheduleBody": "Esto quitará el horario. Podrás crear uno nuevo más tarde.",
       "deleting": "Eliminando...",
       "delete": "Eliminar"
+    },
+    "installApp": "Instalar la app",
+    "advanced": {
+      "title": "Avanzado",
+      "description": "ntfy y Mattermost, para quien ya los usa",
+      "channelsHint": "Reciben el look del día y los avisos de colada, además del email y el dispositivo."
+    },
+    "defaults": {
+      "title": "Qué te avisamos",
+      "description": "Por email sin configurar nada, y en tu móvil si activas este dispositivo.",
+      "channels": {
+        "email": "Email",
+        "push": "Este dispositivo"
+      },
+      "events": {
+        "friend_request": {
+          "title": "Solicitudes de amistad",
+          "description": "Alguien quiere ser tu amigo"
+        },
+        "friend_accepted": {
+          "title": "Amistad aceptada",
+          "description": "Aceptan tu solicitud"
+        },
+        "daily_outfit": {
+          "title": "Look del día",
+          "description": "Según tus horarios de abajo"
+        }
+      },
+      "emailTo": "Los emails van a {email}. Cada uno trae un enlace para darte de baja con un toque.",
+      "emailUnavailable": "El email no está configurado en este servidor todavía.",
+      "pushNeedsDevice": "Activa este dispositivo para elegir qué te llega al móvil.",
+      "lowNoise": "Sin spam: nunca te avisamos de cada reacción.",
+      "saveError": "No se pudo guardar. Inténtalo de nuevo.",
+      "device": {
+        "title": "Este dispositivo",
+        "devices": "{count, plural, one {# dispositivo activado} other {# dispositivos activados}}",
+        "pitch": "Recibe los avisos en este móvil u ordenador, como los de cualquier app.",
+        "enable": "Activar en este dispositivo",
+        "enabledHere": "Activado en este dispositivo",
+        "disable": "Desactivar aquí",
+        "test": "Enviar prueba",
+        "testSent": "Prueba enviada. Debería llegarte en unos segundos.",
+        "testNone": "No hay ningún dispositivo que pueda recibirla. Actívalo de nuevo.",
+        "enabledToast": "¡Listo! Stinky ya puede avisarte aquí.",
+        "disabledToast": "Desactivado en este dispositivo.",
+        "deniedToast": "Has bloqueado las notificaciones. Puedes permitirlas en los ajustes del navegador.",
+        "errorToast": "No se pudo activar. Inténtalo de nuevo.",
+        "blocked": "Las notificaciones de Miaurmario están bloqueadas en este navegador. Permítelas en sus ajustes (icono del candado junto a la dirección) y vuelve aquí.",
+        "iosNeedsInstall": "En iPhone y iPad los avisos solo llegan si abres Miaurmario desde su icono en la pantalla de inicio. Instálala en un momento:",
+        "iosTooOld": "Para recibir avisos en el iPhone necesitas iOS 16.4 o posterior. Mientras tanto te llegan por email.",
+        "unsupported": "Este navegador no admite notificaciones. En Android usa Chrome; en iPhone, instala la app desde Safari.",
+        "installGuide": "Ver cómo instalarla"
+      }
     }
   },
   "analytics": {
@@ -2946,5 +3005,72 @@
     "refreshing": "Actualizando…",
     "updateAvailable": "Hay una versión nueva de Miaurmario",
     "update": "Actualizar"
+  },
+  "install": {
+    "title": "Instala Miaurmario",
+    "subtitle": "Tenla a un toque, como una app más: pantalla completa, sin tiendas y ocupa casi nada.",
+    "installed": "¡Ya la tienes instalada! Stinky vive en tu pantalla de inicio.",
+    "installedToast": "¡Instalada! Búscala en tu pantalla de inicio.",
+    "platformLabel": "Tu dispositivo",
+    "detected": "(detectado)",
+    "menuIcon": "menú",
+    "notificationsLink": "Ajustes de notificaciones",
+    "tabs": {
+      "ios": "iPhone / iPad",
+      "android": "Android",
+      "other": "Huawei y otros",
+      "desktop": "Ordenador"
+    },
+    "ios": {
+      "step1": "Abre <strong>miaurmario.andreipop.org</strong> en <strong>Safari</strong>.",
+      "step2": "Toca <strong>Compartir</strong> <icon></icon> (abajo en iPhone, arriba en iPad).",
+      "step3": "Baja y elige <strong>Añadir a pantalla de inicio</strong>; luego toca <strong>Añadir</strong>.",
+      "step4": "Abre Miaurmario <strong>desde el icono nuevo</strong>.",
+      "shareIcon": "Compartir",
+      "pushNote": "Los avisos en iPhone solo funcionan al abrir Miaurmario desde el icono de la pantalla de inicio (iOS 16.4 o posterior). También en la UE.",
+      "otherBrowsers": "¿Usas Chrome o Edge en el iPhone? Desde iOS 16.4 también puedes: Compartir → Añadir a pantalla de inicio."
+    },
+    "android": {
+      "installButton": "Instalar Miaurmario",
+      "step1": "Abre <strong>miaurmario.andreipop.org</strong> en <strong>Chrome</strong>.",
+      "step2": "Toca el menú <icon></icon> (arriba a la derecha).",
+      "step3": "Elige <strong>Instalar aplicación</strong> o <strong>Añadir a pantalla de inicio</strong>.",
+      "step4": "Abre Miaurmario <strong>desde el icono</strong>.",
+      "pushNote": "Con Chrome los avisos funcionan tanto instalada como en el navegador."
+    },
+    "other": {
+      "step1": "Abre el <strong>menú</strong> del navegador (☰ o ⋮).",
+      "step2": "Busca <strong>Añadir a pantalla de inicio</strong>. En Samsung Internet: <strong>Añadir página a → Pantalla de inicio</strong>.",
+      "step3": "Abre Miaurmario <strong>desde el icono</strong>.",
+      "pushNote": "Para recibir avisos en el móvil usa Chrome: algunos navegadores, como Huawei Browser, no los admiten. El email te llega igual."
+    },
+    "desktop": {
+      "step1": "En <strong>Chrome</strong> o <strong>Edge</strong>: pulsa el icono de instalar de la barra de direcciones (o menú → <strong>Instalar Miaurmario</strong>).",
+      "step2": "En <strong>Safari para Mac</strong>: <strong>Archivo → Añadir al Dock</strong>.",
+      "step3": "En <strong>Firefox</strong> no se instala, pero los avisos funcionan igual desde la pestaña."
+    },
+    "hint": {
+      "text": "Instala Miaurmario en tu móvil: se abre a pantalla completa y puede avisarte.",
+      "cta": "Cómo instalarla",
+      "dismiss": "Cerrar"
+    }
+  },
+  "unsubscribe": {
+    "working": "Un momento…",
+    "doneTitle": "Hecho, sin más emails",
+    "doneBody": "Ya no te mandaremos emails de {what}.",
+    "resubscribedTitle": "Vuelves a recibirlos",
+    "errorTitle": "Este enlace no funciona",
+    "errorBody": "Puede que esté incompleto. Entra en Miaurmario y cambia tus avisos en Notificaciones.",
+    "allButton": "Darme de baja de todos los emails",
+    "undoButton": "Deshacer",
+    "manage": "Gestionar notificaciones",
+    "pushNote": "Esto solo afecta al email: los avisos en tus dispositivos siguen igual.",
+    "scopes": {
+      "friend_request": "solicitudes de amistad",
+      "friend_accepted": "amistades aceptadas",
+      "daily_outfit": "look del día",
+      "all": "ningún tipo"
+    }
   }
 }

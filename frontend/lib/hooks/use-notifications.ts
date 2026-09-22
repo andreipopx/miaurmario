@@ -219,3 +219,85 @@ export function useNotificationHistory(limit = 20) {
     enabled: status !== 'loading',
   });
 }
+
+// ---- Default channels: account email + Web Push ------------------------------
+
+export type NotificationEvent = 'friend_request' | 'friend_accepted' | 'daily_outfit';
+export const NOTIFICATION_EVENTS: NotificationEvent[] = [
+  'friend_request',
+  'friend_accepted',
+  'daily_outfit',
+];
+export type DefaultChannel = 'email' | 'push';
+
+export type EventToggles = Record<NotificationEvent, boolean>;
+
+export interface NotificationPreferences {
+  email: EventToggles;
+  push: EventToggles;
+  email_address: string;
+  email_available: boolean;
+  push_available: boolean;
+  vapid_public_key: string | null;
+  push_devices: number;
+}
+
+const PREFS_KEY = ['notification-preferences'];
+
+export function useNotificationPreferences() {
+  const { status } = useSession();
+  useSetTokenIfAvailable();
+
+  return useQuery({
+    queryKey: PREFS_KEY,
+    queryFn: () => api.get<NotificationPreferences>('/notifications/preferences'),
+    enabled: status !== 'loading',
+  });
+}
+
+export function useUpdateNotificationPreferences() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async (patch: Partial<Record<DefaultChannel, Partial<EventToggles>>>) => {
+      if (session?.accessToken) {
+        setAccessToken(session.accessToken as string);
+      }
+      return api.patch<NotificationPreferences>('/notifications/preferences', patch);
+    },
+    // Optimistic: the switch flips immediately, rolls back on error.
+    onMutate: async (patch) => {
+      await queryClient.cancelQueries({ queryKey: PREFS_KEY });
+      const previous = queryClient.getQueryData<NotificationPreferences>(PREFS_KEY);
+      if (previous) {
+        queryClient.setQueryData<NotificationPreferences>(PREFS_KEY, {
+          ...previous,
+          email: { ...previous.email, ...patch.email },
+          push: { ...previous.push, ...patch.push },
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _patch, context) => {
+      if (context?.previous) queryClient.setQueryData(PREFS_KEY, context.previous);
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(PREFS_KEY, data);
+    },
+  });
+}
+
+export function useTestPush() {
+  const { data: session } = useSession();
+  return useMutation({
+    mutationFn: async () => {
+      if (session?.accessToken) {
+        setAccessToken(session.accessToken as string);
+      }
+      return api.post<{ sent: number; removed: number; failed: number }>(
+        '/notifications/push/test'
+      );
+    },
+  });
+}

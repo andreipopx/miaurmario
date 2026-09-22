@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/auth-provider';
 import { ApiError, NetworkError } from '@/lib/api';
 import { getAiAccessErrorCode } from '@/lib/ai-access';
+import { useCaptureInstallPrompt } from '@/lib/pwa/install-prompt';
 
 // Queries that expect a 404 as a legitimate "not configured yet" state
 // (e.g. user has no family, no location set) should tag themselves with
@@ -55,6 +56,8 @@ function handleMutationError(
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Android/desktop Chromium fire beforeinstallprompt once, early: keep it for the install guide.
+  useCaptureInstallPrompt();
   const [queryClient] = useState(
     () =>
       new QueryClient({

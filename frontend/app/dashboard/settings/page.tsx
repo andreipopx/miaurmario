@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
-import { Loader2, Save, RotateCcw, MapPin, Ruler, Sun, Moon, Monitor, Palette } from 'lucide-react';
+import { Bell, Loader2, Save, RotateCcw, MapPin, Ruler, Sun, Moon, Monitor, Palette, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -469,6 +469,28 @@ export default function SettingsPage() {
           <CardContent>
             <Button variant="outline" asChild>
               <Link href="/dashboard/settings/integrations">{t('integrations.cta')}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Notifications + install the PWA */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              {t('notificationsCard.title')}
+            </CardTitle>
+            <CardDescription>{t('notificationsCard.description')}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/notifications">{t('notificationsCard.manage')}</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/install">
+                <Smartphone className="h-4 w-4" strokeWidth={1.75} />
+                {t('notificationsCard.install')}
+              </Link>
             </Button>
           </CardContent>
         </Card>

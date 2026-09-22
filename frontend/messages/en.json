@@ -971,6 +971,12 @@
         "rateLimited": "Too many attempts. Wait a few minutes.",
         "generic": "We couldn't save your password. Please try again."
       }
+    },
+    "notificationsCard": {
+      "title": "Notifications & app",
+      "description": "What we tell you by email and on your phone, and how to install Miaurmario.",
+      "manage": "Notifications",
+      "install": "Install Miaurmario"
     }
   },
   "invite": {
@@ -1075,7 +1081,7 @@
   "notifications": {
     "title": "Notifications",
     "subtitle": "Choose how and when Miaurmario should nudge you",
-    "pageSubtitle": "Configure how and when you receive outfit recommendations",
+    "pageSubtitle": "Choose what we tell you about and where",
     "channelsTitle": "Channels",
     "channelsSubtitle": "Where notifications get delivered",
     "schedulesTitle": "Schedules",
@@ -1083,12 +1089,12 @@
     "empty": "You haven't set up any notifications yet.",
     "addChannelCta": "Add a channel",
     "addScheduleCta": "Add a schedule",
-    "channelsCardTitle": "Notification Channels",
+    "channelsCardTitle": "Advanced channels",
     "channelsCardDescription": "Add channels to receive your daily outfit recommendations",
     "channelsEmptyTitle": "No notification channels configured",
     "channelsEmptyHint": "Add a channel to start receiving outfit suggestions",
-    "schedulesCardTitle": "Delivery Schedule",
-    "schedulesCardDescription": "Set when you want to receive outfit recommendations each day",
+    "schedulesCardTitle": "Outfit of the day",
+    "schedulesCardDescription": "When we prepare your look (sent through the channels above)",
     "schedulesEmptyTitle": "No schedules configured",
     "schedulesEmptyHint": "Add a schedule to receive daily outfit suggestions",
     "testButton": "Test",
@@ -1175,6 +1181,59 @@
       "scheduleBody": "This will remove the schedule. You can create a new one later.",
       "deleting": "Deleting...",
       "delete": "Delete"
+    },
+    "installApp": "Install the app",
+    "advanced": {
+      "title": "Advanced",
+      "description": "ntfy and Mattermost, for people who already use them",
+      "channelsHint": "They get the outfit of the day and laundry reminders, on top of email and device."
+    },
+    "defaults": {
+      "title": "What we notify you about",
+      "description": "By email with zero setup, and on your phone once you enable this device.",
+      "channels": {
+        "email": "Email",
+        "push": "This device"
+      },
+      "events": {
+        "friend_request": {
+          "title": "Friend requests",
+          "description": "Someone wants to be your friend"
+        },
+        "friend_accepted": {
+          "title": "Request accepted",
+          "description": "Someone accepts your request"
+        },
+        "daily_outfit": {
+          "title": "Outfit of the day",
+          "description": "On your schedules below"
+        }
+      },
+      "emailTo": "Emails go to {email}. Each one has a one-tap unsubscribe link.",
+      "emailUnavailable": "Email isn't configured on this server yet.",
+      "pushNeedsDevice": "Enable this device to choose what reaches your phone.",
+      "lowNoise": "No spam: we never notify you about every reaction.",
+      "saveError": "Couldn't save. Please try again.",
+      "device": {
+        "title": "This device",
+        "devices": "{count, plural, one {# device enabled} other {# devices enabled}}",
+        "pitch": "Get notifications on this phone or computer, like any other app.",
+        "enable": "Enable on this device",
+        "enabledHere": "Enabled on this device",
+        "disable": "Disable here",
+        "test": "Send a test",
+        "testSent": "Test sent. It should arrive in a few seconds.",
+        "testNone": "No device can receive it. Enable it again.",
+        "enabledToast": "Done! Stinky can notify you here now.",
+        "disabledToast": "Disabled on this device.",
+        "deniedToast": "Notifications are blocked. You can allow them in your browser settings.",
+        "errorToast": "Couldn't enable it. Please try again.",
+        "blocked": "Miaurmario notifications are blocked in this browser. Allow them in its settings (lock icon next to the address) and come back.",
+        "iosNeedsInstall": "On iPhone and iPad notifications only arrive when you open Miaurmario from its home-screen icon. Install it in a moment:",
+        "iosTooOld": "iPhone notifications need iOS 16.4 or later. Meanwhile you'll get them by email.",
+        "unsupported": "This browser doesn't support notifications. On Android use Chrome; on iPhone, install the app from Safari.",
+        "installGuide": "See how to install it"
+      }
     }
   },
   "analytics": {
@@ -2946,5 +3005,72 @@
     "refreshing": "Refreshing…",
     "updateAvailable": "A new version of Miaurmario is available",
     "update": "Update"
+  },
+  "install": {
+    "title": "Install Miaurmario",
+    "subtitle": "One tap away, like any other app: full screen, no app store, tiny footprint.",
+    "installed": "It's installed! Stinky lives on your home screen.",
+    "installedToast": "Installed! Find it on your home screen.",
+    "platformLabel": "Your device",
+    "detected": "(detected)",
+    "menuIcon": "menu",
+    "notificationsLink": "Notification settings",
+    "tabs": {
+      "ios": "iPhone / iPad",
+      "android": "Android",
+      "other": "Huawei & others",
+      "desktop": "Computer"
+    },
+    "ios": {
+      "step1": "Open <strong>miaurmario.andreipop.org</strong> in <strong>Safari</strong>.",
+      "step2": "Tap <strong>Share</strong> <icon></icon> (bottom on iPhone, top on iPad).",
+      "step3": "Scroll down, pick <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.",
+      "step4": "Open Miaurmario <strong>from the new icon</strong>.",
+      "shareIcon": "Share",
+      "pushNote": "iPhone notifications only work when Miaurmario is opened from its home-screen icon (iOS 16.4 or later). In the EU too.",
+      "otherBrowsers": "Using Chrome or Edge on iPhone? Since iOS 16.4 you can too: Share → Add to Home Screen."
+    },
+    "android": {
+      "installButton": "Install Miaurmario",
+      "step1": "Open <strong>miaurmario.andreipop.org</strong> in <strong>Chrome</strong>.",
+      "step2": "Tap the menu <icon></icon> (top right).",
+      "step3": "Pick <strong>Install app</strong> or <strong>Add to Home screen</strong>.",
+      "step4": "Open Miaurmario <strong>from the icon</strong>.",
+      "pushNote": "With Chrome, notifications work both installed and in the browser."
+    },
+    "other": {
+      "step1": "Open the browser <strong>menu</strong> (☰ or ⋮).",
+      "step2": "Look for <strong>Add to Home screen</strong>. In Samsung Internet: <strong>Add page to → Home screen</strong>.",
+      "step3": "Open Miaurmario <strong>from the icon</strong>.",
+      "pushNote": "For phone notifications use Chrome: some browsers, like Huawei Browser, don't support them. Email still reaches you."
+    },
+    "desktop": {
+      "step1": "In <strong>Chrome</strong> or <strong>Edge</strong>: click the install icon in the address bar (or menu → <strong>Install Miaurmario</strong>).",
+      "step2": "In <strong>Safari on Mac</strong>: <strong>File → Add to Dock</strong>.",
+      "step3": "<strong>Firefox</strong> can't install it, but notifications work from the tab."
+    },
+    "hint": {
+      "text": "Install Miaurmario on your phone: it opens full screen and can notify you.",
+      "cta": "How to install",
+      "dismiss": "Close"
+    }
+  },
+  "unsubscribe": {
+    "working": "One moment…",
+    "doneTitle": "Done, no more emails",
+    "doneBody": "We won't email you about {what} anymore.",
+    "resubscribedTitle": "You'll get them again",
+    "errorTitle": "This link doesn't work",
+    "errorBody": "It may be incomplete. Sign in to Miaurmario and change your notifications there.",
+    "allButton": "Unsubscribe from all emails",
+    "undoButton": "Undo",
+    "manage": "Manage notifications",
+    "pushNote": "This only affects email: notifications on your devices stay as they are.",
+    "scopes": {
+      "friend_request": "friend requests",
+      "friend_accepted": "accepted friend requests",
+      "daily_outfit": "your outfit of the day",
+      "all": "anything"
+    }
   }
 }

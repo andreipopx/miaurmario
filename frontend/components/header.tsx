@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { Wordmark } from '@/components/brand/wordmark';
 import { BackButton } from '@/components/native/back-button';
+import { ProfileDropdown } from '@/components/profile-menu';
 import { needsAppBack } from '@/lib/native/navigation';
 
 interface HeaderProps {
@@ -21,7 +22,7 @@ const iconButton =
 
 /**
  * Mobile: Stinky avatar (opens the profile menu) · greeting or wordmark · bell.
- * Desktop: the sidebar carries the logo; the header keeps greeting + bell + avatar (→ Ajustes).
+ * Desktop: the sidebar carries the logo; the header keeps greeting + bell + avatar (→ profile menu).
  */
 export function Header({ onMenuClick }: HeaderProps) {
   const { user } = useAuth();
@@ -69,14 +70,8 @@ export function Header({ onMenuClick }: HeaderProps) {
           <Bell className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
         </Link>
 
-        {/* Desktop: avatar goes straight to settings */}
-        <Link
-          href="/dashboard/settings"
-          aria-label={tNav('settings')}
-          className="hidden shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:block"
-        >
-          <StinkyAvatar size={44} />
-        </Link>
+        {/* Desktop: avatar opens the profile menu (perfil, ajustes, admin, cerrar sesión) */}
+        <ProfileDropdown />
       </div>
     </header>
   );

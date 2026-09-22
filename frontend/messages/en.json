@@ -272,14 +272,19 @@
     "primary": "Main",
     "profileMenu": "Your profile and menu",
     "familySettings": "Manage family",
-    "viewProfile": "Your profile and settings",
+    "viewProfile": "View your profile",
     "sendFeedback": "Send a suggestion or bug",
     "admin": "Admin",
     "adminBadge": "{count, plural, one {# pending item} other {# pending items}}",
     "friends": "Friends",
     "newActivity": "{count, plural, one {# new} other {# new}}",
     "stinky": "Chat with Stinky",
-    "music": "Music"
+    "music": "Music",
+    "inspo": "Inspiration",
+    "stinkyShort": "Stinky",
+    "garments": "Items",
+    "integrations": "Integrations",
+    "general": "General"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",

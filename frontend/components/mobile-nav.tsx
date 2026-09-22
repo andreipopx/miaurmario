@@ -4,7 +4,7 @@ import { TransitionLink } from '@/components/native/transition-link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-import { DOCK_ITEMS, isActivePath } from '@/components/nav-items';
+import { MAIN_SECTIONS, resolveNav } from '@/components/nav-items';
 import { useSocialSummary } from '@/lib/hooks/use-social';
 
 /**
@@ -17,6 +17,8 @@ export function MobileNav() {
   const t = useTranslations('nav');
   const { data: summary } = useSocialSummary();
   const socialCount = summary?.total ?? 0;
+  // Sub-pages (Looks, Música, a friend's profile…) keep their section's tab lit.
+  const activeKey = resolveNav(pathname)?.section.key;
 
   return (
     <>
@@ -33,8 +35,8 @@ export function MobileNav() {
         className="glass-dock fixed inset-x-4 z-50 mx-auto flex h-16 max-w-md items-center justify-between rounded-[32px] p-2 lg:hidden"
         style={{ bottom: 'calc(24px + env(safe-area-inset-bottom))' }}
       >
-        {DOCK_ITEMS.map((item) => {
-          const active = isActivePath(pathname, item.href);
+        {MAIN_SECTIONS.map((item) => {
+          const active = activeKey === item.key;
           const Icon = item.icon;
           const badge = item.socialBadge ? socialCount : 0;
           const label = badge > 0 ? `${t(item.key)} · ${t('newActivity', { count: badge })}` : t(item.key);
@@ -66,7 +68,7 @@ export function MobileNav() {
                   </span>
                 )}
               </span>
-              {active && <span className="text-sm font-bold">{t(item.key)}</span>}
+              {active && <span className="whitespace-nowrap text-sm font-bold">{t(item.shortKey ?? item.key)}</span>}
             </TransitionLink>
           );
         })}

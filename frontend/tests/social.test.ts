@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { dayKind, localIsoDate, parseLocalDay, shareOrCopy } from '@/lib/social';
 import { normalizeUsernameQuery, profileShareUrl } from '@/lib/hooks/use-social';
-import { DOCK_ITEMS, PRIMARY_ITEMS } from '@/components/nav-items';
 import { colorIndexFor, initialsFor } from '@/components/social/person-avatar';
 
 describe('dayKind', () => {
@@ -68,20 +67,6 @@ describe('shareOrCopy', () => {
     const writeText = vi.fn().mockRejectedValue(new Error('denied'));
     await expect(shareOrCopy(data, { clipboard: { writeText } } as never)).resolves.toBe('failed');
     await expect(shareOrCopy(data, {} as never)).resolves.toBe('failed');
-  });
-});
-
-describe('navigation', () => {
-  it('keeps the dock at four tabs with Amigos replacing Looks', () => {
-    expect(DOCK_ITEMS.map((i) => i.key)).toEqual(['today', 'wardrobe', 'stylist', 'friends']);
-    expect(DOCK_ITEMS.find((i) => i.key === 'friends')?.socialBadge).toBe(true);
-  });
-
-  it('keeps Looks reachable from the profile menu / sidebar', () => {
-    const keys = PRIMARY_ITEMS.map((i) => i.key);
-    expect(keys).toContain('looks');
-    expect(keys).toContain('friends');
-    expect(new Set(keys).size).toBe(keys.length);
   });
 });
 

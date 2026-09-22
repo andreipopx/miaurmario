@@ -1,6 +1,6 @@
 'use client';
 
-import { DOCK_ITEMS } from '@/components/nav-items';
+import { TOP_LEVEL_PATHS } from '@/components/nav-items';
 
 /**
  * In-app navigation helpers for the installed PWA. iOS standalone has no browser
@@ -31,10 +31,9 @@ export function canGoBackInApp(): boolean {
   return inAppDepth > 0;
 }
 
-const TAB_PATHS = new Set(DOCK_ITEMS.map((i) => i.href));
-
+/** Dock sections and their in-section tabs (Looks, Música…) are top level: no back button. */
 export function isTabRoute(pathname: string): boolean {
-  return TAB_PATHS.has(pathname);
+  return TOP_LEVEL_PATHS.has(pathname);
 }
 
 /** Screens that draw their own back/cancel control in-page. */
@@ -46,7 +45,7 @@ export function needsAppBack(pathname: string): boolean {
 }
 
 const PARENT_OVERRIDES: Record<string, string> = {
-  '/dashboard/family/feed': '/dashboard',
+  '/dashboard/family/feed': '/dashboard/friends',
 };
 
 /** Where "back" goes when there is no in-app history. */

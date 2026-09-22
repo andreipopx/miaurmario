@@ -13,6 +13,7 @@ import {
   Plug,
   Settings,
   Shirt,
+  Smartphone,
   Sparkles,
   UserRound,
   Users,
@@ -92,6 +93,7 @@ export const SETTINGS: NavSection = {
   tabs: [
     { key: 'general', href: '/dashboard/settings', icon: Settings },
     { key: 'notifications', href: '/dashboard/notifications', icon: Bell },
+    { key: 'install', href: '/dashboard/install', icon: Smartphone },
     { key: 'integrations', href: '/dashboard/settings/integrations', icon: Plug },
     { key: 'familySettings', href: '/dashboard/family', icon: Users },
   ],

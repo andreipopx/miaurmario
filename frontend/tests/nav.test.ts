@@ -56,6 +56,7 @@ describe('information architecture', () => {
     expect(where('/dashboard/settings/integrations/spotify')).toBe('settings/integrations');
     expect(where('/dashboard/settings/ai')).toBe('settings/general');
     expect(where('/dashboard/notifications')).toBe('settings/notifications');
+    expect(where('/dashboard/install')).toBe('settings/install');
     expect(where('/dashboard/admin')).toBeNull();
     expect(where('/dashboardx')).toBeNull();
   });

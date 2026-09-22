@@ -284,7 +284,8 @@
     "stinkyShort": "Stinky",
     "garments": "Items",
     "integrations": "Integrations",
-    "general": "General"
+    "general": "General",
+    "install": "Install app"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",

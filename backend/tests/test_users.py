@@ -177,3 +177,76 @@ class TestOnboarding:
         assert response.status_code == 200
         data = response.json()
         assert data["onboarding_completed"] is True
+
+
+SEEN_TIPS_URL = "/api/v1/users/me/seen-tips"
+
+
+class TestSeenTips:
+    """First-run guidance state (welcome tour + one-time tips), synced across devices."""
+
+    @pytest.mark.asyncio
+    async def test_new_user_has_seen_nothing(self, client: AsyncClient, test_user, auth_headers):
+        response = await client.get("/api/v1/users/me", headers=auth_headers)
+        assert response.status_code == 200
+        assert response.json()["seen_tips"] == []
+
+    @pytest.mark.asyncio
+    async def test_add_merges_and_dedupes(self, client: AsyncClient, test_user, auth_headers):
+        r1 = await client.patch(SEEN_TIPS_URL, json={"add": ["tour"]}, headers=auth_headers)
+        assert r1.status_code == 200
+        assert r1.json()["seen_tips"] == ["tour"]
+
+        r2 = await client.patch(
+            SEEN_TIPS_URL,
+            json={"add": ["tip.wardrobe", "tour", "tip.wardrobe"]},
+            headers=auth_headers,
+        )
+        assert r2.json()["seen_tips"] == ["tour", "tip.wardrobe"]
+
+        me = await client.get("/api/v1/users/me", headers=auth_headers)
+        assert me.json()["seen_tips"] == ["tour", "tip.wardrobe"]
+
+    @pytest.mark.asyncio
+    async def test_remove_shows_again(self, client: AsyncClient, test_user, auth_headers):
+        await client.patch(
+            SEEN_TIPS_URL, json={"add": ["tour", "tip.stinky"]}, headers=auth_headers
+        )
+        r = await client.patch(SEEN_TIPS_URL, json={"remove": ["tour"]}, headers=auth_headers)
+        assert r.status_code == 200
+        assert r.json()["seen_tips"] == ["tip.stinky"]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("key", ["", "Tour", "tip wardrobe", "x" * 41, "1tip", "<script>"])
+    async def test_rejects_bad_keys(self, client: AsyncClient, test_user, auth_headers, key):
+        r = await client.patch(SEEN_TIPS_URL, json={"add": [key]}, headers=auth_headers)
+        assert r.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_caps_total_keys(self, client: AsyncClient, test_user, auth_headers):
+        for batch in range(3):
+            keys = [f"tip.k{batch}-{i}" for i in range(20)]
+            r = await client.patch(SEEN_TIPS_URL, json={"add": keys}, headers=auth_headers)
+            assert r.status_code == 200
+        r = await client.patch(
+            SEEN_TIPS_URL, json={"add": [f"tip.extra{i}" for i in range(5)]}, headers=auth_headers
+        )
+        assert r.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_requires_auth(self, client: AsyncClient):
+        r = await client.patch(SEEN_TIPS_URL, json={"add": ["tour"]})
+        assert r.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_profile_patch_does_not_touch_seen_tips(
+        self, client: AsyncClient, test_user, auth_headers
+    ):
+        await client.patch(SEEN_TIPS_URL, json={"add": ["tour"]}, headers=auth_headers)
+        r = await client.patch(
+            "/api/v1/users/me",
+            json={"display_name": "X", "seen_tips": []},
+            headers=auth_headers,
+        )
+        assert r.status_code == 200
+        assert r.json()["seen_tips"] == ["tour"]

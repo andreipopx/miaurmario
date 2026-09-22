@@ -89,16 +89,22 @@ export function RelationActions({
 
   if (relation === 'outgoing' && friendshipId) {
     return (
-      <Button
-        size={size}
-        variant="secondary"
-        disabled={remove.isPending}
-        onClick={() => remove.mutate(friendshipId, { onSuccess: () => toast.success(t('requestCancelled')), onError })}
-        aria-label={t('cancelRequestLabel')}
-      >
-        <Clock className="h-4 w-4" strokeWidth={2} aria-hidden />
-        {t('pending')}
-      </Button>
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+          <Clock className="h-4 w-4" strokeWidth={2} aria-hidden />
+          {t('pending')}
+        </span>
+        <Button
+          size={size}
+          variant="secondary"
+          disabled={remove.isPending}
+          onClick={() => remove.mutate(friendshipId, { onSuccess: () => toast.success(t('requestCancelled')), onError })}
+          aria-label={t('cancelRequestLabel')}
+        >
+          <X className="h-4 w-4" strokeWidth={2} aria-hidden />
+          {t('cancelRequest')}
+        </Button>
+      </div>
     );
   }
 

@@ -362,6 +362,50 @@ html[data-keyboard='open'] [data-dock] {
   animation: stinky-fx-still 2600ms linear forwards;
 }
 
+/* Stinky bite burst: "¡ñam!"/"ñac" pop with a springy jump, tooth-mark doodles draw in (components/stinky/stinky-bite-fx.tsx). */
+@keyframes stinky-fx-pop {
+  0%   { opacity: 0; transform: translate(-50%, 0) scale(0.3) rotate(0deg); }
+  16%  { opacity: 1; transform: translate(-50%, var(--fx-jump)) scale(1.18) rotate(var(--fx-rot)); }
+  30%  { transform: translate(-50%, calc(var(--fx-jump) * 0.55)) scale(0.94) rotate(calc(var(--fx-rot) * -0.5)); }
+  44%  { transform: translate(-50%, calc(var(--fx-jump) * 0.8)) scale(1.04) rotate(var(--fx-rot)); }
+  78%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, calc(var(--fx-jump) * 1.25)) scale(0.92) rotate(var(--fx-rot)); }
+}
+.stinky-fx-pop {
+  opacity: 0;
+  animation-name: stinky-fx-pop;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+@keyframes stinky-fx-mark {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7) rotate(var(--fx-rot)); }
+  14%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotate(var(--fx-rot)); }
+  26%  { transform: translate(-50%, -50%) scale(1) rotate(var(--fx-rot)); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.96) rotate(var(--fx-rot)); }
+}
+.stinky-fx-mark {
+  opacity: 0;
+  animation-name: stinky-fx-mark;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+@keyframes stinky-fx-draw {
+  from { stroke-dashoffset: 40; }
+  to   { stroke-dashoffset: 0; }
+}
+.stinky-fx-mark .stinky-fx-draw {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: stinky-fx-draw 260ms ease-out forwards;
+  animation-delay: var(--fx-delay, 0ms);
+}
+.stinky-fx-still-short {
+  transform: translate(-50%, -40%) rotate(var(--fx-rot, 0deg));
+  animation: stinky-fx-still 1500ms linear forwards;
+}
+
 /* Scrollbars: thin, rounded, quiet; pink on hover (Stinky pop). */
 html {
   scrollbar-width: thin;

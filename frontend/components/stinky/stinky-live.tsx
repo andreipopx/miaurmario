@@ -25,14 +25,19 @@ import '@oneworks/avatar-react/renderer.css'
 import type { AvatarAnimationClip, AvatarAnimationLibrary, AvatarDefinition } from '@oneworks/avatar'
 
 import { Stinky, type StinkyProps } from './stinky'
+import { BITE_FX_MS, StinkyBiteFx } from './stinky-bite-fx'
+import { STINKY_PET_VIBRATION, pickPetReaction, type StinkyPetReaction } from './stinky-pet'
 import { startPurrVibration } from './stinky-purr'
+import { PURR_FX_MS, StinkyPurrFx } from './stinky-purr-fx'
 import { observeSlitPupils } from './stinky-pupils'
 import {
   STINKY_ANIMATIONS_URL,
+  STINKY_BITE_LEAN,
+  STINKY_MOUTH_TIMELINE,
   STINKY_STATE_META,
   resolveStinkyState,
+  stinkyClipMouths,
   stinkyDefinitionUrl,
-  STINKY_MOUTH_OPEN_WINDOWS,
   stinkyMouthAt,
   type StinkyMouth,
   type StinkyState,
@@ -45,18 +50,36 @@ export interface StinkyLiveProps extends StinkyProps {
   fps?: number
 }
 
+const MOUTHS: readonly StinkyMouth[] = ['neutral', 'open', 'bite', 'bite-half']
+const PET_STATES: ReadonlySet<StinkyState> = new Set<StinkyState>(['purr', 'bite'])
+const PET_FX_MS: Record<StinkyPetReaction, number> = { purr: PURR_FX_MS, bite: BITE_FX_MS }
+
 type Loaded = { definitions: Record<StinkyMouth, AvatarDefinition>; library: AvatarAnimationLibrary }
 const cache = new Map<string, Promise<unknown>>()
 const getJson = <T,>(url: string) => {
   if (!cache.has(url)) cache.set(url, fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(url)))))
   return cache.get(url) as Promise<T>
 }
-// Two definitions per variant (":3" and open mouth) — swapped inside happy/wave so only one mouth ever shows.
+// One definition per mouth (":3", open, bite, bite-half), identical otherwise; clips swap between them so only
+// one mouth ever shows.
 const load = (variant: StinkyVariant) => Promise.all([
-  getJson<AvatarDefinition>(stinkyDefinitionUrl(variant, 'neutral')),
-  getJson<AvatarDefinition>(stinkyDefinitionUrl(variant, 'open')),
+  Promise.all(MOUTHS.map(m => getJson<AvatarDefinition>(stinkyDefinitionUrl(variant, m)))),
   getJson<AvatarAnimationLibrary>(STINKY_ANIMATIONS_URL),
-]).then(([neutral, open, library]): Loaded => ({ definitions: { neutral, open }, library }))
+]).then(([defs, library]): Loaded => ({
+  definitions: Object.fromEntries(MOUTHS.map((m, i) => [m, defs[i]])) as Record<StinkyMouth, AvatarDefinition>,
+  library,
+}))
+
+/** Bite lean-in toward the camera, same timing/pivot as the pre-rendered bite clip. */
+function startBiteLean(el: HTMLElement | null): Animation | null {
+  if (!el || typeof el.animate !== 'function') return null
+  const total = STINKY_BITE_LEAN.at(-1)![0]
+  el.style.transformOrigin = '50% 51%'
+  return el.animate(
+    STINKY_BITE_LEAN.map(([ms, s]) => ({ offset: ms / total, transform: `scale(${s})` })),
+    { duration: total, easing: 'linear' },
+  )
+}
 
 const looksLowEnd = () => {
   if (typeof navigator === 'undefined') return true
@@ -67,8 +90,10 @@ const looksLowEnd = () => {
 export default function StinkyLive(props: StinkyLiveProps) {
   const { state = 'idle', size = 128, settleTo = 'idle', variant: forced, onDone, onPet, interactive, label = 'Stinky', className, fps = 24 } = props
   const isInteractive = interactive ?? size >= 48
-  const beforePurr = useRef<StinkyState | null>(null)
+  const beforePet = useRef<StinkyState | null>(null)
   const lastPet = useRef(-Infinity)
+  const petHistory = useRef<StinkyPetReaction[]>([])
+  const [petFx, setPetFx] = useState<{ kind: StinkyPetReaction; key: number } | null>(null)
   const reducedMotion = usePrefersReducedMotion()
   const variant = useStinkyVariant(forced)
   const [data, setData] = useState<Loaded | null>(null)
@@ -77,12 +102,11 @@ export default function StinkyLive(props: StinkyLiveProps) {
   const settle = settleTo == null ? null : resolveStinkyState(settleTo)
   const [shown, setShown] = useState<StinkyState>(requested)
   const hostRef = useRef<HTMLSpanElement>(null)
-  // happy/wave swap the ":3" for an open mouth: a second renderer with the open-mouth definition is stacked on top,
-  // both follow the same clock, and each tick shows exactly one of them (never two mouths).
-  const openAvatarRef = useRef<AvatarHandle>(null)
-  const neutralLayerRef = useRef<HTMLSpanElement>(null)
-  const openLayerRef = useRef<HTMLSpanElement>(null)
-  const avatarRef = useRef<AvatarHandle>(null)
+  /** Inner stage: receives the purr vibration / bite lean (the fx overlays stay unscaled). */
+  const stageRef = useRef<HTMLSpanElement>(null)
+  // One renderer per mouth the clip needs, stacked; all follow the same clock and exactly one is visible per tick.
+  const avatars = useRef<Partial<Record<StinkyMouth, AvatarHandle | null>>>({})
+  const layers = useRef<Partial<Record<StinkyMouth, HTMLSpanElement | null>>>({})
 
   useEffect(() => setShown(requested), [requested])
   useEffect(() => {
@@ -95,12 +119,13 @@ export default function StinkyLive(props: StinkyLiveProps) {
     () => (data?.library.groups.states?.clips[shown] as AvatarAnimationClip | undefined) ?? null,
     [data, shown],
   )
-
-  const hasOpenLayer = STINKY_MOUTH_OPEN_WINDOWS[shown] != null
+  const mouthKey = stinkyClipMouths(shown).join(',')
+  const clipMouths = useMemo<StinkyMouth[]>(() => ['neutral', ...stinkyClipMouths(shown)], [mouthKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (clip == null || reducedMotion || downgraded) return
     const host = hostRef.current
+    const edges = (STINKY_MOUTH_TIMELINE[shown] ?? []).flatMap(([from, to]) => [from, to])
     let raf = 0
     let started = false
     let t0 = 0
@@ -111,6 +136,7 @@ export default function StinkyLive(props: StinkyLiveProps) {
     let sampled = 0
     let visible = true
     let finished = false
+    let motion: Animation | null = null
 
     // Self-clocked driver: play() + pause() once, then seek() on our own rAF clock.
     // This avoids an SDK 1.0.0-rc.9 race where the renderer's first rAF timestamp precedes
@@ -119,20 +145,19 @@ export default function StinkyLive(props: StinkyLiveProps) {
     // It also lets us cap the update rate and pause off-screen.
     const tick = () => {
       raf = requestAnimationFrame(tick)
-      const avatar = avatarRef.current
-      if (!avatar) return
       const now = performance.now()
-      const openAvatar = hasOpenLayer ? openAvatarRef.current : null
       if (!started) {
-        if (!host?.querySelector('svg') || (hasOpenLayer && !openAvatar)) return
-        for (const a of openAvatar ? [avatar, openAvatar] : [avatar]) {
-          a.play(clip, { playback: clip.playback, trackId: 'stinky' }).catch(() => setDowngraded(true))
-          a.pause('stinky')
+        const handles = clipMouths.map(m => avatars.current[m])
+        if (!host?.querySelector('svg') || handles.some(h => !h)) return
+        for (const a of handles) {
+          a!.play(clip, { playback: clip.playback, trackId: 'stinky' }).catch(() => setDowngraded(true))
+          a!.pause('stinky')
         }
         started = true
         t0 = now
         lastFrame = now
-        if (shown === 'purr') startPurrVibration(host)
+        if (shown === 'purr') motion = startPurrVibration(stageRef.current)
+        if (shown === 'bite') motion = startBiteLean(stageRef.current)
         return
       }
       // Runtime performance guard: sample the first 30 frames after start.
@@ -148,29 +173,23 @@ export default function StinkyLive(props: StinkyLiveProps) {
       lastUpdate = now
       const elapsed = now - t0
       const clipMs = clip.playback === 'loop' ? elapsed % clip.durationMs : Math.min(elapsed, clip.durationMs)
-      if (!openAvatar) {
-        avatar.seek(clipMs, 'stinky')
-      } else {
-        // Seek only the visible renderer, plus the hidden one when a mouth swap is within two updates
-        // (so it is already on the right frame when it becomes visible). Exactly one layer is visible.
-        const open = stinkyMouthAt(shown, clipMs) === 'open'
-        const window = STINKY_MOUTH_OPEN_WINDOWS[shown]!
-        const nearSwap = Math.min(Math.abs(clipMs - window[0]), Math.abs(clipMs - window[1])) <= 2 * (1000 / fps)
-        if (open || nearSwap) openAvatar.seek(clipMs, 'stinky')
-        if (!open || nearSwap) avatar.seek(clipMs, 'stinky')
-        if (openLayerRef.current) openLayerRef.current.style.visibility = open ? 'visible' : 'hidden'
-        if (neutralLayerRef.current) neutralLayerRef.current.style.visibility = open ? 'hidden' : 'visible'
+      // Seek the visible renderer, plus the others when a mouth swap is within two updates (so they are
+      // already on the right frame when they become visible). Exactly one layer is visible.
+      const mouth = stinkyMouthAt(shown, clipMs)
+      const nearSwap = edges.some(e => Math.abs(clipMs - e) <= 2 * (1000 / fps))
+      for (const m of clipMouths) {
+        if (m === mouth || nearSwap) avatars.current[m]?.seek(clipMs, 'stinky')
+        const layer = layers.current[m]
+        if (layer) layer.style.visibility = m === mouth ? 'visible' : 'hidden'
       }
-      if (clip.playback === 'once') {
-        if (elapsed >= clip.durationMs) {
-          finished = true
-          onDone?.()
-          if (shown === 'purr') {
-            const back = beforePurr.current ?? requested
-            beforePurr.current = null
-            setShown(STINKY_STATE_META[back].playback === 'loop' ? back : settle ?? 'idle')
-          } else if (settle != null && settle !== shown) setShown(settle)
-        }
+      if (clip.playback === 'once' && elapsed >= clip.durationMs) {
+        finished = true
+        onDone?.()
+        if (PET_STATES.has(shown)) {
+          const back = beforePet.current ?? requested
+          beforePet.current = null
+          setShown(STINKY_STATE_META[back].playback === 'loop' ? back : settle ?? 'idle')
+        } else if (settle != null && settle !== shown) setShown(settle)
       }
     }
     const io = typeof IntersectionObserver === 'function' && host
@@ -178,15 +197,14 @@ export default function StinkyLive(props: StinkyLiveProps) {
       : null
     if (io && host) io.observe(host)
     raf = requestAnimationFrame(tick)
-    const avatarAtStart = avatarRef
-    const openAtStart = openAvatarRef
+    const avatarsAtStart = avatars.current
     return () => {
       cancelAnimationFrame(raf)
       io?.disconnect()
-      avatarAtStart.current?.stop({ trackId: 'stinky' })
-      openAtStart.current?.stop({ trackId: 'stinky' })
+      motion?.cancel()
+      for (const m of clipMouths) avatarsAtStart[m]?.stop({ trackId: 'stinky' })
     }
-  }, [clip, reducedMotion, downgraded, fps, settle, shown, onDone, requested, hasOpenLayer])
+  }, [clip, clipMouths, reducedMotion, downgraded, fps, settle, shown, onDone, requested])
 
   // Slit pupils: rewrite the SDK's (black) eye highlight into a vertical slit on every render.
   const live = !reducedMotion && !downgraded && data != null
@@ -195,6 +213,12 @@ export default function StinkyLive(props: StinkyLiveProps) {
     if (!live || !host) return
     return observeSlitPupils(host)
   }, [live, data])
+
+  useEffect(() => {
+    if (!petFx) return
+    const t = setTimeout(() => setPetFx(null), PET_FX_MS[petFx.kind])
+    return () => clearTimeout(t)
+  }, [petFx])
 
   if (!live || data == null) {
     return (
@@ -214,12 +238,16 @@ export default function StinkyLive(props: StinkyLiveProps) {
 
   const pet = () => {
     const now = performance.now()
-    if (shown === 'purr' || now - lastPet.current < 1200) return
+    if (PET_STATES.has(shown) || now - lastPet.current < 1200) return
     lastPet.current = now
-    beforePurr.current = shown
-    setShown('purr')
-    navigator.vibrate?.([15, 30, 15, 30, 15, 30, 15])
-    onPet?.()
+    beforePet.current = shown
+    // ~65% purr / ~35% playful bite, never three bites in a row.
+    const reaction = pickPetReaction(petHistory.current)
+    petHistory.current = [...petHistory.current, reaction].slice(-4)
+    setShown(reaction)
+    setPetFx({ kind: reaction, key: now })
+    navigator.vibrate?.([...STINKY_PET_VIBRATION[reaction]])
+    onPet?.(reaction)
   }
   const decorative = !isInteractive && label === ''
   return (
@@ -236,26 +264,26 @@ export default function StinkyLive(props: StinkyLiveProps) {
       data-stinky-state={shown}
       data-stinky-mode='live'
     >
-      <span ref={neutralLayerRef} style={{ position: 'absolute', inset: 0 }}>
-        <Avatar
-          ref={avatarRef}
-          definition={data.definitions.neutral}
-          animationLibraries={[data.library]}
-          theme={variant}
-          style={{ width: '100%', height: '100%' }}
-        />
+      <span ref={stageRef} style={{ position: 'absolute', inset: 0 }}>
+        {clipMouths.map(m => (
+          <span
+            key={m}
+            ref={el => { layers.current[m] = el }}
+            data-stinky-mouth={m}
+            style={{ position: 'absolute', inset: 0, visibility: m === 'neutral' ? 'visible' : 'hidden' }}
+          >
+            <Avatar
+              ref={h => { avatars.current[m] = h }}
+              definition={data.definitions[m]}
+              animationLibraries={[data.library]}
+              theme={variant}
+              style={{ width: '100%', height: '100%' }}
+            />
+          </span>
+        ))}
       </span>
-      {hasOpenLayer ? (
-        <span ref={openLayerRef} style={{ position: 'absolute', inset: 0, visibility: 'hidden' }}>
-          <Avatar
-            ref={openAvatarRef}
-            definition={data.definitions.open}
-            animationLibraries={[data.library]}
-            theme={variant}
-            style={{ width: '100%', height: '100%' }}
-          />
-        </span>
-      ) : null}
+      {petFx?.kind === 'purr' && <StinkyPurrFx key={petFx.key} size={size} reducedMotion={false} />}
+      {petFx?.kind === 'bite' && <StinkyBiteFx key={petFx.key} size={size} reducedMotion={false} />}
     </span>
   )
 }

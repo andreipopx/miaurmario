@@ -15,6 +15,8 @@ import {
   type StinkyStateInput,
   type StinkyVariant,
 } from './stinky-states'
+import { BITE_FX_MS, StinkyBiteFx } from './stinky-bite-fx'
+import { STINKY_PET_VIBRATION, pickPetReaction, type StinkyPetReaction } from './stinky-pet'
 import { startPurrVibration } from './stinky-purr'
 import { PURR_FX_MS, StinkyPurrFx } from './stinky-purr-fx'
 import { usePrefersReducedMotion, useStinkyVariant } from './use-stinky-env'
@@ -30,10 +32,10 @@ export interface StinkyProps {
   variant?: StinkyVariant
   /** Called when a requested `once` state has played through. */
   onDone?: () => void
-  /** Tap/click/Enter/Space pets Stinky (plays `purr`, then returns). Default: `size >= 48`. */
+  /** Tap/click/Enter/Space pets Stinky (plays `purr` or, sometimes, a playful `bite`, then returns). Default: `size >= 48`. */
   interactive?: boolean
-  /** Called when Stinky is petted. */
-  onPet?: () => void
+  /** Called when Stinky is petted, with the reaction he chose. */
+  onPet?: (reaction: StinkyPetReaction) => void
   /** Accessible label when not interactive; pass `''` to mark Stinky as decorative. */
   label?: string
   className?: string
@@ -46,7 +48,9 @@ const MAX_BOUNDARY_WAIT_MS = 700
 /** Minimum time between two pets. */
 const PET_THROTTLE_MS = 1200
 const PET_LABEL = 'Acariciar a Stinky'
-const PURR_VIBRATION = [15, 30, 15, 30, 15, 30, 15]
+/** Reactions to a pet: they return to the previous state when they finish. */
+const PET_STATES: ReadonlySet<StinkyState> = new Set<StinkyState>(['purr', 'bite'])
+const PET_FX_MS: Record<StinkyPetReaction, number> = { purr: PURR_FX_MS, bite: BITE_FX_MS }
 
 // ---- clip cache: one fetch per clip; each play gets a fresh object URL so the animation restarts at frame 0
 const blobCache = new Map<string, Promise<Blob | null>>()
@@ -89,9 +93,10 @@ export function Stinky({
   const isInteractive = interactive ?? size >= 48
 
   const initial = stinkyAssets(requested, variant).webp
-  // Hearts + "prrr" burst shown while purring; a new key restarts the animation.
-  const [purrFx, setPurrFx] = useState<number | null>(null)
-  const purrFxTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Pet overlay: hearts + "prrr" for purr, "¡ñam!" + bite marks for bite; a new key restarts the animation.
+  const [petFx, setPetFx] = useState<{ kind: StinkyPetReaction; key: number } | null>(null)
+  const petFxTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const petHistory = useRef<StinkyPetReaction[]>([])
   const [layers, setLayers] = useState<Layer[]>(() => [{ key: 0, state: requested, src: initial, blob: false, shown: true }])
 
   // Mutable playback bookkeeping (not render state).
@@ -135,7 +140,7 @@ export function Stinky({
   /** Called when a `once` clip reaches its last frame (== neutral frame). */
   const onClipEnd = useCallback((ended: StinkyState) => {
     const { requested: req, settle: st, onDone: done } = latest.current
-    if (ended === 'purr') {
+    if (PET_STATES.has(ended)) {
       const back = returnTo.current ?? req
       returnTo.current = null
       showRef.current(STINKY_STATE_META[back].playback === 'loop' ? back : st ?? 'idle')
@@ -198,7 +203,7 @@ export function Stinky({
   useEffect(() => {
     if (requested === lastRequested.current) return
     lastRequested.current = requested
-    if (current.current.state === 'purr' && requested !== 'purr') {
+    if (PET_STATES.has(current.current.state) && !PET_STATES.has(requested)) {
       returnTo.current = requested
       return
     }
@@ -219,7 +224,10 @@ export function Stinky({
   // Preload what is likely next (+ purr when petting is possible).
   useEffect(() => {
     STINKY_LIKELY_NEXT[requested].forEach(preload)
-    if (isInteractive) preload('purr')
+    if (isInteractive) {
+      preload('purr')
+      preload('bite')
+    }
   }, [requested, isInteractive, preload, variant])
 
   useEffect(() => {
@@ -228,22 +236,25 @@ export function Stinky({
       pending.forEach(clearTimeout)
       pending.clear()
       vibration.current?.cancel()
-      if (purrFxTimer.current) clearTimeout(purrFxTimer.current)
+      if (petFxTimer.current) clearTimeout(petFxTimer.current)
     }
   }, [])
 
   const pet = useCallback(() => {
     const now = performance.now()
-    if (now - lastPet.current < PET_THROTTLE_MS || current.current.state === 'purr') return
+    if (now - lastPet.current < PET_THROTTLE_MS || PET_STATES.has(current.current.state)) return
     lastPet.current = now
     const prev = current.current.state
     returnTo.current = STINKY_STATE_META[prev].playback === 'loop' ? prev : latest.current.settle ?? 'idle'
-    show('purr', { immediate: true })
-    setPurrFx(now)
-    if (purrFxTimer.current) clearTimeout(purrFxTimer.current)
-    purrFxTimer.current = setTimeout(() => setPurrFx(null), PURR_FX_MS)
-    if (!latest.current.reducedMotion && typeof navigator !== 'undefined') navigator.vibrate?.(PURR_VIBRATION)
-    latest.current.onPet?.()
+    // ~65% purr / ~35% playful bite, never three bites in a row.
+    const reaction = pickPetReaction(petHistory.current)
+    petHistory.current = [...petHistory.current, reaction].slice(-4)
+    show(reaction, { immediate: true })
+    setPetFx({ kind: reaction, key: now })
+    if (petFxTimer.current) clearTimeout(petFxTimer.current)
+    petFxTimer.current = setTimeout(() => setPetFx(null), PET_FX_MS[reaction])
+    if (!latest.current.reducedMotion && typeof navigator !== 'undefined') navigator.vibrate?.([...STINKY_PET_VIBRATION[reaction]])
+    latest.current.onPet?.(reaction)
   }, [show])
 
   const onLayerLoad = (layer: Layer) => {
@@ -307,7 +318,8 @@ export function Stinky({
         )}
       >
         {images}
-        {purrFx !== null && <StinkyPurrFx key={purrFx} size={size} reducedMotion={reducedMotion} />}
+        {petFx?.kind === 'purr' && <StinkyPurrFx key={petFx.key} size={size} reducedMotion={reducedMotion} />}
+        {petFx?.kind === 'bite' && <StinkyBiteFx key={petFx.key} size={size} reducedMotion={reducedMotion} />}
       </button>
     )
   }

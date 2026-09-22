@@ -103,7 +103,7 @@ function Bubble({
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-[22px] rounded-br-lg bg-primary px-4 py-2.5 text-[15px] leading-snug text-primary-foreground">
+        <p className="max-w-[85%] whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-[22px] rounded-br-lg bg-primary px-4 py-2.5 text-[15px] leading-snug text-primary-foreground">
           {message.content}
         </p>
       </div>
@@ -117,7 +117,7 @@ function Bubble({
         {(message.content || empty) && (
           <div
             className={cn(
-              'break-words rounded-[22px] rounded-bl-lg bg-panel px-4 py-2.5 text-[15px] leading-snug',
+              'break-words [overflow-wrap:anywhere] rounded-[22px] rounded-bl-lg bg-panel px-4 py-2.5 text-[15px] leading-snug',
               message.error && 'text-muted-foreground'
             )}
           >

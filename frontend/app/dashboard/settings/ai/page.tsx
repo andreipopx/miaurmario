@@ -278,7 +278,7 @@ export default function AISettingsPage() {
             <p className="text-sm text-destructive">{t('apiErrors.ai_encryption_unavailable')}</p>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="ai-provider">{t('form.provider')}</Label>
               <Select value={preset.id} onValueChange={(v) => update(applyPreset(form, v))}>
@@ -341,7 +341,7 @@ export default function AISettingsPage() {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="ai-vision-model">{t('form.visionModel')}</Label>
               <Input

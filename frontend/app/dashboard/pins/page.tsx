@@ -54,7 +54,7 @@ export default function PinsPage() {
       {query.data && query.data.items.length > 0 && (
         <>
           <div
-            className="grid gap-3"
+            className="grid grid-cols-1 gap-3"
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}
           >
             {query.data.items.map((pin) => (

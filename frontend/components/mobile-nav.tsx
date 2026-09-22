@@ -32,7 +32,7 @@ export function MobileNav() {
         data-dock
         data-dock-nav
         aria-label={t('primary')}
-        className="glass-dock fixed inset-x-4 z-50 mx-auto flex h-16 max-w-md items-center justify-between rounded-[32px] p-2 lg:hidden"
+        className="glass-dock fixed inset-x-4 z-50 mx-auto flex h-16 max-w-md items-center justify-between rounded-[32px] p-2 max-[359px]:inset-x-3 max-[359px]:p-1.5 lg:hidden"
         style={{ bottom: 'calc(24px + env(safe-area-inset-bottom))' }}
       >
         {MAIN_SECTIONS.map((item) => {
@@ -49,12 +49,15 @@ export function MobileNav() {
               className={cn(
                 'pressable flex h-12 items-center justify-center rounded-full transition-[background-color,padding,width,transform] duration-200 ease-pop',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                // Narrow phones / big system font: inactive icons give up their
+                // spare width first, the active pill keeps its label (truncated
+                // only as a last resort) so all five always fit.
                 active
-                  ? 'gap-2 bg-signature px-4 text-signature-foreground'
-                  : 'w-12 text-foreground hover:bg-accent'
+                  ? 'min-w-0 max-w-[55%] shrink-0 gap-2 bg-signature px-4 text-signature-foreground max-[359px]:gap-1.5 max-[359px]:px-3'
+                  : 'w-12 min-w-0 shrink text-foreground hover:bg-accent'
               )}
             >
-              <span className="relative">
+              <span className="relative shrink-0">
                 <Icon className={active ? 'h-5 w-5' : 'h-[22px] w-[22px]'} strokeWidth={active ? 2 : 1.75} aria-hidden />
                 {badge > 0 && (
                   <span
@@ -68,7 +71,7 @@ export function MobileNav() {
                   </span>
                 )}
               </span>
-              {active && <span className="whitespace-nowrap text-sm font-bold">{t(item.shortKey ?? item.key)}</span>}
+              {active && <span className="min-w-0 truncate text-sm font-bold">{t(item.shortKey ?? item.key)}</span>}
             </TransitionLink>
           );
         })}

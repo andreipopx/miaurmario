@@ -198,9 +198,9 @@ function MomentCard({
         </p>
       )}
 
-      <div className="mt-3 flex gap-2.5">
+      <div className="mt-3 flex flex-wrap gap-2.5">
         {moment.is_worn ? (
-          <p className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-background text-sm font-bold">
+          <p className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-background text-sm font-bold">
             <Check className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
             {t('worn')}
           </p>
@@ -209,7 +209,7 @@ function MomentCard({
             <Button
               variant="secondary"
               size="lg"
-              className="flex-1 bg-background"
+              className="min-w-[8.5rem] flex-1 bg-background px-4 sm:px-6"
               onClick={anotherIdea}
               disabled={suggest.isPending}
             >
@@ -223,7 +223,7 @@ function MomentCard({
               {outfit ? tToday('anotherIdea') : t('suggest')}
             </Button>
             {outfit && (
-              <Button size="lg" className="flex-1" onClick={wearIt} disabled={wear.isPending}>
+              <Button size="lg" className="min-w-[8.5rem] flex-1 px-4 sm:px-6" onClick={wearIt} disabled={wear.isPending}>
                 {wear.isPending ? (
                   <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
                 ) : (
@@ -429,14 +429,14 @@ export function DayMoments() {
               <p className="mt-4 text-lg font-extrabold tracking-tight">{tToday('noLookTitle')}</p>
               <p className="mt-1 max-w-xs text-sm text-muted-foreground">{tToday('noLookBody')}</p>
             </div>
-            <div className="mt-3 flex gap-2.5">
-              <Button asChild variant="secondary" size="lg" className="flex-1 bg-background">
+            <div className="mt-3 flex flex-wrap gap-2.5">
+              <Button asChild variant="secondary" size="lg" className="min-w-[8.5rem] flex-1 bg-background px-4 sm:px-6">
                 <Link href="/dashboard/suggest">
                   <Sparkles className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
                   {tToday('askStinky')}
                 </Link>
               </Button>
-              <Button size="lg" className="flex-1" onClick={() => setAdding(true)}>
+              <Button size="lg" className="min-w-[8.5rem] flex-1 px-4 sm:px-6" onClick={() => setAdding(true)}>
                 <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
                 {t('planDay')}
               </Button>

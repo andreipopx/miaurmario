@@ -173,7 +173,7 @@ export default function HistoryPage() {
       </div>
 
       {/* Main content - two column layout */}
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
         {/* Calendar column */}
         <Card className="order-2 h-fit border-0 bg-panel lg:order-1">
           <CardContent className="p-4 sm:p-4">

@@ -411,7 +411,7 @@ function OutfitsPageContent() {
           )}
         </>
       ) : (
-        <div className="grid lg:grid-cols-[360px_1fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6">
           <Card className="h-fit border-0 bg-panel">
             <CardContent className="p-4 sm:p-4">
               {calendarLoading ? (

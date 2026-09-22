@@ -199,6 +199,10 @@ html {
 }
 
 body {
+  /* Long unbreakable strings (URLs, emails, @handles) wrap instead of pushing
+     the layout past the screen edge on narrow phones. Only kicks in when a word
+     would otherwise overflow, so normal text is unchanged. */
+  overflow-wrap: break-word;
   /* The app shell never rubber-bands or pull-to-reloads as a whole (we ship our
      own pull-to-refresh); horizontal overscroll never triggers back/forward. */
   overscroll-behavior-y: none;

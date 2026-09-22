@@ -89,7 +89,7 @@ function LoadingSkeleton() {
           <Skeleton key={i} className="h-[120px] rounded-lg" />
         ))}
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-32" />
@@ -458,7 +458,7 @@ export default function LearningPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {insights.map((insight) => (
                     <InsightCard
                       key={insight.id}
@@ -471,7 +471,7 @@ export default function LearningPage() {
             </Card>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Color Preferences */}
             <Card>
               <CardHeader>
@@ -547,7 +547,7 @@ export default function LearningPage() {
                 <CardDescription>{t('bestCombinationsSubtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {best_pairs.map((pair, index) => (
                     <ItemPairCard key={index} pair={pair} />
                   ))}
@@ -567,7 +567,7 @@ export default function LearningPage() {
                 <CardDescription>{t('occasionPatternsSubtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {profile.occasion_patterns.map((pattern) => (
                     <div key={pattern.occasion} className="rounded-lg bg-panel p-4">
                       <div className="mb-2 flex items-center justify-between gap-2">
@@ -608,7 +608,7 @@ export default function LearningPage() {
                 <CardDescription>{t('weatherPreferencesSubtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                   {profile.weather_preferences.map((pref) => (
                     <div key={pref.weather_type} className="flex flex-col items-center rounded-lg bg-panel p-4 text-center">
                       <span

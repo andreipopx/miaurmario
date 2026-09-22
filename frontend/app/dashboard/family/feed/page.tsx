@@ -355,7 +355,7 @@ function FeedContent() {
 
       {/* Outfits feed */}
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardContent className="p-4 space-y-3">
@@ -385,7 +385,7 @@ function FeedContent() {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {data.outfits.map((outfit) => (
             <FeedOutfitCard
               key={outfit.id}

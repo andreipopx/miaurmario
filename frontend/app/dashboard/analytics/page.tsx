@@ -71,7 +71,7 @@ function LoadingSkeleton() {
           <Skeleton key={i} className="h-[132px] rounded-lg" />
         ))}
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {[1, 2].map((c) => (
           <Card key={c}>
             <CardHeader>
@@ -286,7 +286,7 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Color Distribution */}
         <Card>
           <CardHeader>
@@ -340,7 +340,7 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Most Worn */}
         <Card>
           <CardHeader>

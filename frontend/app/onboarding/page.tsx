@@ -93,11 +93,11 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
         const isCurrent = index === currentStep;
 
         return (
-          <div key={step.id} className="flex items-center">
+          <div key={step.id} className={cn('flex items-center', index < STEPS.length - 1 && 'min-w-0')}>
             <div
               aria-hidden
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200',
+                'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-200',
                 isCurrent
                   ? 'bg-signature text-signature-foreground'
                   : isComplete
@@ -115,7 +115,7 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
               <div
                 aria-hidden
                 className={cn(
-                  'mx-0.5 h-1 w-4 rounded-full sm:mx-1 sm:w-8',
+                  'mx-0.5 h-1 w-4 min-w-1 shrink rounded-full sm:mx-1 sm:w-8',
                   index < currentStep ? 'bg-primary' : 'bg-panel'
                 )}
               />
@@ -151,7 +151,7 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
           {t('welcomeSubtitle')}
         </p>
       </div>
-      <div className="mx-auto grid max-w-md gap-2 text-left">
+      <div className="mx-auto grid grid-cols-1 max-w-md gap-2 text-left">
         {features.map(({ icon: Icon, color, title, desc }) => (
           <div key={title} className="flex items-start gap-3 rounded-quick bg-panel p-3">
             <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-pop-foreground', color)}>
@@ -208,7 +208,7 @@ function FamilyStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
     <div className="space-y-6">
       <StepHeader title={t('title')} subtitle={t('subtitle')} />
 
-      <div className="mx-auto grid max-w-2xl gap-3 md:grid-cols-2">
+      <div className="mx-auto grid grid-cols-1 max-w-2xl gap-3 md:grid-cols-2">
         <Card
           className={cn(
             'transition-colors duration-150',

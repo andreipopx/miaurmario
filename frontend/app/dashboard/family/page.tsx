@@ -98,7 +98,7 @@ function NoFamilyView() {
     <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
       <PageHeader title={t('title')} description={t('noFamilySubtitle')} />
 
-      <div className="grid max-w-2xl gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 max-w-2xl gap-4 md:grid-cols-2">
         <Card className={cn('border-0 bg-panel', mode === 'create' && 'ring-2 ring-signature')}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

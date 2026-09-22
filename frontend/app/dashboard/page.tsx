@@ -46,11 +46,11 @@ import { InstallHint } from '@/components/install/install-hint';
 function SectionHeader({ title, href, cta }: { title: string; href?: string; cta?: string }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-4 px-1">
-      <h2 className="text-lg font-bold tracking-tight">{title}</h2>
+      <h2 className="min-w-0 text-lg font-bold tracking-tight">{title}</h2>
       {href && cta && (
         <Link
           href={href}
-          className="-mr-2 inline-flex min-h-[44px] items-center gap-1 rounded-full px-3 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="-mr-2 inline-flex min-h-[44px] shrink-0 items-center whitespace-nowrap gap-1 rounded-full px-3 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {cta}
           <ChevronRight className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -124,12 +124,12 @@ function WeatherBadge() {
   const Icon = weatherIcon(weather);
   const place = user?.location_name?.split(',')[0];
   return (
-    <p className="flex items-center gap-1.5 text-sm font-semibold" title={conditionLabel(weather)}>
-      <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+    <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold" title={conditionLabel(weather)}>
+      <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
       <span className="sr-only">{conditionLabel(weather)}, </span>
       {displayValue(weather.temperature, unit)}
       {tempSymbol(unit)}
-      {place && <span className="max-w-[9rem] truncate">· {place}</span>}
+      {place && <span className="min-w-0 max-w-[9rem] truncate">· {place}</span>}
     </p>
   );
 }
@@ -149,7 +149,7 @@ function WeekStrip() {
   return (
     <section aria-labelledby="week-title">
       <div className="flex items-center justify-between gap-3 px-1">
-        <h2 id="week-title" className="text-[15px] font-bold">
+        <h2 id="week-title" className="shrink-0 text-[15px] font-bold">
           {t('thisWeek')}
         </h2>
         <WeatherBadge />
@@ -158,12 +158,12 @@ function WeekStrip() {
         {days.map(({ date, isToday }) => {
           const short = format.dateTime(date, { weekday: 'short' }).replace('.', '');
           return (
-            <li key={date.toISOString()}>
+            <li key={date.toISOString()} className="min-w-0">
               <Link
                 href="/dashboard/history"
                 aria-current={isToday ? 'date' : undefined}
                 aria-label={format.dateTime(date, { weekday: 'long', day: 'numeric', month: 'long' })}
-                className="flex w-11 flex-col items-center gap-1.5 rounded-full py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex w-11 min-w-0 max-w-full flex-col items-center gap-1.5 rounded-full py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="text-xs font-medium capitalize text-muted-foreground" aria-hidden>
                   {short}
@@ -382,7 +382,7 @@ export default function DashboardPage() {
     <div className="space-y-6 lg:space-y-8">
       <InstallHint />
       <QuickActions />
-      <div className="grid gap-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
         <div className="space-y-5">
           <WeekStrip />
           <DayMoments />

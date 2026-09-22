@@ -422,7 +422,7 @@ export default function SettingsPage() {
         }
       />
 
-      <div className="grid gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Account Section */}
         <Card>
           <CardHeader>
@@ -431,7 +431,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <AvatarSettings user={userProfile} />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{tAccount('name')}</Label>
                 <Input value={userProfile?.display_name || ''} disabled />
@@ -540,7 +540,7 @@ export default function SettingsPage() {
 
             <div>
               <Label className="eyebrow mb-3 block">{tMeasurements('body')}</Label>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {BODY_MEASUREMENT_FIELDS.map((field) => {
                   const unit = unitSystem === 'metric' ? field.unitMetric : field.unitImperial;
                   const placeholder = unitSystem === 'metric' ? field.placeholderMetric : field.placeholderImperial;
@@ -567,7 +567,7 @@ export default function SettingsPage() {
 
             <div>
               <Label className="eyebrow mb-3 block">{tMeasurements('sizes')}</Label>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {SIZE_FIELDS.map((field) => (
                   <div key={field.key} className="space-y-1">
                     <Label className="text-sm">{tFields(field.labelKey)}</Label>
@@ -668,7 +668,7 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{tComfort('temperatureUnit')}</Label>
                 <Select
@@ -705,7 +705,7 @@ export default function SettingsPage() {
                 </Select>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{tComfort('layering')}</Label>
                 <Select
@@ -725,7 +725,7 @@ export default function SettingsPage() {
                 </Select>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {(() => {
                 const unit = formData.temperature_unit || 'celsius';
                 const isFahrenheit = unit === 'fahrenheit';
@@ -776,7 +776,7 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{tRecommendations('defaultOccasion')}</Label>
                 <Select
@@ -814,7 +814,7 @@ export default function SettingsPage() {
                 </Select>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{tRecommendations('avoidRepeatDays')}</Label>
                 <Input

@@ -385,8 +385,8 @@ export default function StudioEditorPage() {
             {isEditMode ? t('editTitle') : t('studioTitle')}
           </h1>
         </div>
-        <div className="flex flex-col items-end">
-          <div className="flex gap-2">
+        <div className="flex min-w-0 max-w-full flex-col items-end">
+          <div className="flex flex-wrap justify-end gap-2">
             {!isEditMode && (
               <Button
                 variant="secondary"

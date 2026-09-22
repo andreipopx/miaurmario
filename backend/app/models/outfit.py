@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
@@ -11,8 +11,10 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    SmallInteger,
     String,
     Text,
+    Time,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -109,6 +111,22 @@ class Outfit(Base):
     # When the outfit was (last) shared; cleared when made private again. A user can share
     # several outfits on the same day: the feed groups them per author and day.
     shared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Day moments ("Momentos del día"): a day (`scheduled_for`) can hold several looks,
+    # e.g. work in the morning and a date at night. Every outfit of a day with the same
+    # `moment_order` belongs to the same moment (alternatives, wore-instead replacements).
+    # Order 0 with no label is the default single moment, so legacy days are one moment.
+    moment_order: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, default=0, server_default="0"
+    )
+    moment_label: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    moment_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    # A "transition" look reuses pieces of an earlier moment's look of the same day.
+    transition_from_outfit_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("outfits.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     replaces_outfit_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),

@@ -2,8 +2,8 @@
 
 Sharing is per outfit (`visibility` friends/public). A user may share several
 outfits on the same day (e.g. work in the morning, a date at night); the feed
-groups them per author and day, ordered inside the group by when they were
-accepted/created. A future `Outfit.day_part` can slot into `_within_day_order`.
+groups them per author and day, ordered inside the group by day moment
+(`Outfit.moment_order`, then its time) and then by when they were accepted/created.
 """
 
 import base64
@@ -69,8 +69,13 @@ def _unb64(cursor: str) -> dict:
 
 
 def _within_day_order():
-    # Chronological inside a day. When `day_part` exists, order by it first.
-    return (func.coalesce(Outfit.responded_at, Outfit.created_at).asc(), Outfit.id.asc())
+    # Day moments first (morning look before the evening one), then chronological.
+    return (
+        Outfit.moment_order.asc(),
+        Outfit.moment_time.asc().nulls_last(),
+        func.coalesce(Outfit.responded_at, Outfit.created_at).asc(),
+        Outfit.id.asc(),
+    )
 
 
 def _base_filters(owner_ids: list[UUID], visibilities: tuple[OutfitVisibility, ...]):

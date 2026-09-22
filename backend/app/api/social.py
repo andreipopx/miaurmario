@@ -8,7 +8,7 @@ Privacy rules (enforced here and in `app.services.access_control`):
 - A user who blocked you is indistinguishable from a user that does not exist.
 """
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 from typing import Annotated
 from uuid import UUID
 
@@ -157,6 +157,10 @@ class SocialOutfit(BaseModel):
     day: date | None = None
     # When it was accepted (or created): the order of looks inside a day.
     worn_order_at: datetime | None = None
+    # Day moment ("Momentos del día"): which look of the day this is.
+    moment_order: int = 0
+    moment_label: str | None = None
+    moment_time: time | None = None
     items: list[SocialOutfitItem]
     reaction_count: int = 0
     comment_count: int = 0
@@ -279,6 +283,9 @@ def _to_social_outfit(
         shared_at=outfit.shared_at,
         day=feed_day(outfit),
         worn_order_at=outfit.responded_at or outfit.created_at,
+        moment_order=outfit.moment_order or 0,
+        moment_label=outfit.moment_label,
+        moment_time=outfit.moment_time,
         items=items,
         reaction_count=st.count,
         comment_count=st.comment_count,

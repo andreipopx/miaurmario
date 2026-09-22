@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -24,7 +24,7 @@ from app.models.preference import UserPreference
 from app.models.user import User
 from app.services.ai_access import require_ai_client
 from app.services.ai_service import AIResponseError
-from app.services.item_scorer import get_season, score_items
+from app.services.item_scorer import ScoredItem, get_season, score_items
 from app.services.music_service import (
     SongContext,
     format_song_context_for_prompt,
@@ -87,6 +87,79 @@ def get_time_of_day(user: User) -> str:
         return "evening"
     else:
         return "night"
+
+
+def time_of_day_for(moment_time: time | None) -> str | None:
+    """Map a moment's clock time to the prompt's time-of-day vocabulary."""
+    if moment_time is None:
+        return None
+    hour = moment_time.hour
+    if 6 <= hour < 12:
+        return "morning"
+    if 12 <= hour < 17:
+        return "afternoon"
+    if 17 <= hour < 21:
+        return "evening"
+    return "night"
+
+
+@dataclass
+class MomentSpec:
+    """Which moment of the day an outfit is for ("Momentos del día").
+
+    ``transition_from`` is an earlier look of the same day (items loaded) whose
+    pieces the new look should mostly reuse, swapping only one or two.
+    """
+
+    order: int = 0
+    label: str | None = None
+    at: time | None = None
+    transition_from: Outfit | None = None
+    transition_from_label: str | None = None
+
+    @property
+    def transition_item_ids(self) -> list[UUID]:
+        if self.transition_from is None:
+            return []
+        return [oi.item_id for oi in self.transition_from.items]
+
+
+def format_moment_for_prompt(moment: MomentSpec | None, number_map: dict[int, UUID]) -> str:
+    """Prompt block for a day moment; with a transition, ask to reuse the earlier look."""
+    if moment is None or (moment.label is None and moment.transition_from is None):
+        return ""
+    lines = ["MOMENTO DEL DÍA:"]
+    when = moment.label or "este momento"
+    if moment.at is not None:
+        when += f" ({moment.at.strftime('%H:%M')})"
+    lines.append(f"- Este look es para: {when}. Hoy hay varios momentos con looks distintos.")
+    base_ids = moment.transition_item_ids
+    if base_ids:
+        uuid_to_number = {v: k for k, v in number_map.items()}
+        refs = sorted(uuid_to_number[i] for i in base_ids if i in uuid_to_number)
+        if refs:
+            prev = moment.transition_from_label or "el momento anterior"
+            lines += [
+                f"- TRANSICIÓN: viene de su look de {prev}: "
+                + ", ".join(f"[{n}]" for n in refs)
+                + ".",
+                "- No debe cambiarse entero: reutiliza la mayoría de esas prendas y cambia "
+                "solo 1 o 2 piezas para adaptarlo a esta ocasión (p. ej. blazer → cazadora "
+                "de cuero, zapatilla → bota, o añade un accesorio que lo suba de tono).",
+                "- En los highlights o el styling_tip di qué se queda y qué cambia.",
+                "- Aquí los 3 outfits parten del mismo look base y pueden compartir piezas "
+                "entre sí; cada uno propone un cambio distinto.",
+            ]
+    return "\n".join(lines) + "\n\n"
+
+
+def insert_before_response_format(prompt: str, block: str) -> str:
+    if not block:
+        return prompt
+    idx = prompt.rfind(RESPONSE_FORMAT_MARKER)
+    if idx == -1:
+        return prompt + "\n" + block
+    return prompt[:idx] + block + prompt[idx:]
 
 
 @dataclass
@@ -532,6 +605,7 @@ class RecommendationService:
         source: OutfitSource,
         number_map: dict[int, UUID],
         scheduled_date: date | None = None,
+        moment: MomentSpec | None = None,
     ) -> Outfit:
         selected_numbers = outfit_data.get("items", [])
         valid_ids = []
@@ -578,6 +652,7 @@ class RecommendationService:
             source=source,
             status=OutfitStatus.pending,
         )
+        apply_moment(outfit, moment)
 
         self.db.add(outfit)
         await self.db.flush()
@@ -615,6 +690,59 @@ class RecommendationService:
         logger.info(f"Created outfit {outfit.id} with {len(valid_ids)} items")
         return outfit
 
+    async def resolve_weather(
+        self, user: User, weather_override: WeatherData | None = None
+    ) -> WeatherData:
+        """Override, else current weather at the user's location; ValueError if unknown."""
+        if weather_override:
+            return weather_override
+        lat = float(user.location_lat) if user.location_lat is not None else None
+        lon = float(user.location_lon) if user.location_lon is not None else None
+
+        if (lat is None and lon is None) and user.location_name:
+            try:
+                geocoded = await self.weather_service.geocode_location_name(user.location_name)
+            except GeocodingServiceError as e:
+                logger.error(f"Geocoding failed for outfit generation: {e}")
+                raise ValueError(
+                    "Could not resolve location. Please update your location in settings."
+                ) from e
+            if geocoded:
+                lat, lon, _ = geocoded
+
+        if lat is None or lon is None:
+            raise ValueError("User location not set. Please set location in settings.")
+        try:
+            return await self.weather_service.get_current_weather(lat, lon)
+        except WeatherServiceError as e:
+            logger.error(f"Weather service failed: {e}")
+            raise ValueError(
+                "Could not fetch weather data. Please try again or provide weather manually."
+            ) from e
+
+    async def ensure_items_in_candidates(
+        self, user: User, candidates: list[ClothingItem], item_ids: list[UUID]
+    ) -> list[ClothingItem]:
+        """Add the user's ready, non-archived items from ``item_ids`` missing in candidates.
+
+        Transition looks reuse pieces worn earlier the same day, which may have
+        just crossed their wash interval; they still count as available today.
+        """
+        missing = set(item_ids) - {i.id for i in candidates}
+        if not missing:
+            return candidates
+        result = await self.db.execute(
+            select(ClothingItem).where(
+                and_(
+                    ClothingItem.id.in_(missing),
+                    ClothingItem.user_id == user.id,
+                    ClothingItem.status == ItemStatus.ready,
+                    ClothingItem.is_archived.is_(False),
+                )
+            )
+        )
+        return candidates + list(result.scalars().all())
+
     async def generate_recommendation(
         self,
         user: User,
@@ -628,6 +756,7 @@ class RecommendationService:
         scheduled_date: date | None = None,
         song_query: str | None = None,
         song_track_id: str | None = None,
+        moment: MomentSpec | None = None,
     ) -> Outfit:
         # Guard first so deferral is unconditional, before any location/weather work.
         # Resolves the user's AI access (none / platform / byok); raises
@@ -637,8 +766,11 @@ class RecommendationService:
         exclude_items = exclude_items or []
         include_items = include_items or []
 
+        if not time_of_day and moment is not None:
+            time_of_day = time_of_day_for(moment.at)
         if not time_of_day:
             time_of_day = get_time_of_day(user)
+        transition_ids = moment.transition_item_ids if moment else []
 
         # A song input personalizes the outfit — skip the shared suggestion cache
         # so we don't serve stale un-inspired suggestions and don't poison the cache.
@@ -655,7 +787,11 @@ class RecommendationService:
 
         # Determine cache eligibility before auto-merge
         use_cache = (
-            not exclude_items and not include_items and not single_outfit and song_context is None
+            not exclude_items
+            and not include_items
+            and not single_outfit
+            and song_context is None
+            and not transition_ids
         )
 
         # Auto-exclude today's rejected items for this occasion
@@ -664,32 +800,7 @@ class RecommendationService:
             exclude_items = list(set(exclude_items) | rejected_ids)
             logger.info(f"Auto-excluding {len(rejected_ids)} rejected items for user {user.id}")
 
-        if weather_override:
-            weather = weather_override
-        else:
-            lat = float(user.location_lat) if user.location_lat is not None else None
-            lon = float(user.location_lon) if user.location_lon is not None else None
-
-            if (lat is None and lon is None) and user.location_name:
-                try:
-                    geocoded = await self.weather_service.geocode_location_name(user.location_name)
-                except GeocodingServiceError as e:
-                    logger.error(f"Geocoding failed for outfit generation: {e}")
-                    raise ValueError(
-                        "Could not resolve location. Please update your location in settings."
-                    ) from e
-                if geocoded:
-                    lat, lon, _ = geocoded
-
-            if lat is None or lon is None:
-                raise ValueError("User location not set. Please set location in settings.")
-            try:
-                weather = await self.weather_service.get_current_weather(lat, lon)
-            except WeatherServiceError as e:
-                logger.error(f"Weather service failed: {e}")
-                raise ValueError(
-                    "Could not fetch weather data. Please try again or provide weather manually."
-                ) from e
+        weather = await self.resolve_weather(user, weather_override)
 
         preferences = user.preferences
 
@@ -723,6 +834,9 @@ class RecommendationService:
                 candidates.extend(forced_items)
                 logger.info(f"Force-included {len(forced_items)} items in recommendation")
 
+        if transition_ids:
+            candidates = await self.ensure_items_in_candidates(user, candidates, transition_ids)
+
         if len(candidates) < 2:
             raise InsufficientWardrobeError(
                 "Not enough items in wardrobe for recommendation. "
@@ -754,6 +868,7 @@ class RecommendationService:
                         source,
                         number_map,
                         scheduled_date=scheduled_date,
+                        moment=moment,
                     )
 
         # Fetch scoring context
@@ -781,12 +896,25 @@ class RecommendationService:
             recently_worn_dates=recently_worn_dates,
             mandatory_item_ids=set(include_items) if include_items else None,
         )
+        if transition_ids:
+            # Scoring truncates to the top N; the pieces to reuse must stay visible.
+            scored_ids = {s.item.id for s in scored}
+            base_set = set(transition_ids)
+            scored += [
+                ScoredItem(item=i)
+                for i in candidates
+                if i.id in base_set and i.id not in scored_ids
+            ]
 
         # Format enriched prompt
         items_text, number_map = self._format_items_for_prompt(scored, good_pairs, user_today)
         mandatory_items_section = self._format_mandatory_items_section(include_items, number_map)
 
         worn_combinations = await self._get_recently_worn_outfit_combinations(user, days=7)
+        if transition_ids:
+            # Reusing today's earlier look is the point, not a repeat to avoid.
+            base = frozenset(transition_ids)
+            worn_combinations = {c for c in worn_combinations if c != base}
 
         preferences_text = self._format_preferences_for_prompt(
             preferences,
@@ -816,6 +944,8 @@ class RecommendationService:
             mandatory_items_section=mandatory_items_section,
             song_context_text=song_context_text,
         )
+
+        prompt = insert_before_response_format(prompt, format_moment_for_prompt(moment, number_map))
 
         # For single_outfit mode (notifications), replace multi-outfit format
         if single_outfit:
@@ -861,6 +991,7 @@ class RecommendationService:
                     source,
                     number_map,
                     scheduled_date=scheduled_date,
+                    moment=moment,
                 )
 
             # Multi-outfit parse
@@ -880,11 +1011,12 @@ class RecommendationService:
                 source,
                 number_map,
                 scheduled_date=scheduled_date,
+                moment=moment,
             )
 
             # Cache remaining outfits for "Try Another" — skip when the request
             # was music-inspired since those suggestions are contextual to the song.
-            if len(outfit_list) > 1 and not music_payload:
+            if len(outfit_list) > 1 and not music_payload and not transition_ids:
                 serializable_map = {str(k): str(v) for k, v in number_map.items()}
                 to_cache = []
                 for od in outfit_list[1:]:
@@ -907,6 +1039,17 @@ class RecommendationService:
             raise AIRecommendationError(
                 "AI service is not available. Please check your AI endpoint configuration in Settings."
             ) from e
+
+
+def apply_moment(outfit: Outfit, moment: MomentSpec | None) -> None:
+    """Stamp the moment fields on a new outfit (no-op -> default moment)."""
+    if moment is None:
+        return
+    outfit.moment_order = moment.order
+    outfit.moment_label = moment.label
+    outfit.moment_time = moment.at
+    if moment.transition_from is not None:
+        outfit.transition_from_outfit_id = moment.transition_from.id
 
 
 class InsufficientWardrobeError(Exception):

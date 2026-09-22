@@ -43,7 +43,7 @@ export function InstallHint() {
   };
 
   return (
-    <div role="status" className="mb-3 flex items-center gap-3 rounded-lg bg-signature-soft p-3 pl-4 text-sm">
+    <div role="status" className="flex items-center gap-3 rounded-lg bg-signature-soft p-3 pl-4 text-sm">
       <Smartphone className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
       <p className="min-w-0 flex-1 font-medium">
         {t('text')}{' '}

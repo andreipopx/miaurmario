@@ -39,6 +39,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { POP_BG, type PopColor } from '@/components/chip';
 import { DayMoments } from '@/components/today/day-moments';
+import { InstallHint } from '@/components/install/install-hint';
 
 // -- Section header -------------------------------------------------------------
 
@@ -379,6 +380,7 @@ function FamilyAside() {
 export default function DashboardPage() {
   return (
     <div className="space-y-6 lg:space-y-8">
+      <InstallHint />
       <QuickActions />
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
         <div className="space-y-5">

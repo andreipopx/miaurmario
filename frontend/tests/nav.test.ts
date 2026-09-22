@@ -35,8 +35,8 @@ describe('information architecture', () => {
     };
     walk(root, '/dashboard');
     // Detail pages ([id], new, integration sub-pages, AI setup) are reached from their parent screen;
-    // Admin is in the profile menu.
-    const top = pages.filter((p) => !/\[|\/new$|\/integrations\/|\/settings\/ai$|\/admin$/.test(p));
+    // Admin is in the profile menu; the install guide is linked from Hoy and Notificaciones.
+    const top = pages.filter((p) => !/\[|\/new$|\/integrations\/|\/settings\/ai$|\/admin$|\/install$/.test(p));
     for (const p of top) expect(where(p), p).not.toBeNull();
   });
 
@@ -56,7 +56,7 @@ describe('information architecture', () => {
     expect(where('/dashboard/settings/integrations/spotify')).toBe('settings/integrations');
     expect(where('/dashboard/settings/ai')).toBe('settings/general');
     expect(where('/dashboard/notifications')).toBe('settings/notifications');
-    expect(where('/dashboard/install')).toBe('settings/install');
+    expect(where('/dashboard/install')).toBeNull();
     expect(where('/dashboard/admin')).toBeNull();
     expect(where('/dashboardx')).toBeNull();
   });

@@ -10,6 +10,7 @@ import { ArrowUp, History, Loader2, SquarePen, Square } from 'lucide-react';
 import { Stinky } from '@/components/stinky/stinky';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
+import { AreaTip } from '@/components/onboarding/area-tip';
 import { ChatOutfitCardView, cardKey } from '@/components/stinky-chat/chat-outfit-card';
 import { ConversationSheet } from '@/components/stinky-chat/conversation-sheet';
 import { POP_BG, popColorAt } from '@/components/chip';
@@ -427,6 +428,7 @@ function StinkyChat() {
         </div>
       </div>
       <div aria-hidden className="h-[72px] shrink-0" />
+      <AreaTip inPage />
 
       <div className="flex flex-col gap-3 pt-3" role="log" aria-live="polite" aria-relevant="additions">
         {loadingConversation && (

@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,6 +36,10 @@ from app.utils.rate_limit import rate_limit_by_user
 from app.utils.timezone import canonical_timezone, is_valid_timezone
 
 USERNAME_REGEX = re.compile(r"^[a-z0-9_]{3,20}$")
+# Keys of the first-run guidance ("tour", "tip.wardrobe"...). Free-form so the
+# frontend can add tips without a backend change, but short and bounded.
+SEEN_TIP_REGEX = re.compile(r"^[a-z][a-z0-9_.-]{0,39}$")
+MAX_SEEN_TIPS = 64
 
 router = APIRouter(prefix="/users/me", tags=["Users"])
 
@@ -63,6 +68,7 @@ class UserProfileResponse(BaseModel):
     body_measurements: dict | None = None
     has_password: bool = False
     password_updated_at: datetime | None = None
+    seen_tips: list[str] = Field(default_factory=list)
 
 
 class UserProfileUpdate(BaseModel):
@@ -91,6 +97,23 @@ class UserProfileUpdate(BaseModel):
         if value is None:
             return None
         return " ".join(value.split()) or None
+
+
+class SeenTipsUpdate(BaseModel):
+    add: list[str] = Field(default_factory=list, max_length=20)
+    remove: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("add", "remove")
+    @classmethod
+    def _valid_keys(cls, value: list[str]) -> list[str]:
+        for key in value:
+            if not SEEN_TIP_REGEX.match(key):
+                raise ValueError("invalid_tip_key")
+        return value
+
+
+class SeenTipsResponse(BaseModel):
+    seen_tips: list[str]
 
 
 class UsernameAvailableResponse(BaseModel):
@@ -152,6 +175,35 @@ async def update_profile(
     return _user_response(current_user)
 
 
+@router.patch("/seen-tips", response_model=SeenTipsResponse)
+async def update_seen_tips(
+    data: SeenTipsUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> SeenTipsResponse:
+    """Mark first-run guidance as seen (``add``) or show it again (``remove``).
+
+    Merges into the stored set instead of replacing it, so two devices marking
+    different tips at once never lose each other's keys (the row is locked).
+    """
+    result = await db.execute(
+        select(User.seen_tips).where(User.id == current_user.id).with_for_update()
+    )
+    current = list(result.scalar_one() or [])
+    removed = set(data.remove)
+    merged = [k for k in current if k not in removed]
+    for key in data.add:
+        if key not in merged and key not in removed:
+            merged.append(key)
+    if len(merged) > MAX_SEEN_TIPS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="too_many_seen_tips"
+        )
+    current_user.seen_tips = merged
+    await db.commit()
+    return SeenTipsResponse(seen_tips=merged)
+
+
 @router.get("/username-available", response_model=UsernameAvailableResponse)
 async def username_available(
     value: str,
@@ -186,6 +238,7 @@ def _user_response(user: User) -> UserProfileResponse:
         body_measurements=user.body_measurements,
         has_password=bool(user.password_hash),
         password_updated_at=user.password_updated_at,
+        seen_tips=list(user.seen_tips or []),
     )
 
 

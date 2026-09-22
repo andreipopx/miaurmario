@@ -285,7 +285,8 @@
     "garments": "Prendas",
     "integrations": "Integraciones",
     "general": "General",
-    "install": "Instalar app"
+    "install": "Instalar app",
+    "howItWorks": "Cómo funciona"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -3221,6 +3222,67 @@
       "friend_accepted": "amistades aceptadas",
       "daily_outfit": "look del día",
       "all": "ningún tipo"
+    }
+  },
+  "firstRun": {
+    "tour": {
+      "dialogLabel": "Cómo funciona Miaurmario",
+      "stepOf": "Paso {current} de {total}",
+      "skip": "Saltar todo",
+      "next": "Siguiente",
+      "back": "Anterior",
+      "done": "¡A por ello!",
+      "goTo": "Ir al paso {n}",
+      "slides": {
+        "upload": {
+          "title": "Sube tu ropa",
+          "body": "Una foto por prenda: el fondo se quita solo y la IA la etiqueta. ¿Tu plan no tiene IA? La etiquetas tú en un momento."
+        },
+        "day": {
+          "title": "Tu día",
+          "body": "Te propongo looks según el tiempo y tus planes, y para varios momentos del día: oficina, gimnasio, cena…"
+        },
+        "stylist": {
+          "title": "Estilista y chat",
+          "body": "Pídeme un look para una ocasión (una boda, una entrevista) o háblame sin más: tengo tu armario delante."
+        },
+        "inspo": {
+          "title": "Inspiración",
+          "body": "Sigue a tus amigos (solo con su @usuario), conecta tu música de Spotify o Last.fm y trae tus tableros de Pinterest."
+        },
+        "install": {
+          "title": "Instala y activa avisos",
+          "body": "Ponme en tu pantalla de inicio y te aviso del look del día sin abrir nada."
+        }
+      },
+      "install": {
+        "guide": "Cómo instalarla",
+        "installNow": "Instalar",
+        "enablePush": "Activar avisos",
+        "pushOn": "Avisos activados en este dispositivo",
+        "pushBlocked": "Tienes los avisos bloqueados: puedes permitirlos en los ajustes del navegador.",
+        "iosNeedsInstall": "En iPhone, primero instálala: los avisos llegan cuando la abres desde la pantalla de inicio.",
+        "enabledToast": "¡Listo! Te avisaré por aquí.",
+        "deniedToast": "Sin permiso no puedo avisarte. Puedes cambiarlo cuando quieras.",
+        "errorToast": "No he podido activar los avisos. Prueba desde Ajustes → Notificaciones."
+      }
+    },
+    "tips": {
+      "wardrobe": "aquí vive tu ropa. Toca una prenda para editarla, o mira tus looks e historial en las pestañas.",
+      "stylist": "dime la ocasión y el plan, y te monto un look con lo que tienes.",
+      "inspo": "busca a tus amigos por su @usuario y conecta Spotify, Last.fm o Pinterest para afinar tu estilo.",
+      "stinky": "pregúntame lo que quieras: qué ponerte hoy, qué combina con qué o qué te falta.",
+      "settings": "tu ciudad, horarios de avisos, integraciones y familia. Lo que cambies aquí lo tengo en cuenta.",
+      "dismiss": "Cerrar consejo"
+    },
+    "firstSteps": {
+      "emptyTitle": "Sube tu primera prenda",
+      "emptyBody": "Con una foto basta: quito el fondo y la etiqueto (o lo haces tú si tu plan no tiene IA). Con {min} prendas empiezo a proponerte looks.",
+      "emptyCta": "Subir prenda",
+      "progressTitle": "¡Vas bien!",
+      "progress": "{count} de {min} prendas para que Stinky empiece a proponerte looks",
+      "progressHint": "Mejor una parte de arriba y otra de abajo, o un vestido y unos zapatos.",
+      "progressCta": "Subir otra prenda"
     }
   }
 }

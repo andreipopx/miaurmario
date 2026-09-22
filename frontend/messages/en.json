@@ -285,7 +285,8 @@
     "garments": "Items",
     "integrations": "Integrations",
     "general": "General",
-    "install": "Install app"
+    "install": "Install app",
+    "howItWorks": "How it works"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
@@ -3221,6 +3222,67 @@
       "friend_accepted": "accepted friend requests",
       "daily_outfit": "your outfit of the day",
       "all": "anything"
+    }
+  },
+  "firstRun": {
+    "tour": {
+      "dialogLabel": "How Miaurmario works",
+      "stepOf": "Step {current} of {total}",
+      "skip": "Skip all",
+      "next": "Next",
+      "back": "Back",
+      "done": "Let's go!",
+      "goTo": "Go to step {n}",
+      "slides": {
+        "upload": {
+          "title": "Add your clothes",
+          "body": "One photo per item: the background is removed automatically and AI tags it. No AI on your plan? Tag it yourself in a moment."
+        },
+        "day": {
+          "title": "Your day",
+          "body": "I suggest looks for the weather and your plans, for several moments of the day: office, gym, dinner…"
+        },
+        "stylist": {
+          "title": "Stylist and chat",
+          "body": "Ask me for a look for an occasion (a wedding, an interview) or just talk to me: I have your wardrobe in front of me."
+        },
+        "inspo": {
+          "title": "Inspiration",
+          "body": "Follow your friends (by @handle only), connect your music from Spotify or Last.fm and bring in your Pinterest boards."
+        },
+        "install": {
+          "title": "Install and turn on alerts",
+          "body": "Put me on your home screen and I'll send you the look of the day without opening anything."
+        }
+      },
+      "install": {
+        "guide": "How to install",
+        "installNow": "Install",
+        "enablePush": "Turn on alerts",
+        "pushOn": "Alerts are on for this device",
+        "pushBlocked": "Alerts are blocked: you can allow them in your browser settings.",
+        "iosNeedsInstall": "On iPhone, install it first: alerts arrive when you open it from the home screen.",
+        "enabledToast": "Done! I'll ping you here.",
+        "deniedToast": "Without permission I can't alert you. You can change it any time.",
+        "errorToast": "Couldn't turn on alerts. Try Settings → Notifications."
+      }
+    },
+    "tips": {
+      "wardrobe": "this is where your clothes live. Tap an item to edit it, or check your looks and history in the tabs.",
+      "stylist": "tell me the occasion and the plan, and I'll put together a look from what you own.",
+      "inspo": "find your friends by their @handle and connect Spotify, Last.fm or Pinterest to fine-tune your style.",
+      "stinky": "ask me anything: what to wear today, what goes with what, or what you're missing.",
+      "settings": "your city, alert times, integrations and family. I take whatever you change here into account.",
+      "dismiss": "Close tip"
+    },
+    "firstSteps": {
+      "emptyTitle": "Add your first item",
+      "emptyBody": "One photo is enough: I remove the background and tag it (or you do, if your plan has no AI). With {min} items I start suggesting looks.",
+      "emptyCta": "Add item",
+      "progressTitle": "Good start!",
+      "progress": "{count} of {min} items before Stinky starts suggesting looks",
+      "progressHint": "Ideally a top and a bottom, or a dress and some shoes.",
+      "progressCta": "Add another item"
     }
   }
 }

@@ -32,6 +32,9 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
+    # New magic-link users start with an empty display name until they pick a
+    # handle, so responses must accept "" (inputs keep min_length=1).
+    display_name: str = Field("", max_length=100)
     id: UUID
     external_id: str
     family_id: UUID | None = None

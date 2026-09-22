@@ -16,6 +16,8 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { useTranslations } from 'next-intl';
 import { PullToRefresh } from '@/components/native/pull-to-refresh';
 import { SectionTabs } from '@/components/section-tabs';
+import { FeatureTour } from '@/components/onboarding/feature-tour';
+import { AreaTip } from '@/components/onboarding/area-tip';
 
 /** Screens with pull-to-refresh (feeds and lists that change under you). */
 const PULL_TO_REFRESH = new Set(['/dashboard', '/dashboard/wardrobe', '/dashboard/friends', '/dashboard/music']);
@@ -73,6 +75,7 @@ export default function DashboardLayout({
           <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
             <AnnouncementBanner />
             <SectionTabs />
+            <AreaTip />
             {children}
           </main>
         </div>
@@ -81,6 +84,7 @@ export default function DashboardLayout({
         <OfflineIndicator />
         <PushSync />
         <ImageLightbox />
+        {user?.onboarding_completed && <FeatureTour />}
       </div>
     </LightboxProvider>
   );

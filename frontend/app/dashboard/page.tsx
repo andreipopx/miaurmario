@@ -40,6 +40,8 @@ import { Button } from '@/components/ui/button';
 import { POP_BG, type PopColor } from '@/components/chip';
 import { DayMoments } from '@/components/today/day-moments';
 import { InstallHint } from '@/components/install/install-hint';
+import { FirstStepsCard } from '@/components/onboarding/first-steps-card';
+import { firstStepsStage } from '@/lib/onboarding/first-run';
 
 // -- Section header -------------------------------------------------------------
 
@@ -378,6 +380,10 @@ function FamilyAside() {
 // -- Page ---------------------------------------------------------------------
 
 export default function DashboardPage() {
+  // Same query as WardrobeSection (shared cache): how far the wardrobe is from the engine's minimum.
+  const { data: wardrobe, isSuccess } = useItems({}, 1, 8);
+  const stage = isSuccess ? firstStepsStage(wardrobe.total) : 'ready';
+
   return (
     <div className="space-y-6 lg:space-y-8">
       <InstallHint />
@@ -385,10 +391,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
         <div className="space-y-5">
           <WeekStrip />
-          <DayMoments />
+          {stage === 'ready' ? <DayMoments /> : <FirstStepsCard count={wardrobe?.total ?? 0} />}
         </div>
         <div className="space-y-6 lg:space-y-8">
-          <WardrobeSection />
+          {stage !== 'empty' && <WardrobeSection />}
           <FamilyAside />
         </div>
       </div>

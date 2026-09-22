@@ -24,6 +24,8 @@ export interface UserProfile {
   body_measurements?: Record<string, number | string> | null;
   has_password?: boolean;
   password_updated_at?: string | null;
+  /** First-run guidance already shown (welcome tour, area tips). Absent on old backends. */
+  seen_tips?: string[];
 }
 
 export interface UserProfileUpdate {

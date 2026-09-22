@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { signOut } from 'next-auth/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { LogOut, MessageSquareHeart, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { HelpCircle, LogOut, MessageSquareHeart, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
 
 import { AppFeedbackDialog } from '@/components/app-feedback-dialog';
 import { ProfileAvatar } from '@/components/profile-avatar';
@@ -14,11 +14,12 @@ import { SETTINGS, isSectionActive } from '@/components/nav-items';
 import { adminBadgeTotal } from '@/lib/admin';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useAdminBadge, useIsSiteAdmin } from '@/lib/hooks/use-admin';
+import { openFeatureTour } from '@/lib/hooks/use-seen-tips';
 import { cn } from '@/lib/utils';
 
 /**
  * The profile menu is deliberately short: your profile, Ajustes, Admin (site
- * admins only), feedback and sign out. Sections live in the dock/sidebar and
+ * admins only), "Cómo funciona" (re-opens the welcome tour), feedback and sign out. Sections live in the dock/sidebar and
  * their sub-pages inside each section, so nothing here repeats them.
  */
 
@@ -62,6 +63,7 @@ function useProfileMenu(openFeedback: () => void): { entries: MenuEntry[]; profi
       badge: adminCount > 0 ? { count: adminCount, label: t('adminBadge', { count: adminCount }) } : undefined,
     });
   }
+  entries.push({ key: 'howItWorks', icon: HelpCircle, label: t('howItWorks'), onSelect: openFeatureTour });
   entries.push({ key: 'feedback', icon: MessageSquareHeart, label: t('sendFeedback'), onSelect: openFeedback });
   entries.push({
     key: 'signOut',

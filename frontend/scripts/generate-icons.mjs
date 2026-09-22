@@ -6,9 +6,10 @@
  *
  * Outputs (public/): favicon.svg, favicon.ico (16/32/48), favicon-32.png, apple-touch-icon.png (180),
  * icon-192.png, icon-512.png (rounded pink tile, purpose "any") and icon-maskable-512.png
- * (full-bleed pink, head inside the 40% safe-zone circle).
+ * (full-bleed pink, head inside the 40% safe-zone circle), plus iOS splash screens in public/splash/
+ * (every current iPhone portrait size, light + dark) with public/splash/manifest.json for app/layout.tsx.
  */
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -119,3 +120,51 @@ await writeFile(path.join(PUB, 'icon-512.png'), await png(anySvg, 512));
 await writeFile(path.join(PUB, 'icon-maskable-512.png'), await png(composeSvg({ size: 512, bg: PINK, fill: 0.58 }), 512));
 
 console.log('icons written to', PUB);
+
+// ---------------------------------------------------------------------------------------------
+// iOS splash screens (apple-touch-startup-image). iOS only shows one when its exact pixel size
+// matches the device, so we emit every current iPhone portrait size, in light (white) and dark
+// (app background): Stinky's head on a pink circle, like the app icon.
+// app/layout.tsx reads the list from public/splash/manifest.json.
+// ---------------------------------------------------------------------------------------------
+const SPLASH_DEVICES = [
+  // [css width, css height, pixel ratio, devices]
+  [440, 956, 3, 'iPhone 16/17 Pro Max'],
+  [420, 912, 3, 'iPhone Air'],
+  [402, 874, 3, 'iPhone 16/17 Pro, iPhone 17'],
+  [430, 932, 3, 'iPhone 14/15 Pro Max, 15/16 Plus'],
+  [393, 852, 3, 'iPhone 14 Pro, 15, 15 Pro, 16'],
+  [428, 926, 3, 'iPhone 12/13 Pro Max, 14 Plus'],
+  [390, 844, 3, 'iPhone 12/13/14, 12/13 Pro, 16e'],
+  [375, 812, 3, 'iPhone X/XS/11 Pro, 12/13 mini'],
+  [414, 896, 3, 'iPhone XS Max, 11 Pro Max'],
+  [414, 896, 2, 'iPhone XR, 11'],
+  [414, 736, 3, 'iPhone 6/7/8 Plus'],
+  [375, 667, 2, 'iPhone 6/7/8, SE (2nd/3rd)'],
+  [320, 568, 2, 'iPhone SE (1st)'],
+];
+const SPLASH_THEMES = { light: '#FFFFFF', dark: '#0F0F0F' };
+const splashDir = path.join(PUB, 'splash');
+await mkdir(splashDir, { recursive: true });
+const splashManifest = [];
+for (const [w, h, dpr, label] of SPLASH_DEVICES) {
+  const pw = w * dpr;
+  const ph = h * dpr;
+  // Pink circle ≈ 44% of the short side, head inside it (same proportions as the apple icon).
+  const circle = Math.round(pw * 0.44);
+  const mark = await png(composeSvg({ size: 512, bg: PINK, circle: true, fill: 0.66 }), circle);
+  for (const [theme, bg] of Object.entries(SPLASH_THEMES)) {
+    const file = `splash-${pw}x${ph}-${theme}.png`;
+    await sharp({ create: { width: pw, height: ph, channels: 3, background: bg } })
+      .composite([{ input: mark, left: Math.round((pw - circle) / 2), top: Math.round((ph - circle) / 2 - ph * 0.04) }])
+      .png({ compressionLevel: 9, palette: true })
+      .toFile(path.join(splashDir, file));
+    splashManifest.push({
+      url: `/splash/${file}`,
+      media: `(device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${dpr}) and (orientation: portrait) and (prefers-color-scheme: ${theme})`,
+      label,
+    });
+  }
+}
+await writeFile(path.join(splashDir, 'manifest.json'), JSON.stringify(splashManifest, null, 2) + '\n');
+console.log(`splash screens written to ${splashDir} (${splashManifest.length})`);

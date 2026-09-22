@@ -540,7 +540,16 @@ async def test_recent_outfits_only_own(db_session, alice, bob):
 
 async def test_listening_mood_tolerates_no_spotify(db_session, alice):
     out, _ = await _tool(db_session, alice, "get_listening_mood", {})
-    assert out == {"ok": True, "data": {"connected": False}}
+    assert out == {
+        "ok": True,
+        "data": {
+            "connected": False,
+            "source": None,
+            "contrast": False,
+            "music_today": None,
+            "available": False,
+        },
+    }
 
 
 async def test_weather_without_location(db_session, alice):

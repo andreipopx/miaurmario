@@ -98,9 +98,11 @@ export function useSpotifyDisconnect() {
   const qc = useQueryClient();
   useSetTokenIfAvailable();
   return useMutation({
-    mutationFn: () => api.delete('/integrations/spotify'),
+    mutationFn: ({ keepHistory = true }: { keepHistory?: boolean } = {}) =>
+      api.delete('/integrations/spotify', { params: { keep_history: String(keepHistory) } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['spotify'] });
+      qc.invalidateQueries({ queryKey: ['music'] });
     },
   });
 }

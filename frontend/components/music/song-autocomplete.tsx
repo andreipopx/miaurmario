@@ -78,12 +78,13 @@ function Cover({ src, size = 40 }: { src: string | null | undefined; size?: numb
 export function SongAutocomplete({
   value,
   onChange,
-  spotifyConnected,
+  musicConnected,
   describedBy,
 }: {
   value: SongSelection;
   onChange: (next: SongSelection) => void;
-  spotifyConnected: boolean;
+  /** Spotify or Last.fm connected (enables the "now playing" shortcut). */
+  musicConnected: boolean;
   describedBy?: string;
 }) {
   const t = useTranslations('suggest');
@@ -97,7 +98,7 @@ export function SongAutocomplete({
   const searching = open && !value.trackId && value.text.trim().length >= 2;
   const search = useMusicSearch(value.text, searching);
   const items = searching ? (search.data?.items ?? []) : [];
-  const nowPlaying = useNowPlaying(spotifyConnected);
+  const nowPlaying = useNowPlaying(musicConnected);
   const playing = nowPlaying.data?.track ?? null;
 
   useEffect(() => {

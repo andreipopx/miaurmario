@@ -43,6 +43,11 @@ class UserPreference(Base):
     avoid_repeat_days: Mapped[int] = mapped_column(Integer, default=7)
     prefer_underused_items: Mapped[bool] = mapped_column(Boolean, default=True)
     variety_level: Mapped[str] = mapped_column(String(20), default="moderate")
+    # "Deja que Stinky contraste tu música": when the day's music sounds low,
+    # the stylist may offer ONE optional brighter look. Off by default.
+    music_contrast: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
 
     # Restrictions
     excluded_item_ids: Mapped[list[uuid.UUID]] = mapped_column(

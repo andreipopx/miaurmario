@@ -46,19 +46,21 @@ class MoodDef:
     energy: float
     valence: float
     color: str  # pop palette: amber | pink | sky | mint
+    sounds: str = ""  # "tu música suena …" (feminine, agrees with "música")
 
 
+# Labels describe how the MUSIC sounds, never the listener.
 MOODS: tuple[MoodDef, ...] = (
-    MoodDef("euphoric", "eufórico", 0.85, 0.85, "amber"),
-    MoodDef("electric", "eléctrico", 0.9, 0.55, "pink"),
-    MoodDef("intense", "intenso", 0.88, 0.22, "pink"),
-    MoodDef("romantic", "romántico", 0.45, 0.75, "pink"),
-    MoodDef("calm", "calmado", 0.22, 0.6, "mint"),
-    MoodDef("dreamy", "soñador", 0.35, 0.5, "sky"),
-    MoodDef("nostalgic", "nostálgico", 0.45, 0.42, "sky"),
-    MoodDef("melancholic", "melancólico", 0.3, 0.18, "sky"),
+    MoodDef("euphoric", "eufórico", 0.85, 0.85, "amber", "eufórica"),
+    MoodDef("electric", "eléctrico", 0.9, 0.55, "pink", "eléctrica"),
+    MoodDef("intense", "intenso", 0.88, 0.22, "pink", "intensa"),
+    MoodDef("romantic", "romántico", 0.45, 0.75, "pink", "romántica"),
+    MoodDef("calm", "calmado", 0.22, 0.6, "mint", "tranquila"),
+    MoodDef("dreamy", "soñador", 0.35, 0.5, "sky", "soñadora"),
+    MoodDef("nostalgic", "nostálgico", 0.45, 0.42, "sky", "nostálgica"),
+    MoodDef("melancholic", "melancólico", 0.3, 0.18, "sky", "melancólica"),
 )
-ECLECTIC = MoodDef("eclectic", "ecléctico", 0.5, 0.5, "amber")
+ECLECTIC = MoodDef("eclectic", "ecléctico", 0.5, 0.5, "amber", "ecléctica")
 MOODS_BY_KEY: dict[str, MoodDef] = {m.key: m for m in (*MOODS, ECLECTIC)}
 MOODS_BY_LABEL: dict[str, MoodDef] = {m.label: m for m in (*MOODS, ECLECTIC)}
 ALLOWED_LABELS: tuple[str, ...] = tuple(m.label for m in (*MOODS, ECLECTIC))
@@ -67,6 +69,12 @@ ALLOWED_LABELS: tuple[str, ...] = tuple(m.label for m in (*MOODS, ECLECTIC))
 def mood_key(label: str | None) -> str:
     mood = MOODS_BY_LABEL.get((label or "").strip().lower())
     return mood.key if mood else ECLECTIC.key
+
+
+def mood_sounds(label: str | None) -> str:
+    """Feminine form for "tu música suena …" copy."""
+    mood = MOODS_BY_LABEL.get((label or "").strip().lower())
+    return (mood or ECLECTIC).sounds
 
 
 def mood_color(label: str | None) -> str:
@@ -392,44 +400,74 @@ class DayMood:
         return MOODS_BY_LABEL.get(self.moods[0], ECLECTIC) if self.moods else ECLECTIC
 
 
+# Last.fm scrobbles carry no duration: count an average-length track.
+DEFAULT_PLAY_MS = 210_000
+
+# Product rule: the mood only exists to dress the person. Copy describes how
+# the MUSIC sounds and what that asks for in clothes ("Tu música de hoy suena
+# melancólica"), never the listener's state of mind.
 ONE_LINERS: dict[str, tuple[str, str]] = {
     "euphoric": (
-        "¡Día de subidón! Stinky ha movido la cola al ritmo de {artist}.",
-        "¡Día de subidón! Esto pide color y algo que brille.",
+        "Tu música de hoy suena a subidón con {artist}: Stinky pide color y algo que brille.",
+        "Tu música de hoy suena eufórica: esto pide color y algo que brille.",
     ),
     "electric": (
-        "Voltaje alto con {artist}: Stinky tiene los bigotes de punta.",
-        "Día eléctrico: contraste, actitud y bigotes de punta.",
+        "{artist} pone tu música en alto voltaje: contraste, actitud y bigotes de punta.",
+        "Tu música de hoy suena eléctrica: contraste, actitud y bigotes de punta.",
     ),
     "intense": (
-        "Mucha intensidad con {artist}. Stinky sugiere negro y botas.",
-        "Día intenso: capas oscuras y paso firme.",
+        "Música intensa con {artist}: Stinky propone negro, botas y paso firme.",
+        "Tu música de hoy suena intensa: capas oscuras y paso firme.",
     ),
     "romantic": (
-        "Modo romántico con {artist}. Stinky ronronea bajito.",
-        "Día tierno: tejidos suaves y tonos cálidos.",
+        "Música romántica con {artist}: tejidos suaves y tonos cálidos, aprobado con ronroneo.",
+        "Tu música de hoy suena romántica: tejidos suaves y tonos cálidos.",
     ),
     "calm": (
-        "Calma total con {artist}: Stinky ya está hecho un ovillo.",
-        "Día tranquilo: comodidad y tonos neutros.",
+        "Música en calma con {artist}: punto cómodo y tonos neutros, modo ovillo.",
+        "Tu música de hoy suena tranquila: comodidad y tonos neutros.",
     ),
     "dreamy": (
-        "Soñando despierto con {artist}. Stinky mira la luna.",
-        "Día soñador: texturas ligeras y colores pastel.",
+        "Música soñadora con {artist}: texturas ligeras y un pastel que flote.",
+        "Tu música de hoy suena soñadora: texturas ligeras y colores pastel.",
     ),
     "nostalgic": (
-        "Nostalgia con {artist}: Stinky rebusca en el armario de siempre.",
-        "Día de recuerdos: un básico vintage nunca falla.",
+        "{artist} le da a tu música un aire retro: Stinky rebusca un básico vintage.",
+        "Tu música de hoy suena nostálgica: un básico vintage nunca falla.",
     ),
     "melancholic": (
-        "Día gris con {artist}. Stinky se te sienta en el regazo.",
-        "Día melancólico: capas suaves y un jersey que abrace.",
+        "Tu música de hoy suena melancólica con {artist}: capas suaves y un jersey que abrace.",
+        "Tu música de hoy suena melancólica: capas suaves y punto gordito.",
     ),
     "eclectic": (
-        "Un poco de todo con {artist}: Stinky no sabe si bailar o dormir.",
-        "Día ecléctico: combina sin miedo.",
+        "Un poco de todo con {artist}: tu música de hoy pide combinar sin miedo.",
+        "Tu música de hoy suena ecléctica: combina sin miedo.",
     ),
 }
+
+# Phrases that talk about the listener instead of the music. AI-written
+# one-liners matching any of these are discarded (the heuristic line is kept).
+PERSON_MOOD_RE = re.compile(
+    r"\b(est[áa]s|estar[áa]s|te sientes|sientes|te notas|te veo|pareces|"
+    r"triste|tristes|tristeza|deprimid\w*|depre|baj[óo]n|[áa]nimo|an[íi]mate|animarte|"
+    r"you(?:'re| are) (?:sad|down|feeling)|you feel|feeling (?:sad|down|blue))\b",
+    re.IGNORECASE,
+)
+
+
+def talks_about_person(text: str | None) -> bool:
+    return bool(text and PERSON_MOOD_RE.search(text))
+
+
+# A low-sounding day: the only case where the optional "contrast" look applies.
+LOW_VALENCE = 0.4
+LOW_ENERGY = 0.35
+
+
+def is_low_mood(energy: float | None, valence: float | None) -> bool:
+    if energy is None or valence is None:
+        return False
+    return valence < LOW_VALENCE or (energy < LOW_ENERGY and valence < 0.55)
 
 
 def one_liner_for(key: str, artist: str | None) -> str:
@@ -470,7 +508,7 @@ def compute_day_mood(plays: Sequence[Any]) -> DayMood:
             genre_counts[g.strip().lower()] += 1
         if play.artist_name:
             artist_counts[play.artist_name] += 1
-        listened_ms += int(play.duration_ms or 0)
+        listened_ms += int(play.duration_ms or DEFAULT_PLAY_MS)
         sig = play_signal(genres, play.track_name, play.album, play.release_year)
         votes.update(sig.votes)
         if sig.has_signal:
@@ -598,8 +636,10 @@ AI_REFINE_MIN_TRACKS = 3
 AI_REFINE_THROTTLE_PREFIX = "music:mood:ai"
 
 AI_SYSTEM_PROMPT = (
-    "Eres Stinky, el gato estilista de Miaurmario. Estimas el estado de ánimo de un día "
-    "a partir de la música que escuchó una persona. Respondes SOLO con JSON válido."
+    "Eres Stinky, el gato estilista de Miaurmario. Describes cómo SUENA la música de un "
+    "día (su energía y su color) para inspirar la ropa. Hablas de la música, nunca de la "
+    "persona: no supones cómo se siente ni le atribuyes emociones. Respondes SOLO con "
+    "JSON válido."
 )
 
 
@@ -617,9 +657,11 @@ def _build_ai_prompt(rows: Sequence[ListeningMood], tracks: dict[date, list[str]
         )
     return (
         "Para cada día, elige 1 o 2 moods SOLO de esta lista: "
-        f"{', '.join(ALLOWED_LABELS)}. Estima energy y valence entre 0 y 1, y escribe "
-        "un one_liner corto (máx. 120 caracteres, en español, tono juguetón de gato, "
-        "puede mencionar a un artista).\n"
+        f"{', '.join(ALLOWED_LABELS)} (describen la MÚSICA). Estima energy y valence de la "
+        "música entre 0 y 1, y escribe un one_liner corto (máx. 120 caracteres, en español, "
+        "tono juguetón de gato) sobre cómo suena la música y qué ropa pide, p. ej. "
+        "«Tu música de hoy suena melancólica: capas suaves y un jersey que abrace». Puede "
+        "mencionar a un artista. Habla solo de la música y la ropa, nunca de la persona.\n"
         'Formato: {"days": [{"date": "YYYY-MM-DD", "moods": ["..."], "energy": 0.5, '
         '"valence": 0.5, "one_liner": "..."}]}\n\n'
         f"Días:\n{json.dumps(days, ensure_ascii=False)}"
@@ -654,6 +696,8 @@ def parse_ai_refinement(text: str) -> dict[str, dict[str, Any]]:
         except (TypeError, ValueError):
             continue
         one_liner = str(entry.get("one_liner") or "").strip()[:160] or None
+        if talks_about_person(one_liner):
+            one_liner = None
         out[day] = {
             "moods": list(dict.fromkeys(labels)),
             "energy": round(energy, 3),

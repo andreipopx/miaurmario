@@ -103,7 +103,7 @@ function Harness({ onSelect, connected = true }: { onSelect: (s: SongSelection) 
   return (
     <SongAutocomplete
       value={value}
-      spotifyConnected={connected}
+      musicConnected={connected}
       onChange={(next) => {
         setValue(next)
         onSelect(next)

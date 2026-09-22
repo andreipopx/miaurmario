@@ -28,7 +28,7 @@ from app.integrations.spotify import (
 )
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
-from app.services import spotify_mood
+from app.services import music_source, spotify_mood
 from app.services.music_overview import clear_user_cache as clear_music_cache
 from app.utils.auth import get_current_user
 
@@ -203,8 +203,14 @@ async def get_mood(
 async def disconnect(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    keep_history: Annotated[bool, Query()] = True,
 ) -> None:
+    """Disconnect; `keep_history=false` also deletes the plays imported from Spotify."""
     await db.execute(delete(SpotifyConnection).where(SpotifyConnection.user_id == current_user.id))
     await db.commit()
+    if not keep_history:
+        await music_source.delete_history(
+            db, current_user.id, source="spotify", tz_name=current_user.timezone
+        )
     await spotify_mood.clear_mood_cache(current_user.id)
     await clear_music_cache(current_user.id)

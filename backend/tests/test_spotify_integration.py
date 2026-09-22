@@ -256,7 +256,7 @@ class TestListeningMood:
         assert ctx.genres == ["alternative r&b", "neo soul", "r&b", "pop"]
         assert ctx.top_artists == ["SZA", "Frank Ocean"]
         prompt = music_service.format_song_context_for_prompt(ctx)
-        assert "Escuchando ahora en Spotify: Frank Ocean — Pink + White" in prompt
+        assert "Sonando ahora (vía Spotify): Frank Ocean — Pink + White" in prompt
         assert "alternative r&b" in prompt
 
     async def test_falls_back_to_recently_played(

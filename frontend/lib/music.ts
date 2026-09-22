@@ -5,6 +5,14 @@ import type { PopColor } from '@/components/chip';
 /** Types for /api/v1/music/* */
 
 export type MusicRange = '7d' | '30d' | '6m';
+export type MusicSource = 'spotify' | 'lastfm';
+
+export interface MusicSettings {
+  contrast: boolean;
+  use_for_mood: boolean;
+  source: MusicSource | null;
+  sources: Record<MusicSource, boolean>;
+}
 export const MUSIC_RANGES: readonly MusicRange[] = ['7d', '30d', '6m'];
 
 export type MoodKey =
@@ -63,6 +71,15 @@ export interface MusicTrack {
   source?: 'spotify' | 'lastfm' | 'musicbrainz';
 }
 
+/** Settings page of a source (where "Gestionar" links to). */
+export function sourceSettingsHref(source: MusicSource | null | undefined): string {
+  return source === 'spotify'
+    ? '/dashboard/settings/integrations/spotify'
+    : source === 'lastfm'
+      ? '/dashboard/settings/integrations/lastfm'
+      : '/dashboard/settings/integrations';
+}
+
 export interface NowPlaying extends MusicTrack {
   is_playing: boolean;
   progress_ms: number | null;
@@ -104,6 +121,8 @@ export interface DayMood {
   minutes: number;
   dominant_artists: string[];
   one_liner: string;
+  /** How the music sounds ("melancólica"), Spanish, agrees with "música". */
+  sounds?: string[];
   method: 'heuristic' | 'ai';
 }
 
@@ -122,8 +141,14 @@ export interface OutfitDay {
 }
 
 export interface MusicOverview {
+  /** Spotify configured on this server. */
   configured: boolean;
+  lastfm_configured: boolean;
   connected: boolean;
+  /** Primary source (Spotify wins when both are connected). */
+  source: MusicSource | null;
+  sources: Record<MusicSource, boolean>;
+  lastfm_username: string | null;
   range: MusicRange;
   start: string;
   end: string;
@@ -132,7 +157,7 @@ export interface MusicOverview {
   recent: ListeningEventItem[];
   top_artists: TopArtist[];
   top_tracks: MusicTrack[];
-  top_source: 'spotify' | 'history';
+  top_source: 'spotify' | 'lastfm' | 'history';
   moods: DayMood[];
   genres: { genre: string; count: number; share: number }[];
   stats: {

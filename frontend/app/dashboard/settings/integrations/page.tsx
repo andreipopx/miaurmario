@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowRight, Music, Pin } from 'lucide-react';
+import { ArrowRight, AudioLines, Music, Pin } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { usePinterestStatus } from '@/lib/hooks/use-pinterest';
+import { useLastfmStatus } from '@/lib/hooks/use-lastfm';
 import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
 
 function StatusBadge({
@@ -31,6 +32,7 @@ export default function IntegrationsIndexPage() {
   const t = useTranslations('integrations');
   const pinterest = usePinterestStatus();
   const spotify = useSpotifyStatus();
+  const lastfm = useLastfmStatus();
 
   const entries = [
     {
@@ -39,11 +41,18 @@ export default function IntegrationsIndexPage() {
       status: pinterest,
     },
     {
+      key: 'lastfm',
+      href: '/dashboard/settings/integrations/lastfm',
+      status: lastfm,
+    },
+    {
       key: 'spotify',
       href: '/dashboard/settings/integrations/spotify',
       status: spotify,
     },
   ] as const;
+
+  const iconBg = { pinterest: 'bg-pop-pink', lastfm: 'bg-pop-amber', spotify: 'bg-pop-mint' } as const;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
@@ -56,7 +65,7 @@ export default function IntegrationsIndexPage() {
       <PageHeader title={t('title')} description={t('subtitle')} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {entries.map(({ key, href, status }, i) => (
+        {entries.map(({ key, href, status }) => (
           <Link
             key={key}
             href={href}
@@ -67,11 +76,13 @@ export default function IntegrationsIndexPage() {
                 aria-hidden
                 className={cn(
                   'flex h-12 w-12 items-center justify-center rounded-quick text-pop-foreground',
-                  i === 0 ? 'bg-pop-pink' : 'bg-pop-mint'
+                  iconBg[key]
                 )}
               >
                 {key === 'pinterest' ? (
                   <Pin className="h-5 w-5" strokeWidth={1.75} />
+                ) : key === 'lastfm' ? (
+                  <AudioLines className="h-5 w-5" strokeWidth={1.75} />
                 ) : (
                   <Music className="h-5 w-5" strokeWidth={1.75} />
                 )}

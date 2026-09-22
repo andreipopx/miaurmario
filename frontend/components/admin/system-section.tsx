@@ -249,6 +249,13 @@ export function SystemSection() {
                 ? t('spotifySlots', { used: data.spotify.connected_users, total: data.spotify.dev_mode_slots })
                 : t('notConfigured')}
             </StatusRow>
+            {data.lastfm && (
+              <StatusRow label={t('lastfm')} tone={data.lastfm.configured ? 'ok' : 'off'}>
+                {data.lastfm.configured
+                  ? t('lastfmUsers', { count: data.lastfm.connected_users })
+                  : t('notConfigured')}
+              </StatusRow>
+            )}
             <StatusRow label={t('pinterest')} tone={data.pinterest.configured ? 'ok' : 'off'}>
               {data.pinterest.configured ? t('configured') : t('notConfigured')}
             </StatusRow>

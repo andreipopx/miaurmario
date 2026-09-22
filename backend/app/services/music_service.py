@@ -61,8 +61,15 @@ class SongContext(BaseModel):
         description="Spotify listening context: now_playing | recently_played (None for queries)",
     )
     top_artists: list[str] = Field(
-        default_factory=list, description="User's recent top artists (Spotify only)"
+        default_factory=list, description="User's recent top artists (Spotify / Last.fm)"
     )
+    # How the user's music of the day SOUNDS (feminine Spanish adjectives that
+    # agree with "música", e.g. "melancólica"), from listening_moods.
+    day_sounds: list[str] = Field(default_factory=list)
+    day_energy: float | None = None
+    day_valence: float | None = None
+    # "Deja que Stinky contraste tu música" (UserPreference.music_contrast).
+    contrast: bool = False
 
     @property
     def display_label(self) -> str:
@@ -289,35 +296,51 @@ async def resolve_music_context(
     - Spotify not connected: identical to the previous behaviour — only a song
       query produces context, via `enrich_song`.
 
+    - No Spotify but Last.fm connected (mood toggle on) + no query: the same,
+      from the scrobbler (``music_source`` picks the source).
+
+    Listening-derived contexts also carry how today's music sounds
+    (listening_moods) and the user's "contrast my music" preference; a typed
+    song carries only the preference.
+
     Never raises.
     """
-    # Local import: spotify_mood imports SongContext from this module.
-    from app.services import spotify_mood
+    # Local imports: these modules import SongContext from this one.
+    from app.services import music_source, spotify_mood
 
-    connection = None
+    sources = music_source.MusicSources()
     try:
-        connection = await spotify_mood.get_connection(db, user.id)
+        sources = await music_source.get_sources(db, user.id)
     except Exception:
-        logger.debug("Spotify connection lookup failed", exc_info=True)
+        logger.debug("Music source lookup failed", exc_info=True)
+    connection = sources.spotify
 
+    ctx: SongContext | None = None
     if song_track_id and connection is not None:
         ctx = await spotify_mood.resolve_track_id(db, connection, song_track_id, song_query)
-        if ctx is not None:
-            return ctx
 
-    if not (song_query and song_query.strip()) and song_track_id:
+    if ctx is None and not (song_query and song_query.strip()) and song_track_id:
         # Not connected: the public embed page still resolves a track id.
         song_query = f"https://open.spotify.com/track/{song_track_id}"
 
-    if song_query and song_query.strip():
+    if ctx is None and song_query and song_query.strip():
         if connection is not None:
             ctx = await spotify_mood.resolve_query(db, connection, song_query)
-            if ctx is not None:
-                return ctx
-        return await enrich_song(song_query)
+        if ctx is None:
+            ctx = await enrich_song(song_query)
 
-    if connection is not None and connection.use_for_mood:
-        return await spotify_mood.listening_mood(db, connection)
+    if ctx is not None:
+        try:
+            ctx = ctx.model_copy()
+            ctx.contrast = await music_source.contrast_enabled(db, user.id)
+        except Exception:
+            logger.debug("Contrast preference lookup failed", exc_info=True)
+        return ctx
+
+    if sources.use_for_mood:
+        ctx = await music_source.listening_mood(db, sources)
+        if ctx is not None:
+            return await music_source.attach_day_mood(db, user, ctx.model_copy())
     return None
 
 
@@ -454,13 +477,15 @@ async def enrich_song(query: str) -> SongContext | None:
 
 def format_song_context_for_prompt(ctx: SongContext) -> str:
     """Render a SongContext as a short bulleted block for the Stylist prompt."""
-    lines = ["\nCONTEXTO MUSICAL (mood/estética a considerar):"]
+    lines = ["\nCONTEXTO MUSICAL (cómo suena su música; mood/estética a considerar):"]
+    via = SOURCE_NAMES.get(ctx.source, "")
+    via = f" (vía {via})" if via else ""
     if ctx.listening == "now_playing" and ctx.artist and ctx.track:
-        lines.append(f"- Escuchando ahora en Spotify: {ctx.artist} — {ctx.track}")
+        lines.append(f"- Sonando ahora{via}: {ctx.artist} — {ctx.track}")
     elif ctx.listening == "recently_played" and ctx.artist and ctx.track:
-        lines.append(f"- Escuchado recientemente en Spotify: {ctx.artist} — {ctx.track}")
+        lines.append(f"- Lo último que ha sonado{via}: {ctx.artist} — {ctx.track}")
     elif ctx.listening and not ctx.track:
-        lines.append("- Hábitos de escucha recientes en Spotify")
+        lines.append(f"- Lo que más suena últimamente{via}")
     elif ctx.artist and ctx.track:
         lines.append(f"- Canción: {ctx.artist} — {ctx.track}")
     elif ctx.track:
@@ -477,9 +502,54 @@ def format_song_context_for_prompt(ctx: SongContext) -> str:
     if ctx.tags:
         lines.append(f"- Etiquetas emocionales / mood: {', '.join(ctx.tags[:6])}")
     if ctx.top_artists:
-        lines.append(f"- Artistas que más escucha últimamente: {', '.join(ctx.top_artists[:5])}")
+        lines.append(f"- Artistas que más suenan últimamente: {', '.join(ctx.top_artists[:5])}")
+    low = False
+    if ctx.day_sounds:
+        level = _level(ctx.day_energy)
+        lines.append(
+            f"- Su música de hoy suena {' y '.join(ctx.day_sounds[:2])}"
+            + (f" (energía {level})" if level else "")
+        )
+        from app.services.listening_mood import is_low_mood
+
+        low = is_low_mood(ctx.day_energy, ctx.day_valence)
     lines.append(
-        "- Usa el mood y la estética de la canción como una capa más de "
-        "inspiración para el outfit; que se sienta coherente sin ser literal."
+        "- Usa el mood y la estética de la MÚSICA como una capa más de inspiración para el "
+        "outfit; que se sienta coherente sin ser literal. Describe la música, nunca a la "
+        "persona: no supongas ni comentes cómo se siente."
     )
+    lines.append(contrast_instruction(ctx.contrast, low, typed=not ctx.listening))
     return "\n".join(lines)
+
+
+SOURCE_NAMES = {"spotify": "Spotify", "lastfm": "Last.fm"}
+
+
+def _level(energy: float | None) -> str | None:
+    if energy is None:
+        return None
+    if energy < 0.4:
+        return "baja"
+    if energy < 0.65:
+        return "media"
+    return "alta"
+
+
+def contrast_instruction(contrast: bool, low: bool, *, typed: bool = False) -> str:
+    """The stylist rule for the "Deja que Stinky contraste tu música" setting."""
+    if contrast and (low or typed):
+        condition = (
+            "Si la canción suena apagada o de energía baja"
+            if typed and not low
+            else "Como la música de hoy suena de energía baja"
+        )
+        return (
+            "- CONTRASTE ACTIVADO (lo ha pedido en sus ajustes): "
+            f"{condition}, los looks acompañan esa música y, como mucho, UNO (si propones "
+            "varios, el último) puede ser una alternativa opcional más luminosa. Plantéala "
+            "como opción en su styling_tip («¿le damos un toque de color?»), nunca como "
+            "diagnóstico ni como remedio para la persona."
+        )
+    return (
+        "- Acompaña el tono de la música tal cual; no intentes compensarlo con looks más alegres."
+    )

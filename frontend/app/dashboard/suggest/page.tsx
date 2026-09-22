@@ -42,7 +42,7 @@ import { api, ApiError, setAccessToken } from '@/lib/api';
 import { OCCASIONS, Outfit, SuggestRequest } from '@/lib/types';
 import { useWeather, Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
-import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
+import { useMusicSettings } from '@/lib/hooks/use-music';
 import { SongAutocomplete, type SongSelection } from '@/components/music/song-autocomplete';
 import { cn } from '@/lib/utils';
 import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
@@ -412,7 +412,8 @@ export default function SuggestPage() {
   const [weatherOverride, setWeatherOverride] = useState<WeatherOverride | null>(null);
   const [song, setSong] = useState<SongSelection>({ text: '', trackId: null, track: null });
   const songQuery = song.text;
-  const spotifyStatus = useSpotifyStatus();
+  const musicSettings = useMusicSettings();
+  const musicConnected = Boolean(musicSettings.data?.source);
   const [isGenerating, setIsGenerating] = useState(false);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -623,13 +624,13 @@ export default function SuggestPage() {
             <SongAutocomplete
               value={song}
               onChange={setSong}
-              spotifyConnected={Boolean(spotifyStatus.data?.connected)}
+              musicConnected={musicConnected}
               describedBy="song-help"
             />
             <p id="song-help" className="px-1 text-xs text-muted-foreground">
               {t('songHelp')}
             </p>
-            {spotifyStatus.data?.connected && spotifyStatus.data.use_for_mood && !songQuery.trim() && (
+            {musicConnected && musicSettings.data?.use_for_mood && !songQuery.trim() && (
               <p className="px-1 text-xs font-semibold text-success">{t('songSpotifyHint')}</p>
             )}
           </div>

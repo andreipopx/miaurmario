@@ -157,8 +157,10 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         "function": {
             "name": "get_listening_mood",
             "description": (
-                "What the user is listening to on Spotify right now or recently "
-                "(artist, track, genres, mood tags), if Spotify is connected."
+                "What the user's music sounds like, for dressing only: the track playing "
+                "now or last (via Spotify or Last.fm), genres, mood tags, how today's "
+                "music sounds (music_today) and whether the user allows an optional "
+                "brighter contrast look (contrast)."
             ),
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
@@ -525,21 +527,47 @@ async def get_recent_outfits(ctx: ToolContext, args: dict[str, Any]) -> dict[str
 
 
 async def get_listening_mood(ctx: ToolContext, args: dict[str, Any]) -> dict[str, Any]:
-    try:
-        from app.services.spotify_mood import get_connection, listening_mood
+    from app.services import music_source
+    from app.services.listening_mood import is_low_mood, mood_sounds
 
-        connection = await get_connection(ctx.db, ctx.user.id)
-        if connection is None:
-            return {"connected": False}
-        mood = await listening_mood(ctx.db, connection)
+    try:
+        sources = await music_source.get_sources(ctx.db, ctx.user.id)
+        contrast = await music_source.contrast_enabled(ctx.db, ctx.user.id)
+        today = await music_source.todays_music(ctx.db, ctx.user)
     except Exception as e:  # music is optional context: never fail the chat
-        logger.warning("Stinky chat listening mood failed: %s", type(e).__name__)
-        return {"connected": True, "available": False}
+        logger.warning("Stinky chat music lookup failed: %s", type(e).__name__)
+        return {"connected": False, "available": False}
+    music_today = (
+        {
+            "sounds": [mood_sounds(m) for m in today.moods][:2],
+            "energy": round(float(today.energy), 2),
+            "valence": round(float(today.valence), 2),
+            "low": is_low_mood(today.energy, today.valence),
+            "genres": [clean_text(g, 40) for g in (today.top_genres or [])][:5],
+        }
+        if today is not None and today.moods
+        else None
+    )
+    base: dict[str, Any] = {
+        "connected": sources.connected,
+        "source": sources.primary,
+        "contrast": contrast,
+        "music_today": music_today,
+    }
+    if not sources.connected:
+        return {**base, "available": music_today is not None}
+    mood = None
+    if sources.use_for_mood:
+        try:
+            mood = await music_source.listening_mood(ctx.db, sources)
+        except Exception as e:
+            logger.warning("Stinky chat listening mood failed: %s", type(e).__name__)
     if mood is None:
-        return {"connected": True, "available": False}
+        return {**base, "available": music_today is not None}
     return {
-        "connected": True,
+        **base,
         "available": True,
+        "source": mood.source,
         "listening": mood.listening,
         "artist": clean_text(mood.artist),
         "track": clean_text(mood.track),

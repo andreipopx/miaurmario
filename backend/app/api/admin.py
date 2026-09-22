@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.admin import AccountDeletion
 from app.models.item import ClothingItem
+from app.models.lastfm import LastfmConnection
 from app.models.outfit import Outfit
 from app.models.pinterest import PinterestConnection
 from app.models.spotify import SpotifyConnection
@@ -249,7 +250,9 @@ class AdminUserDetail(AdminUserResponse):
     outfit_count: int
     # None when the friends feature (``friendships`` table) is not installed.
     friend_count: int | None
+    # Connection flags only: admins never see individual listening data.
     spotify_connected: bool
+    lastfm_connected: bool
     pinterest_connected: bool
     input_tokens_this_month: int
     output_tokens_this_month: int
@@ -320,6 +323,9 @@ async def get_user_detail(
     spotify = await _count(
         db, select(func.count(SpotifyConnection.id)).where(SpotifyConnection.user_id == target.id)
     )
+    lastfm = await _count(
+        db, select(func.count(LastfmConnection.id)).where(LastfmConnection.user_id == target.id)
+    )
     pinterest = await _count(
         db,
         select(func.count(PinterestConnection.id)).where(PinterestConnection.user_id == target.id),
@@ -344,6 +350,7 @@ async def get_user_detail(
         outfit_count=outfits,
         friend_count=await _friend_count(db, target.id),
         spotify_connected=spotify > 0,
+        lastfm_connected=lastfm > 0,
         pinterest_connected=pinterest > 0,
         input_tokens_this_month=prompt,
         output_tokens_this_month=completion,

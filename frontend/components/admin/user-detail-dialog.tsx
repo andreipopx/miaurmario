@@ -178,7 +178,11 @@ export function UserDetailDialog({
               <KeyValue label={tu('outfits')}>{user.outfit_count}</KeyValue>
               <KeyValue label={tu('friends')}>{user.friend_count ?? '—'}</KeyValue>
               <KeyValue label={tu('integrations')}>
-                {[user.spotify_connected && 'Spotify', user.pinterest_connected && 'Pinterest']
+                {[
+                  user.spotify_connected && 'Spotify',
+                  user.lastfm_connected && 'Last.fm',
+                  user.pinterest_connected && 'Pinterest',
+                ]
                   .filter(Boolean)
                   .join(' · ') || tu('none')}
               </KeyValue>

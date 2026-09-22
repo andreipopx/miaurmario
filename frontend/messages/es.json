@@ -709,7 +709,7 @@
     "songPlaceholder": "Ej: Mitski — My Love Mine All Mine, o pega un link de Spotify",
     "songHelp": "Opcional. El Estilista usará el mood de la canción como capa de inspiración.",
     "inspiredBy": "Inspirado en",
-    "songSpotifyHint": "Spotify conectado: si lo dejas vacío, usaremos lo que estás escuchando.",
+    "songSpotifyHint": "Música conectada: si lo dejas vacío, usaremos cómo suena lo que estás escuchando.",
     "thinkingTitle": "Stinky está pensando tu look…",
     "thinkingBody": "Mirando tu armario, el tiempo y la ocasión.",
     "thinkingBodySong": "Mirando tu armario, el tiempo y lo que suena: <b>{song}</b>.",
@@ -1906,6 +1906,64 @@
         "not_allowlisted": "Tu cuenta de Spotify no está en la lista de usuarios permitidos de la app (modo desarrollo). Pide al administrador que la añada.",
         "profile_failed": "Conectamos con Spotify pero no pudimos leer tu perfil. Inténtalo de nuevo."
       }
+    },
+    "lastfm": {
+      "eyebrow": "Música para todos",
+      "title": "Last.fm",
+      "description": "Conecta tu usuario de Last.fm: tu historial de escuchas y tu mood musical, sin límite de cuentas.",
+      "tagline": "Tus scrobbles, traducidos a estilo.",
+      "manage": "Gestionar Last.fm",
+      "connectTitle": "Conecta tu usuario de Last.fm",
+      "connectDescription": "Escribe tu nombre de usuario de Last.fm. Leeremos tus escuchas públicas cada 15 minutos para tu historial, tus tops y el mood musical del Estilista. No necesitas contraseña.",
+      "usernameLabel": "Usuario de Last.fm",
+      "usernamePlaceholder": "tu_usuario",
+      "usernameHelp": "También puedes pegar el enlace de tu perfil (last.fm/user/…).",
+      "usernameInvalid": "Ese no parece un usuario de Last.fm válido.",
+      "connectButton": "Conectar",
+      "webAuthButton": "Iniciar sesión con Last.fm",
+      "or": "o",
+      "connectedToast": "Last.fm conectado. Importando tus últimas escuchas…",
+      "notConfigured": "La integración con Last.fm aún no está configurada en este servidor.",
+      "howTitle": "¿Escuchas en Spotify?",
+      "howBody": "Activa el scrobbling de Spotify en last.fm/settings/applications y todo lo que suene en Spotify llegará aquí a través de Last.fm. Tu perfil debe mostrar tus escuchas recientes (no ocultas).",
+      "howLink": "Abrir ajustes de Last.fm",
+      "connectedAs": "Usuario conectado",
+      "openProfile": "Ver perfil en Last.fm",
+      "lastSync": "Última sincronización: {when}",
+      "neverSynced": "Importando tus escuchas…",
+      "useForMood": "Usar Last.fm como mood",
+      "useForMoodHelp": "Si no escribes una canción al pedir un outfit, el Estilista se inspirará en cómo suena lo último que has escuchado.",
+      "settingsFailed": "No se pudo guardar el ajuste.",
+      "disconnect": "Desconectar",
+      "disconnectSuccess": "Last.fm desconectado.",
+      "bothNote": "También tienes Spotify conectado: se usan los dos y las escuchas repetidas se cuentan una sola vez.",
+      "errorTitle": "No se pudo conectar",
+      "errorGeneric": "Algo salió mal al conectar con Last.fm. Inténtalo de nuevo.",
+      "errors": {
+        "lastfm_user_not_found": "No existe ningún usuario de Last.fm con ese nombre.",
+        "lastfm_private": "Ese perfil oculta sus escuchas recientes. Hazlas públicas en la privacidad de Last.fm y vuelve a intentarlo.",
+        "lastfm_rate_limited": "Last.fm está saturado ahora mismo. Prueba en un minuto.",
+        "lastfm_unavailable": "No hemos podido contactar con Last.fm. Inténtalo más tarde.",
+        "lastfm_not_configured": "La integración con Last.fm aún no está configurada en este servidor.",
+        "invalid_state": "La solicitud caducó o no es válida. Vuelve a intentarlo desde aquí.",
+        "access_denied": "Has cancelado la autorización en Last.fm.",
+        "session_failed": "Last.fm no confirmó la sesión. Inténtalo de nuevo."
+      },
+      "syncErrors": {
+        "private": "Tu perfil de Last.fm oculta las escuchas recientes, así que no podemos sincronizar. Hazlas públicas en Last.fm.",
+        "not_found": "Ya no encontramos ese usuario en Last.fm. ¿Lo has renombrado? Desconecta y vuelve a conectar.",
+        "rate_limited": "Last.fm nos ha pedido ir más despacio; lo reintentaremos solos.",
+        "bad_key": "Hay un problema con la configuración de Last.fm del servidor.",
+        "unavailable": "La última sincronización con Last.fm falló; lo reintentaremos solos."
+      }
+    },
+    "disconnectMusic": {
+      "title": "¿Desconectar {source}?",
+      "description": "Dejaremos de importar tus escuchas. ¿Qué hacemos con el historial que ya hemos guardado desde {source}?",
+      "keep": "Conservar historial",
+      "delete": "Borrar historial",
+      "cancel": "Cancelar",
+      "deletedToast": "{source} desconectado y su historial borrado."
     }
   },
   "pins": {
@@ -1922,13 +1980,13 @@
   "music": {
     "title": "Música",
     "subtitle": "Lo que escuchas, tu mood y qué llevabas puesto.",
-    "manage": "Gestionar Spotify",
+    "manage": "Gestionar",
     "loading": "Cargando tu música…",
     "errorTitle": "No he podido cargar tu música",
     "errorBody": "Inténtalo de nuevo en un momento.",
     "emptyTitle": "Stinky aún no ha oído nada",
-    "emptyBody": "Conecta Spotify y guardaré tu historial de escuchas para leer tu mood y relacionarlo con tus looks.",
-    "notConfigured": "Spotify no está configurado en este servidor todavía.",
+    "emptyBody": "Conecta Last.fm o Spotify y guardaré tu historial de escuchas para leer cómo suena tu música y relacionarla con tus looks.",
+    "notConfigured": "La música aún no está configurada en este servidor.",
     "connectCta": "Conectar Spotify",
     "nowPlaying": "Suena ahora",
     "lastPlayed": "Lo último que sonó",
@@ -1943,7 +2001,7 @@
       "30d": "30 días",
       "6m": "6 meses"
     },
-    "moodTitle": "Tu mood",
+    "moodTitle": "Cómo suena tu música",
     "moodEmpty": "Aún no hay escuchas en este periodo.",
     "statPlays": "Escuchas",
     "statMinutes": "Minutos",
@@ -1985,41 +2043,61 @@
     },
     "oneLiner": {
       "euphoric": {
-        "withArtist": "¡Día de subidón! Stinky ha movido la cola al ritmo de {artist}.",
-        "plain": "¡Día de subidón! Esto pide color y algo que brille."
+        "withArtist": "Tu música de hoy suena a subidón con {artist}: Stinky pide color y algo que brille.",
+        "plain": "Tu música de hoy suena eufórica: esto pide color y algo que brille."
       },
       "electric": {
-        "withArtist": "Voltaje alto con {artist}: Stinky tiene los bigotes de punta.",
-        "plain": "Día eléctrico: contraste, actitud y bigotes de punta."
+        "withArtist": "{artist} pone tu música en alto voltaje: contraste, actitud y bigotes de punta.",
+        "plain": "Tu música de hoy suena eléctrica: contraste, actitud y bigotes de punta."
       },
       "intense": {
-        "withArtist": "Mucha intensidad con {artist}. Stinky sugiere negro y botas.",
-        "plain": "Día intenso: capas oscuras y paso firme."
+        "withArtist": "Música intensa con {artist}: Stinky propone negro, botas y paso firme.",
+        "plain": "Tu música de hoy suena intensa: capas oscuras y paso firme."
       },
       "romantic": {
-        "withArtist": "Modo romántico con {artist}. Stinky ronronea bajito.",
-        "plain": "Día tierno: tejidos suaves y tonos cálidos."
+        "withArtist": "Música romántica con {artist}: tejidos suaves y tonos cálidos, aprobado con ronroneo.",
+        "plain": "Tu música de hoy suena romántica: tejidos suaves y tonos cálidos."
       },
       "calm": {
-        "withArtist": "Calma total con {artist}: Stinky ya está hecho un ovillo.",
-        "plain": "Día tranquilo: comodidad y tonos neutros."
+        "withArtist": "Música en calma con {artist}: punto cómodo y tonos neutros, modo ovillo.",
+        "plain": "Tu música de hoy suena tranquila: comodidad y tonos neutros."
       },
       "dreamy": {
-        "withArtist": "Soñando despierto con {artist}. Stinky mira la luna.",
-        "plain": "Día soñador: texturas ligeras y colores pastel."
+        "withArtist": "Música soñadora con {artist}: texturas ligeras y un pastel que flote.",
+        "plain": "Tu música de hoy suena soñadora: texturas ligeras y colores pastel."
       },
       "nostalgic": {
-        "withArtist": "Nostalgia con {artist}: Stinky rebusca en el armario de siempre.",
-        "plain": "Día de recuerdos: un básico vintage nunca falla."
+        "withArtist": "{artist} le da a tu música un aire retro: Stinky rebusca un básico vintage.",
+        "plain": "Tu música de hoy suena nostálgica: un básico vintage nunca falla."
       },
       "melancholic": {
-        "withArtist": "Día gris con {artist}. Stinky se te sienta en el regazo.",
-        "plain": "Día melancólico: capas suaves y un jersey que abrace."
+        "withArtist": "Tu música de hoy suena melancólica con {artist}: capas suaves y un jersey que abrace.",
+        "plain": "Tu música de hoy suena melancólica: capas suaves y punto gordito."
       },
       "eclectic": {
-        "withArtist": "Un poco de todo con {artist}: Stinky no sabe si bailar o dormir.",
-        "plain": "Día ecléctico: combina sin miedo."
+        "withArtist": "Un poco de todo con {artist}: tu música de hoy pide combinar sin miedo.",
+        "plain": "Tu música de hoy suena ecléctica: combina sin miedo."
       }
+    },
+    "connectLastfmCta": "Conectar Last.fm",
+    "openInLastfm": "Abrir en Last.fm",
+    "sourceLastfm": "Según Last.fm",
+    "syncError": "No he podido sincronizar {source} ahora mismo; lo reintento solo.",
+    "prefs": {
+      "title": "Tu música y Stinky",
+      "contrast": "Deja que Stinky contraste tu música",
+      "contrastHelp": "Por defecto, los looks acompañan cómo suena tu música. Si lo activas, cuando tu música suene apagada Stinky puede proponerte además una alternativa más luminosa, solo como opción.",
+      "contrastFailed": "No se pudo guardar el ajuste.",
+      "privacyNote": "El mood describe tu música (energía, tono, género) solo para vestirte; nunca analiza cómo te sientes.",
+      "deleteTitle": "Historial de escuchas",
+      "deleteHelp": "Borra todas tus escuchas y moods guardados. Las conexiones se mantienen y no volveremos a importar lo borrado.",
+      "deleteButton": "Borrar mi historial",
+      "deleteConfirmTitle": "¿Borrar tu historial de escuchas?",
+      "deleteConfirmBody": "Se eliminarán todas tus escuchas y moods diarios de Miaurmario. Esto no se puede deshacer y no afecta a tu cuenta de Spotify ni de Last.fm.",
+      "deleteConfirm": "Borrar historial",
+      "cancel": "Cancelar",
+      "deleted": "Historial borrado.",
+      "deleteFailed": "No se pudo borrar el historial."
     }
   },
   "weatherConditions": {
@@ -2560,7 +2638,9 @@
             "clear": "Aviso retirado"
           }
         }
-      }
+      },
+      "lastfm": "Last.fm",
+      "lastfmUsers": "{count, plural, one {# usuario conectado} other {# usuarios conectados}}"
     }
   },
   "appFeedback": {

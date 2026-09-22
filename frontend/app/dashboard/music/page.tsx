@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
 import { StinkyTip } from '@/components/stinky-tip';
+import { MusicPrefsCard } from '@/components/music/music-prefs-card';
 import { Chip, POP_BG } from '@/components/chip';
 import { MoodTimeline } from '@/components/music/mood-timeline';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ import {
   moodColor,
   parseDay,
   relativeTime,
+  sourceSettingsHref,
   type DayMood,
   type ListeningEventItem,
   type MusicOverview,
@@ -32,7 +34,7 @@ import {
   type TopArtist,
 } from '@/lib/music';
 
-const SPOTIFY_SETTINGS = '/dashboard/settings/integrations/spotify';
+const LASTFM_SETTINGS = '/dashboard/settings/integrations/lastfm';
 
 function Cover({
   src,
@@ -90,6 +92,9 @@ export default function MusicPage() {
   const sync = useMusicSyncOnMount(connected);
   const connect = useSpotifyConnect();
   const data = overview.data;
+  const manageHref = sourceSettingsHref(data?.source);
+  const syncErrors = sync.data?.errors;
+  const failedSource = syncErrors?.lastfm ? 'Last.fm' : syncErrors?.spotify ? 'Spotify' : null;
 
   const hasHistory = Boolean(data && (data.recent.length > 0 || data.moods.length > 0));
 
@@ -101,7 +106,7 @@ export default function MusicPage() {
         action={
           connected ? (
             <Button variant="outline" size="sm" asChild>
-              <Link href={SPOTIFY_SETTINGS}>
+              <Link href={manageHref}>
                 <Settings2 className="h-4 w-4" aria-hidden />
                 {t('manage')}
               </Link>
@@ -122,16 +127,31 @@ export default function MusicPage() {
         <EmptyState
           state="sleepy"
           title={t('emptyTitle')}
-          description={data.configured ? t('emptyBody') : t('notConfigured')}
+          description={
+            data.configured || data.lastfm_configured ? t('emptyBody') : t('notConfigured')
+          }
           action={
-            data.configured ? (
-              <Button onClick={() => connect.mutate()} disabled={connect.isPending}>
-                {connect.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                {t('connectCta')}
-              </Button>
+            data.configured || data.lastfm_configured ? (
+              <div className="flex flex-wrap justify-center gap-2">
+                {data.lastfm_configured && (
+                  <Button asChild>
+                    <Link href={LASTFM_SETTINGS}>{t('connectLastfmCta')}</Link>
+                  </Button>
+                )}
+                {data.configured && (
+                  <Button
+                    variant={data.lastfm_configured ? 'outline' : 'default'}
+                    onClick={() => connect.mutate()}
+                    disabled={connect.isPending}
+                  >
+                    {connect.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                    {t('connectCta')}
+                  </Button>
+                )}
+              </div>
             ) : (
               <Button variant="outline" asChild>
-                <Link href={SPOTIFY_SETTINGS}>{t('manage')}</Link>
+                <Link href={manageHref}>{t('manage')}</Link>
               </Button>
             )
           }
@@ -139,6 +159,11 @@ export default function MusicPage() {
       ) : data ? (
         <>
           <NowPlayingCard now={data.now_playing} last={data.recent[0] ?? null} syncing={sync.isPending} />
+          {failedSource && (
+            <p role="status" className="px-1 text-xs text-muted-foreground">
+              {t('syncError', { source: failedSource })}
+            </p>
+          )}
 
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label={t('rangeLabel')}>
             {MUSIC_RANGES.map((r) => (
@@ -152,6 +177,7 @@ export default function MusicPage() {
           <TopsSection data={data} />
           <RecentSection items={data.recent} />
           <LooksSection days={data.outfit_days} />
+          <MusicPrefsCard />
         </>
       ) : null}
     </div>
@@ -204,7 +230,7 @@ function NowPlayingCard({
           </div>
           {track.url && (
             <Button variant="ghost" size="icon" asChild>
-              <a href={track.url} target="_blank" rel="noreferrer noopener" aria-label={t('openInSpotify')}>
+              <a href={track.url} target="_blank" rel="noreferrer noopener" aria-label={track.url.includes('last.fm') ? t('openInLastfm') : t('openInSpotify')}>
                 <ExternalLink className="h-[18px] w-[18px]" aria-hidden />
               </a>
             </Button>
@@ -274,7 +300,12 @@ function MoodSection({ data }: { data: MusicOverview }) {
 
 function TopsSection({ data }: { data: MusicOverview }) {
   const t = useTranslations('music');
-  const source = data.top_source === 'spotify' ? t('sourceSpotify') : t('sourceHistory');
+  const source =
+    data.top_source === 'spotify'
+      ? t('sourceSpotify')
+      : data.top_source === 'lastfm'
+        ? t('sourceLastfm')
+        : t('sourceHistory');
   return (
     <section aria-labelledby="tops-title" className="space-y-4">
       <SectionTitle id="tops-title" aside={<span className="text-xs text-muted-foreground">{source}</span>}>

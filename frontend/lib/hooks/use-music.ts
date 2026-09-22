@@ -8,6 +8,8 @@ import type {
   MusicOverview,
   MusicRange,
   MusicSearchResponse,
+  MusicSettings,
+  MusicSource,
   NowPlaying,
 } from '@/lib/music';
 
@@ -33,11 +35,12 @@ interface SyncResponse {
   skipped: boolean;
   inserted: number;
   error?: string;
+  errors?: Partial<Record<MusicSource, string>>;
   last_synced_at: string | null;
 }
 
 /**
- * Pull the latest Spotify plays once when the Música tab opens (the backend
+ * Pull the latest plays (Spotify and/or Last.fm) once when the Música tab opens (the backend
  * throttles real syncs to one every couple of minutes).
  */
 export function useMusicSyncOnMount(enabled = true) {
@@ -48,6 +51,7 @@ export function useMusicSyncOnMount(enabled = true) {
     mutationFn: () => api.post<SyncResponse>('/music/sync'),
     onSuccess: (data) => {
       if (data.inserted > 0) qc.invalidateQueries({ queryKey: ['music', 'overview'] });
+      if (data.errors?.lastfm) qc.invalidateQueries({ queryKey: ['lastfm', 'status'] });
     },
   });
   const { mutate } = mutation;
@@ -64,7 +68,9 @@ export function useNowPlaying(enabled = true) {
   return useQuery({
     queryKey: ['music', 'now-playing'],
     queryFn: () =>
-      api.get<{ connected: boolean; track: NowPlaying | null }>('/music/now-playing'),
+      api.get<{ connected: boolean; source: MusicSource | null; track: NowPlaying | null }>(
+        '/music/now-playing',
+      ),
     enabled,
     staleTime: 20_000,
     retry: false,
@@ -90,5 +96,38 @@ export function useMusicSearch(query: string, enabled = true) {
     enabled: enabled && q.length >= 2,
     staleTime: 5 * 60_000,
     retry: false,
+  });
+}
+
+export function useMusicSettings(enabled = true) {
+  useSetTokenIfAvailable();
+  return useQuery({
+    queryKey: ['music', 'settings'],
+    queryFn: () => api.get<MusicSettings>('/music/settings'),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+/** "Deja que Stinky contraste tu música" (off by default). */
+export function useUpdateMusicContrast() {
+  const qc = useQueryClient();
+  useSetTokenIfAvailable();
+  return useMutation({
+    mutationFn: (contrast: boolean) => api.patch<MusicSettings>('/music/settings', { contrast }),
+    onSuccess: (data) => qc.setQueryData(['music', 'settings'], data),
+  });
+}
+
+/** Delete every stored play and daily mood (connections stay). */
+export function useDeleteMusicHistory() {
+  const qc = useQueryClient();
+  useSetTokenIfAvailable();
+  return useMutation({
+    mutationFn: () =>
+      api.delete<{ deleted: { events: number; moods: number } }>('/music/history'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['music'] });
+    },
   });
 }

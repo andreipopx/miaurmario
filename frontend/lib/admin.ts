@@ -60,6 +60,7 @@ export interface AdminUserDetail extends AdminUser {
   outfit_count: number;
   friend_count: number | null;
   spotify_connected: boolean;
+  lastfm_connected: boolean;
   pinterest_connected: boolean;
   input_tokens_this_month: number;
   output_tokens_this_month: number;
@@ -165,6 +166,7 @@ export interface SystemStatus {
     error?: string;
   };
   spotify: { configured: boolean; connected_users: number; dev_mode_slots: number };
+  lastfm?: { configured: boolean; connected_users: number };
   pinterest: { configured: boolean };
 }
 

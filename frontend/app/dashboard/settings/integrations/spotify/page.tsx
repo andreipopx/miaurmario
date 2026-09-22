@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -14,6 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PageHeader } from '@/components/page-header';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { DisconnectMusicDialog } from '@/components/music/disconnect-music-dialog';
+import { MusicPrefsCard } from '@/components/music/music-prefs-card';
 import {
   useSpotifyConnect,
   useSpotifyDisconnect,
@@ -46,6 +48,7 @@ export default function SpotifyIntegrationPage() {
   const disconnect = useSpotifyDisconnect();
   const updateSettings = useSpotifyUpdateSettings();
   const refreshMood = useSpotifyMoodRefresh();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (justConnected) {
@@ -118,11 +121,7 @@ export default function SpotifyIntegrationPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() =>
-                disconnect.mutate(undefined, {
-                  onSuccess: () => toast.success(t('disconnectSuccess')),
-                })
-              }
+              onClick={() => setConfirmOpen(true)}
               disabled={disconnect.isPending}
             >
               {t('disconnect')}
@@ -247,8 +246,32 @@ export default function SpotifyIntegrationPage() {
               )}
             </CardContent>
           </Card>
+
+          <MusicPrefsCard />
         </section>
       )}
+
+      <DisconnectMusicDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        source="Spotify"
+        pending={disconnect.isPending}
+        onConfirm={(keepHistory) =>
+          disconnect.mutate(
+            { keepHistory },
+            {
+              onSuccess: () => {
+                setConfirmOpen(false);
+                toast.success(
+                  keepHistory
+                    ? t('disconnectSuccess')
+                    : tI('disconnectMusic.deletedToast', { source: 'Spotify' })
+                );
+              },
+            }
+          )
+        }
+      />
     </div>
   );
 }

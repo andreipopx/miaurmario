@@ -1,5 +1,6 @@
 import logging
 import os
+import uuid
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -15,6 +16,7 @@ from app.models.user import User
 from app.schemas.notification import EmailConfig, ExpoPushConfig, NtfyConfig
 from app.services.ai_access import AIAccessError
 from app.services.ai_service import AIDisabledError
+from app.services.event_notifications import default_channels_for, notify_friendship_event
 from app.services.learning_service import LearningService
 from app.services.notification_providers import (
     EmailProvider,
@@ -74,6 +76,22 @@ async def send_notification(ctx: dict, user_id: str, outfit_id: str):
 
     except Exception:
         logger.exception(f"Failed to send notification for outfit {outfit_id}")
+        await db.rollback()
+        raise
+    finally:
+        await db.close()
+
+
+async def send_social_notification(ctx: dict, event: str, friendship_id: str) -> dict:
+    """Friend request received / accepted -> account email + Web Push."""
+    db = get_db_session(ctx)
+    try:
+        result = await notify_friendship_event(db, event, uuid.UUID(friendship_id))
+        await db.commit()
+        logger.info("Social notification %s for %s: %s", event, friendship_id, result)
+        return result
+    except Exception:
+        logger.exception("Failed to send %s notification for %s", event, friendship_id)
         await db.rollback()
         raise
     finally:
@@ -185,7 +203,9 @@ async def process_scheduled_notification(ctx: dict, schedule_id: str):
                 )
             )
         )
-        if not channels_result.scalars().first():
+        if not channels_result.scalars().first() and not await default_channels_for(
+            db, user, "daily_outfit"
+        ):
             logger.warning(f"No enabled channels for user {schedule.user_id}, skipping")
             return {"status": "skipped", "reason": "no_channels"}
 

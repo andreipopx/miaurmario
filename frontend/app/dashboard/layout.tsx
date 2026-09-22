@@ -10,6 +10,8 @@ import { Header } from '@/components/header';
 import { OfflineIndicator } from '@/components/offline-indicator';
 import { ImageLightbox } from '@/components/image-lightbox';
 import { AnnouncementBanner } from '@/components/announcement-banner';
+import { InstallHint } from '@/components/install/install-hint';
+import { PushSync } from '@/components/install/push-sync';
 import { LightboxProvider } from '@/lib/lightbox-context';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTranslations } from 'next-intl';
@@ -71,6 +73,7 @@ export default function DashboardLayout({
           {/* pb-dock reserves room for the floating mobile dock so it never covers content. */}
           <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
             <AnnouncementBanner />
+            <InstallHint />
             <SectionTabs />
             {children}
           </main>
@@ -78,6 +81,7 @@ export default function DashboardLayout({
         <MobileNav />
         {pathname && PULL_TO_REFRESH.has(pathname) && <PullToRefresh key={pathname} />}
         <OfflineIndicator />
+        <PushSync />
         <ImageLightbox />
       </div>
     </LightboxProvider>

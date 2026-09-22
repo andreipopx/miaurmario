@@ -22,6 +22,7 @@ from app.database import get_db
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.outfit import Outfit, OutfitItem, OutfitRating, OutfitVisibility, RatingScope
 from app.models.user import User
+from app.services import notification_queue
 from app.services.access_control import (
     accepted_friend_ids,
     are_friends,
@@ -414,6 +415,9 @@ async def send_friend_request(body: UsernameBody, db: Db, me: CurrentUser) -> Fr
     except FriendshipError as exc:
         raise _raise_friendship(exc) from exc
     await db.commit()
+    # They had already asked me, so request() accepted theirs: tell them instead.
+    event = "friend_accepted" if f.status == FriendshipStatus.accepted else "friend_request"
+    await notification_queue.enqueue_social_notification(event, f.id)
     await db.refresh(f, attribute_names=["requester", "addressee"])
     return _friendship_out(f, me)
 
@@ -425,6 +429,7 @@ async def accept_friend_request(friendship_id: UUID, db: Db, me: CurrentUser) ->
     except FriendshipError as exc:
         raise _raise_friendship(exc) from exc
     await db.commit()
+    await notification_queue.enqueue_social_notification("friend_accepted", f.id)
     await db.refresh(f, attribute_names=["requester", "addressee"])
     return _friendship_out(f, me)
 

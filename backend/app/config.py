@@ -133,6 +133,18 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_user: str | None = None
     smtp_password: str | None = None
+
+    # Web Push (VAPID). Generate a key pair with `python scripts/generate_vapid_keys.py`.
+    # Both keys are base64url (public: uncompressed P-256 point, private: raw 32 bytes).
+    # Push stays disabled (no "Este dispositivo" channel) until both are set.
+    vapid_public_key: str | None = Field(default=None)
+    vapid_private_key: str | None = Field(default=None)
+    vapid_subject: str = Field(default="mailto:hola@andreipop.org")
+
+    @property
+    def web_push_enabled(self) -> bool:
+        return bool(self.vapid_public_key and self.vapid_private_key)
+
     # Storage
     storage_path: str = Field(default="/data/wardrobe")
     max_upload_size_mb: int = Field(default=10)

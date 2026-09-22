@@ -13,6 +13,12 @@ from app.models.outfit import Outfit, OutfitItem
 from app.models.schedule import Schedule
 from app.models.user import User
 from app.schemas.notification import EmailConfig, ExpoPushConfig, MattermostConfig, NtfyConfig
+from app.services.event_notifications import (
+    CHANNEL_ACCOUNT_EMAIL,
+    CHANNEL_WEB_PUSH,
+    default_channels_for,
+    send_default_channels,
+)
 from app.services.notification_providers import (
     EmailMessage,
     EmailProvider,
@@ -24,6 +30,7 @@ from app.services.notification_providers import (
     NtfyNotification,
     NtfyProvider,
 )
+from app.services.web_push import PushPayload
 from app.utils.email_templates import render_outfit_email
 
 logger = logging.getLogger(__name__)
@@ -282,8 +289,9 @@ class NotificationDispatcher:
             .order_by(NotificationSettings.priority)
         )
         channels = list(channels_result.scalars().all())
+        default_channels = await default_channels_for(self.db, user, "daily_outfit")
 
-        if not channels:
+        if not channels and not default_channels:
             return [
                 NotificationResult(
                     channel="none",
@@ -292,7 +300,7 @@ class NotificationDispatcher:
                 )
             ]
 
-        results = []
+        results = await self._send_outfit_default_channels(outfit, user, for_tomorrow)
         success = False
 
         for channel_config in channels:
@@ -322,12 +330,12 @@ class NotificationDispatcher:
 
                 await self.db.flush()
 
-        if not success:
+        if channels and not success:
             # Record failed notification for retry
             notification = Notification(
                 user_id=user_id,
                 outfit_id=outfit_id,
-                channel=channels[0].channel if channels else "unknown",
+                channel=channels[0].channel,
                 status=NotificationStatus.retrying,
                 payload={"occasion": outfit.occasion},
                 attempts=1,
@@ -337,6 +345,89 @@ class NotificationDispatcher:
             self.db.add(notification)
             await self.db.flush()
 
+        return results
+
+    def _outfit_push(self, outfit: Outfit, for_tomorrow: bool) -> PushPayload:
+        day = "de mañana" if for_tomorrow else "de hoy"
+        occasion = outfit.occasion.replace("_", " ")
+        weather = outfit.weather_data or {}
+        temp = weather.get("temperature")
+        title = f"Tu look {day} está listo"
+        body = outfit.reasoning or f"Stinky te ha preparado un look {occasion}."
+        if temp is not None:
+            body = f"{temp}°C · {body}"
+        return PushPayload(
+            title=title,
+            body=body[:180],
+            url="/dashboard/history",
+            tag=f"daily-outfit-{outfit.id}",
+        )
+
+    def _render_outfit_email(self, outfit: Outfit, for_tomorrow: bool, unsubscribe_url: str):
+        weather = outfit.weather_data or {}
+        highlights: list[str] = []
+        if outfit.ai_raw_response and isinstance(outfit.ai_raw_response, dict):
+            raw = outfit.ai_raw_response.get("highlights", [])
+            if isinstance(raw, list):
+                highlights = [str(h) for h in raw]
+        return render_outfit_email(
+            occasion=outfit.occasion,
+            reasoning=outfit.reasoning,
+            highlights=highlights,
+            style_notes=outfit.style_notes,
+            temperature=weather.get("temperature") if weather else None,
+            condition=str(weather["condition"]) if weather.get("condition") else None,
+            for_tomorrow=for_tomorrow,
+            cta_url=f"{self.app_url}/dashboard/history",
+            unsubscribe_url=unsubscribe_url,
+        )
+
+    async def _send_outfit_default_channels(
+        self,
+        outfit: Outfit,
+        user: User,
+        for_tomorrow: bool,
+        only: list[str] | None = None,
+        record: bool = True,
+    ) -> list[NotificationResult]:
+        """Account email + Web Push for the daily outfit (each recorded separately)."""
+        sent = await send_default_channels(
+            self.db,
+            user=user,
+            event="daily_outfit",
+            render_email=lambda unsub: self._render_outfit_email(outfit, for_tomorrow, unsub),
+            push=self._outfit_push(outfit, for_tomorrow),
+            channels=only,
+        )
+        results: list[NotificationResult] = []
+        now = datetime.now(UTC)
+        for r in sent:
+            status = DeliveryStatus.SENT if r.success else DeliveryStatus.FAILED
+            results.append(NotificationResult(channel=r.channel, status=status, error=r.error))
+            if record:
+                self.db.add(
+                    Notification(
+                        user_id=user.id,
+                        outfit_id=outfit.id,
+                        channel=r.channel,
+                        status=NotificationStatus.sent
+                        if r.success
+                        else NotificationStatus.retrying,
+                        payload={
+                            "type": "daily_outfit",
+                            "occasion": outfit.occasion,
+                            "for_tomorrow": for_tomorrow,
+                        },
+                        attempts=1,
+                        last_attempt_at=now,
+                        sent_at=now if r.success else None,
+                        error_message=r.error,
+                    )
+                )
+        if any(r.success for r in sent):
+            outfit.sent_at = now
+            outfit.status = "sent"
+        await self.db.flush()
         return results
 
     async def retry_notification(self, notification: Notification) -> NotificationResult:
@@ -364,6 +455,23 @@ class NotificationDispatcher:
                 status=DeliveryStatus.FAILED,
                 error="Outfit not found",
             )
+
+        if notification.channel in (CHANNEL_ACCOUNT_EMAIL, CHANNEL_WEB_PUSH):
+            payload = notification.payload or {}
+            retried = await self._send_outfit_default_channels(
+                outfit,
+                user,
+                bool(payload.get("for_tomorrow")),
+                only=[notification.channel],
+                record=False,
+            )
+            if not retried:
+                return NotificationResult(
+                    channel=notification.channel,
+                    status=DeliveryStatus.FAILED,
+                    error=f"Channel {notification.channel} disabled or unavailable",
+                )
+            return retried[0]
 
         # Get the channel config for this notification's channel
         channel_result = await self.db.execute(

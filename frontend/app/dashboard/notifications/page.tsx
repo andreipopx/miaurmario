@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
@@ -12,9 +13,13 @@ import {
   Loader2,
   Settings2,
   Calendar,
+  ChevronDown,
   Mail,
   MessageSquare,
+  Smartphone,
 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DefaultChannelsCard } from '@/components/notifications/default-channels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -293,7 +298,6 @@ function AddChannelDialog({
                 <SelectContent>
                   <SelectItem value="ntfy">{t('ntfyOption')}</SelectItem>
                   <SelectItem value="mattermost">{t('mattermostOption')}</SelectItem>
-                  <SelectItem value="email">{t('emailOption')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -648,6 +652,7 @@ export default function NotificationsPage() {
   const deleteSchedule = useDeleteSchedule();
 
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'channel' | 'schedule'; id: string } | null>(null);
 
   const handleCreateChannel = async (data: ChannelFormData): Promise<void> => {
@@ -736,54 +741,21 @@ export default function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
-      <PageHeader title={t('title')} description={t('pageSubtitle')} />
+      <PageHeader
+        title={t('title')}
+        description={t('pageSubtitle')}
+        action={
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/install">
+              <Smartphone className="h-4 w-4" strokeWidth={1.75} />
+              {t('installApp')}
+            </Link>
+          </Button>
+        }
+      />
 
-      {/* Notification Channels */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Settings2 className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-                {t('channelsCardTitle')}
-              </CardTitle>
-              <CardDescription>
-                {t('channelsCardDescription')}
-              </CardDescription>
-            </div>
-            <AddChannelDialog onAdd={handleCreateChannel} isLoading={createSetting.isPending} userEmail={userProfile?.email} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loadingSettings ? (
-            <div className="space-y-4">
-              <Skeleton className="h-24 rounded-lg" />
-              <Skeleton className="h-24 rounded-lg" />
-            </div>
-          ) : settings?.length === 0 ? (
-            <EmptyState
-              state="sleepy"
-              size="sm"
-              className="py-6"
-              title={t('channelsEmptyTitle')}
-              description={t('channelsEmptyHint')}
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {settings?.map((setting) => (
-                <ChannelCard
-                  key={setting.id}
-                  setting={setting}
-                  testing={testingId === setting.id}
-                  onTest={() => handleTest(setting.id)}
-                  onToggle={(enabled) => handleToggleChannel(setting.id, enabled)}
-                  onDelete={() => setDeleteConfirm({ type: 'channel', id: setting.id })}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Default channels: account email + this device (Web Push) */}
+      <DefaultChannelsCard />
 
       {/* Schedules */}
       <Card>
@@ -837,6 +809,63 @@ export default function NotificationsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Advanced: ntfy / Mattermost (and legacy SMTP email) channels */}
+      <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+        <CollapsibleTrigger className="pressable flex w-full items-center justify-between gap-3 rounded-lg bg-panel px-4 py-4 text-left sm:px-5">
+          <span className="flex min-w-0 items-center gap-3">
+            <Settings2 className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+            <span className="min-w-0">
+              <span className="block font-bold">{t('advanced.title')}</span>
+              <span className="block text-sm text-muted-foreground">{t('advanced.description')}</span>
+            </span>
+          </span>
+          <ChevronDown
+            className={cn('h-5 w-5 shrink-0 transition-transform', advancedOpen && 'rotate-180')}
+            strokeWidth={1.75}
+            aria-hidden
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-3">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>{t('channelsCardTitle')}</CardTitle>
+                  <CardDescription>{t('advanced.channelsHint')}</CardDescription>
+                </div>
+                <AddChannelDialog
+                  onAdd={handleCreateChannel}
+                  isLoading={createSetting.isPending}
+                  userEmail={userProfile?.email}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingSettings ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-24 rounded-lg" />
+                </div>
+              ) : settings?.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('channelsEmptyHint')}</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {settings?.map((setting) => (
+                    <ChannelCard
+                      key={setting.id}
+                      setting={setting}
+                      testing={testingId === setting.id}
+                      onTest={() => handleTest(setting.id)}
+                      onToggle={(enabled) => handleToggleChannel(setting.id, enabled)}
+                      onDelete={() => setDeleteConfirm({ type: 'channel', id: setting.id })}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>

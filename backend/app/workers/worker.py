@@ -20,6 +20,7 @@ from app.workers.notifications import (
     process_scheduled_notification,
     retry_failed_notifications,
     send_notification,
+    send_social_notification,
     update_learning_profiles,
 )
 from app.workers.pinterest import import_pinterest_board, refresh_expiring_tokens
@@ -70,6 +71,7 @@ class WorkerSettings:
     functions = [
         tag_item_image,
         send_notification,
+        send_social_notification,
         retry_failed_notifications,
         check_scheduled_notifications,
         process_scheduled_notification,

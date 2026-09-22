@@ -72,6 +72,13 @@ services:
       NTFY_TOPIC: ${NTFY_TOPIC:-}
       NTFY_TOKEN: ${NTFY_TOKEN:-}
       APP_URL: ${APP_URL:-https://localhost:3000}
+      # Default notification channels (see .env.example)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      MAGIC_LINK_BASE_URL: ${MAGIC_LINK_BASE_URL:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:hola@andreipop.org}
       OIDC_SKIP_SSL_VERIFY: ${OIDC_SKIP_SSL_VERIFY:-false}
     volumes:
       - uploads_data:/data/uploads
@@ -115,11 +122,20 @@ services:
       AI_VISION_ENABLED: ${AI_VISION_ENABLED:-}
       AI_TEXT_ENABLED: ${AI_TEXT_ENABLED:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Signs the unsubscribe links in notification emails (must match the backend)
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
       # Notifications
       NTFY_SERVER: ${NTFY_SERVER:-}
       NTFY_TOPIC: ${NTFY_TOPIC:-}
       NTFY_TOKEN: ${NTFY_TOKEN:-}
       APP_URL: ${APP_URL:-https://localhost:3000}
+      # Default notification channels (see .env.example)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      MAGIC_LINK_BASE_URL: ${MAGIC_LINK_BASE_URL:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:hola@andreipop.org}
     volumes:
       - uploads_data:/data/uploads
     dns:

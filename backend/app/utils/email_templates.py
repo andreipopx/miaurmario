@@ -61,6 +61,7 @@ _CHROME = {
         "button_fallback": "¿El botón no funciona? Copia y pega este enlace en tu navegador:",
         "sent_by": "Te lo manda Stinky desde",
         "manage": "Gestionar notificaciones",
+        "unsubscribe": "Darme de baja de estos emails",
         "stinky_alt": "Stinky, el gato de Miaurmario",
     },
     "en": {
@@ -68,6 +69,7 @@ _CHROME = {
         "button_fallback": "Button not working? Copy and paste this link into your browser:",
         "sent_by": "Sent by Stinky from",
         "manage": "Manage notifications",
+        "unsubscribe": "Unsubscribe from these emails",
         "stinky_alt": "Stinky, the Miaurmario cat",
     },
 }
@@ -364,13 +366,26 @@ def render_family_invite_email(
 # --------------------------------------------------------------------------- #
 
 
-def _manage_link(locale: str, origin: str | None) -> str:
+def _manage_link(locale: str, origin: str | None, unsubscribe_url: str | None = None) -> str:
     chrome = _CHROME[normalize_locale(locale)]
     url = escape(f"{_asset_origin(origin)}/dashboard/notifications", quote=True)
-    return (
+    html = (
         f'<br><a href="{url}" style="color:{MUTED}; text-decoration:underline;">'
         f"{escape(chrome['manage'])}</a>"
     )
+    if unsubscribe_url:
+        html += (
+            f' &middot; <a href="{escape(unsubscribe_url, quote=True)}" '
+            f'style="color:{MUTED}; text-decoration:underline;">'
+            f"{escape(chrome['unsubscribe'])}</a>"
+        )
+    return html
+
+
+def _text_unsubscribe(locale: str, unsubscribe_url: str | None) -> str:
+    if not unsubscribe_url:
+        return ""
+    return f"{_CHROME[normalize_locale(locale)]['unsubscribe']}: {unsubscribe_url}"
 
 
 def render_notification_email(
@@ -437,6 +452,7 @@ def render_outfit_email(
     cta_url: str,
     locale: str | None = None,
     origin: str | None = None,
+    unsubscribe_url: str | None = None,
 ) -> RenderedEmail:
     loc = normalize_locale(locale)
     c = _OUTFIT[loc]
@@ -477,7 +493,7 @@ def render_outfit_email(
         body_html=body,
         cta_label=c["cta"],
         cta_url=cta_url,
-        footer_links_html=_manage_link(loc, origin),
+        footer_links_html=_manage_link(loc, origin, unsubscribe_url),
         origin=origin,
     )
     lines = [f"{c['occasion']}: {occasion_t}" + (f" · {weather_t}" if weather_t else "")]
@@ -489,8 +505,133 @@ def render_outfit_email(
         f"{c['tip']}: {style_notes}" if style_notes else "",
         f"{c['cta']}: {cta_url}",
         _text_footer(loc, origin),
+        _text_unsubscribe(loc, unsubscribe_url),
     )
     return RenderedEmail(subject=subject, html=html, text=text)
+
+
+# --------------------------------------------------------------------------- #
+# Social: friend request received / accepted
+# --------------------------------------------------------------------------- #
+
+_FRIEND_REQUEST = {
+    "es": {
+        "subject": "@{username} quiere ser tu amigo en Miaurmario",
+        "preheader": "Acepta y veréis los looks que compartís.",
+        "heading": "¡Tienes una solicitud de amistad!",
+        "intro": "<strong>@{username}</strong> quiere añadirte como amigo en Miaurmario. "
+        "Si aceptas, podréis ver los looks que compartís y reaccionar a ellos.",
+        "cta": "Ver solicitud",
+        "note": "¿No conoces a @{username}? Puedes rechazarla o bloquearle desde Amigos: "
+        "no se enterará.",
+    },
+    "en": {
+        "subject": "@{username} wants to be your friend on Miaurmario",
+        "preheader": "Accept and you'll see each other's shared looks.",
+        "heading": "You have a friend request!",
+        "intro": "<strong>@{username}</strong> wants to add you as a friend on Miaurmario. "
+        "If you accept, you'll see each other's shared looks and can react to them.",
+        "cta": "View request",
+        "note": "Don't know @{username}? You can decline or block them from Friends: "
+        "they won't be told.",
+    },
+}
+
+_FRIEND_ACCEPTED = {
+    "es": {
+        "subject": "@{username} ha aceptado tu solicitud",
+        "preheader": "Ya sois amigos en Miaurmario.",
+        "heading": "¡Ya sois amigos!",
+        "intro": "<strong>@{username}</strong> ha aceptado tu solicitud de amistad. "
+        "A partir de ahora veréis los looks que compartís. Stinky aprueba.",
+        "cta": "Ver amigos",
+        "note": "",
+    },
+    "en": {
+        "subject": "@{username} accepted your friend request",
+        "preheader": "You're now friends on Miaurmario.",
+        "heading": "You're friends now!",
+        "intro": "<strong>@{username}</strong> accepted your friend request. From now on "
+        "you'll see each other's shared looks. Stinky approves.",
+        "cta": "View friends",
+        "note": "",
+    },
+}
+
+
+def _render_social_email(
+    copy: dict[str, dict[str, str]],
+    *,
+    username: str,
+    cta_url: str,
+    locale: str | None,
+    origin: str | None,
+    unsubscribe_url: str | None,
+) -> RenderedEmail:
+    loc = normalize_locale(locale)
+    c = copy[loc]
+    subject = c["subject"].format(username=username)
+    note = c["note"].format(username=username)
+    html = _layout(
+        locale=loc,
+        title=subject,
+        preheader=c["preheader"],
+        heading=c["heading"],
+        body_html=_p(c["intro"].format(username=escape(username))),
+        cta_label=c["cta"],
+        cta_url=cta_url,
+        after_cta_html=_p(escape(note), style="margin:0;") if note else "",
+        footer_links_html=_manage_link(loc, origin, unsubscribe_url),
+        origin=origin,
+    )
+    plain_intro = (
+        c["intro"].replace("<strong>", "").replace("</strong>", "").format(username=username)
+    )
+    text = _text(
+        c["heading"],
+        plain_intro,
+        f"{c['cta']}: {cta_url}",
+        note,
+        _text_footer(loc, origin),
+        _text_unsubscribe(loc, unsubscribe_url),
+    )
+    return RenderedEmail(subject=subject, html=html, text=text)
+
+
+def render_friend_request_email(
+    *,
+    username: str,
+    cta_url: str,
+    locale: str | None = None,
+    origin: str | None = None,
+    unsubscribe_url: str | None = None,
+) -> RenderedEmail:
+    return _render_social_email(
+        _FRIEND_REQUEST,
+        username=username,
+        cta_url=cta_url,
+        locale=locale,
+        origin=origin,
+        unsubscribe_url=unsubscribe_url,
+    )
+
+
+def render_friend_accepted_email(
+    *,
+    username: str,
+    cta_url: str,
+    locale: str | None = None,
+    origin: str | None = None,
+    unsubscribe_url: str | None = None,
+) -> RenderedEmail:
+    return _render_social_email(
+        _FRIEND_ACCEPTED,
+        username=username,
+        cta_url=cta_url,
+        locale=locale,
+        origin=origin,
+        unsubscribe_url=unsubscribe_url,
+    )
 
 
 _TEST = {

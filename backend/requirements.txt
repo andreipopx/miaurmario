@@ -32,6 +32,7 @@ apscheduler>=3.10.4
 
 # Notifications
 aiosmtplib>=3.0.1
+pywebpush>=2.0.0  # Web Push (VAPID) for the "Este dispositivo" channel
 
 # Utilities
 tenacity>=8.2.3

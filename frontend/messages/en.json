@@ -817,6 +817,28 @@
       "deleteAccountConfirm": "This will permanently delete your account and all your data. This can't be undone.",
       "deleteAccountConfirmButton": "Delete account permanently"
     },
+    "avatar": {
+      "title": "Profile photo",
+      "description": "Your friends and anyone who can see your profile will see it. Without a photo, your initial is shown.",
+      "add": "Add photo",
+      "change": "Change photo",
+      "remove": "Remove photo",
+      "cropTitle": "Adjust your photo",
+      "cropHint": "Drag to move it and use the zoom or pinch to get closer.",
+      "cropArea": "Photo crop: drag or use the arrow keys to move, + and - to zoom",
+      "zoom": "Zoom",
+      "noPreview": "This format can't be previewed. It will be cropped to the centre.",
+      "save": "Save photo",
+      "saved": "Profile photo updated",
+      "removed": "Profile photo removed",
+      "errors": {
+        "type": "Unsupported format. Use JPG, PNG, WebP or HEIC.",
+        "size": "That photo is too large (10 MB max).",
+        "invalid": "We couldn't read that image.",
+        "rateLimited": "Too many changes in a row. Try again later.",
+        "generic": "Couldn't save the photo. Please try again."
+      }
+    },
     "header": {
       "reset": "Reset",
       "resetConfirm": "Reset all preferences to defaults?",

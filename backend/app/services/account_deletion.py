@@ -14,7 +14,7 @@ then removes, in one transaction:
 * the ``users`` row itself;
 
 and afterwards the upload directory ``STORAGE_PATH/<user_id>`` (item photos,
-feedback screenshots). The tombstone keeps the username, a SHA-256 of the email
+feedback screenshots, profile photos). The tombstone keeps the username, a SHA-256 of the email
 and per-table counts, never the data.
 """
 

@@ -30,6 +30,7 @@ import { ColorPreferences } from '@/components/settings/color-preferences';
 import { toF, toCelsius } from '@/lib/temperature';
 import { toast } from 'sonner';
 import { SecurityCard } from '@/components/settings/security-card';
+import { AvatarSettings } from '@/components/settings/avatar-settings';
 import { PageHeader } from '@/components/page-header';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { cn } from '@/lib/utils';
@@ -428,7 +429,8 @@ export default function SettingsPage() {
             <CardTitle>{tAccount('title')}</CardTitle>
             <CardDescription>{tAccount('description')}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            <AvatarSettings user={userProfile} />
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{tAccount('name')}</Label>

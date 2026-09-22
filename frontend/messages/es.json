@@ -817,6 +817,28 @@
       "deleteAccountConfirm": "Esto eliminará tu cuenta y todos tus datos de forma permanente. No se puede deshacer.",
       "deleteAccountConfirmButton": "Eliminar cuenta permanentemente"
     },
+    "avatar": {
+      "title": "Foto de perfil",
+      "description": "La ven tus amigos y quien vea tu perfil. Sin foto se muestra tu inicial.",
+      "add": "Añadir foto",
+      "change": "Cambiar foto",
+      "remove": "Quitar foto",
+      "cropTitle": "Ajusta tu foto",
+      "cropHint": "Arrastra para moverla y usa el zoom o pellizca para acercarla.",
+      "cropArea": "Recorte de la foto: arrastra o usa las flechas para moverla, + y - para el zoom",
+      "zoom": "Zoom",
+      "noPreview": "No se puede previsualizar este formato. Se recortará al centro.",
+      "save": "Guardar foto",
+      "saved": "Foto de perfil actualizada",
+      "removed": "Foto de perfil eliminada",
+      "errors": {
+        "type": "Formato no admitido. Usa JPG, PNG, WebP o HEIC.",
+        "size": "La foto pesa demasiado (máximo 10 MB).",
+        "invalid": "No hemos podido leer esa imagen.",
+        "rateLimited": "Demasiados cambios seguidos. Inténtalo más tarde.",
+        "generic": "No se pudo guardar la foto. Inténtalo de nuevo."
+      }
+    },
     "header": {
       "reset": "Restablecer",
       "resetConfirm": "¿Restablecer todas las preferencias a los valores predeterminados?",

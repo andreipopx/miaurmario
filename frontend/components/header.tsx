@@ -6,7 +6,7 @@ import { Bell } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { Wordmark } from '@/components/brand/wordmark';
 import { BackButton } from '@/components/native/back-button';
 import { ProfileDropdown } from '@/components/profile-menu';
@@ -52,7 +52,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             aria-label={tNav('profileMenu')}
             className="pressable shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:hidden"
           >
-            <StinkyAvatar size={44} />
+            <ProfileAvatar size={44} />
           </button>
         )}
 

@@ -26,6 +26,7 @@ from app.models.user import User
 from app.schemas.item import DEFAULT_WASH_INTERVALS
 from app.services.ai_access import AIAccessError, ai_error_detail
 from app.services.ai_service import AIDisabledError
+from app.services.avatar_service import avatar_thumb_url
 from app.services.item_service import ItemService
 from app.services.learning_service import LearningService
 from app.services.outfit_service import OutfitListFilters, OutfitService
@@ -419,7 +420,7 @@ def outfit_to_response(
                 id=r.id,
                 user_id=r.user_id,
                 user_display_name=_rater_name(r.user),
-                user_avatar_url=r.user.avatar_url if r.user else None,
+                user_avatar_url=avatar_thumb_url(r.user),
                 rating=r.rating,
                 comment=r.comment,
                 created_at=r.created_at,
@@ -983,7 +984,7 @@ async def submit_family_rating(
         id=rating.id,
         user_id=rating.user_id,
         user_display_name=_rater_name(current_user),
-        user_avatar_url=current_user.avatar_url,
+        user_avatar_url=avatar_thumb_url(current_user),
         rating=rating.rating,
         comment=rating.comment,
         created_at=rating.created_at,
@@ -1028,7 +1029,7 @@ async def get_family_ratings(
             id=r.id,
             user_id=r.user_id,
             user_display_name=_rater_name(r.user),
-            user_avatar_url=r.user.avatar_url,
+            user_avatar_url=avatar_thumb_url(r.user),
             rating=r.rating,
             comment=r.comment,
             created_at=r.created_at,

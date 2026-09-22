@@ -9,7 +9,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { LogOut, MessageSquareHeart, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
 
 import { AppFeedbackDialog } from '@/components/app-feedback-dialog';
-import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { SETTINGS, isSectionActive } from '@/components/nav-items';
 import { adminBadgeTotal } from '@/lib/admin';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -154,7 +154,7 @@ export function ProfileMenuSheetContent({
           onClick={onNavigate}
           className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <StinkyAvatar size={52} className="bg-background" />
+          <ProfileAvatar size={52} className="bg-background" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-base font-bold">{profile.name}</span>
             <span className="block truncate text-sm text-muted-foreground">{profile.handle}</span>
@@ -187,7 +187,7 @@ export function ProfileDropdown() {
           aria-label={t('profileMenu')}
           className="hidden shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:block"
         >
-          <StinkyAvatar size={44} />
+          <ProfileAvatar size={44} />
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content
@@ -200,7 +200,7 @@ export function ProfileDropdown() {
                 href={profile.href}
                 className="mb-1 flex items-center gap-3 rounded-2xl bg-panel p-3 outline-none data-[highlighted]:bg-accent"
               >
-                <StinkyAvatar size={40} className="bg-background" />
+                <ProfileAvatar size={40} className="bg-background" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-bold">{profile.name}</span>
                   <span className="block truncate text-[13px] text-muted-foreground">{profile.handle}</span>

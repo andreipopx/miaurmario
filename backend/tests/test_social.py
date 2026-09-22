@@ -252,7 +252,13 @@ class TestSearch:
         results = r.json()
         assert bea.username in [x["user"]["username"] for x in results]
         for x in results:
-            assert set(x["user"].keys()) == {"username", "display_name", "avatar_url", "bio"}
+            assert set(x["user"].keys()) == {
+                "username",
+                "display_name",
+                "avatar_url",
+                "avatar_thumb_url",
+                "bio",
+            }
 
     async def test_underscore_is_not_a_wildcard(self, client, ana, bea):
         # "b_a" must not match "bea_…" through LIKE's single-char wildcard.
@@ -514,7 +520,13 @@ class TestReactions:
     async def test_profile_relations(self, client, ana, bea):
         p = (await client.get(f"{API}/social/users/{bea.username}", headers=_headers(ana))).json()
         assert p["relation"] == "none"
-        assert set(p["user"].keys()) == {"username", "display_name", "avatar_url", "bio"}
+        assert set(p["user"].keys()) == {
+            "username",
+            "display_name",
+            "avatar_url",
+            "avatar_thumb_url",
+            "bio",
+        }
         await client.post(
             f"{API}/friends/requests", json={"username": bea.username}, headers=_headers(ana)
         )

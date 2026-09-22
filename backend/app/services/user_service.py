@@ -139,7 +139,9 @@ class UserService:
             user = User(
                 external_id=f"magic:{email_l}",
                 email=email_l,
-                display_name=email_l.split("@")[0],
+                # Never derive a visible name from the email; the username chosen
+                # during onboarding becomes the display name.
+                display_name="",
                 role="admin" if email_l in admin_set else "member",
                 last_login_at=datetime.now(UTC),
             )

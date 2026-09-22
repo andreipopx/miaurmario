@@ -118,6 +118,10 @@ async def update_profile(
         if await user_service.username_taken(normalized, exclude_user_id=current_user.id):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username_taken")
         update_data["username"] = normalized
+        email_local = (current_user.email or "").split("@")[0].lower()
+        current_display = (current_user.display_name or "").strip().lower()
+        if "display_name" not in update_data and current_display in ("", email_local):
+            update_data["display_name"] = normalized
 
     for field, value in update_data.items():
         setattr(current_user, field, value)

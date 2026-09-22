@@ -14,7 +14,7 @@ export function colorIndexFor(username: string): number {
 }
 
 export function initialsFor(user: Pick<PublicUser, 'display_name' | 'username'>): string {
-  const source = (user.display_name || user.username || '?').trim();
+  const source = (user.username || '?').trim();
   const parts = source.split(/\s+/).filter(Boolean);
   const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : source.slice(0, 1);
   return letters.toUpperCase();

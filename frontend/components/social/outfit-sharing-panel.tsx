@@ -87,7 +87,7 @@ export function OutfitSharingPanel({
                 <PersonAvatar user={r.user} size={36} />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm">
-                    <strong className="font-bold">{r.user.display_name}</strong>{' '}
+                    <strong className="font-bold">@{r.user.username}</strong>{' '}
                     <span className="text-muted-foreground">
                       {r.comment ? tR('commentedShort') : tR('lovedShort')}
                     </span>

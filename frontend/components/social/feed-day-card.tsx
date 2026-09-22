@@ -64,7 +64,7 @@ export function FeedDayCard({ group }: { group: FeedDayGroup }) {
   };
 
   return (
-    <article className="rounded-lg border border-border bg-card p-3.5 sm:p-4" aria-label={t('cardLabel', { name: group.author.display_name })}>
+    <article className="rounded-lg border border-border bg-card p-3.5 sm:p-4" aria-label={t('cardLabel', { name: '@' + group.author.username })}>
       <header className="flex items-center gap-3">
         <Link
           href={`/dashboard/friends/${encodeURIComponent(group.author.username)}`}
@@ -72,8 +72,7 @@ export function FeedDayCard({ group }: { group: FeedDayGroup }) {
         >
           <PersonAvatar user={group.author} size={44} />
           <span className="min-w-0">
-            <span className="block truncate text-[15px] font-bold">{group.author.display_name}</span>
-            <span className="block truncate text-sm text-muted-foreground">@{group.author.username}</span>
+            <span className="block truncate text-[15px] font-bold">@{group.author.username}</span>
           </span>
         </Link>
         <span className="shrink-0 rounded-full bg-panel px-3 py-1 text-xs font-semibold first-letter:uppercase">

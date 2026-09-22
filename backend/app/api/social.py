@@ -73,7 +73,9 @@ class PublicUser(BaseModel):
 def public_user(user: User) -> PublicUser:
     return PublicUser(
         username=user.username or "",
-        display_name=user.display_name or user.username or "",
+        # Social surfaces show only the @handle: display_name defaulted to the
+        # email's local part, which must never leak to other users.
+        display_name=user.username or "",
         avatar_url=user.avatar_url,
         bio=user.bio,
     )

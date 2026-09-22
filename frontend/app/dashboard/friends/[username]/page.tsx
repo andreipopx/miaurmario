@@ -65,7 +65,7 @@ export default function FriendProfilePage() {
   const list = outfits.data?.pages.flatMap((p) => p.items) ?? [];
 
   const onBlock = () => {
-    if (!confirm(t('confirmBlock', { name: user.display_name }))) return;
+    if (!confirm(t('confirmBlock', { name: '@' + user.username }))) return;
     block.mutate(user.username, {
       onSuccess: () => {
         toast.success(t('blocked'));
@@ -88,8 +88,7 @@ export default function FriendProfilePage() {
             </span>
           )}
         </div>
-        <h1 className="mt-3 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">{user.display_name}</h1>
-        <p className="text-sm font-semibold text-muted-foreground">@{user.username}</p>
+        <h1 className="mt-3 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">@{user.username}</h1>
         {user.bio && <p className="mx-auto mt-2 max-w-sm text-[15px] leading-snug">{user.bio}</p>}
         {friend_count != null && (
           <p className="mt-2 text-sm text-muted-foreground">{t('friendCount', { count: friend_count })}</p>
@@ -129,7 +128,7 @@ export default function FriendProfilePage() {
             size="sm"
             state="sleepy"
             title={relation === 'friends' || is_me ? t('noLooksTitle') : t('notFriendsTitle')}
-            description={relation === 'friends' || is_me ? t('noLooksBody', { name: user.display_name }) : t('notFriendsBody', { name: user.display_name })}
+            description={relation === 'friends' || is_me ? t('noLooksBody', { name: '@' + user.username }) : t('notFriendsBody', { name: '@' + user.username })}
           />
         ) : (
           <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3">

@@ -126,8 +126,7 @@ function PersonRow({
     <>
       <PersonAvatar user={user} size={44} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-bold">{user.display_name}</span>
-        <span className="block truncate text-sm text-muted-foreground">@{user.username}</span>
+        <span className="block truncate text-[15px] font-bold">@{user.username}</span>
       </span>
     </>
   );
@@ -201,7 +200,7 @@ function SearchBox({ onAccepted }: { onAccepted: (name: string) => void }) {
                     friendshipId={r.friendship_id}
                     size="sm"
                     compact
-                    onAccepted={() => onAccepted(r.user.display_name)}
+                    onAccepted={() => onAccepted('@' + r.user.username)}
                   />
                 </PersonRow>
               ))}
@@ -239,7 +238,7 @@ function FriendsTab({ onAccepted }: { onAccepted: (name: string) => void }) {
             <Section title={t('incoming', { count: data.incoming.length })}>
               {data.incoming.map((f) => (
                 <PersonRow key={f.id} user={f.user} stacked>
-                  <RelationActions username={f.user.username} relation="incoming" friendshipId={f.id} size="sm" onAccepted={() => onAccepted(f.user.display_name)} />
+                  <RelationActions username={f.user.username} relation="incoming" friendshipId={f.id} size="sm" onAccepted={() => onAccepted('@' + f.user.username)} />
                 </PersonRow>
               ))}
             </Section>
@@ -331,7 +330,7 @@ function ActivityTab({ active }: { active: boolean }) {
               <PersonAvatar user={a.user} size={40} />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm">
-                  <strong className="font-bold">{a.user.display_name}</strong>{' '}
+                  <strong className="font-bold">@{a.user.username}</strong>{' '}
                   {a.comment ? t('commented') : t('loved')}{' '}
                   <span className="font-semibold first-letter:uppercase">{a.outfit_name || occasion}</span>
                 </span>

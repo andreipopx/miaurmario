@@ -95,7 +95,7 @@ export function ReactionBar({ outfit }: { outfit: SocialOutfit }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('commentTitle', { name: outfit.author.display_name })}</DialogTitle>
+            <DialogTitle>{t('commentTitle', { name: '@' + outfit.author.username })}</DialogTitle>
             <DialogDescription>{t('commentHint')}</DialogDescription>
           </DialogHeader>
           <Textarea

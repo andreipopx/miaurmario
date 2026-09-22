@@ -73,7 +73,7 @@ export function RelationActions({
           send.mutate(username, {
             onSuccess: (f) => {
               if (f.relation === 'friends') {
-                toast.success(t('nowFriends', { name: f.user.display_name }));
+                toast.success(t('nowFriends', { name: '@' + f.user.username }));
                 onAccepted?.();
               } else toast.success(t('requestSent'));
             },
@@ -111,7 +111,7 @@ export function RelationActions({
           onClick={() =>
             accept.mutate(friendshipId, {
               onSuccess: (f) => {
-                toast.success(t('nowFriends', { name: f.user.display_name }));
+                toast.success(t('nowFriends', { name: '@' + f.user.username }));
                 onAccepted?.();
               },
               onError,

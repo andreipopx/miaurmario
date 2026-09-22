@@ -86,9 +86,9 @@ describe('navigation', () => {
 });
 
 describe('PersonAvatar helpers', () => {
-  it('initials from display name', () => {
-    expect(initialsFor({ display_name: 'Ana Pop', username: 'ana' })).toBe('AP');
-    expect(initialsFor({ display_name: 'bea', username: 'bea' })).toBe('B');
+  it('initials come from the handle, never the (email-derived) display name', () => {
+    expect(initialsFor({ display_name: 'martingomezlucia8', username: 'lumago' })).toBe('L');
+    expect(initialsFor({ display_name: '', username: 'bea' })).toBe('B');
   });
 
   it('stable colour index in range', () => {

@@ -72,8 +72,7 @@ export default function PublicProfilePage() {
             <div className="mt-4 flex justify-center">
               <PersonAvatar user={data.user} size={64} />
             </div>
-            <h1 className="mt-3 text-2xl font-extrabold tracking-[-0.02em]">{data.user.display_name}</h1>
-            <p className="text-sm font-semibold text-muted-foreground">@{data.user.username}</p>
+            <h1 className="mt-3 text-2xl font-extrabold tracking-[-0.02em]">@{data.user.username}</h1>
             {data.user.bio && <p className="mt-2 text-[15px] leading-snug">{data.user.bio}</p>}
 
             <div className="mt-5 flex flex-col items-stretch gap-2">
@@ -84,7 +83,7 @@ export default function PublicProfilePage() {
                 </>
               ) : data.relation === 'friends' ? (
                 <>
-                  <p className="text-[15px] font-semibold">{t('alreadyFriends', { name: data.user.display_name })}</p>
+                  <p className="text-[15px] font-semibold">{t('alreadyFriends', { name: '@' + data.user.username })}</p>
                   <Button asChild size="lg">
                     <Link href={`/dashboard/friends/${encodeURIComponent(data.user.username)}`}>{t('seeLooks')}</Link>
                   </Button>
@@ -93,7 +92,7 @@ export default function PublicProfilePage() {
                 <p className="text-sm text-muted-foreground">{t('blockedByYou')}</p>
               ) : (
                 <>
-                  <p className="text-[15px]">{t('invite', { name: data.user.display_name })}</p>
+                  <p className="text-[15px]">{t('invite', { name: '@' + data.user.username })}</p>
                   <div className="flex justify-center">
                     <RelationActions
                       username={data.user.username}

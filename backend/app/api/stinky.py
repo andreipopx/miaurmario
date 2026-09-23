@@ -106,11 +106,20 @@ class ConversationList(BaseModel):
     conversations: list[ConversationSummary]
 
 
+class MemoryNote(BaseModel):
+    """ "Stinky ha tomado nota: ..." — what he wrote to «Stinky recuerda»."""
+
+    kind: str
+    text: str
+    action: Literal["created", "updated", "deleted"] = "created"
+
+
 class ChatMessageOut(BaseModel):
     id: UUID
     role: Literal["user", "assistant"]
     content: str
     cards: list[OutfitCard] = []
+    notes: list[MemoryNote] = []
     created_at: datetime
 
 
@@ -166,6 +175,16 @@ def card_for_client(card: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def note_for_client(note: dict[str, Any]) -> dict[str, Any]:
+    """Only the three keys the chat renders; text is capped like any tool data."""
+    action = note.get("action")
+    return {
+        "kind": clean_text(note.get("kind"), 20) or "fact",
+        "text": clean_text(note.get("text"), 200) or "",
+        "action": action if action in ("created", "updated", "deleted") else "created",
+    }
+
+
 def sse(event: str, data: dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
 
@@ -209,6 +228,8 @@ async def _chat_stream(
                     continue
                 if name == "outfit":
                     data = {"card": card_for_client(data["card"])}
+                elif name == "memory":
+                    data = {"note": note_for_client(data["note"])}
                 yield sse(name, data)
         except Exception:
             logger.exception("Stinky chat turn failed")
@@ -318,6 +339,7 @@ def _collapse_messages(rows: list[ChatMessage]) -> list[ChatMessageOut]:
         cards = [
             OutfitCard(**card_for_client(c)) for c in (row.attachments or []) if isinstance(c, dict)
         ]
+        notes = [MemoryNote(**note_for_client(n)) for n in (row.notes or []) if isinstance(n, dict)]
         if current is None:
             current = ChatMessageOut(
                 id=row.id, role="assistant", content="", created_at=row.created_at
@@ -327,8 +349,10 @@ def _collapse_messages(rows: list[ChatMessage]) -> list[ChatMessageOut]:
             current.content = f"{current.content}\n\n{text}" if current.content else text
         if cards:
             current.cards = cards  # the final row carries every card of the turn
+        if notes:
+            current.notes = notes  # same for the memory notes
         current.id = row.id  # the final row id (used to mark cards as saved)
-    return [m for m in out if m.role == "user" or m.content or m.cards]
+    return [m for m in out if m.role == "user" or m.content or m.cards or m.notes]
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationDetail)

@@ -38,6 +38,7 @@ from app.models.pinterest import PinterestConnection, PinterestPin
 from app.models.preference import UserPreference
 from app.models.schedule import Schedule
 from app.models.spotify import SpotifyConnection
+from app.models.stinky_memory import StinkyMemory
 from app.models.user import User
 from app.models.user_ai_settings import UserAISettings
 
@@ -50,6 +51,7 @@ __all__ = [
     "WaitlistRequest",
     "ChatConversation",
     "ChatMessage",
+    "StinkyMemory",
     "Family",
     "FamilyInvite",
     "Friendship",

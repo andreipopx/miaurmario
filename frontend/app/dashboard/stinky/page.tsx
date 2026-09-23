@@ -1,11 +1,12 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowUp, History, Loader2, SquarePen, Square } from 'lucide-react';
+import { ArrowUp, History, Loader2, NotebookPen, SquarePen, Square } from 'lucide-react';
 
 import { Stinky } from '@/components/stinky/stinky';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
@@ -32,6 +33,7 @@ import {
   rotate,
   splitBold,
   streamChat,
+  type ChatMemoryNote,
   type ChatMessage,
   type ChatOutfitCard,
 } from '@/lib/stinky-chat';
@@ -49,6 +51,8 @@ const TOOL_KEYS = new Set([
   'show_outfit',
   'create_outfit',
   'suggest_outfit',
+  'remember',
+  'forget',
 ]);
 
 let localIdSeq = 0;
@@ -74,6 +78,35 @@ function RichText({ text }: { text: string }) {
         </span>
       ))}
     </>
+  );
+}
+
+/**
+ * "Stinky ha tomado nota: ..." — a discreet line so a memory he writes during
+ * the chat is never invisible, with the way out (Ajustes) right next to it.
+ */
+function MemoryNotes({ notes }: { notes: ChatMemoryNote[] }) {
+  const t = useTranslations('stinkyChat');
+  return (
+    <ul className="mt-1 w-full space-y-1" data-testid="memory-notes">
+      {notes.map((note, i) => (
+        <li
+          key={`${note.text}-${i}`}
+          className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 rounded-quick bg-panel/70 px-3 py-1.5 text-[13px] leading-snug text-muted-foreground"
+        >
+          <NotebookPen className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+          <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+            {note.action === 'deleted' ? t('memoryForgot', { text: note.text }) : t('memoryNote', { text: note.text })}
+          </span>
+          <Link
+            href="/dashboard/settings/memory"
+            className="font-bold underline underline-offset-2 hover:text-foreground"
+          >
+            {t('memoryManage')}
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -114,7 +147,8 @@ function Bubble({
       </div>
     );
   }
-  const empty = !message.content && message.cards.length === 0;
+  const notes = message.notes ?? [];
+  const empty = !message.content && message.cards.length === 0 && notes.length === 0;
   return (
     <div className="flex items-end gap-2">
       <StinkyAvatar size={30} className="mb-0.5 bg-signature-soft" />
@@ -137,6 +171,7 @@ function Bubble({
             onSave={message.streaming ? undefined : () => onSaveCard(message, card, i)}
           />
         ))}
+        {notes.length > 0 && <MemoryNotes notes={notes} />}
         {message.streaming && !empty && statusLabel && (
           <span className="mt-1 px-2 text-xs text-muted-foreground">{statusLabel}</span>
         )}
@@ -199,7 +234,7 @@ function StinkyChat() {
     if (!data || data.id !== cParam || loadedIdRef.current === cParam || streaming) return;
     loadedIdRef.current = cParam;
     setConversationId(cParam);
-    setMessages(data.messages.map((m) => ({ ...m, cards: m.cards ?? [] })));
+    setMessages(data.messages.map((m) => ({ ...m, cards: m.cards ?? [], notes: m.notes ?? [] })));
   }, [cParam, conversation.data, streaming]);
 
   useEffect(() => {
@@ -240,7 +275,7 @@ function StinkyChat() {
       setMessages((ms) => [
         ...ms,
         userMsg,
-        { id: botId, role: 'assistant', content: '', cards: [], streaming: true },
+        { id: botId, role: 'assistant', content: '', cards: [], notes: [], streaming: true },
       ]);
       setInput('');
       setStreaming(true);

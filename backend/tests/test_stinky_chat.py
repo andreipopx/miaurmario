@@ -14,6 +14,7 @@ from app.config import get_settings
 from app.models.chat import ChatConversation, ChatMessage
 from app.models.item import ClothingItem, ItemStatus
 from app.models.outfit import Outfit, OutfitItem, OutfitSource
+from app.models.stinky_memory import StinkyMemory
 from app.models.user import User
 from app.models.user_ai_settings import UserAISettings
 from app.services.ai_access import require_ai_client
@@ -375,6 +376,60 @@ async def test_create_outfit_via_chat_emits_card(client, db_session, alice, mock
     assert outfit.user_id == alice.id
     assert outfit.source == OutfitSource.stinky_chat
     assert outfit.name == "Lunes negro"
+
+
+async def test_remember_via_chat_emits_a_note_and_survives_reload(
+    client, db_session, alice, mock_provider
+):
+    """A memory Stinky writes mid-chat is never invisible: it streams as a
+    ``memory`` event and stays on the message when the chat is reopened."""
+    mock_provider(
+        [
+            tool_call("remember", {"kind": "preference", "text": "le gusta el lino"}),
+            reasoning_then_text("Apuntado. Prrr."),
+        ]
+    )
+    resp = await client.post(
+        "/api/v1/stinky/chat",
+        json={"message": "me encanta el lino"},
+        headers=_headers(alice),
+    )
+    events = parse_sse(resp.text)
+    notes = [d["note"] for n, d in events if n == "memory"]
+    assert notes == [{"kind": "preference", "text": "le gusta el lino", "action": "created"}]
+
+    stored = (
+        (await db_session.execute(select(StinkyMemory).where(StinkyMemory.user_id == alice.id)))
+        .scalars()
+        .all()
+    )
+    assert [m.text for m in stored] == ["le gusta el lino"]
+    assert stored[0].source == "chat"
+
+    conversation_id = [d for n, d in events if n == "meta"][0]["conversation_id"]
+    detail = await client.get(
+        f"/api/v1/stinky/conversations/{conversation_id}", headers=_headers(alice)
+    )
+    assistant = [m for m in detail.json()["messages"] if m["role"] == "assistant"][-1]
+    assert assistant["notes"] == [
+        {"kind": "preference", "text": "le gusta el lino", "action": "created"}
+    ]
+
+
+async def test_the_memory_digest_reaches_the_system_prompt(
+    client, db_session, alice, mock_provider
+):
+    from app.services import stinky_memory
+
+    await stinky_memory.remember(db_session, alice.id, "name", "Andrea")
+    await stinky_memory.remember(db_session, alice.id, "dislike", "no lleva rojo")
+    await db_session.commit()
+
+    prov = mock_provider([reasoning_then_text("Hola, Andrea.")])
+    await client.post("/api/v1/stinky/chat", json={"message": "hola"}, headers=_headers(alice))
+    system = prov.requests[0]["messages"][0]["content"]
+    assert "Le gusta que le llamen: Andrea" in system
+    assert "No le gusta: no lleva rojo" in system
 
 
 async def test_provider_error_yields_error_event(client, alice, monkeypatch):

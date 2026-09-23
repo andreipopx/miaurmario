@@ -13,6 +13,7 @@ from app.models.preference import UserPreference
 from app.models.user import User
 from app.services.ai_access import require_ai_client
 from app.services.ai_service import AIResponseError
+from app.services.stinky_memory import stylist_memory_lines
 from app.utils.clothing import deduplicate_by_body_slot
 from app.utils.prompts import load_prompt
 from app.utils.style_profile import format_style_profile_for_prompt
@@ -58,7 +59,9 @@ class PairingService:
         )
         preferences = result.scalar_one_or_none()
         return format_style_profile_for_prompt(
-            preferences, body_measurements=getattr(user, "body_measurements", None)
+            preferences,
+            body_measurements=getattr(user, "body_measurements", None),
+            memory_text=await stylist_memory_lines(self.db, user.id),
         )
 
     def _format_item_description(self, item: ClothingItem) -> str:

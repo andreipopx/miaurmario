@@ -1047,6 +1047,11 @@
       "description": "What we tell you by email and on your phone, and how to install Miaurmario.",
       "manage": "Notifications",
       "install": "Install Miaurmario"
+    },
+    "styleQuiz": {
+      "title": "Your style with Stinky",
+      "description": "The card quiz: what you like, what you don't and how you like things to sit.",
+      "cta": "See your style"
     }
   },
   "invite": {
@@ -3283,6 +3288,208 @@
       "progress": "{count} of {min} items before Stinky starts suggesting looks",
       "progressHint": "Ideally a top and a bottom, or a dress and some shoes.",
       "progressCta": "Add another item"
+    },
+    "styleQuiz": {
+      "dialogLabel": "Your style with Stinky",
+      "pageTitle": "Your style",
+      "pageDescription": "What you have told Stinky about your taste. It is about clothes, not about you.",
+      "backToSettings": "← Settings",
+      "loading": "Loading…",
+      "progressLabel": "Quiz progress",
+      "skip": "Skip",
+      "next": "Next",
+      "back": "Back",
+      "finish": "Done",
+      "done": "Let's go!",
+      "saveError": "I couldn't save your style. Try again.",
+      "savedToast": "Saved. I'll keep it in mind.",
+      "startQuiz": "Take the quiz",
+      "emptyState": "I don't know what you like yet. Take a quick quiz and I'll start suggesting looks with your taste, not mine.",
+      "lastTuned": "Last time you tuned your style: {date}",
+      "cardOf": "Card {current} of {total}",
+      "cardRole": "style card",
+      "deckPrompt": "Is this you?",
+      "deckHint": "Swipe the card or use the buttons. The ← and → keys work too.",
+      "skipCard": "Not fussed",
+      "likeCard": "I like: {card}",
+      "dislikeCard": "Not for me: {card}",
+      "addChip": "Add",
+      "removeChip": "Remove {value}",
+      "chipsFull": "That's plenty, I can work with those",
+      "categories": {
+        "aesthetic": "A look",
+        "silhouette": "A silhouette",
+        "palette": "A palette"
+      },
+      "answers": {
+        "like": "you like it",
+        "dislike": "not for you",
+        "pass": "no opinion"
+      },
+      "steps": {
+        "length": "Your style with Stinky",
+        "fit": "How you like it to sit",
+        "essentials": "Two more things",
+        "likes": "Your references",
+        "avoid": "What not to",
+        "summary": "What I understood"
+      },
+      "length": {
+        "title": "Quick or thorough?",
+        "body": "Your call. You can redo it or go further whenever you like.",
+        "bodyMerge": "Whatever you pick now wins; anything you don't touch stays as it is.",
+        "quick": {
+          "title": "Quick",
+          "body": "{cards} cards and two questions. Under a minute."
+        },
+        "deep": {
+          "title": "Thorough",
+          "body": "{cards} cards and all the questions. About three minutes."
+        }
+      },
+      "fit": {
+        "title": "How do you like clothes to sit?",
+        "body": "This is about the garment, not about you: it helps me pick the cut.",
+        "options": {
+          "holgado": "Loose",
+          "ajustado": "Close-fitting",
+          "mixto": "Depends: I mix"
+        }
+      },
+      "brands": {
+        "title": "Brands, designers or references",
+        "body": "Whatever inspires you. I use them as a compass, not to copy them.",
+        "placeholder": "Type and press Enter"
+      },
+      "occasions": {
+        "title": "What do you dress for most?",
+        "body": "Office, uni, going out, home… whatever fills your week.",
+        "placeholder": "Office, weekend plans…"
+      },
+      "neverWear": {
+        "title": "Things you never wear",
+        "body": "Garments, cuts or prints you don't want to see in my suggestions.",
+        "placeholder": "Heels, floral prints…"
+      },
+      "colorsAvoid": {
+        "title": "Colours you'd rather avoid",
+        "body": "I'll leave them out unless there's no other option.",
+        "placeholder": "Yellow, orange…"
+      },
+      "summary": {
+        "title": "What Stinky has learned",
+        "empty": "You haven't told me anything yet. No problem: I'll learn from what you wear.",
+        "editable": "You can edit it or redo it whenever you like from Settings → Your style.",
+        "editNow": "Edit it by hand",
+        "keepGoing": "Keep tuning",
+        "changed": "You changed your mind on {count, plural, one {one thing} other {# things}}: {list}."
+      },
+      "restyle": {
+        "title": "Tune your style again",
+        "body": "Three ways to do it, whichever suits you.",
+        "adjust": {
+          "title": "Adjust what I have",
+          "body": "Change only what you want, no need to redo the quiz."
+        },
+        "merge": {
+          "title": "Merge with the old one",
+          "body": "Swipe again; the new answers win and the rest stays."
+        },
+        "fresh": {
+          "title": "Start from scratch",
+          "body": "I delete your profile and ask everything again.",
+          "confirmTitle": "Start from scratch?",
+          "confirmBody": "Everything you told me about your style is deleted and I ask it all again. This can't be undone.",
+          "confirm": "Yes, delete and start",
+          "cancel": "Never mind"
+        }
+      },
+      "editor": {
+        "title": "Adjust what I have",
+        "body": "Tap a card to change it: like → not for me → no opinion.",
+        "cards": "Style cards",
+        "cycle": "{card}: {state}. Tap to change",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "cards": {
+        "minimal": {
+          "title": "Clean minimalism",
+          "body": "Few pieces, straight lines, zero noise."
+        },
+        "streetwear": {
+          "title": "Streetwear",
+          "body": "Hoodies, trainers and logos with attitude."
+        },
+        "tailored": {
+          "title": "Tailoring",
+          "body": "Blazers, pleated trousers, everything measured."
+        },
+        "boho": {
+          "title": "Bohemian",
+          "body": "Flowing fabrics, prints, a festival air."
+        },
+        "preppy": {
+          "title": "Preppy",
+          "body": "Polos, knitwear over the shoulders, boat shoes."
+        },
+        "vintage": {
+          "title": "Vintage and second-hand",
+          "body": "Pieces with a history, nothing straight off the rail."
+        },
+        "sporty": {
+          "title": "Sporty and athleisure",
+          "body": "Technical, comfortable, ready to move."
+        },
+        "romantic": {
+          "title": "Romantic and flowing",
+          "body": "Ruffles, ties, light fabrics."
+        },
+        "utility": {
+          "title": "Workwear and utility",
+          "body": "Pockets, canvas and work garments."
+        },
+        "oversize": {
+          "title": "Loose volumes",
+          "body": "Everything a couple of sizes up, on purpose."
+        },
+        "fitted": {
+          "title": "Close lines",
+          "body": "Garments that follow the line, no slack."
+        },
+        "wide-leg": {
+          "title": "Wide-leg trousers",
+          "body": "A broad leg falling straight to the floor."
+        },
+        "layers": {
+          "title": "Long layers",
+          "body": "Coats and gilets stacked, cold or not."
+        },
+        "monochrome": {
+          "title": "One single colour",
+          "body": "The same tone from top to bottom."
+        },
+        "neutrals": {
+          "title": "Warm neutrals",
+          "body": "Beige, ecru, camel and brown."
+        },
+        "black-white": {
+          "title": "Black and white",
+          "body": "No half measures, pure contrast."
+        },
+        "pastels": {
+          "title": "Pastels",
+          "body": "Soft, washed-out tones."
+        },
+        "brights": {
+          "title": "Bright colours",
+          "body": "Red, yellow, electric green."
+        },
+        "jewel": {
+          "title": "Deep tones",
+          "body": "Burgundy, bottle green, navy."
+        }
+      }
     }
   }
 }

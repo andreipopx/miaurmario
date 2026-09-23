@@ -1047,6 +1047,11 @@
       "description": "Qué te avisamos por email y en el móvil, y cómo instalar Miaurmario.",
       "manage": "Notificaciones",
       "install": "Instala Miaurmario"
+    },
+    "styleQuiz": {
+      "title": "Tu estilo con Stinky",
+      "description": "El test de tarjetas: lo que te gusta, lo que no y cómo te gusta que te quede.",
+      "cta": "Ver tu estilo"
     }
   },
   "invite": {
@@ -3283,6 +3288,208 @@
       "progress": "{count} de {min} prendas para que Stinky empiece a proponerte looks",
       "progressHint": "Mejor una parte de arriba y otra de abajo, o un vestido y unos zapatos.",
       "progressCta": "Subir otra prenda"
+    },
+    "styleQuiz": {
+      "dialogLabel": "Tu estilo con Stinky",
+      "pageTitle": "Tu estilo",
+      "pageDescription": "Lo que le has contado a Stinky sobre tu gusto. Va de ropa, no de ti.",
+      "backToSettings": "← Ajustes",
+      "loading": "Cargando…",
+      "progressLabel": "Progreso del test",
+      "skip": "Saltar",
+      "next": "Siguiente",
+      "back": "Anterior",
+      "finish": "Listo",
+      "done": "¡A por ello!",
+      "saveError": "No he podido guardar tu estilo. Inténtalo otra vez.",
+      "savedToast": "Guardado. Lo tendré en cuenta.",
+      "startQuiz": "Hacer el test",
+      "emptyState": "Todavía no sé qué te gusta. Hazme un test rápido y empiezo a proponerte looks con tu criterio, no con el mío.",
+      "lastTuned": "Última vez que afinaste tu estilo: {date}",
+      "cardOf": "Tarjeta {current} de {total}",
+      "cardRole": "tarjeta de estilo",
+      "deckPrompt": "¿Esto te pega?",
+      "deckHint": "Desliza la tarjeta o usa los botones. También valen las flechas ← y →.",
+      "skipCard": "Ni fu ni fa",
+      "likeCard": "Me gusta: {card}",
+      "dislikeCard": "No me va: {card}",
+      "addChip": "Añadir",
+      "removeChip": "Quitar {value}",
+      "chipsFull": "Ya tienes bastantes, con esos me apaño",
+      "categories": {
+        "aesthetic": "Un look",
+        "silhouette": "Una silueta",
+        "palette": "Una paleta"
+      },
+      "answers": {
+        "like": "te gusta",
+        "dislike": "no te va",
+        "pass": "sin opinión"
+      },
+      "steps": {
+        "length": "Tu estilo con Stinky",
+        "fit": "Cómo te gusta que te quede",
+        "essentials": "Dos cosas más",
+        "likes": "Tus referencias",
+        "avoid": "Lo que no",
+        "summary": "Lo que he entendido"
+      },
+      "length": {
+        "title": "¿Vamos rápido o a fondo?",
+        "body": "Tú eliges. Lo puedes repetir o ampliar cuando quieras.",
+        "bodyMerge": "Lo nuevo que elijas manda; lo que no toques se queda como está.",
+        "quick": {
+          "title": "Rápido",
+          "body": "{cards} tarjetas y dos preguntas. Menos de un minuto."
+        },
+        "deep": {
+          "title": "A fondo",
+          "body": "{cards} tarjetas y todas las preguntas. Unos tres minutos."
+        }
+      },
+      "fit": {
+        "title": "¿Cómo te gusta que te quede la ropa?",
+        "body": "Es sobre la prenda, no sobre ti: me ayuda a elegir el corte.",
+        "options": {
+          "holgado": "Holgada",
+          "ajustado": "Ajustada",
+          "mixto": "Depende: mezclo"
+        }
+      },
+      "brands": {
+        "title": "Marcas, diseñadores o referencias",
+        "body": "Lo que sea que te inspire. Las uso de brújula, no para copiarlas.",
+        "placeholder": "Escribe y pulsa Intro"
+      },
+      "occasions": {
+        "title": "¿Para qué te vistes más?",
+        "body": "Oficina, universidad, salir, casa… lo que más te toque.",
+        "placeholder": "Oficina, planes de finde…"
+      },
+      "neverWear": {
+        "title": "Lo que no te pones nunca",
+        "body": "Prendas, cortes o estampados que no quieres ver en mis propuestas.",
+        "placeholder": "Tacones, estampado de flores…"
+      },
+      "colorsAvoid": {
+        "title": "Colores que prefieres evitar",
+        "body": "Los dejo fuera salvo que no me quede otra.",
+        "placeholder": "Amarillo, naranja…"
+      },
+      "summary": {
+        "title": "Lo que Stinky ha aprendido",
+        "empty": "De momento no me has contado nada. No pasa nada: iré aprendiendo de lo que te pongas.",
+        "editable": "Puedes editarlo o rehacerlo cuando quieras desde Ajustes → Tu estilo.",
+        "editNow": "Editarlo a mano",
+        "keepGoing": "Seguir afinando",
+        "changed": "Has cambiado de idea en {count, plural, one {una cosa} other {# cosas}}: {list}."
+      },
+      "restyle": {
+        "title": "Volver a afinar tu estilo",
+        "body": "Tres formas de hacerlo, según lo que te apetezca.",
+        "adjust": {
+          "title": "Reajustar lo que tengo",
+          "body": "Cambia solo lo que quieras, sin repetir el test."
+        },
+        "merge": {
+          "title": "Mezclar con lo anterior",
+          "body": "Vuelves a pasar tarjetas; lo nuevo manda y lo demás se queda."
+        },
+        "fresh": {
+          "title": "Empezar de cero",
+          "body": "Borro tu perfil y te lo pregunto todo otra vez.",
+          "confirmTitle": "¿Empezamos de cero?",
+          "confirmBody": "Se borra lo que me has contado sobre tu estilo y te lo pregunto todo de nuevo. Esto no se puede deshacer.",
+          "confirm": "Sí, borrar y empezar",
+          "cancel": "Mejor no"
+        }
+      },
+      "editor": {
+        "title": "Reajustar lo que tengo",
+        "body": "Toca una tarjeta para cambiarla: me gusta → no me va → sin opinión.",
+        "cards": "Tarjetas de estilo",
+        "cycle": "{card}: {state}. Tocar para cambiar",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "cards": {
+        "minimal": {
+          "title": "Minimalismo limpio",
+          "body": "Pocas piezas, líneas rectas, cero ruido."
+        },
+        "streetwear": {
+          "title": "Streetwear",
+          "body": "Sudaderas, zapatillas y logos con actitud."
+        },
+        "tailored": {
+          "title": "Sastrería",
+          "body": "Americanas, pantalón de pinzas, todo medido."
+        },
+        "boho": {
+          "title": "Bohemio",
+          "body": "Tejidos fluidos, estampados, aire de festival."
+        },
+        "preppy": {
+          "title": "Preppy",
+          "body": "Polos, punto sobre los hombros, náuticos."
+        },
+        "vintage": {
+          "title": "Vintage y segunda mano",
+          "body": "Piezas con historia, nada recién salido de tienda."
+        },
+        "sporty": {
+          "title": "Deportivo y athleisure",
+          "body": "Técnico, cómodo, listo para moverte."
+        },
+        "romantic": {
+          "title": "Romántico y fluido",
+          "body": "Vuelos, lazadas, tejidos ligeros."
+        },
+        "utility": {
+          "title": "Workwear y utilitario",
+          "body": "Bolsillos, lonas y prendas de trabajo."
+        },
+        "oversize": {
+          "title": "Volúmenes holgados",
+          "body": "Todo un par de tallas más grande, a propósito."
+        },
+        "fitted": {
+          "title": "Líneas ajustadas",
+          "body": "Prendas que siguen la línea, sin holguras."
+        },
+        "wide-leg": {
+          "title": "Pantalón ancho",
+          "body": "Pernera amplia que cae recta hasta el suelo."
+        },
+        "layers": {
+          "title": "Capas largas",
+          "body": "Abrigos y chalecos superpuestos, aunque no haga frío."
+        },
+        "monochrome": {
+          "title": "Un solo color",
+          "body": "El mismo tono de arriba abajo."
+        },
+        "neutrals": {
+          "title": "Neutros cálidos",
+          "body": "Beige, crudo, camel y marrón."
+        },
+        "black-white": {
+          "title": "Blanco y negro",
+          "body": "Sin medias tintas, contraste puro."
+        },
+        "pastels": {
+          "title": "Pasteles",
+          "body": "Tonos suaves y lavados."
+        },
+        "brights": {
+          "title": "Colores vivos",
+          "body": "Rojo, amarillo, verde eléctrico."
+        },
+        "jewel": {
+          "title": "Tonos profundos",
+          "body": "Burdeos, verde botella, azul marino."
+        }
+      }
     }
   }
 }

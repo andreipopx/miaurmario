@@ -3,23 +3,12 @@
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import {
-  closeNotificationHaptics,
-  isNotificationHapticEnabled,
-} from '@/lib/native/notification-haptic';
 
 const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
 const CHECK_EVERY_MS = 30 * 60 * 1000;
 
 export function ServiceWorkerRegister() {
   const t = useTranslations('pwa');
-
-  // The iPhone haptic experiment flashes a notification and closes it again; if the app was killed
-  // mid-flash, one can survive. Sweep it away on load, but only for devices that opted in.
-  useEffect(() => {
-    if (!isNotificationHapticEnabled()) return;
-    void closeNotificationHaptics();
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

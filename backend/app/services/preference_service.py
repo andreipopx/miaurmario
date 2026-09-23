@@ -6,6 +6,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.preference import UserPreference
 from app.schemas.preference import PreferenceUpdate
+from app.utils.style_quiz import normalize_quiz, stamp_now
 
 
 class PreferenceService:
@@ -45,6 +46,7 @@ class PreferenceService:
             variety_level="moderate",
             excluded_item_ids=[],
             excluded_combinations=[],
+            taste_profile={},
         )
         self.db.add(preferences)
         await self.db.commit()
@@ -80,6 +82,21 @@ class PreferenceService:
         await self.db.commit()
         await self.db.refresh(preferences)
         return preferences
+
+    async def get_style_quiz(self, user_id: uuid.UUID) -> dict:
+        """The saved «Tu estilo con Stinky» answers, always in canonical shape."""
+        preferences = await self.get_preferences(user_id)
+        return normalize_quiz(preferences.taste_profile if preferences else None)
+
+    async def set_style_quiz(self, user_id: uuid.UUID, data: dict) -> dict:
+        """Replace the answers wholesale — the deck and the Ajustes form both
+        send the full profile, so there is no half-written state to merge."""
+        preferences = await self.get_or_create_preferences(user_id)
+        preferences.taste_profile = stamp_now(data)
+        flag_modified(preferences, "taste_profile")
+        await self.db.commit()
+        await self.db.refresh(preferences)
+        return normalize_quiz(preferences.taste_profile)
 
     @staticmethod
     def _strip_color_overlaps(update_data: dict, preferences: UserPreference) -> dict:

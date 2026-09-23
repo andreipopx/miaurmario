@@ -3,8 +3,8 @@
 The recommendation and pairing prompts are shared by every user, so nothing
 about a particular person's taste may live in the .txt templates. Instead the
 services inject ``{style_profile_text}`` built here from the user's saved
-preferences (colours, style sliders), what the app learned from feedback and
-the body notes they chose to share.
+preferences (the «Tu estilo con Stinky» swipe deck, colours, style sliders),
+what the app learned from feedback and the body notes they chose to share.
 
 Tag values stay in English in parentheses — the wardrobe list the model sees
 uses them (e.g. ``navy``), so "azul marino (navy)" lets it match both ways.
@@ -140,7 +140,13 @@ def format_style_profile_for_prompt(
     the user has told us nothing, so the prompt never falls back to anybody
     else's taste.
     """
-    lines: list[str] = []
+    # Imported here, not at module level: style_quiz reads COLOR_NAMES_ES from
+    # this module, and the cycle would bite on import.
+    from app.utils.style_quiz import quiz_prompt_lines
+
+    # What they told Stinky in the swipe deck comes first: it is the most
+    # explicit thing we have about their taste.
+    lines: list[str] = list(quiz_prompt_lines(_get(preferences, "taste_profile")))
 
     favorites = _get(preferences, "color_favorites")
     if favorites:

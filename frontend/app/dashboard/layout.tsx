@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { PullToRefresh } from '@/components/native/pull-to-refresh';
 import { SectionTabs } from '@/components/section-tabs';
 import { FeatureTour } from '@/components/onboarding/feature-tour';
+import { StyleQuizDialog } from '@/components/style-quiz/style-quiz-dialog';
 import { AreaTip } from '@/components/onboarding/area-tip';
 
 /** Screens with pull-to-refresh (feeds and lists that change under you). */
@@ -85,6 +86,8 @@ export default function DashboardLayout({
         <PushSync />
         <ImageLightbox />
         {user?.onboarding_completed && <FeatureTour />}
+        {/* Offered once the tour is done, and re-run from Ajustes → Tu estilo. */}
+        {user?.onboarding_completed && <StyleQuizDialog />}
       </div>
     </LightboxProvider>
   );

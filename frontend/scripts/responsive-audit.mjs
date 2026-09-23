@@ -119,6 +119,32 @@ const SCREENS = [
     },
   },
   { id: 'settings', path: '/dashboard/settings' },
+  { id: 'style-profile', path: '/dashboard/settings/style' },
+  {
+    // "Tu estilo con Stinky" opens by itself once the welcome tour is done.
+    id: 'style-quiz-length',
+    path: '/dashboard',
+    action: async (page) => {
+      await page.getByTestId('style-quiz').waitFor({ timeout: 5000 });
+    },
+  },
+  {
+    id: 'style-quiz-deck',
+    path: '/dashboard',
+    action: async (page) => {
+      await page.getByTestId('quiz-length-deep').click({ timeout: 5000 });
+      await page.getByTestId('style-quiz-card').waitFor({ timeout: 3000 });
+    },
+  },
+  {
+    id: 'style-quiz-editor',
+    path: '/dashboard/settings/style',
+    action: async (page) => {
+      const adjust = page.getByTestId('restyle-adjust');
+      if (await adjust.count()) await adjust.click();
+      await page.getByTestId('style-editor').waitFor({ timeout: 3000 });
+    },
+  },
   { id: 'settings-ai', path: '/dashboard/settings/ai' },
   { id: 'notifications', path: '/dashboard/notifications' },
   { id: 'integrations', path: '/dashboard/settings/integrations' },

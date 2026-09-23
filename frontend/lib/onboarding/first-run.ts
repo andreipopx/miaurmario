@@ -11,6 +11,9 @@ import { resolveNav } from '@/components/nav-items';
 
 export const TOUR_KEY = 'tour';
 
+/** «Tu estilo con Stinky»: the swipe deck, offered once right after the tour. */
+export const STYLE_QUIZ_KEY = 'style-quiz';
+
 /** Areas with a one-time tip, keyed by nav section key (nav-items.ts). Hoy has the tour instead. */
 export const AREA_TIPS = {
   wardrobe: 'tip.wardrobe',
@@ -61,6 +64,19 @@ export function shouldAutoOpenTour(user: FirstRunUser | null | undefined, local:
   return !mergeSeen(user.seen_tips, local).includes(TOUR_KEY);
 }
 
+/**
+ * The style quiz follows the tour, never interrupts it, and only asks once:
+ * afterwards it lives in Ajustes → Tu estilo. Like the tour it needs the user
+ * to be past onboarding, and it waits for the tour to be dealt with first so
+ * two dialogs never fight over the screen.
+ */
+export function shouldAutoOpenStyleQuiz(user: FirstRunUser | null | undefined, local: readonly string[] = []): boolean {
+  if (!user || !user.onboarding_completed || !user.username) return false;
+  if (!Array.isArray(user.seen_tips)) return false;
+  const seen = mergeSeen(user.seen_tips, local);
+  return seen.includes(TOUR_KEY) && !seen.includes(STYLE_QUIZ_KEY);
+}
+
 /** Which area tip belongs to this path, if any (sub-pages share their section's tip). */
 export function tipKeyForPath(pathname: string | null | undefined): TipKey | null {
   const section = resolveNav(pathname)?.section.key;
@@ -82,9 +98,9 @@ export function shouldShowTip(
   return seen.includes(TOUR_KEY) && !seen.includes(key);
 }
 
-/** "Saltar todo" in the tour: the tour and every area tip. */
+/** "Saltar todo" in the tour: the tour, the style quiz and every area tip. */
 export function skipAllKeys(): string[] {
-  return [TOUR_KEY, ...ALL_TIP_KEYS];
+  return [TOUR_KEY, STYLE_QUIZ_KEY, ...ALL_TIP_KEYS];
 }
 
 export type FirstStepsStage = 'empty' | 'progress' | 'ready';

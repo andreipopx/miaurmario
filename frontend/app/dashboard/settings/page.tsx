@@ -462,6 +462,19 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Tu estilo con Stinky: the swipe-deck taste profile */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('styleQuiz.title')}</CardTitle>
+            <CardDescription>{t('styleQuiz.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/settings/style">{t('styleQuiz.cta')}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Integrations Section */}
         <Card>
           <CardHeader>

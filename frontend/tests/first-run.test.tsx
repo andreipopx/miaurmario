@@ -7,6 +7,7 @@ import React from 'react'
 import {
   ALL_TIP_KEYS,
   MIN_ITEMS_FOR_LOOKS,
+  STYLE_QUIZ_KEY,
   TOUR_KEY,
   firstStepsStage,
   mergeSeen,
@@ -145,8 +146,8 @@ describe('first-run rules', () => {
     expect(shouldShowTip(baseUser([TOUR_KEY]), null)).toBe(false)
   })
 
-  it('"Saltar todo" covers the tour and every area tip', () => {
-    expect(skipAllKeys()).toEqual([TOUR_KEY, ...ALL_TIP_KEYS])
+  it('"Saltar todo" covers the tour, the style quiz and every area tip', () => {
+    expect(skipAllKeys()).toEqual([TOUR_KEY, STYLE_QUIZ_KEY, ...ALL_TIP_KEYS])
     expect(ALL_TIP_KEYS).toHaveLength(5)
   })
 

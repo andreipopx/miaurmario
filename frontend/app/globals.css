@@ -116,8 +116,11 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    overflow-x: hidden;
     max-width: 100vw;
+  }
+
+  html {
+    overflow-x: hidden;
     font-family: var(--font-sans), 'Figtree', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -203,8 +206,13 @@ body {
      the layout past the screen edge on narrow phones. Only kicks in when a word
      would otherwise overflow, so normal text is unchanged. */
   overflow-wrap: break-word;
-  /* The app shell never rubber-bands or pull-to-reloads as a whole (we ship our
-     own pull-to-refresh); horizontal overscroll never triggers back/forward. */
+}
+
+/* The app shell never rubber-bands or pull-to-reloads as a whole (we ship our own
+   pull-to-refresh); horizontal overscroll never triggers back/forward. This lives
+   on <html>, never on <body>: `overflow-x: hidden` + `overscroll-behavior: none`
+   on <body> makes it a scroll container that swallows the wheel on desktop. */
+html {
   overscroll-behavior-y: none;
   overscroll-behavior-x: none;
 }

@@ -3414,7 +3414,10 @@
       "cardRole": "style card",
       "deckPrompt": "Is this you?",
       "deckHint": "Swipe the card or use the buttons. The ← and → keys work too.",
+      "deckIntro": "✕ not for me · ♥ I like it · “Not fussed” leaves the card as it was.",
       "skipCard": "Not fussed",
+      "skipCardHint": "changes nothing",
+      "skipCardLabel": "Not fussed: changes nothing, move to the next card",
       "likeCard": "I like: {card}",
       "dislikeCard": "Not for me: {card}",
       "addChip": "Add",
@@ -3432,7 +3435,9 @@
       },
       "steps": {
         "length": "Your style with Stinky",
+        "garment": "What I suggest",
         "fit": "How you like it to sit",
+        "sizes": "Your usual sizes",
         "essentials": "Two more things",
         "likes": "Your references",
         "avoid": "What not to",
@@ -3444,7 +3449,7 @@
         "bodyMerge": "Whatever you pick now wins; anything you don't touch stays as it is.",
         "quick": {
           "title": "Quick",
-          "body": "{cards} cards and two questions. Under a minute."
+          "body": "{cards} cards and a couple of questions. Under a minute."
         },
         "deep": {
           "title": "Thorough",
@@ -3459,6 +3464,31 @@
           "ajustado": "Close-fitting",
           "mixto": "Depends: I mix"
         }
+      },
+      "garment": {
+        "title": "What kind of clothes should I suggest?",
+        "body": "It's the shop section I look in, not a question about you.",
+        "note": "Optional. Leave it and I'll suggest anything.",
+        "options": {
+          "masculina": "Menswear",
+          "femenina": "Womenswear",
+          "ambas": "Both, or no preference",
+          "sin_decir": "I'd rather not say"
+        }
+      },
+      "sizes": {
+        "title": "Your usual sizes",
+        "body": "Optional, and every shop is different: put down whatever you normally order. I use it to tell you which size to look at if I suggest something you don't own.",
+        "top": "Top",
+        "bottom": "Bottom",
+        "shoe": "Shoes",
+        "placeholderTop": "M, 40…",
+        "placeholderBottom": "42, 32…",
+        "placeholderShoe": "41, 8…",
+        "atShop": "Your usual sizes: {list}",
+        "atShopHint": "A reminder so you can pick in the shop yourself. I don't buy anything.",
+        "none": "You haven't told me your sizes yet.",
+        "saveError": "I couldn't save your sizes. Try again."
       },
       "brands": {
         "title": "Brands, designers or references",
@@ -3519,79 +3549,110 @@
       "cards": {
         "minimal": {
           "title": "Clean minimalism",
-          "body": "Few pieces, straight lines, zero noise."
+          "body": "Few pieces, straight lines, zero noise.",
+          "examples": "White tee + straight trousers + plain trainer."
         },
         "streetwear": {
           "title": "Streetwear",
-          "body": "Hoodies, trainers and logos with attitude."
+          "body": "Hoodies, trainers and logos with attitude.",
+          "examples": "Hoodie + wide jeans + chunky trainer."
         },
         "tailored": {
           "title": "Tailoring",
-          "body": "Blazers, pleated trousers, everything measured."
+          "body": "Blazers, pleated trousers, everything measured.",
+          "examples": "Blazer + pleated trousers + leather ankle boot."
         },
         "boho": {
           "title": "Bohemian",
-          "body": "Flowing fabrics, prints, a festival air."
+          "body": "Flowing fabrics, prints, a festival air.",
+          "examples": "Long printed dress + cloth bag + ankle boot."
         },
         "preppy": {
           "title": "Preppy",
-          "body": "Polos, knitwear over the shoulders, boat shoes."
+          "body": "Polos, knitwear over the shoulders, boat shoes.",
+          "examples": "Knitted jumper + checked skirt + white trainer."
         },
         "vintage": {
           "title": "Vintage and second-hand",
-          "body": "Pieces with a history, nothing straight off the rail."
+          "body": "Pieces with a history, nothing straight off the rail.",
+          "examples": "Striped shirt + straight jeans + second-hand bag."
         },
         "sporty": {
           "title": "Sporty and athleisure",
-          "body": "Technical, comfortable, ready to move."
+          "body": "Technical, comfortable, ready to move.",
+          "examples": "Technical tee + shorts + running trainer."
         },
         "romantic": {
           "title": "Romantic and flowing",
-          "body": "Ruffles, ties, light fabrics."
+          "body": "Ruffles, ties, light fabrics.",
+          "examples": "Floaty dress + small bag + low ankle boot."
         },
         "utility": {
           "title": "Workwear and utility",
-          "body": "Pockets, canvas and work garments."
+          "body": "Pockets, canvas and work garments.",
+          "examples": "Work jacket + cargo trousers + boot."
         },
         "oversize": {
           "title": "Loose volumes",
-          "body": "Everything a couple of sizes up, on purpose."
+          "body": "Everything a couple of sizes up, on purpose.",
+          "examples": "Tee two sizes up + wide trousers, never your exact size."
         },
         "fitted": {
           "title": "Close lines",
-          "body": "Garments that follow the line, no slack."
+          "body": "Garments that follow the line, no slack.",
+          "examples": "Close-knit jumper + skinny trousers + narrow ankle boot."
         },
         "wide-leg": {
           "title": "Wide-leg trousers",
-          "body": "A broad leg falling straight to the floor."
+          "body": "A broad leg falling straight to the floor.",
+          "examples": "Palazzo trousers or wide jeans, straight from the hip."
         },
         "layers": {
           "title": "Long layers",
-          "body": "Coats and gilets stacked, cold or not."
+          "body": "Coats and gilets stacked, cold or not.",
+          "examples": "Tee + blazer + long coat over the top."
         },
         "monochrome": {
           "title": "One single colour",
-          "body": "The same tone from top to bottom."
+          "body": "The same tone from top to bottom.",
+          "examples": "Grey on top, grey below, grey on the shoe."
         },
         "neutrals": {
           "title": "Warm neutrals",
-          "body": "Beige, ecru, camel and brown."
+          "body": "Beige, ecru, camel and brown.",
+          "examples": "Ecru tee + camel trousers + beige trainer."
         },
         "black-white": {
           "title": "Black and white",
-          "body": "No half measures, pure contrast."
+          "body": "No half measures, pure contrast.",
+          "examples": "White tee + black trousers + grey trainer."
         },
         "pastels": {
           "title": "Pastels",
-          "body": "Soft, washed-out tones."
+          "body": "Soft, washed-out tones.",
+          "examples": "Baby-blue tee + pale-pink trousers + mint trainer."
         },
         "brights": {
           "title": "Bright colours",
-          "body": "Red, yellow, electric green."
+          "body": "Red, yellow, electric green.",
+          "examples": "Yellow tee + electric-blue trousers + red trainer."
         },
         "jewel": {
           "title": "Deep tones",
-          "body": "Burgundy, bottle green, navy."
+          "body": "Burgundy, bottle green, navy.",
+          "examples": "Burgundy tee + navy trousers + bottle-green trainer."
+        }
+      },
+      "garmentWords": {
+        "masculina": {
+          "shirt": "Shirt",
+          "blouse": "Shirt",
+          "top": "Tee"
+        },
+        "femenina": {
+          "shirt": "Blouse",
+          "blouse": "Blouse",
+          "top": "Top"
         }
       }
     }

@@ -202,7 +202,8 @@ def format_style_profile_for_prompt(
     if body:
         lines.append(
             f"- Notas de cuerpo que ha compartido: {body}. Úsalas para proporción y "
-            "caída, nunca para juzgar ni comentar el cuerpo."
+            "caída, y las tallas para decirle cuál mirar si le recomiendas una "
+            "prenda que todavía no tiene; nunca para juzgar ni comentar el cuerpo."
         )
 
     if not lines:

@@ -25,9 +25,13 @@ import { Chip } from '@/components/chip';
 import { LazyStinky } from '@/components/native/lazy-stinky';
 import { useFormatDate } from '@/lib/date-locale';
 import { openStyleQuiz, useSaveStyleQuiz, useStyleQuiz } from '@/lib/hooks/use-style-quiz';
+import { SizeFields } from '@/components/style-quiz/size-fields';
+import { useHabitualSizes } from '@/lib/hooks/use-habitual-sizes';
 import {
   FIT_CHOICES,
+  GARMENT_PREFS,
   STYLE_CARDS,
+  type Sizes,
   type StyleQuizProfile,
   type Swipe,
   emptyProfile,
@@ -71,10 +75,19 @@ export default function StyleProfilePage() {
   const [draft, setDraft] = useState<StyleQuizProfile>(emptyProfile);
   const [confirmReset, setConfirmReset] = useState(false);
 
+  // The habitual sizes are not part of the quiz: they are the same
+  // `shirt_size` / `pants_size` / `shoe_size` the measurements form stores.
+  const habitualSizes = useHabitualSizes();
+  const [sizes, setSizes] = useState<Sizes>({});
+
   // Start editing from whatever is saved, and stay in sync while not editing.
   useEffect(() => {
     if (!editing && data?.profile) setDraft(data.profile);
   }, [editing, data?.profile]);
+
+  useEffect(() => {
+    if (!editing) setSizes(habitualSizes.saved);
+  }, [editing, habitualSizes.saved]);
 
   const updatedAt = useMemo(() => {
     const raw = data?.profile.updated_at;
@@ -84,6 +97,8 @@ export default function StyleProfilePage() {
   }, [data?.profile.updated_at, formatDate]);
 
   const saveDraft = () => {
+    // Two homes, one button: the quiz answers and the sizes on the profile.
+    habitualSizes.save(sizes).catch(() => toast.error(t('sizes.saveError')));
     save.mutate(draft, {
       onSuccess: () => {
         setEditing(false);
@@ -256,6 +271,34 @@ export default function StyleProfilePage() {
                     {t(`fit.options.${fit}`)}
                   </Chip>
                 ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="eyebrow">{t('garment.title')}</p>
+              <p className="mt-1 text-[13px] leading-snug text-muted-foreground">{t('garment.body')}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {GARMENT_PREFS.map((option) => (
+                  <Chip
+                    key={option}
+                    active={draft.garment_pref === option}
+                    data-testid={`edit-garment-${option}`}
+                    onClick={() =>
+                      setDraft((d) => ({ ...d, garment_pref: d.garment_pref === option ? null : option }))
+                    }
+                  >
+                    {t(`garment.options.${option}`)}
+                  </Chip>
+                ))}
+              </div>
+              <p className="mt-2 text-[13px] leading-snug text-muted-foreground">{t('garment.note')}</p>
+            </div>
+
+            <div>
+              <p className="eyebrow">{t('sizes.title')}</p>
+              <p className="mt-1 text-[13px] leading-snug text-muted-foreground">{t('sizes.body')}</p>
+              <div className="mt-2">
+                <SizeFields values={sizes} onChange={setSizes} />
               </div>
             </div>
 

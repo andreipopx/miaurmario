@@ -49,6 +49,7 @@ class ClothingTags(BaseModel):
 
 TAGGING_PROMPT = load_prompt("clothing_analysis")
 DESCRIPTION_PROMPT = load_prompt("clothing_description")
+CARE_LABEL_PROMPT = load_prompt("care_label")
 
 # Valid values for validation
 VALID_TYPES = {
@@ -686,6 +687,32 @@ class AIService:
         if err:
             raise err
         raise AIResponseError(f"AI {task_name} returned no content", reason="empty")
+
+    async def analyze_care_label(self, image_path: str | Path) -> str | None:
+        """Read a care-label photo and return the model's raw JSON answer.
+
+        Parsing lives in ``app.services.care_label`` so the same validation runs
+        on hand-typed care data. Returns None when no endpoint answered.
+        """
+        image_base64 = self._preprocess_image(image_path)
+        messages = [
+            {"role": "system", "content": CARE_LABEL_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"},
+                    },
+                ],
+            },
+        ]
+        content, error, _ = await self._call_with_fallback(messages, "care-label")
+        if content:
+            return content
+        if error:
+            raise error
+        return None
 
     async def check_health(self) -> dict:
         """Check health of all configured AI endpoints."""

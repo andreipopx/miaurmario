@@ -11,6 +11,11 @@ DEFAULT_SECRET_KEY = "change-me-in-production"
 # Nominatim requires an identifying User-Agent with a contact URL.
 DEFAULT_GEOCODING_USER_AGENT = "Miaurmario/1.0 (+https://github.com/andreipopx/miaurmario)"
 
+# Shops we read a pasted product link from deserve to know who is knocking.
+DEFAULT_LINK_IMPORT_USER_AGENT = (
+    "Miaurmario/1.0 (+https://github.com/andreipopx/miaurmario; wardrobe link preview)"
+)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -149,6 +154,12 @@ class Settings(BaseSettings):
     storage_path: str = Field(default="/data/wardrobe")
     max_upload_size_mb: int = Field(default=10)
     max_bulk_upload_count: int = Field(default=20)
+
+    # Importing a garment from a pasted shop link. The page is fetched
+    # server-side (https only, public addresses only, no JavaScript executed);
+    # the User-Agent identifies us to the shops we read, as Nominatim requires.
+    link_import_enabled: bool = Field(default=True)
+    link_import_user_agent: str = Field(default=DEFAULT_LINK_IMPORT_USER_AGENT)
 
     # Background removal
     bg_removal_provider: str = Field(default="rembg")  # "rembg" or "http"

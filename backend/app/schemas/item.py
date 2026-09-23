@@ -1,9 +1,11 @@
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
+from app.utils.care import MAX_FIBERS, care_hints, normalize_fiber, parse_composition
 from app.utils.signed_urls import sign_image_url
 
 # Default wash intervals by clothing type (wears between washes)
@@ -39,6 +41,87 @@ class ItemTags(BaseModel):
     fit: str | None = None
 
 
+class CareComposition(BaseModel):
+    """One fibre of a garment's composition, e.g. 60% cotton."""
+
+    fiber: str = Field(max_length=40)
+    percent: int | None = Field(None, ge=1, le=100)
+
+    @field_validator("fiber", mode="before")
+    @classmethod
+    def _normalize_fiber(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return normalize_fiber(value) or value.strip()[:40]
+        return value
+
+
+class CareWash(BaseModel):
+    machine: bool | None = None
+    hand_wash: bool | None = None
+    do_not_wash: bool | None = None
+    max_temp_c: int | None = Field(None, ge=0, le=95)
+    cycle: Literal["normal", "gentle", "delicate"] | None = None
+
+
+class CareDry(BaseModel):
+    tumble_dry: bool | None = None
+    tumble_heat: Literal["low", "medium", "high"] | None = None
+    line_dry: bool | None = None
+    flat_dry: bool | None = None
+
+
+class CareIron(BaseModel):
+    allowed: bool | None = None
+    max_temp_c: int | None = Field(None, ge=0, le=220)
+    steam: bool | None = None
+
+
+class CareProfessional(BaseModel):
+    dry_clean: bool | None = None
+    code: str | None = Field(None, max_length=8)
+
+
+class CareInfo(BaseModel):
+    """Structured care-label data: composition plus the laundry symbols.
+
+    Every field is optional — a label that only says "100% algodón" is as valid
+    as a fully symbol-annotated one, and a user without AI fills in whichever
+    parts they can read.
+    """
+
+    composition: list[CareComposition] = Field(default_factory=list, max_length=MAX_FIBERS)
+    wash: CareWash | None = None
+    bleach: Literal["any", "non_chlorine", "none"] | None = None
+    dry: CareDry | None = None
+    iron: CareIron | None = None
+    professional: CareProfessional | None = None
+    notes: str | None = Field(None, max_length=500)
+    source: Literal["ai", "manual"] = "manual"
+
+    @field_validator("composition", mode="before")
+    @classmethod
+    def _accept_text(cls, value: Any) -> Any:
+        """Accept a typed "60% algodón, 40% poliéster" as well as a list."""
+        if isinstance(value, str):
+            return parse_composition(value)
+        if value is None:
+            return []
+        return value
+
+    def is_empty(self) -> bool:
+        return not any(
+            (
+                self.composition,
+                self.wash,
+                self.bleach,
+                self.dry,
+                self.iron,
+                self.professional,
+                self.notes,
+            )
+        )
+
+
 class ItemBase(BaseModel):
     type: str = Field(default="unknown", max_length=50)  # Default to unknown, AI will detect
     subtype: str | None = Field(None, max_length=50)
@@ -48,6 +131,8 @@ class ItemBase(BaseModel):
     purchase_date: date | None = None
     purchase_price: Decimal | None = Field(None, ge=0)
     favorite: bool = False
+    source_url: str | None = Field(None, max_length=2048)
+    care: CareInfo | None = None
 
 
 class ItemCreate(ItemBase):
@@ -69,6 +154,8 @@ class ItemUpdate(BaseModel):
     colors: list[str] | None = None
     primary_color: str | None = None
     wash_interval: int | None = None
+    source_url: str | None = Field(None, max_length=2048)
+    care: CareInfo | None = None
 
 
 class ItemResponse(ItemBase):
@@ -129,6 +216,14 @@ class ItemResponse(ItemBase):
         if self.medium_path:
             return sign_image_url(self.medium_path)
         return None
+
+    @computed_field
+    @property
+    def care_hints(self) -> list[str]:
+        """Stable codes (``wash_30``, ``no_tumble``…) the frontend localises."""
+        if self.care is None:
+            return []
+        return care_hints(self.care.model_dump())
 
     @computed_field
     @property
@@ -292,3 +387,42 @@ class WashHistoryResponse(BaseModel):
     method: str | None = None
     notes: str | None = None
     created_at: datetime
+
+
+class LinkPreviewRequest(BaseModel):
+    """A shop URL pasted by the user, to be read server-side."""
+
+    url: str = Field(min_length=4, max_length=2048)
+
+
+class LinkPreviewImage(BaseModel):
+    """The product photo, re-encoded by us and inlined for the review screen."""
+
+    data_url: str
+    content_type: str
+    size_bytes: int
+
+
+class LinkPreviewResponse(BaseModel):
+    """Everything a pasted link gave us. Never creates an item on its own."""
+
+    source_url: str
+    extracted: bool
+    reason: str | None = None
+    name: str | None = None
+    brand: str | None = None
+    price: Decimal | None = None
+    currency: str | None = None
+    primary_color: str | None = None
+    description: str | None = None
+    site_name: str | None = None
+    image: LinkPreviewImage | None = None
+
+
+class CareLabelResponse(BaseModel):
+    """What the vision model read off a care-label photo, for the review screen."""
+
+    care: CareInfo
+    hints: list[str] = Field(default_factory=list)
+    suggested_material: str | None = None
+    read: bool = True

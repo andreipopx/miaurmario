@@ -189,6 +189,8 @@ class ItemService:
             purchase_date=item_data.purchase_date,
             purchase_price=item_data.purchase_price,
             favorite=item_data.favorite,
+            source_url=item_data.source_url,
+            care=item_data.care.model_dump() if item_data.care else None,
         )
 
         self.db.add(item)

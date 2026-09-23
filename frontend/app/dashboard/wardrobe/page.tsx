@@ -33,6 +33,8 @@ import { cn, getDaysSinceDateInTimezone } from '@/lib/utils';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useTranslations } from 'next-intl';
 import { useColorLabel } from '@/lib/tag-labels';
+import { readSharedIntake } from '@/lib/shared-intake';
+import type { AddItemInitial } from '@/components/add-item-dialog';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -232,12 +234,14 @@ function EmptyWardrobe({ onAddClick }: { onAddClick: () => void }) {
 export default function WardrobePage() {
   const t = useTranslations('wardrobe');
   const tCommon = useTranslations('common');
+  const tShare = useTranslations('wardrobe.share');
   const typeLabel = useClothingTypeLabel();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: userProfile } = useUserProfile();
   const userTimezone = userProfile?.timezone || 'UTC';
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [sharedIntake, setSharedIntake] = useState<AddItemInitial | null>(null);
   const [selection, setSelection] = useState<BulkSelection>({
     mode: 'none',
     selectedIds: new Set(),
@@ -261,13 +265,35 @@ export default function WardrobePage() {
     }
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Open the add dialog from a quick action (?add=1), then clean the URL
+  // Open the add dialog from a quick action (?add=1), then clean the URL.
+  // ?shared=1 means the share target stashed a photo or a link for us to pick
+  // up; ?share_failed=1 means the POST reached the server instead of the
+  // worker, so there is nothing to pick up and we say so.
   useEffect(() => {
-    if (searchParams.get('add')) {
-      setAddDialogOpen(true);
-      router.replace('/dashboard/wardrobe', { scroll: false });
+    if (!searchParams.get('add')) return;
+    const shared = searchParams.get('shared');
+    const shareFailed = searchParams.get('share_failed');
+    setAddDialogOpen(true);
+    router.replace('/dashboard/wardrobe', { scroll: false });
+
+    if (shareFailed) {
+      toast.error(tShare('failed'));
+      return;
     }
-  }, [searchParams, router]);
+    if (!shared) return;
+    let cancelled = false;
+    void readSharedIntake().then((payload) => {
+      if (cancelled) return;
+      if (!payload) {
+        toast.error(tShare('failed'));
+        return;
+      }
+      setSharedIntake({ file: payload.file, link: payload.link, name: payload.title });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sortOption = SORT_OPTIONS[sortIndex];
 
@@ -684,7 +710,14 @@ export default function WardrobePage() {
         onPageChange={handlePageChange}
       />
 
-      <AddItemDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+      <AddItemDialog
+        open={addDialogOpen}
+        onOpenChange={(open) => {
+          setAddDialogOpen(open);
+          if (!open) setSharedIntake(null);
+        }}
+        initial={sharedIntake}
+      />
       <ItemDetailDialog
         item={detailItem}
         open={!!detailItemId}

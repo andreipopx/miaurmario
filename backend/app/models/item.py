@@ -112,6 +112,12 @@ class ClothingItem(Base):
     notes: Mapped[str | None] = mapped_column(Text)
     favorite: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Where the garment came from: the shop link it was imported from, if any
+    source_url: Mapped[str | None] = mapped_column(String(2048))
+
+    # Care label: composition and laundry symbols (see app/schemas/item.CareInfo)
+    care: Mapped[dict | None] = mapped_column(JSONB)
+
     # Lifecycle
     is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

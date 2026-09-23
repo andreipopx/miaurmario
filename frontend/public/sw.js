@@ -4,6 +4,41 @@ const VERSION = new URL(self.location.href).searchParams.get('v') || 'dev';
 const CACHE = `miaurmario-${VERSION}`;
 const CORE = ['/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png'];
 
+// Web Share Target: the system share sheet POSTs here (Android/Chromium and an
+// installed desktop PWA; iOS has no share target). We stash the payload in its
+// own cache — which survives the version sweep in `activate` — and redirect to
+// the wardrobe, where the page reads it once and opens the add dialog.
+const SHARE_CACHE = 'miaurmario-share';
+const SHARE_META_URL = '/__shared__/payload.json';
+const SHARE_FILE_URL = '/__shared__/image';
+const SHARE_TARGET_PATH = '/share-target';
+const SHARE_LANDING = '/dashboard/wardrobe?add=1&shared=1';
+
+async function stashSharedPayload(request) {
+  const form = await request.formData();
+  const file = form.get('image');
+  const meta = {
+    title: String(form.get('title') || ''),
+    text: String(form.get('text') || ''),
+    url: String(form.get('url') || ''),
+    hasImage: false,
+    at: Date.now(),
+  };
+
+  const cache = await caches.open(SHARE_CACHE);
+  await cache.delete(SHARE_FILE_URL);
+  if (file && typeof file === 'object' && 'size' in file && file.size > 0) {
+    meta.hasImage = true;
+    meta.name = file.name || 'compartida.jpg';
+    meta.type = file.type || 'image/jpeg';
+    await cache.put(SHARE_FILE_URL, new Response(file, { headers: { 'Content-Type': meta.type } }));
+  }
+  await cache.put(
+    SHARE_META_URL,
+    new Response(JSON.stringify(meta), { headers: { 'Content-Type': 'application/json' } })
+  );
+}
+
 self.addEventListener('install', (e) => {
   // First install: take over right away. Updates wait until the page asks
   // (SKIP_WAITING from the "Actualizar" toast) so we never swap code mid-use.
@@ -18,7 +53,7 @@ self.addEventListener('message', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== SHARE_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -80,8 +115,21 @@ self.addEventListener('notificationclick', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET') return;
   const url = new URL(req.url);
+
+  // A share from the system sheet: keep the payload, then hand the user to the
+  // add-garment flow. Never save anything on its own.
+  if (req.method === 'POST' && url.origin === self.location.origin && url.pathname === SHARE_TARGET_PATH) {
+    event.respondWith((async () => {
+      try {
+        await stashSharedPayload(req.clone());
+      } catch (_) { /* fall through: the dialog just opens empty */ }
+      return Response.redirect(SHARE_LANDING, 303);
+    })());
+    return;
+  }
+
+  if (req.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
   // Never cache API or Next data — always network for freshness.
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/data/')) return;

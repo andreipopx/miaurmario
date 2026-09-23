@@ -86,10 +86,19 @@ const SCREENS = [
     },
   },
   {
+    // ?add=1 is the app's own deep link for this dialog; clicking the button
+    // depends on which empty state the wardrobe happens to be in.
     id: 'armario-add-dialog',
-    path: '/dashboard/wardrobe',
+    path: '/dashboard/wardrobe?add=1',
     action: async (page) => {
-      await page.getByRole('button', { name: /añadir|add/i }).first().click();
+      await page.getByRole('dialog').first().waitFor({ timeout: 15000 });
+    },
+  },
+  {
+    id: 'armario-add-link',
+    path: '/dashboard/wardrobe?add=1',
+    action: async (page) => {
+      await page.getByRole('tab', { name: /enlace|link/i }).click();
     },
   },
   { id: 'looks', path: '/dashboard/outfits' },

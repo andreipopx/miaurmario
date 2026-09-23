@@ -54,6 +54,17 @@ export function iosSupportsWebPush(ua: string): boolean {
   return v[0] > 16 || (v[0] === 16 && v[1] >= 4);
 }
 
+/**
+ * Web Share Target: can the system share sheet send a photo or a link straight
+ * into the installed app? Android Chromium and installed desktop PWAs can.
+ * iOS has no share target at all, and Firefox does not implement one, so there
+ * the UI says to paste the link or pick the photo instead.
+ */
+export function supportsShareTarget(ua: string, maxTouchPoints = 0): boolean {
+  if (isIOSUserAgent(ua, maxTouchPoints)) return false;
+  return !/Firefox|FxiOS/i.test(ua);
+}
+
 // ---- Browser wrappers ---------------------------------------------------------
 
 export function currentPlatform(): InstallPlatform {

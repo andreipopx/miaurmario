@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func, text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,6 +27,12 @@ class UserPreference(Base):
 
     # Style preferences
     style_profile: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+    # "Tu estilo con Stinky": the swipe deck + free-text answers. Shape and
+    # meaning live in app/utils/style_quiz.py; readers normalize before use.
+    taste_profile: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
 
     # Occasion settings
     default_occasion: Mapped[str] = mapped_column(String(50), default="casual")

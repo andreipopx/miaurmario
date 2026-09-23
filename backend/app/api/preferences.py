@@ -7,10 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.preference import PreferenceResponse, PreferenceUpdate
+from app.schemas.preference import (
+    PreferenceResponse,
+    PreferenceUpdate,
+    StyleQuizProfile,
+    StyleQuizResponse,
+)
 from app.services.ai_access import ProviderURLError, validate_provider_url
 from app.services.preference_service import PreferenceService
 from app.utils.auth import get_current_user
+from app.utils.style_quiz import STYLE_CARD_IDS, is_answered, quiz_summary_lines
 
 router = APIRouter(prefix="/users/me/preferences", tags=["Preferences"])
 
@@ -87,6 +93,37 @@ async def reset_preferences(
     service = PreferenceService(db)
     preferences = await service.reset_preferences(current_user.id)
     return _build_preference_response(preferences)
+
+
+def _style_quiz_response(quiz: dict) -> StyleQuizResponse:
+    return StyleQuizResponse(
+        profile=StyleQuizProfile(**quiz),
+        answered=is_answered(quiz),
+        summary=quiz_summary_lines(quiz),
+        cards=list(STYLE_CARD_IDS),
+    )
+
+
+@router.get("/style-quiz", response_model=StyleQuizResponse)
+async def get_style_quiz(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> StyleQuizResponse:
+    """«Tu estilo con Stinky»: the saved answers and the summary shown in Ajustes."""
+    service = PreferenceService(db)
+    return _style_quiz_response(await service.get_style_quiz(current_user.id))
+
+
+@router.put("/style-quiz", response_model=StyleQuizResponse)
+async def put_style_quiz(
+    data: StyleQuizProfile,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> StyleQuizResponse:
+    """Replace the answers (re-running the deck or editing them in Ajustes)."""
+    service = PreferenceService(db)
+    quiz = await service.set_style_quiz(current_user.id, data.model_dump())
+    return _style_quiz_response(quiz)
 
 
 @router.post("/excluded-items/{item_id}", response_model=dict)

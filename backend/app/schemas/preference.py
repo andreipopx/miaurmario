@@ -1,4 +1,8 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+from app.utils.style_quiz import MAX_CHIP_LENGTH, MAX_CHIPS, QUIZ_VERSION
 
 
 class AIEndpoint(BaseModel):
@@ -96,3 +100,50 @@ class PreferenceUpdate(BaseModel):
 class PreferenceResponse(PreferenceBase):
     class Config:
         from_attributes = True
+
+
+# --- "Tu estilo con Stinky" ---------------------------------------------------
+
+Chips = list[str]
+
+
+class StyleQuizProfile(BaseModel):
+    """The swipe deck plus the free-text answers.
+
+    Only taste, never the person: no body, size or "what flatters you" field
+    exists here by design. Unknown card ids and over-long chips are cleaned up
+    server-side (``app.utils.style_quiz.normalize_quiz``) instead of rejected,
+    so an older or newer client never gets a 422 in the middle of onboarding.
+    """
+
+    liked: Chips = Field(default_factory=list, description="Card ids swiped right")
+    disliked: Chips = Field(default_factory=list, description="Card ids swiped left")
+    brands: Chips = Field(
+        default_factory=list, description="Brands, designers or references they like"
+    )
+    never_wear: Chips = Field(default_factory=list, description="Things they never wear")
+    colors_avoid: Chips = Field(default_factory=list, description="Colours they would rather avoid")
+    occasions: Chips = Field(default_factory=list, description="What they dress for most")
+    fit: Literal["holgado", "ajustado", "mixto"] | None = Field(
+        default=None, description="How they like clothes to sit"
+    )
+    completed: bool = Field(
+        default=False, description="They reached the end of the deck (vs. skipped)"
+    )
+    version: int = Field(default=QUIZ_VERSION, description="Shape of the stored answers")
+    updated_at: str | None = Field(
+        default=None, description="When it was last saved (ISO 8601, set server-side)"
+    )
+
+
+class StyleQuizResponse(BaseModel):
+    """The saved answers plus what Stinky understood, in plain Spanish."""
+
+    profile: StyleQuizProfile
+    answered: bool = Field(description="They have told us something")
+    summary: list[str] = Field(
+        default_factory=list, description="Spanish sentences shown back to the user"
+    )
+    cards: list[str] = Field(default_factory=list, description="Card ids the backend knows")
+    max_chips: int = Field(default=MAX_CHIPS)
+    max_chip_length: int = Field(default=MAX_CHIP_LENGTH)

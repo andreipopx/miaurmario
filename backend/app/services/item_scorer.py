@@ -6,6 +6,7 @@ from uuid import UUID
 from app.models.item import ClothingItem
 from app.models.preference import UserPreference
 from app.services.weather_service import WeatherData
+from app.utils.style_quiz import QuizBias, quiz_bias
 
 OCCASION_FORMALITY = {
     "casual": ["very-casual", "casual", "smart-casual"],
@@ -193,10 +194,41 @@ def _recency_score(
     return min(1.0, 0.1 + 0.9 * (days_since / avoid_days))
 
 
+#: «Tu estilo con Stinky» nudges the ranking; the saved colour preferences and
+#: the weather still outweigh it, so the deck tilts the wardrobe rather than
+#: locking whole halves of it away.
+QUIZ_COLOR_BONUS = 0.08
+QUIZ_COLOR_PENALTY = 0.2
+QUIZ_STYLE_STEP = 0.04
+QUIZ_STYLE_BONUS_CAP = 0.12
+QUIZ_STYLE_PENALTY_CAP = 0.15
+
+
+def _quiz_score_delta(item: ClothingItem, bias: QuizBias | None) -> float:
+    """How much the swipe deck likes this item. 0.0 when the deck is untouched."""
+    if not bias:
+        return 0.0
+
+    delta = 0.0
+    colors = {(c or "").lower() for c in (item.colors or [])}
+    if item.primary_color:
+        colors.add(item.primary_color.lower())
+    if colors & bias.liked_colors:
+        delta += QUIZ_COLOR_BONUS
+    if colors & bias.avoided_colors:
+        delta -= QUIZ_COLOR_PENALTY
+
+    item_styles = {(st or "").lower() for st in (item.style or [])}
+    delta += min(QUIZ_STYLE_BONUS_CAP, QUIZ_STYLE_STEP * len(item_styles & bias.liked_styles))
+    delta -= min(QUIZ_STYLE_PENALTY_CAP, QUIZ_STYLE_STEP * len(item_styles & bias.disliked_styles))
+    return delta
+
+
 def _preference_score(
     item: ClothingItem,
     preferences: UserPreference | None,
     learned: dict | None,
+    quiz: QuizBias | None = None,
 ) -> float:
     score = 1.0
     color = (item.primary_color or "").lower()
@@ -209,6 +241,8 @@ def _preference_score(
             score += 0.1
         if color and color in avoid_colors:
             score -= 0.3
+
+        score += _quiz_score_delta(item, quiz)
 
     if learned:
         learned_favs = [c.lower() for c in learned.get("learned_favorite_colors", [])]
@@ -298,6 +332,9 @@ def score_items(
         elif preferences.variety_level == "low":
             avoid_days = max(1, int(avoid_days * 0.5))
 
+    # One pass over the swipe-deck answers for the whole wardrobe.
+    quiz = quiz_bias(getattr(preferences, "taste_profile", None)) if preferences else None
+
     use_underused = preferences.prefer_underused_items if preferences else True
     median_wear = median([i.wear_count or 0 for i in items]) if use_underused and items else 0
 
@@ -307,7 +344,7 @@ def score_items(
         fs = _formality_score(item, occasion)
         ss = _season_score(item, current_season)
         rs = _recency_score(item, user_today, avoid_days, recently_worn_dates)
-        ps = _preference_score(item, preferences, learned_prefs)
+        ps = _preference_score(item, preferences, learned_prefs, quiz)
         us = _usage_score(item, median_wear) if use_underused else 1.0
 
         total = ws * fs * ss * rs * ps * us

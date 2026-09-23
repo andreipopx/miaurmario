@@ -12,6 +12,7 @@ from app.services.item_scorer import _preference_score, score_items
 from app.services.weather_service import WeatherData
 from app.utils.style_profile import STYLE_TAGS_ES, format_style_profile_for_prompt
 from app.utils.style_quiz import (
+    GARMENT_PREFS,
     MAX_CHIP_LENGTH,
     MAX_CHIPS,
     QUIZ_VERSION,
@@ -145,6 +146,100 @@ class TestSummaryAndPrompt:
         text = format_style_profile_for_prompt(prefs)
         assert "minimalismo limpio" in text
         assert "tacones" in text
+
+
+class TestGarmentPreference:
+    """«¿Qué ropa quieres que te proponga?» — about clothes, never about who.
+
+    It is asked, never inferred, and an unanswered one has to leave every
+    prompt exactly as it was before the question existed.
+    """
+
+    BASE = {"liked": ["minimal"], "fit": "holgado"}
+
+    def test_unanswered_is_the_default_and_changes_nothing(self):
+        assert empty_quiz()["garment_pref"] is None
+        assert normalize_quiz({})["garment_pref"] is None
+        assert quiz_prompt_lines(self.BASE) == quiz_prompt_lines(
+            {**self.BASE, "garment_pref": None}
+        )
+
+    @pytest.mark.parametrize("value", ["ambas", "sin_decir"])
+    def test_ambas_and_a_refusal_behave_exactly_like_unanswered(self, value):
+        """The whole point: nothing downstream may tell these three apart."""
+        assert quiz_prompt_lines({**self.BASE, "garment_pref": value}) == quiz_prompt_lines(
+            self.BASE
+        )
+        prefs = UserPreference(taste_profile={**self.BASE, "garment_pref": value})
+        plain = UserPreference(taste_profile=self.BASE)
+        assert format_style_profile_for_prompt(prefs) == format_style_profile_for_prompt(plain)
+
+    @pytest.mark.parametrize("value,word", [("masculina", "camisa"), ("femenina", "blusa")])
+    def test_an_answer_adds_one_line_about_garment_words(self, value, word):
+        base = quiz_prompt_lines(self.BASE)
+        lines = quiz_prompt_lines({**self.BASE, "garment_pref": value})
+        assert len(lines) == len(base) + 1
+        added = next(line for line in lines if line not in base)
+        assert value in added
+        # It steers the vocabulary and what to suggest, not anything about them.
+        assert word in added
+        assert "no digas nada sobre la persona" in added
+
+    def test_it_reaches_the_stylist_prompt(self):
+        prefs = UserPreference(taste_profile={**self.BASE, "garment_pref": "femenina"})
+        assert "sección femenina" in format_style_profile_for_prompt(prefs)
+
+    def test_the_summary_reads_it_back_but_never_a_refusal(self):
+        assert "sección masculina" in " ".join(
+            quiz_summary_lines({**self.BASE, "garment_pref": "masculina"})
+        )
+        assert quiz_summary_lines({**self.BASE, "garment_pref": "sin_decir"}) == quiz_summary_lines(
+            self.BASE
+        )
+
+    def test_garbage_is_dropped_rather_than_rejected(self):
+        for junk in ("hombre", "", None, 7, ["femenina"]):
+            assert normalize_quiz({"garment_pref": junk})["garment_pref"] is None
+        for value in GARMENT_PREFS:
+            assert normalize_quiz({"garment_pref": value})["garment_pref"] == value
+
+    def test_it_counts_as_having_answered(self):
+        assert is_answered({"garment_pref": "ambas"})
+        assert not is_answered({"garment_pref": "not-an-option"})
+
+    def test_it_never_talks_about_the_person(self):
+        from app.utils.style_quiz import GARMENT_PREF_PROMPT_ES, GARMENT_PREF_SUMMARY_ES
+
+        for line in (*GARMENT_PREF_PROMPT_ES.values(), *GARMENT_PREF_SUMMARY_ES.values()):
+            assert not any(w in line.casefold() for w in BODY_WORDS)
+            for banned in ("hombre", "mujer", "género", "sexo", "chico", "chica"):
+                assert banned not in line.casefold(), line
+
+
+class TestHabitualSizes:
+    """Sizes live with the measurements, not in the quiz: one place knows them."""
+
+    def test_the_quiz_never_stores_a_size(self):
+        assert not [k for k in empty_quiz() if "size" in k or "talla" in k]
+        stored = normalize_quiz({"shirt_size": "M", "sizes": {"top": "M"}})
+        assert "shirt_size" not in stored and "sizes" not in stored
+
+    def test_sizes_reach_the_prompt_from_the_measurements(self):
+        text = format_style_profile_for_prompt(
+            None, body_measurements={"shirt_size": "M", "pants_size": "40", "shoe_size": "42"}
+        )
+        assert "talla de parte de arriba M" in text
+        assert "talla de pantalón 40" in text
+        assert "talla de calzado 42" in text
+        # They are for telling the user what to look for, never a comment.
+        assert "nunca para juzgar" in text
+
+    def test_no_sizes_saved_means_no_line(self):
+        assert "talla" not in format_style_profile_for_prompt(None, body_measurements={})
+
+    def test_the_removed_inseam_field_is_not_reintroduced(self):
+        """It was dropped from the form on purpose; nothing may ask for it again."""
+        assert "inseam" not in empty_quiz()
 
 
 class TestBias:

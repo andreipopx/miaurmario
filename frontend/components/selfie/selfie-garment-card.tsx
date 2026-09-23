@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Check, Loader2, Plus, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useGarmentWord } from '@/lib/garment-words';
 import { useTagLabel } from '@/lib/tag-labels';
 import { cn } from '@/lib/utils';
 import type { SelfieGarment, SelfieItemSummary } from '@/lib/selfie';
@@ -38,15 +39,17 @@ export function SelfieGarmentCard({
 }: SelfieGarmentCardProps) {
   const t = useTranslations('selfie');
   const label = useTagLabel();
+  // "camisa" or "blusa", depending on what the user asked to be proposed.
+  const garmentWord = useGarmentWord();
 
-  const typeLabel = label('types', garment.type);
+  const typeLabel = garmentWord(garment.type);
   const details = [
     garment.primary_color ? label('colors', garment.primary_color) : null,
     garment.pattern && garment.pattern !== 'solid' ? label('patterns', garment.pattern) : null,
     garment.material ? label('materials', garment.material) : null,
   ].filter(Boolean) as string[];
 
-  const pickedName = picked ? (picked.name ?? label('types', picked.type)) : null;
+  const pickedName = picked ? (picked.name ?? garmentWord(picked.type)) : null;
 
   return (
     <li className="rounded-lg bg-panel p-3 sm:p-4">
@@ -84,7 +87,7 @@ export function SelfieGarmentCard({
           <ul className="mt-2 flex flex-wrap gap-2">
             {options.map((option) => {
               const isPicked = picked?.id === option.id;
-              const name = option.name ?? label('types', option.type);
+              const name = option.name ?? garmentWord(option.type);
               return (
                 <li key={option.id}>
                   <button

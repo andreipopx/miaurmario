@@ -110,8 +110,9 @@ Chips = list[str]
 class StyleQuizProfile(BaseModel):
     """The swipe deck plus the free-text answers.
 
-    Only taste, never the person: no body, size or "what flatters you" field
-    exists here by design. Unknown card ids and over-long chips are cleaned up
+    Only taste and which clothes to propose, never the person: no body, size or
+    "what flatters you" field exists here by design (habitual sizes live with
+    the other measurements on the user, not in this block). Unknown card ids and over-long chips are cleaned up
     server-side (``app.utils.style_quiz.normalize_quiz``) instead of rejected,
     so an older or newer client never gets a 422 in the middle of onboarding.
     """
@@ -126,6 +127,13 @@ class StyleQuizProfile(BaseModel):
     occasions: Chips = Field(default_factory=list, description="What they dress for most")
     fit: Literal["holgado", "ajustado", "mixto"] | None = Field(
         default=None, description="How they like clothes to sit"
+    )
+    garment_pref: Literal["masculina", "femenina", "ambas", "sin_decir"] | None = Field(
+        default=None,
+        description=(
+            "Which section of a shop to dress them from. Optional; unanswered "
+            "behaves exactly like 'ambas' and is never inferred from anything else"
+        ),
     )
     completed: bool = Field(
         default=False, description="They reached the end of the deck (vs. skipped)"

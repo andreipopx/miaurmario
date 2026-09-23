@@ -16,10 +16,14 @@ import { Chip } from '@/components/chip';
 import { useSaveStyleQuiz, useStyleQuiz, useStyleQuizRequest } from '@/lib/hooks/use-style-quiz';
 import { readLocalSeen, useSeenTips } from '@/lib/hooks/use-seen-tips';
 import { STYLE_QUIZ_KEY, shouldAutoOpenStyleQuiz } from '@/lib/onboarding/first-run';
+import { SizeFields } from '@/components/style-quiz/size-fields';
+import { useHabitualSizes } from '@/lib/hooks/use-habitual-sizes';
 import {
   FIT_CHOICES,
+  GARMENT_PREFS,
   STYLE_CARDS,
   type DeckState,
+  type Sizes,
   type ProfileChange,
   type QuizLength,
   type RestyleMode,
@@ -41,14 +45,19 @@ import {
 } from '@/lib/style-quiz/cards';
 import { cn } from '@/lib/utils';
 
-/** The questions after the deck, per length. "A fondo" asks all four fields. */
+/** The questions after the deck, per length. "A fondo" asks all of them. */
 const TAIL_STEPS: Record<QuizLength, readonly TailStep[]> = {
   quick: ['fit', 'essentials'],
-  deep: ['fit', 'likes', 'avoid'],
+  deep: ['fit', 'sizes', 'likes', 'avoid'],
 };
 
-type TailStep = 'fit' | 'essentials' | 'likes' | 'avoid';
-type Phase = 'length' | 'deck' | TailStep | 'summary';
+type TailStep = 'fit' | 'sizes' | 'essentials' | 'likes' | 'avoid';
+/**
+ * `garment` — "¿qué ropa quieres que te proponga?" — is asked once, before the
+ * deck, because it changes the words Stinky uses for everything that follows.
+ * It is optional: skipping it is an answer, and it means "de todo".
+ */
+type Phase = 'length' | 'garment' | 'deck' | TailStep | 'summary';
 
 /** Drag distance that counts as a swipe, and the fly-out duration. */
 const SWIPE_THRESHOLD = 72;
@@ -84,6 +93,11 @@ export function StyleQuizDialog() {
   const [fly, setFly] = useState<Swipe | null>(null);
   const [dragX, setDragX] = useState(0);
 
+  // The habitual sizes live with the other measurements, not in the quiz.
+  const habitualSizes = useHabitualSizes();
+  const [sizes, setSizes] = useState<Sizes>({});
+  const sizesEdited = useRef(false);
+
   const autoOpened = useRef(false);
   const lastRequest = useRef(request.n);
   const flyTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -105,7 +119,13 @@ export function StyleQuizDialog() {
     setPhase('length');
     setFly(null);
     setDragX(0);
+    sizesEdited.current = false;
   }, []);
+
+  // Start from whatever is already saved, until the user types over it.
+  useEffect(() => {
+    if (!sizesEdited.current) setSizes(habitualSizes.saved);
+  }, [habitualSizes.saved]);
 
   // Once per load, after the tour has been dealt with.
   useEffect(() => {
@@ -144,7 +164,7 @@ export function StyleQuizDialog() {
 
   const goTo = useCallback((next: Phase) => {
     setPhase(next);
-    if (next !== 'summary' && next !== 'deck' && next !== 'length') {
+    if (next !== 'summary' && next !== 'deck' && next !== 'length' && next !== 'garment') {
       setVisited((seen) => (seen.includes(next) ? seen : [...seen, next]));
     }
   }, []);
@@ -221,7 +241,14 @@ export function StyleQuizDialog() {
     [mode, saved?.profile, deck, profile]
   );
 
+  /** Sizes go to the profile, not to the quiz — and only if they were touched. */
+  const saveSizesIfEdited = () => {
+    if (!sizesEdited.current) return;
+    habitualSizes.save(sizes).catch(() => toast.error(t('sizes.saveError')));
+  };
+
   const finish = () => {
+    saveSizesIfEdited();
     const payload = payloadNow(true);
     setProfile(payload);
     setChanges(saved?.answered ? diffAnswers(saved.profile, payload) : []);
@@ -237,6 +264,7 @@ export function StyleQuizDialog() {
 
   /** "Saltar": keep whatever they already answered, never nag again. */
   const skip = () => {
+    saveSizesIfEdited();
     const payload = payloadNow(false);
     markSeen([STYLE_QUIZ_KEY]);
     setOpen(false);
@@ -256,9 +284,13 @@ export function StyleQuizDialog() {
   };
 
   const back = () => {
+    if (phase === 'garment') {
+      setPhase('length');
+      return;
+    }
     if (phase === 'deck') {
       if (deck.index === 0) {
-        setPhase('length');
+        setPhase('garment');
         return;
       }
       setDragX(0);
@@ -290,6 +322,7 @@ export function StyleQuizDialog() {
   // The deck is most of the journey; the questions share what is left.
   const progress = useMemo(() => {
     if (phase === 'length') return 0;
+    if (phase === 'garment') return 4;
     if (phase === 'summary') return 100;
     if (phase === 'deck') {
       return cards.length === 0 ? 75 : Math.round((Math.min(deck.index, cards.length) / cards.length) * 75);
@@ -298,7 +331,12 @@ export function StyleQuizDialog() {
   }, [phase, cards.length, deck.index, tail]);
 
   const summary = save.data?.summary ?? [];
-  const isLastQuestion = phase !== 'deck' && phase !== 'length' && phase !== 'summary' && tail.indexOf(phase) === tail.length - 1;
+  const isLastQuestion =
+    phase !== 'deck' &&
+    phase !== 'length' &&
+    phase !== 'garment' &&
+    phase !== 'summary' &&
+    tail.indexOf(phase) === tail.length - 1;
 
   return (
     <DialogPrimitive.Root
@@ -390,7 +428,7 @@ export function StyleQuizDialog() {
                       setLength(option);
                       setCards(cardsFor(option));
                       setDeck((state) => continueDeck(state));
-                      setPhase('deck');
+                      setPhase('garment');
                     }}
                     className="flex min-w-0 items-center gap-3 rounded-tile border-[1.5px] border-border bg-background px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
@@ -413,9 +451,58 @@ export function StyleQuizDialog() {
             </div>
           )}
 
+          {/* Asked once, before the deck: it decides the words Stinky uses for
+              every garment after this. About clothes, never about the person —
+              and leaving it alone is a perfectly good answer. */}
+          {phase === 'garment' && (
+            <div className="px-4 pb-2 pt-4" data-testid="quiz-garment">
+              <h2 className="text-[20px] font-extrabold leading-tight tracking-[-0.02em]">{t('garment.title')}</h2>
+              <p className="mt-1 text-sm leading-snug text-muted-foreground">{t('garment.body')}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {GARMENT_PREFS.map((option) => (
+                  <Chip
+                    key={option}
+                    active={profile.garment_pref === option}
+                    data-testid={`garment-${option}`}
+                    onClick={() =>
+                      setProfile((p) => ({ ...p, garment_pref: p.garment_pref === option ? null : option }))
+                    }
+                  >
+                    {t(`garment.options.${option}`)}
+                  </Chip>
+                ))}
+              </div>
+              <p className="mt-3 text-[13px] leading-snug text-muted-foreground">{t('garment.note')}</p>
+            </div>
+          )}
+
+          {phase === 'sizes' && (
+            <div className="px-4 pb-2 pt-4" data-testid="quiz-sizes">
+              <h2 className="text-[20px] font-extrabold leading-tight tracking-[-0.02em]">{t('sizes.title')}</h2>
+              <p className="mt-1 text-sm leading-snug text-muted-foreground">{t('sizes.body')}</p>
+              <div className="mt-3">
+                <SizeFields
+                  values={sizes}
+                  onChange={(next) => {
+                    sizesEdited.current = true;
+                    setSizes(next);
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           {phase === 'deck' && card && (
             <div className="px-4 pb-2 pt-3">
-              <p className="mb-2 text-center text-[15px] font-semibold">{t('deckPrompt')}</p>
+              <div className="mb-2">
+                <p className="text-center text-[15px] font-semibold">{t('deckPrompt')}</p>
+                {/* What the three buttons do, said once, on the first card. */}
+                {deck.index === 0 && (
+                  <p className="mt-0.5 break-words text-center text-[12px] leading-snug text-muted-foreground" data-testid="deck-intro">
+                    {t('deckIntro')}
+                  </p>
+                )}
+              </div>
 
               <div className="relative h-[clamp(190px,36vh,280px)] select-none">
                 {/* The next card peeks from behind so the deck reads as a deck. */}
@@ -459,8 +546,17 @@ export function StyleQuizDialog() {
                 >
                   <X className="h-6 w-6" strokeWidth={2.5} aria-hidden />
                 </Button>
-                <Button variant="ghost" className="min-w-0 flex-1" onClick={() => choose('pass')}>
-                  {t('skipCard')}
+                {/* "Ni fu ni fa" is a skip, not an answer: it says so on the
+                    button, because it is the only one that changes nothing. */}
+                <Button
+                  variant="ghost"
+                  onClick={() => choose('pass')}
+                  aria-label={t('skipCardLabel')}
+                  data-testid="quiz-pass"
+                  className="h-14 min-w-0 flex-1 flex-col gap-0 px-2 py-1 leading-tight"
+                >
+                  <span className="max-w-full truncate text-sm font-semibold">{t('skipCard')}</span>
+                  <span className="max-w-full truncate text-[11px] font-medium text-muted-foreground">{t('skipCardHint')}</span>
                 </Button>
                 <Button
                   variant="signature"
@@ -596,7 +692,11 @@ export function StyleQuizDialog() {
                 <ChevronLeft className="h-5 w-5" strokeWidth={2} aria-hidden />
               </Button>
             )}
-            {phase === 'length' ? null : phase === 'summary' ? (
+            {phase === 'length' ? null : phase === 'garment' ? (
+              <Button ref={primary} className="min-w-0 flex-1" onClick={() => setPhase('deck')} data-testid="quiz-garment-next">
+                {t('next')}
+              </Button>
+            ) : phase === 'summary' ? (
               <Button variant="signature" className="min-w-0 flex-1" onClick={() => setOpen(false)}>
                 {t('done')}
               </Button>

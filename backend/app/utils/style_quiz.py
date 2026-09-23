@@ -13,6 +13,13 @@ both the stylist prompts and the non-AI scorer need the same mapping:
 
 Keep the id list in sync with ``frontend/lib/style-quiz/cards.ts``; unknown ids
 coming from an older/newer client are dropped rather than rejected.
+
+Besides the cards, the quiz stores one optional preference about *clothes*:
+``garment_pref`` — which section of a shop the user wants to be dressed from.
+It is asked, never inferred, and leaving it unanswered is a first-class answer
+that changes nothing anywhere. Habitual sizes are deliberately **not** here:
+they live with the other measurements on the user, so there is one place that
+knows them.
 """
 
 from collections.abc import Iterable, Mapping
@@ -72,6 +79,38 @@ STYLE_CARDS: tuple[StyleCard, ...] = (
 STYLE_CARDS_BY_ID: dict[str, StyleCard] = {c.id: c for c in STYLE_CARDS}
 STYLE_CARD_IDS: tuple[str, ...] = tuple(c.id for c in STYLE_CARDS)
 
+#: "¿Qué ropa quieres que te proponga Stinky?" — a preference about *clothes*,
+#: the section they want to be dressed from. It is never a statement about the
+#: person, and nothing else in the app may infer it from a name, a photo, a
+#: handle or a wardrobe. Unanswered (``None``) and ``"sin_decir"`` behave
+#: exactly like ``"ambas"``: no line reaches any prompt.
+GARMENT_PREFS: tuple[str, ...] = ("masculina", "femenina", "ambas", "sin_decir")
+
+#: The only two values that change a prompt, and what they change: the words
+#: used for garments, and which section to look in for something not owned yet.
+GARMENT_PREF_PROMPT_ES: dict[str, str] = {
+    "masculina": (
+        "- Ropa que quiere que le proponga: de la sección masculina. Usa ese "
+        "vocabulario al nombrar prendas (camisa, pantalón, jersey) y, si le "
+        "sugieres algo que todavía no tiene, búscalo ahí. Es una preferencia "
+        "de ropa: no digas nada sobre la persona."
+    ),
+    "femenina": (
+        "- Ropa que quiere que le proponga: de la sección femenina. Usa ese "
+        "vocabulario al nombrar prendas (blusa, falda, vestido) y, si le "
+        "sugieres algo que todavía no tiene, búscalo ahí. Es una preferencia "
+        "de ropa: no digas nada sobre la persona."
+    ),
+}
+
+#: Read back to the user in "esto he entendido". "sin_decir" is a refusal, so
+#: it is never echoed.
+GARMENT_PREF_SUMMARY_ES: dict[str, str] = {
+    "masculina": "Te propongo ropa de la sección masculina.",
+    "femenina": "Te propongo ropa de la sección femenina.",
+    "ambas": "Te propongo ropa de cualquier sección.",
+}
+
 FIT_CHOICES: tuple[str, ...] = ("holgado", "ajustado", "mixto")
 FIT_ES: dict[str, str] = {
     "holgado": "holgado y con aire",
@@ -96,6 +135,7 @@ ANSWER_FIELDS: tuple[str, ...] = (
     "colors_avoid",
     "occasions",
     "fit",
+    "garment_pref",
 )
 
 
@@ -109,6 +149,7 @@ def empty_quiz() -> dict[str, Any]:
         "colors_avoid": [],
         "occasions": [],
         "fit": None,
+        "garment_pref": None,
         "completed": False,
         "version": QUIZ_VERSION,
         "updated_at": None,
@@ -161,6 +202,8 @@ def normalize_quiz(data: Mapping[str, Any] | None) -> dict[str, Any]:
     quiz["occasions"] = _clean_chips(src.get("occasions"))
     fit = src.get("fit")
     quiz["fit"] = fit if fit in FIT_CHOICES else None
+    garment_pref = src.get("garment_pref")
+    quiz["garment_pref"] = garment_pref if garment_pref in GARMENT_PREFS else None
     quiz["completed"] = bool(src.get("completed"))
     # Set server-side on every write; a client-sent value is ignored.
     updated_at = src.get("updated_at")
@@ -197,6 +240,10 @@ def quiz_prompt_lines(quiz: Mapping[str, Any] | None) -> list[str]:
         lines.append(f"- No le va: {_labels(q['disliked'])}")
     if q["fit"]:
         lines.append(f"- Cómo le gusta que le siente la ropa: {FIT_ES[q['fit']]}")
+    # Unanswered, "ambas" and "sin_decir" all add nothing: the prompt then
+    # behaves exactly as it did before this question existed.
+    if q["garment_pref"] in GARMENT_PREF_PROMPT_ES:
+        lines.append(GARMENT_PREF_PROMPT_ES[q["garment_pref"]])
     if q["colors_avoid"]:
         lines.append(f"- Colores que prefiere no llevar: {', '.join(q['colors_avoid'])}")
     if q["never_wear"]:
@@ -224,6 +271,8 @@ def quiz_summary_lines(quiz: Mapping[str, Any] | None) -> list[str]:
         lines.append(f"No te va: {_labels(q['disliked'])}.")
     if q["fit"]:
         lines.append(f"Prefieres que la ropa te quede {FIT_ES[q['fit']]}.")
+    if q["garment_pref"] in GARMENT_PREF_SUMMARY_ES:
+        lines.append(GARMENT_PREF_SUMMARY_ES[q["garment_pref"]])
     if q["colors_avoid"]:
         lines.append(f"Evito estos colores: {', '.join(q['colors_avoid'])}.")
     if q["never_wear"]:

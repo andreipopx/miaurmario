@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link2, Loader2 } from 'lucide-react';
+import { Link2, Loader2, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useSizeSummary } from '@/components/style-quiz/size-fields';
+import { useHabitualSizes } from '@/lib/hooks/use-habitual-sizes';
+import { hasSizes } from '@/lib/style-quiz/cards';
 import { LinkPreview, dataUrlToFile, useLinkPreview } from '@/lib/hooks/use-intake';
 import { ApiError } from '@/lib/api';
 
@@ -48,6 +51,9 @@ function hostOf(url: string): string {
  */
 export function LinkImportTab({ initialUrl, onUse, onCancel }: LinkImportTabProps) {
   const t = useTranslations('wardrobe.add.link');
+  const tSizes = useTranslations('firstRun.styleQuiz.sizes');
+  const habitualSizes = useHabitualSizes();
+  const sizeSummary = useSizeSummary();
   const [url, setUrl] = useState(initialUrl ?? '');
   const [preview, setPreview] = useState<LinkPreview | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
@@ -153,6 +159,20 @@ export function LinkImportTab({ initialUrl, onUse, onCancel }: LinkImportTabProp
               </p>
             </div>
           </div>
+
+          {/* A reminder of the sizes the user usually orders, so they can pick
+              the right one on the shop's own page. Nothing is ordered here. */}
+          {hasSizes(habitualSizes.saved) && (
+            <div className="flex items-start gap-2 rounded-quick bg-background p-2.5" data-testid="link-sizes">
+              <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden />
+              <div className="min-w-0">
+                <p className="break-words text-xs font-semibold text-foreground">
+                  {tSizes('atShop', { list: sizeSummary(habitualSizes.saved) })}
+                </p>
+                <p className="mt-0.5 break-words text-xs text-muted-foreground">{tSizes('atShopHint')}</p>
+              </div>
+            </div>
+          )}
 
           {!preview.extracted && (
             <Alert variant="signature">

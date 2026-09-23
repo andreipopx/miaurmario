@@ -8,7 +8,8 @@
  * travel: keep this list and the backend catalogue in sync (both sides have a
  * test that fails if they drift).
  *
- * No third-party imagery: each card is a text tile on a pop tint.
+ * No third-party imagery: every card is an illustrated tile drawn in the repo
+ * as inline SVG (see `components/style-quiz/garment-shapes.tsx`).
  */
 
 export type StyleCardCategory = 'aesthetic' | 'silhouette' | 'palette';
@@ -70,11 +71,68 @@ export const cardsFor = (length: QuizLength): readonly StyleCard[] =>
  * about yet, so nothing is answered twice.
  */
 export function remainingCards(state: DeckState): readonly StyleCard[] {
-  return STYLE_CARDS.filter((c) => !state.touched.includes(c.id));
+  return STYLE_CARDS.filter((c) => !state.seen.includes(c.id));
 }
 
 export const FIT_CHOICES = ['holgado', 'ajustado', 'mixto'] as const;
 export type FitChoice = (typeof FIT_CHOICES)[number];
+
+/**
+ * «¿Qué ropa quieres que te proponga Stinky?» — which section of a shop to
+ * dress the user from. It is a preference about *clothes*, never a statement
+ * about the person, and it is only ever asked: nothing in the app infers it
+ * from a name, a photo, a handle or what is already in the wardrobe.
+ *
+ * `null` (never answered) and `'sin_decir'` behave exactly like `'ambas'`
+ * everywhere, including in the prompts, which simply leave the line out.
+ */
+export const GARMENT_PREFS = ['masculina', 'femenina', 'ambas', 'sin_decir'] as const;
+export type GarmentPref = (typeof GARMENT_PREFS)[number];
+
+/**
+ * Habitual sizes live with the other measurements on the user
+ * (`body_measurements`), not in the quiz — the settings form, the stylist
+ * prompt and the shop-link import all read the same three keys.
+ */
+export const SIZE_KEYS = ['shirt_size', 'pants_size', 'shoe_size'] as const;
+export type SizeKey = (typeof SIZE_KEYS)[number];
+export type Sizes = Partial<Record<SizeKey, string>>;
+
+/** Sizes are typed by hand and differ per shop, so they stay short free text. */
+export const MAX_SIZE_LENGTH = 24;
+
+/** Pull just the three habitual sizes out of whatever is stored, as strings. */
+export function sizesFrom(measurements: Record<string, string | number> | null | undefined): Sizes {
+  const out: Sizes = {};
+  for (const key of SIZE_KEYS) {
+    const raw = measurements?.[key];
+    if (typeof raw === 'string' || typeof raw === 'number') {
+      const text = String(raw).trim().slice(0, MAX_SIZE_LENGTH);
+      if (text) out[key] = text;
+    }
+  }
+  return out;
+}
+
+export const hasSizes = (sizes: Sizes): boolean => SIZE_KEYS.some((key) => Boolean(sizes[key]?.trim()));
+
+/**
+ * Merge edited sizes back into the stored measurements without touching
+ * anything else in there — height, weight and the rest belong to the settings
+ * form, and a blanked-out size is removed rather than stored empty.
+ */
+export function mergeSizes(
+  measurements: Record<string, string | number> | null | undefined,
+  sizes: Sizes
+): Record<string, string | number> {
+  const merged: Record<string, string | number> = { ...(measurements ?? {}) };
+  for (const key of SIZE_KEYS) {
+    const text = sizes[key]?.trim().slice(0, MAX_SIZE_LENGTH) ?? '';
+    if (text) merged[key] = text;
+    else delete merged[key];
+  }
+  return merged;
+}
 
 /** Free-text answers: chips, so short and few. Mirrors MAX_CHIPS in the backend. */
 export const MAX_CHIPS = 12;
@@ -88,11 +146,20 @@ export interface DeckState {
   index: number;
   liked: string[];
   disliked: string[];
-  /** Cards the user acted on **in this run** — what "mezclar" overrides with. */
+  /**
+   * Cards the user gave a real answer to **in this run** (me gusta / no me va)
+   * — what "mezclar" overrides the old profile with. "Ni fu ni fa" is not an
+   * answer, so it never lands here.
+   */
   touched: string[];
+  /**
+   * Cards this run actually put on screen, answered or not. "Seguir afinando"
+   * skips these so nothing is asked twice.
+   */
+  seen: string[];
 }
 
-export const emptyDeck = (): DeckState => ({ index: 0, liked: [], disliked: [], touched: [] });
+export const emptyDeck = (): DeckState => ({ index: 0, liked: [], disliked: [], touched: [], seen: [] });
 
 /** "Reajustar" / "mezclar" start with the saved answers already highlighted. */
 export function deckFromProfile(profile: Pick<StyleQuizProfile, 'liked' | 'disliked'> | null | undefined): DeckState {
@@ -106,22 +173,33 @@ export function deckFromProfile(profile: Pick<StyleQuizProfile, 'liked' | 'disli
 
 const without = (list: readonly string[], id: string) => list.filter((x) => x !== id);
 
+const withId = (list: readonly string[], id: string) => (list.includes(id) ? [...list] : [...list, id]);
+
 /**
  * Apply one swipe/tap. A card is never in both piles, and re-answering a card
  * (after going back) replaces the old answer instead of duplicating it.
+ *
+ * **"Ni fu ni fa" changes nothing.** It moves to the next card and leaves any
+ * answer this card already had exactly where it was — the one the user gave a
+ * moment ago after stepping back, or the one saved from a previous run that a
+ * "mezclar" is building on. Clearing an answer is done in Ajustes → Tu estilo,
+ * where a card cycles back to "sin opinión" on purpose.
  */
 export function applySwipe(state: DeckState, swipe: Swipe, cards: readonly StyleCard[] = STYLE_CARDS): DeckState {
   const card = cards[state.index];
   if (!card) return state;
+  const index = Math.min(cards.length, state.index + 1);
+  const seen = withId(state.seen, card.id);
+  if (swipe === 'pass') return { ...state, index, seen };
+
   const liked = without(state.liked, card.id);
   const disliked = without(state.disliked, card.id);
   return {
-    index: Math.min(cards.length, state.index + 1),
+    index,
+    seen,
     liked: swipe === 'like' ? [...liked, card.id] : liked,
     disliked: swipe === 'dislike' ? [...disliked, card.id] : disliked,
-    // "Ni fu ni fa" counts as an answer too: in a merge it clears whatever the
-    // user used to think about this card.
-    touched: state.touched.includes(card.id) ? state.touched : [...state.touched, card.id],
+    touched: withId(state.touched, card.id),
   };
 }
 
@@ -166,6 +244,8 @@ export interface StyleQuizProfile {
   colors_avoid: string[];
   occasions: string[];
   fit: FitChoice | null;
+  /** Which section to dress them from; `null` means "never asked" = "ambas". */
+  garment_pref: GarmentPref | null;
   completed: boolean;
   /** Shape of the stored answers; the backend owns both of these. */
   version?: number;
@@ -191,6 +271,7 @@ export const emptyProfile = (): StyleQuizProfile => ({
   colors_avoid: [],
   occasions: [],
   fit: null,
+  garment_pref: null,
   completed: false,
 });
 
@@ -224,8 +305,9 @@ const answerIn = (profile: Pick<StyleQuizProfile, 'liked' | 'disliked'>, id: str
 
 /**
  * "Mezclar con lo anterior": the old profile wins on every card the user did
- * not see this time, and the fresh answer wins wherever they did. A run that
- * touched nothing leaves the profile exactly as it was.
+ * not answer this time, and the fresh answer wins wherever they did. A run
+ * that answered nothing — including one where every card got "Ni fu ni fa" —
+ * leaves the profile exactly as it was.
  */
 export function mergeDeck(previous: Pick<StyleQuizProfile, 'liked' | 'disliked'>, run: DeckState): Pick<StyleQuizProfile, 'liked' | 'disliked'> {
   const touched = new Set(run.touched);
@@ -262,6 +344,7 @@ export function hasAnswers(profile: StyleQuizProfile): boolean {
       profile.never_wear.length ||
       profile.colors_avoid.length ||
       profile.occasions.length ||
-      profile.fit
+      profile.fit ||
+      profile.garment_pref
   );
 }

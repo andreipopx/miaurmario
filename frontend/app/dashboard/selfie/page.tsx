@@ -28,7 +28,7 @@ import { useCreateStudioOutfit } from '@/lib/hooks/use-studio';
 import { getAiAccessErrorCode } from '@/lib/ai-access';
 import { ApiError, getErrorMessage } from '@/lib/api';
 import { formatDateLocalized } from '@/lib/date-locale';
-import { useTagLabel } from '@/lib/tag-labels';
+import { useGarmentWord } from '@/lib/garment-words';
 import {
   chosenItemIds,
   initialPicks,
@@ -67,7 +67,7 @@ export default function SelfiePage() {
   const t = useTranslations('selfie');
   const locale = useLocale();
   const router = useRouter();
-  const label = useTagLabel();
+  const garmentWord = useGarmentWord();
 
   const { data: aiStatus } = useAIStatus();
   const noVisionAi = Boolean(aiStatus && aiStatus.server_ai_enabled && !aiStatus.capabilities.vision);
@@ -170,7 +170,7 @@ export default function SelfiePage() {
       setExtraItems((prev) => [...prev, summary]);
       setPicks((prev) => setPick(prev, garment.index, summary.id));
       setAddedIndexes((prev) => [...prev, garment.index]);
-      toast.success(t('addedToast', { name: summary.name ?? label('types', summary.type) }));
+      toast.success(t('addedToast', { name: summary.name ?? garmentWord(summary.type) }));
     } catch (err) {
       toast.error(getErrorMessage(err, t('addFailed')));
     } finally {

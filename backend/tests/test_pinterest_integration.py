@@ -45,7 +45,8 @@ def test_alembic_single_head_chain():
     cfg = Config(str(BACKEND_DIR / "alembic.ini"))
     cfg.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_heads() == ["seentips2609"]
+    assert script.get_heads() == ["srccare2609"]
+    assert script.get_revision("srccare2609").down_revision == "seentips2609"
     assert script.get_revision("seentips2609").down_revision == "notif2609"
     assert script.get_revision("notif2609").down_revision == "daymoments2609"
     assert script.get_revision("daymoments2609").down_revision == "avatar2609"

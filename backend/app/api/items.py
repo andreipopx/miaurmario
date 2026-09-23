@@ -1,6 +1,10 @@
 import asyncio
+import base64
+import json
 import logging
+import tempfile
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -8,6 +12,7 @@ from zoneinfo import ZoneInfo
 from arq import create_pool
 from arq.jobs import Job
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from pydantic import ValidationError
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,22 +28,32 @@ from app.schemas.item import (
     BulkDeleteResponse,
     BulkUploadResponse,
     BulkUploadResult,
+    CareInfo,
+    CareLabelResponse,
     ItemCreate,
     ItemFilter,
     ItemImageResponse,
     ItemListResponse,
     ItemResponse,
     ItemUpdate,
+    LinkPreviewImage,
+    LinkPreviewRequest,
+    LinkPreviewResponse,
     LogWashRequest,
     LogWearRequest,
     RemoveBackgroundRequest,
     ReorderImagesRequest,
     WashHistoryResponse,
 )
-from app.services.ai_access import get_ai_access
+from app.services import link_import
+from app.services.ai_access import ai_error_detail, get_ai_access, require_ai_client
+from app.services.ai_service import AIDisabledError
+from app.services.care_label import parse_care_label
 from app.services.image_service import ImageService
 from app.services.item_service import ItemService
 from app.utils.auth import get_current_user
+from app.utils.care import care_hints, dominant_material
+from app.utils.rate_limit import rate_limit_by_user
 from app.workers.settings import get_redis_settings
 
 logger = logging.getLogger(__name__)
@@ -66,6 +81,41 @@ def _has_tag_content(field: str, value: Any) -> bool:
     if field == "tags" and isinstance(value, dict):
         return any(v not in _EMPTY_TAG_VALUES for v in value.values())
     return value not in _EMPTY_TAG_VALUES
+
+
+def _clean_source_url(raw: str | None) -> str | None:
+    """Normalize the shop link before it is stored (and later rendered as href)."""
+    if not raw or not raw.strip():
+        return None
+    try:
+        normalized, _host, _port = link_import.normalize_link_url(raw)
+    except link_import.LinkImportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": exc.reason, "message": exc.message},
+        ) from None
+    return normalized
+
+
+def _parse_care_form(raw: str | None) -> CareInfo | None:
+    """The multipart form carries care data as a JSON object."""
+    if not raw or not raw.strip():
+        return None
+    try:
+        payload = json.loads(raw)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_care", "message": "Care data is not valid JSON"},
+        ) from None
+    try:
+        care = CareInfo.model_validate(payload)
+    except ValidationError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_care", "message": "Care data is not valid"},
+        ) from None
+    return None if care.is_empty() else care
 
 
 @router.get("", response_model=ItemListResponse)
@@ -119,6 +169,113 @@ async def list_items(
     )
 
 
+@router.post("/link-preview", response_model=LinkPreviewResponse)
+async def preview_item_link(
+    payload: LinkPreviewRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> LinkPreviewResponse:
+    """Read a pasted shop link and hand the fields to the review screen.
+
+    Nothing is saved here: the user always sees what we read before the garment
+    exists. A link we cannot read still comes back 200 with ``extracted: false``
+    so the add form can open with the link filled in and the rest typed by hand.
+    """
+    if not settings.link_import_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": "link_import_disabled", "message": "Link import is turned off"},
+        )
+    await rate_limit_by_user(current_user.id, "item_link_preview", 20, 300)
+
+    try:
+        result = await link_import.import_link(payload.url)
+    except link_import.LinkImportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": exc.reason, "message": exc.message},
+        ) from None
+
+    extraction = result.extraction
+    image: LinkPreviewImage | None = None
+    if result.image and result.image_content_type:
+        encoded = base64.b64encode(result.image).decode("ascii")
+        image = LinkPreviewImage(
+            data_url=f"data:{result.image_content_type};base64,{encoded}",
+            content_type=result.image_content_type,
+            size_bytes=len(result.image),
+        )
+
+    return LinkPreviewResponse(
+        source_url=extraction.source_url,
+        extracted=result.extracted,
+        reason=result.reason,
+        name=extraction.name,
+        brand=extraction.brand,
+        price=extraction.price,
+        currency=extraction.currency,
+        primary_color=extraction.primary_color,
+        description=extraction.description,
+        site_name=extraction.site_name,
+        image=image,
+    )
+
+
+@router.post("/care-label", response_model=CareLabelResponse)
+async def read_care_label(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    image: UploadFile = File(...),
+) -> CareLabelResponse:
+    """Read the washing label in a photo into structured care data.
+
+    Needs vision AI. Wardrobes without it get the usual ``ai_*`` code and the
+    form falls back to typing the care information in by hand.
+    """
+    await rate_limit_by_user(current_user.id, "item_care_label", 20, 300)
+
+    image_service = ImageService()
+    content = await image.read()
+    if not image_service.validate_image(content, image.content_type or "application/octet-stream"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid image file. Supported formats: JPEG, PNG, WebP, HEIC",
+        )
+
+    try:
+        ai_service = await require_ai_client(db, current_user, "vision")
+    except AIDisabledError as e:
+        code, detail = ai_error_detail(e)
+        raise HTTPException(status_code=code, detail=detail) from None
+
+    suffix = Path(image.filename or "label.jpg").suffix or ".jpg"
+    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)  # noqa: SIM115
+    try:
+        tmp.write(content)
+        tmp.close()
+        raw = await ai_service.analyze_care_label(tmp.name)
+    except AIDisabledError as e:
+        code, detail = ai_error_detail(e)
+        raise HTTPException(status_code=code, detail=detail) from None
+    except Exception as e:
+        logger.warning(f"Care label read failed: {type(e).__name__}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "care_label_failed", "message": "We could not read that label"},
+        ) from None
+    finally:
+        Path(tmp.name).unlink(missing_ok=True)
+
+    care = parse_care_label(raw or "")
+    payload = care.model_dump()
+    return CareLabelResponse(
+        care=care,
+        hints=care_hints(payload),
+        suggested_material=dominant_material(payload.get("composition") or []),
+        read=not care.is_empty(),
+    )
+
+
 @router.post("", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_item(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -133,6 +290,8 @@ async def create_item(
     primary_color: str | None = Form(None),
     favorite: bool = Form(False),
     skip_ai: bool = Form(False),
+    source_url: str | None = Form(None),
+    care: str | None = Form(None, description="CareInfo as a JSON object"),
 ) -> ItemResponse:
     # Validate and process image
     image_service = ImageService()
@@ -188,6 +347,8 @@ async def create_item(
         colors=color_list,
         primary_color=primary_color,
         favorite=favorite,
+        source_url=_clean_source_url(source_url),
+        care=_parse_care_form(care),
     )
 
     item = await item_service.create(
@@ -566,6 +727,9 @@ async def update_item(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Item not found",
         )
+
+    if "source_url" in item_data.model_fields_set:
+        item_data.source_url = _clean_source_url(item_data.source_url)
 
     update_data = item_data.model_dump(exclude_unset=True)
     if any(_has_tag_content(f, update_data.get(f)) for f in TAG_WRITEBACK_FIELDS):

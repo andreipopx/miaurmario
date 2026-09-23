@@ -33,6 +33,7 @@ from app.services.notification_providers import (
 from app.services.notification_service import DeliveryStatus, NotificationDispatcher
 from app.services.recommendation_service import RecommendationService
 from app.services.weather_service import WeatherService
+from app.utils.care import care_hint_text
 from app.utils.redis_lock import distributed_lock
 from app.workers.db import get_db_session
 
@@ -462,6 +463,16 @@ async def _check_wash_reminders_inner(ctx: dict):
                 title = "Laundry Reminder"
                 body = f"{count} item{'s' if count != 1 else ''} need washing: {summary}"
 
+                # A read care label tells the user *how* to wash, not just when.
+                care_notes = []
+                for item in items[:5]:
+                    hint = care_hint_text(item.care)
+                    if hint:
+                        care_notes.append(f"{item.name or item.type}: {hint}")
+                care_notes = care_notes[:3]
+                if care_notes:
+                    body += f" ({'; '.join(care_notes)})"
+
                 # Send via first enabled channel
                 sent = False
                 sent_channel = "unknown"
@@ -526,6 +537,7 @@ async def _check_wash_reminders_inner(ctx: dict):
                         "item_count": count,
                         "title": title,
                         "body": body,
+                        "care": care_notes,
                     },
                     sent_at=datetime.now(UTC) if sent else None,
                     error_message=None if sent else "All channels failed",

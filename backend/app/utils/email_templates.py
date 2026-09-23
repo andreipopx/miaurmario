@@ -422,7 +422,7 @@ _OUTFIT = {
         "heading": "Tu conjunto {day} está listo",
         "occasion": "Ocasión",
         "forecast": "previsión",
-        "fallback": "¡Tu conjunto está listo!",
+        "fallback": "Tu conjunto está listo. Te lo he dejado preparado antes de la siesta.",
         "tip": "Consejo de Stinky",
         "cta": "Ver conjunto",
     },
@@ -433,7 +433,7 @@ _OUTFIT = {
         "heading": "Your outfit {day} is ready",
         "occasion": "Occasion",
         "forecast": "forecast",
-        "fallback": "Your outfit is ready!",
+        "fallback": "Your outfit is ready. I left it out for you before my nap.",
         "tip": "Stinky's tip",
         "cta": "View outfit",
     },
@@ -543,7 +543,8 @@ _FRIEND_ACCEPTED = {
         "preheader": "Ya sois amigos en Miaurmario.",
         "heading": "¡Ya sois amigos!",
         "intro": "<strong>@{username}</strong> ha aceptado tu solicitud de amistad. "
-        "A partir de ahora veréis los looks que compartís. Stinky aprueba.",
+        "A partir de ahora veréis los looks que compartís. Stinky da el visto bueno "
+        "desde el sofá.",
         "cta": "Ver amigos",
         "note": "",
     },
@@ -552,7 +553,7 @@ _FRIEND_ACCEPTED = {
         "preheader": "You're now friends on Miaurmario.",
         "heading": "You're friends now!",
         "intro": "<strong>@{username}</strong> accepted your friend request. From now on "
-        "you'll see each other's shared looks. Stinky approves.",
+        "you'll see each other's shared looks. Stinky gives it the nod from the sofa.",
         "cta": "View friends",
         "note": "",
     },

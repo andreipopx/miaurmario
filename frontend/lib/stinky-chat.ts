@@ -61,6 +61,37 @@ export type ChatStreamEvent =
 
 export const MAX_MESSAGE_CHARS = 1000;
 
+/** Message keys Stinky greets an empty chat with, cycled so he doesn't repeat himself. */
+export const GREETING_KEYS = ['greeting1', 'greeting2', 'greeting3', 'greeting4'] as const;
+
+/** Message keys for the "he's thinking" status, cycled once per turn. */
+export const THINKING_KEYS = ['statusThinking1', 'statusThinking2', 'statusThinking3'] as const;
+
+/**
+ * Pick the variant at `seed` (wrapping, negatives included). Deterministic on
+ * purpose: the server and the client always render the same line for the same
+ * seed, so rotating Stinky's phrases never trips hydration.
+ */
+export function rotate<T>(variants: readonly T[], seed: number): T {
+  const n = variants.length;
+  return variants[((Math.trunc(seed) % n) + n) % n];
+}
+
+/**
+ * Read a rotation counter from localStorage and advance it. Client-only (it
+ * returns 0 without storage), so callers must run it after mount.
+ */
+export function nextRotationSeed(key: string): number {
+  try {
+    const seed = Number.parseInt(window.localStorage.getItem(key) ?? '0', 10);
+    const current = Number.isFinite(seed) ? seed : 0;
+    window.localStorage.setItem(key, String((current + 1) % 1000));
+    return current;
+  } catch {
+    return 0;
+  }
+}
+
 const KNOWN_EVENTS = new Set(['meta', 'status', 'delta', 'outfit', 'done', 'error']);
 
 /**

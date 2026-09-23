@@ -2,13 +2,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError, setAccessToken } from '@/lib/api';
 import {
+  GREETING_KEYS,
+  THINKING_KEYS,
   applyStreamEvent,
   createSSEParser,
+  nextRotationSeed,
+  rotate,
   splitBold,
   streamChat,
   type ChatMessage,
   type ChatStreamEvent,
 } from '@/lib/stinky-chat';
+import en from '@/messages/en.json';
+import es from '@/messages/es.json';
 
 function collect(chunks: string[]) {
   const events: ChatStreamEvent[] = [];
@@ -95,6 +101,63 @@ describe('splitBold', () => {
     expect(splitBold('sin negrita')).toEqual([{ text: 'sin negrita', bold: false }]);
   });
 });
+
+describe("Stinky's phrase rotation", () => {
+  it('wraps around and stays deterministic (no randomness in SSR)', () => {
+    const lines = ['a', 'b', 'c'] as const
+    expect([0, 1, 2, 3, 4].map((s) => rotate(lines, s))).toEqual(['a', 'b', 'c', 'a', 'b'])
+    expect(rotate(lines, -1)).toBe('c')
+    expect(rotate(lines, 0)).toBe(rotate(lines, 0))
+  })
+
+  it('has one greeting and one thinking line per key', () => {
+    for (const key of GREETING_KEYS) expect(es.stinkyChat[key]).toBeTruthy()
+    for (const key of THINKING_KEYS) expect(es.stinkyChat[key]).toBeTruthy()
+    expect(new Set(GREETING_KEYS.map((k) => es.stinkyChat[k])).size).toBe(GREETING_KEYS.length)
+    expect(GREETING_KEYS.map((k) => en.stinkyChat[k]).every(Boolean)).toBe(true)
+    expect(THINKING_KEYS.map((k) => en.stinkyChat[k]).every(Boolean)).toBe(true)
+  })
+
+  it('never puts a cat noise in two consecutive rotation steps', () => {
+    const noise = /\b(miau|prrr|ñam|meow|purr|nom)\b/i
+    for (const keys of [GREETING_KEYS, THINKING_KEYS]) {
+      for (const messages of [es, en]) {
+        const lines = keys.map((k) => messages.stinkyChat[k] as string)
+        for (let i = 0; i < lines.length; i++) {
+          const next = lines[(i + 1) % lines.length]
+          expect(noise.test(lines[i]) && noise.test(next)).toBe(false)
+        }
+      }
+    }
+  })
+})
+
+describe('nextRotationSeed', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('advances a counter in localStorage and survives a hostile store', () => {
+    const store = new Map<string, string>()
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+      },
+    })
+    expect(nextRotationSeed('k')).toBe(0)
+    expect(nextRotationSeed('k')).toBe(1)
+    expect(nextRotationSeed('k')).toBe(2)
+
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: () => {
+          throw new Error('blocked')
+        },
+        setItem: () => {},
+      },
+    })
+    expect(nextRotationSeed('k')).toBe(0)
+  })
+})
 
 describe('streamChat', () => {
   afterEach(() => {

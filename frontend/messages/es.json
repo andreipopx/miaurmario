@@ -449,7 +449,7 @@
   "wardrobe": {
     "title": "Armario",
     "subtitle": "Gestiona la ropa que tienes",
-    "empty": "Aún no hay prendas aquí. Stinky esperará pacientemente.",
+    "empty": "Armario vacío. Stinky se echa aquí a esperar, que la siesta no se hace sola.",
     "emptyCta": "Añade tu primera prenda",
     "addItem": "Añadir prenda",
     "searchPlaceholder": "Buscar en tu armario...",
@@ -461,8 +461,8 @@
     "aiAnalyzing": "Analizando con IA...",
     "analysisFailed": "Análisis fallido",
     "aiCompleteness": "Completitud IA: {pct}%",
-    "emptyTitle": "Aún no hay prendas aquí",
-    "emptyBody": "Stinky esperará pacientemente. Añade tu primera pieza y empezamos.",
+    "emptyTitle": "Armario vacío",
+    "emptyBody": "Stinky se echa aquí a esperar, que la siesta no se hace sola. Añade tu primera prenda y empezamos.",
     "addFirstItem": "Añadir primera prenda",
     "searchItemsPlaceholder": "Buscar prendas...",
     "perPage": "{size} por página",
@@ -535,7 +535,7 @@
         "deleteImage": "Borrar imagen",
         "label": "Acciones de la prenda"
       },
-      "analyzing": "Stinky está analizando...",
+      "analyzing": "Stinky la está olisqueando…",
       "form": {
         "name": "Nombre",
         "namePlaceholder": "Nombre de la prenda",
@@ -720,7 +720,7 @@
     "acceptOutfit": "Me gusta",
     "rejectOutfit": "No es para mí",
     "acceptedToast": "Conjunto guardado",
-    "rejectedToast": "Tomo nota — la próxima lo haré mejor",
+    "rejectedToast": "Tomo nota — la próxima la clavo",
     "generateError": "No se pudo generar el conjunto. Inténtalo de nuevo.",
     "greetingMorning": "Buenos días",
     "greetingAfternoon": "Buenas tardes",
@@ -758,15 +758,15 @@
     "songHelp": "Opcional. El Estilista usará el mood de la canción como capa de inspiración.",
     "inspiredBy": "Inspirado en",
     "songSpotifyHint": "Música conectada: si lo dejas vacío, usaremos cómo suena lo que estás escuchando.",
-    "thinkingTitle": "Stinky está pensando tu look…",
+    "thinkingTitle": "Stinky lo está rumiando… prrr",
     "thinkingBody": "Mirando tu armario, el tiempo y la ocasión.",
     "thinkingBodySong": "Mirando tu armario, el tiempo y lo que suena: <b>{song}</b>.",
     "thinkingCaption": "Combinando tus prendas · unos segundos",
-    "introTitle": "¿Qué te pongo hoy?",
-    "introBody": "Elige la ocasión y Stinky te arma un look con tu armario.",
-    "introBodyOccasion": "Plan: {occasion}. Cuando quieras, Stinky se pone a ello.",
+    "introTitle": "¿Qué nos ponemos hoy?",
+    "introBody": "Elige la ocasión y te monto un look con lo que ya tienes. Sin moverme del sofá.",
+    "introBodyOccasion": "Plan: {occasion}. Cuando quieras me pongo, que la siesta puede esperar.",
     "acceptedTitle": "¡Buena elección!",
-    "acceptedBody": "Guardado en tus looks. Stinky aprueba.",
+    "acceptedBody": "Guardado en tus looks. Stinky lo aprueba con un ronroneo.",
     "anotherLook": "Otro look",
     "seeLooks": "Ver mis looks",
     "errorTitle": "Uy, algo se ha torcido",
@@ -1734,7 +1734,7 @@
       "multiBottoms": "Hay más de una prenda inferior.",
       "noFootwear": "No has elegido calzado."
     },
-    "aiThinking": "Stinky está pensando...",
+    "aiThinking": "Stinky le está dando vueltas…",
     "required": "obligatorio"
   },
   "itemPicker": {
@@ -2173,7 +2173,7 @@
     "oneLiner": {
       "euphoric": {
         "withArtist": "Tu música de hoy suena a subidón con {artist}: Stinky pide color y algo que brille.",
-        "plain": "Tu música de hoy suena eufórica: esto pide color y algo que brille."
+        "plain": "Tu música de hoy suena eufórica: pide color y algo que brille. Yo ya estoy de pie."
       },
       "electric": {
         "withArtist": "{artist} pone tu música en alto voltaje: contraste, actitud y bigotes de punta.",
@@ -2181,31 +2181,31 @@
       },
       "intense": {
         "withArtist": "Música intensa con {artist}: Stinky propone negro, botas y paso firme.",
-        "plain": "Tu música de hoy suena intensa: capas oscuras y paso firme."
+        "plain": "Tu música de hoy suena intensa: capas oscuras y paso de cazador."
       },
       "romantic": {
         "withArtist": "Música romántica con {artist}: tejidos suaves y tonos cálidos, aprobado con ronroneo.",
-        "plain": "Tu música de hoy suena romántica: tejidos suaves y tonos cálidos."
+        "plain": "Tu música de hoy suena romántica: tejidos suaves y tonos cálidos. Prrr."
       },
       "calm": {
         "withArtist": "Música en calma con {artist}: punto cómodo y tonos neutros, modo ovillo.",
-        "plain": "Tu música de hoy suena tranquila: comodidad y tonos neutros."
+        "plain": "Tu música de hoy suena tranquila: comodidad, tonos neutros y ganas de siesta."
       },
       "dreamy": {
         "withArtist": "Música soñadora con {artist}: texturas ligeras y un pastel que flote.",
-        "plain": "Tu música de hoy suena soñadora: texturas ligeras y colores pastel."
+        "plain": "Tu música de hoy suena soñadora: texturas ligeras y pasteles de siesta al sol."
       },
       "nostalgic": {
         "withArtist": "{artist} le da a tu música un aire retro: Stinky rebusca un básico vintage.",
-        "plain": "Tu música de hoy suena nostálgica: un básico vintage nunca falla."
+        "plain": "Tu música de hoy suena nostálgica: rescata ese básico vintage del fondo del armario."
       },
       "melancholic": {
         "withArtist": "Tu música de hoy suena melancólica con {artist}: capas suaves y un jersey que abrace.",
-        "plain": "Tu música de hoy suena melancólica: capas suaves y punto gordito."
+        "plain": "Tu música de hoy suena melancólica: capas suaves y un punto en el que enroscarse."
       },
       "eclectic": {
         "withArtist": "Un poco de todo con {artist}: tu música de hoy pide combinar sin miedo.",
-        "plain": "Tu música de hoy suena ecléctica: combina sin miedo."
+        "plain": "Tu música de hoy suena ecléctica: combina sin miedo, que yo apruebo desde el sofá."
       }
     },
     "connectLastfmCta": "Conectar Last.fm",
@@ -2973,20 +2973,25 @@
   "stinkyChat": {
     "title": "Stinky",
     "subtitle": "Tu estilista gatuno",
-    "statusThinking": "Pensando…",
+    "statusThinking1": "Pensándolo…",
+    "statusThinking2": "Rumiándolo… prrr",
+    "statusThinking3": "Dándole vueltas…",
     "statusTool": {
-      "get_wardrobe": "Mirando tu armario…",
-      "get_weather": "Mirando el cielo…",
+      "get_wardrobe": "Husmeando en tu armario…",
+      "get_weather": "Asomándome a la ventana…",
       "get_recent_outfits": "Repasando tus últimos looks…",
-      "get_listening_mood": "Escuchando tu música…",
+      "get_listening_mood": "Orejas puestas en tu música…",
       "get_user_preferences": "Repasando tus gustos…",
       "show_outfit": "Montando el look…",
       "create_outfit": "Guardando el look…",
       "suggest_outfit": "Preparando un outfit…",
       "default": "Un momento…"
     },
-    "emptyTitle": "¿En qué te ayudo?",
-    "emptyBody": "Pregúntame qué ponerte, qué te falta o cómo combinar esa prenda que nunca usas.",
+    "greeting1": "Miau. ¿Qué nos ponemos hoy?",
+    "greeting2": "¿En qué te ayudo?",
+    "greeting3": "Aquí estoy, despierto y todo.",
+    "greeting4": "Dime, ¿qué plan tienes?",
+    "emptyBody": "Pregúntame qué ponerte, qué te falta o cómo combinar esa prenda que nunca usas. La tengo vigilada.",
     "suggestion1": "¿Qué me pongo hoy?",
     "suggestion2": "Tengo una boda en octubre",
     "suggestion3": "¿Qué me falta para el otoño?",
@@ -3240,11 +3245,11 @@
         },
         "day": {
           "title": "Tu día",
-          "body": "Te propongo looks según el tiempo y tus planes, y para varios momentos del día: oficina, gimnasio, cena…"
+          "body": "Me asomo a la ventana y te propongo looks según el tiempo y tus planes, para varios momentos del día: oficina, gimnasio, cena…"
         },
         "stylist": {
           "title": "Estilista y chat",
-          "body": "Pídeme un look para una ocasión (una boda, una entrevista) o háblame sin más: tengo tu armario delante."
+          "body": "Pídeme un look para una ocasión (una boda, una entrevista) o háblame sin más: tengo tu armario delante y opinión de sobra."
         },
         "inspo": {
           "title": "Inspiración",
@@ -3252,7 +3257,7 @@
         },
         "install": {
           "title": "Instala y activa avisos",
-          "body": "Ponme en tu pantalla de inicio y te aviso del look del día sin abrir nada."
+          "body": "Ponme en tu pantalla de inicio y te aviso del look del día sin que abras nada. Siempre encuentro hueco."
         }
       },
       "install": {
@@ -3268,10 +3273,10 @@
       }
     },
     "tips": {
-      "wardrobe": "aquí vive tu ropa. Toca una prenda para editarla, o mira tus looks e historial en las pestañas.",
-      "stylist": "dime la ocasión y el plan, y te monto un look con lo que tienes.",
+      "wardrobe": "aquí vive tu ropa. Toca una prenda para editarla, o mira tus looks e historial en las pestañas. Yo vigilo desde arriba del armario.",
+      "stylist": "dime la ocasión y el plan, y te monto un look con lo que tienes. Prrr.",
       "inspo": "busca a tus amigos por su @usuario y conecta Spotify, Last.fm o Pinterest para afinar tu estilo.",
-      "stinky": "pregúntame lo que quieras: qué ponerte hoy, qué combina con qué o qué te falta.",
+      "stinky": "pregúntame lo que quieras: qué ponerte hoy, qué combina con qué o qué te falta. Estoy despierto, aprovecha.",
       "settings": "tu ciudad, horarios de avisos, integraciones y familia. Lo que cambies aquí lo tengo en cuenta.",
       "dismiss": "Cerrar consejo"
     },

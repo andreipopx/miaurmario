@@ -409,7 +409,7 @@ DEFAULT_PLAY_MS = 210_000
 ONE_LINERS: dict[str, tuple[str, str]] = {
     "euphoric": (
         "Tu música de hoy suena a subidón con {artist}: Stinky pide color y algo que brille.",
-        "Tu música de hoy suena eufórica: esto pide color y algo que brille.",
+        "Tu música de hoy suena eufórica: pide color y algo que brille. Yo ya estoy de pie.",
     ),
     "electric": (
         "{artist} pone tu música en alto voltaje: contraste, actitud y bigotes de punta.",
@@ -417,31 +417,31 @@ ONE_LINERS: dict[str, tuple[str, str]] = {
     ),
     "intense": (
         "Música intensa con {artist}: Stinky propone negro, botas y paso firme.",
-        "Tu música de hoy suena intensa: capas oscuras y paso firme.",
+        "Tu música de hoy suena intensa: capas oscuras y paso de cazador.",
     ),
     "romantic": (
         "Música romántica con {artist}: tejidos suaves y tonos cálidos, aprobado con ronroneo.",
-        "Tu música de hoy suena romántica: tejidos suaves y tonos cálidos.",
+        "Tu música de hoy suena romántica: tejidos suaves y tonos cálidos. Prrr.",
     ),
     "calm": (
         "Música en calma con {artist}: punto cómodo y tonos neutros, modo ovillo.",
-        "Tu música de hoy suena tranquila: comodidad y tonos neutros.",
+        "Tu música de hoy suena tranquila: comodidad, tonos neutros y ganas de siesta.",
     ),
     "dreamy": (
         "Música soñadora con {artist}: texturas ligeras y un pastel que flote.",
-        "Tu música de hoy suena soñadora: texturas ligeras y colores pastel.",
+        "Tu música de hoy suena soñadora: texturas ligeras y pasteles de siesta al sol.",
     ),
     "nostalgic": (
         "{artist} le da a tu música un aire retro: Stinky rebusca un básico vintage.",
-        "Tu música de hoy suena nostálgica: un básico vintage nunca falla.",
+        "Tu música de hoy suena nostálgica: rescata ese básico vintage del fondo del armario.",
     ),
     "melancholic": (
         "Tu música de hoy suena melancólica con {artist}: capas suaves y un jersey que abrace.",
-        "Tu música de hoy suena melancólica: capas suaves y punto gordito.",
+        "Tu música de hoy suena melancólica: capas suaves y un punto en el que enroscarse.",
     ),
     "eclectic": (
         "Un poco de todo con {artist}: tu música de hoy pide combinar sin miedo.",
-        "Tu música de hoy suena ecléctica: combina sin miedo.",
+        "Tu música de hoy suena ecléctica: combina sin miedo, que yo apruebo desde el sofá.",
     ),
 }
 
@@ -636,10 +636,13 @@ AI_REFINE_MIN_TRACKS = 3
 AI_REFINE_THROTTLE_PREFIX = "music:mood:ai"
 
 AI_SYSTEM_PROMPT = (
-    "Eres Stinky, el gato estilista de Miaurmario. Describes cómo SUENA la música de un "
-    "día (su energía y su color) para inspirar la ropa. Hablas de la música, nunca de la "
-    "persona: no supones cómo se siente ni le atribuyes emociones. Respondes SOLO con "
-    "JSON válido."
+    "Eres Stinky, el gato esmoquin que ejerce de estilista en Miaurmario. Describes cómo "
+    "SUENA la música de un día (su energía y su color) para inspirar la ropa. Se te nota "
+    "el gato —el sofá, la siesta, el rayo de sol, los bigotes— pero con moderación: como "
+    "mucho un sonido gatuno (miau, prrr, ñam) de vez en cuando, nunca en todas las "
+    "frases, y nada de lenguaje infantil. Hablas de la música, nunca de la persona: no "
+    "supones cómo se siente ni le atribuyes emociones, y no comentas su cuerpo. "
+    "Respondes SOLO con JSON válido."
 )
 
 
@@ -659,8 +662,9 @@ def _build_ai_prompt(rows: Sequence[ListeningMood], tracks: dict[date, list[str]
         "Para cada día, elige 1 o 2 moods SOLO de esta lista: "
         f"{', '.join(ALLOWED_LABELS)} (describen la MÚSICA). Estima energy y valence de la "
         "música entre 0 y 1, y escribe un one_liner corto (máx. 120 caracteres, en español, "
-        "tono juguetón de gato) sobre cómo suena la música y qué ropa pide, p. ej. "
-        "«Tu música de hoy suena melancólica: capas suaves y un jersey que abrace». Puede "
+        "tono de gato con criterio) sobre cómo suena la música y qué ropa pide, p. ej. "
+        "«Tu música de hoy suena melancólica: capas suaves y un jersey que abrace» o "
+        "«Esto suena a siesta larga: punto gordo y tonos de manta». Puede "
         "mencionar a un artista. Habla solo de la música y la ropa, nunca de la persona.\n"
         'Formato: {"days": [{"date": "YYYY-MM-DD", "moods": ["..."], "energy": 0.5, '
         '"valence": 0.5, "one_liner": "..."}]}\n\n'

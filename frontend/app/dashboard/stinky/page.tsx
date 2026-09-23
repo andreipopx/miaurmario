@@ -24,8 +24,12 @@ import {
   useStinkyConversation,
 } from '@/lib/hooks/use-stinky-chat';
 import {
+  GREETING_KEYS,
   MAX_MESSAGE_CHARS,
+  THINKING_KEYS,
   applyStreamEvent,
+  nextRotationSeed,
+  rotate,
   splitBold,
   streamChat,
   type ChatMessage,
@@ -160,8 +164,13 @@ function StinkyChat() {
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  // Stinky greets a blank chat with a different line each visit. Seed 0 on the
+  // first render (server and client agree), then advance once mounted.
+  const [greetingSeed, setGreetingSeed] = useState(0);
 
   const abortRef = useRef<AbortController | null>(null);
+  // Which "he's thinking" line this turn uses; advances once per message sent.
+  const thinkingSeed = useRef(0);
   const loadedIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -200,6 +209,8 @@ function StinkyChat() {
   // Stop streaming when leaving the page.
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  useEffect(() => setGreetingSeed(nextRotationSeed('stinky-chat:greeting')), []);
+
   // Keep the newest message in view (also when the keyboard opens and the room shrinks).
   useLayoutEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
@@ -207,6 +218,11 @@ function StinkyChat() {
 
   const toolLabel = useCallback(
     (tool?: string) => (tool && TOOL_KEYS.has(tool) ? t(`statusTool.${tool}` as never) : t('statusTool.default')),
+    [t]
+  );
+
+  const thinkingLabel = useCallback(
+    (seed: number) => t(rotate(THINKING_KEYS, seed) as never),
     [t]
   );
 
@@ -229,7 +245,8 @@ function StinkyChat() {
       setInput('');
       setStreaming(true);
       setMood('thinking');
-      setStatusLabel(t('statusThinking'));
+      const turnThinking = thinkingLabel(thinkingSeed.current++);
+      setStatusLabel(turnThinking);
 
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -255,7 +272,7 @@ function StinkyChat() {
                 }
                 return;
               case 'status':
-                setStatusLabel(ev.data.phase === 'tool' ? toolLabel(ev.data.tool) : t('statusThinking'));
+                setStatusLabel(ev.data.phase === 'tool' ? toolLabel(ev.data.tool) : turnThinking);
                 return;
               case 'delta':
                 setStatusLabel(null);
@@ -308,7 +325,17 @@ function StinkyChat() {
         if (outfitCreated) queryClient.invalidateQueries({ queryKey: ['outfits'] });
       }
     },
-    [aiUnavailable, conversationId, locale, queryClient, router, streaming, t, toolLabel]
+    [
+      aiUnavailable,
+      conversationId,
+      locale,
+      queryClient,
+      router,
+      streaming,
+      t,
+      thinkingLabel,
+      toolLabel,
+    ]
   );
 
   const onSaveCard = useCallback(
@@ -387,7 +414,7 @@ function StinkyChat() {
   const loadingConversation = !!cParam && conversation.isLoading && messages.length === 0;
   const isEmpty = messages.length === 0 && !loadingConversation;
   const suggestions = [t('suggestion1'), t('suggestion2'), t('suggestion3'), t('suggestion4')];
-  const headerStatus = streaming ? statusLabel || t('statusThinking') : t('subtitle');
+  const headerStatus = streaming ? statusLabel || thinkingLabel(0) : t('subtitle');
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
@@ -440,7 +467,9 @@ function StinkyChat() {
 
         {isEmpty && (
           <div className="flex flex-col items-center px-2 pb-2 pt-6 text-center">
-            <p className="text-2xl font-extrabold tracking-tight">{t('emptyTitle')}</p>
+            <p className="text-2xl font-extrabold tracking-tight">
+              {t(rotate(GREETING_KEYS, greetingSeed) as never)}
+            </p>
             <p className="mt-1.5 max-w-xs text-[15px] text-muted-foreground">{t('emptyBody')}</p>
             {!aiUnavailable && (
               <div className="mt-6 flex w-full flex-col gap-2 sm:grid sm:grid-cols-2">

@@ -23,7 +23,12 @@ function sameKey(a: ArrayBuffer | null | undefined, b: Uint8Array): boolean {
 async function getRegistration(): Promise<ServiceWorkerRegistration> {
   const existing = await navigator.serviceWorker.getRegistration('/');
   if (!existing) {
-    await navigator.serviceWorker.register('/sw.js?v=dev', { updateViaCache: 'none' });
+    // Same URL as components/sw-register.tsx: a different ?v= would create a
+    // second registration with its own cache.
+    const version = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
+    await navigator.serviceWorker.register(`/sw.js?v=${encodeURIComponent(version)}`, {
+      updateViaCache: 'none',
+    });
   }
   return navigator.serviceWorker.ready;
 }

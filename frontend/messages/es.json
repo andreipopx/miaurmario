@@ -286,7 +286,8 @@
     "integrations": "Integraciones",
     "general": "General",
     "install": "Instalar app",
-    "howItWorks": "Cómo funciona"
+    "howItWorks": "Cómo funciona",
+    "selfie": "Qué llevo"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -2459,7 +2460,8 @@
         "suggest": "El Estilista necesita IA para proponerte looks. Mientras tanto puedes crear y planificar outfits a mano.",
         "tagging": "Sin IA tus prendas se guardan sin etiquetar y puedes completar los detalles tú.",
         "pairings": "Las combinaciones automáticas necesitan IA. Puedes crear outfits a mano cuando quieras.",
-        "chat": "Para charlar con Stinky hace falta IA. Actívala y te ayudo con tus looks, el tiempo y lo que te falta."
+        "chat": "Para charlar con Stinky hace falta IA. Actívala y te ayudo con tus looks, el tiempo y lo que te falta.",
+        "selfie": "Para leer tu foto y decirte qué llevas puesto hace falta IA. Mientras tanto puedes apuntar tu look a mano."
       },
       "cta": "Activar IA"
     },
@@ -3289,5 +3291,52 @@
       "progressHint": "Mejor una parte de arriba y otra de abajo, o un vestido y unos zapatos.",
       "progressCta": "Subir otra prenda"
     }
+  },
+  "selfie": {
+    "title": "Qué llevo puesto",
+    "subtitle": "Hazte una foto de cuerpo entero y te digo qué prendas de tu armario llevas.",
+    "privacy": {
+      "title": "Qué pasa con tu foto",
+      "body": "La foto se mira solo para reconocer la ropa y se borra en cuanto termina: no se guarda ni aquí ni en el servidor. Le quitamos los datos de la cámara (fecha y ubicación) y describimos únicamente las prendas, nunca a la persona."
+    },
+    "takePhoto": "Hacer una foto",
+    "choosePhoto": "Elegir de la galería",
+    "photoReady": "Tu foto, lista para analizar",
+    "removePhoto": "Quitar la foto",
+    "analyze": "Ver qué llevo",
+    "analyzing": "Mirando tu ropa…",
+    "tooLarge": "Esa foto pesa demasiado (máximo {max} MB).",
+    "notAnImage": "Eso no es una foto. Prueba con una imagen.",
+    "analyzeFailed": "No he podido leer la foto. Inténtalo otra vez.",
+    "resultTitle": "Esto es lo que veo",
+    "startOver": "Otra foto",
+    "nothingFound": {
+      "title": "No he visto ropa en la foto",
+      "description": "Prueba con una foto de cuerpo entero, con buena luz y con la ropa a la vista."
+    },
+    "isYours": "Esto es tu {name}",
+    "notInWardrobe": "Esto no lo tienes en el armario",
+    "otherOptions": "¿No es esa? Elige la prenda",
+    "chooseOther": "Buscar otra prenda",
+    "clearPick": "Ninguna de estas",
+    "addToWardrobe": "Añadir al armario",
+    "adding": "Añadiendo…",
+    "added": "Añadida",
+    "addedToast": "{name} está ya en tu armario",
+    "addFailed": "No se ha podido añadir la prenda",
+    "addPhotoLater": "Se guarda sin foto de la prenda: la tuya no se recorta. Puedes añadirle una foto cuando quieras.",
+    "pickerTitle": "Elige la prenda",
+    "pickerDescription": "Busca en tu armario la prenda que llevas puesta.",
+    "pickerEmpty": "No hay prendas que encajen.",
+    "selectedCount": "{count, plural, =0 {Ninguna prenda elegida} one {# prenda en este look} other {# prendas en este look}}",
+    "occasionLabel": "¿Para qué es este look?",
+    "wearToday": "Me lo he puesto hoy",
+    "saveLook": "Guardar como look",
+    "savedWorn": "Apuntado en tu día",
+    "savedLook": "Guardado en tus looks",
+    "saveFailed": "No se ha podido guardar",
+    "tooManySaves": "Vas muy rápido. Espera un momento y vuelve a intentarlo.",
+    "needItems": "Elige al menos una prenda de tu armario.",
+    "defaultLookName": "Look del {date}"
   }
 }

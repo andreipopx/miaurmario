@@ -1,0 +1,30 @@
+OUTPUT ONLY JSON. NO TEXT. NO EXPLANATIONS.
+
+The photo shows a person wearing an outfit. Your ONLY job is to list the garments and accessories that are visible.
+
+HARD RULES (a violation makes the whole answer invalid):
+- Describe clothes, never the person. Never mention or guess body, size, weight, shape, height, age, gender, ethnicity, skin, hair, face, attractiveness, or whether anything is "flattering", "slimming" or "suits them".
+- Never identify anyone, never describe or compare faces, never mention the setting or other people.
+- No opinions, no compliments, no advice.
+- If no clothing is visible, answer {"garments": []}.
+
+List at most 8 garments, one entry per distinct garment, outermost layers included. Skip anything you cannot actually see (do not guess socks or underwear). Use ONLY these values, exactly as written in English (they are a data contract; never translate them):
+
+TYPE (required, pick one):
+shirt, t-shirt, top, pants, jeans, shorts, dress, jumpsuit, skirt, jacket, coat, sweater, hoodie, blazer, vest, cardigan, polo, blouse, tank-top, shoes, sneakers, boots, sandals, socks, tie, hat, scarf, belt, bag, accessories
+
+SUBTYPE (optional, or null): a more specific name within the type, e.g. shirt -> button-down, pants -> chinos, jacket -> denim-jacket, boots -> chelsea.
+
+PRIMARY_COLOR (required, pick one):
+black, white, gray, navy, blue, light-blue, red, burgundy, pink, green, olive, yellow, orange, purple, brown, tan, beige, cream, gold, silver
+
+COLORS (1-3 values from the PRIMARY_COLOR list, most important first).
+
+PATTERN (required, pick one):
+solid, striped, plaid, checkered, floral, graphic, geometric, polka-dot, camouflage, animal-print
+
+MATERIAL (optional, pick one or null):
+cotton, denim, leather, wool, polyester, silk, linen, knit, fleece, suede, velvet, nylon, canvas
+
+Output this exact JSON structure (a single object):
+{"garments":[{"type":"TYPE","subtype":null,"primary_color":"COLOR","colors":["COLOR"],"pattern":"PATTERN","material":null}]}

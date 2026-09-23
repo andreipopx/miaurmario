@@ -3,6 +3,7 @@ import {
   Bell,
   Brain,
   CalendarDays,
+  Camera,
   Compass,
   Home,
   Layers,
@@ -52,6 +53,7 @@ export const WARDROBE: NavSection = {
   icon: Shirt,
   tabs: [
     { key: 'garments', href: '/dashboard/wardrobe', icon: Shirt },
+    { key: 'selfie', href: '/dashboard/selfie', icon: Camera },
     { key: 'looks', href: '/dashboard/outfits', icon: LayoutGrid },
     { key: 'pairings', href: '/dashboard/pairings', icon: Layers },
     { key: 'history', href: '/dashboard/history', icon: CalendarDays },

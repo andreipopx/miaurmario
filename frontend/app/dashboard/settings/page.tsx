@@ -30,6 +30,7 @@ import { ColorPreferences } from '@/components/settings/color-preferences';
 import { toF, toCelsius } from '@/lib/temperature';
 import { toast } from 'sonner';
 import { SecurityCard } from '@/components/settings/security-card';
+import { HapticsCard } from '@/components/settings/haptics-card';
 import { AvatarSettings } from '@/components/settings/avatar-settings';
 import { PageHeader } from '@/components/page-header';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -461,6 +462,9 @@ export default function SettingsPage() {
             <LanguageSwitcher />
           </CardContent>
         </Card>
+
+        {/* Vibración: test button + the honest note about iPhone */}
+        <HapticsCard />
 
         {/* Tu estilo con Stinky: the swipe-deck taste profile */}
         <Card>

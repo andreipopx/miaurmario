@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { haptic } from '@/lib/native/haptics'
 import { cn } from '@/lib/utils'
 
 import {
@@ -253,7 +254,8 @@ export function Stinky({
     setPetFx({ kind: reaction, key: now })
     if (petFxTimer.current) clearTimeout(petFxTimer.current)
     petFxTimer.current = setTimeout(() => setPetFx(null), PET_FX_MS[reaction])
-    if (!latest.current.reducedMotion && typeof navigator !== 'undefined') navigator.vibrate?.([...STINKY_PET_VIBRATION[reaction]])
+    // `haptic` covers Android (Vibration API) and iOS 17.4+ (hidden switch tap); it checks Reduce Motion itself.
+    if (!latest.current.reducedMotion) haptic(STINKY_PET_VIBRATION[reaction])
     latest.current.onPet?.(reaction)
   }, [show])
 

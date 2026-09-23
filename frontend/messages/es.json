@@ -907,6 +907,16 @@
       "language": "Idioma",
       "description": "Elige el tema y el idioma de la app."
     },
+    "haptics": {
+      "title": "Vibración",
+      "description": "Stinky vibra el móvil cuando le acaricias: un ronroneo suave y un mordisquito más seco.",
+      "test": "Probar vibración",
+      "note": "En iPhone va a medias: necesita iOS 17.4 o más y, aun así, puede que tu iPhone no lo haga.",
+      "resultVibrate": "¿Lo has notado? Eso era el ronroneo de Stinky.",
+      "resultSwitch": "Enviado. En iPhone puede que no se note: depende de tu versión de iOS.",
+      "resultNone": "Este navegador no puede hacer vibrar el móvil.",
+      "resultReducedMotion": "Tienes activado \u201cReducir movimiento\u201d, así que la vibración está apagada."
+    },
     "family": {
       "title": "Familia",
       "noFamily": "Aún no estás en una familia.",

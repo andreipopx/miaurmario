@@ -907,6 +907,16 @@
       "language": "Language",
       "description": "Choose the app's theme and language."
     },
+    "haptics": {
+      "title": "Vibration",
+      "description": "Stinky buzzes your phone when you pet him: a soft purr, or a sharper nibble.",
+      "test": "Test vibration",
+      "note": "On iPhone it only half works: it needs iOS 17.4 or newer, and even then your iPhone may do nothing.",
+      "resultVibrate": "Feel that? That was Stinky purring.",
+      "resultSwitch": "Sent. On iPhone you may feel nothing \u2014 it depends on your iOS version.",
+      "resultNone": "This browser cannot vibrate your phone.",
+      "resultReducedMotion": "\u201cReduce Motion\u201d is on, so vibration is switched off."
+    },
     "family": {
       "title": "Family",
       "noFamily": "You're not in a family yet.",

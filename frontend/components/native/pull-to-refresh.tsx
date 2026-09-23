@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Stinky } from '@/components/stinky/stinky';
+import { haptic } from '@/lib/native/haptics';
 
 const THRESHOLD = 72; // px of (damped) pull that triggers a refresh
 const MAX_PULL = 120;
@@ -93,7 +94,7 @@ export function PullToRefresh({ onRefresh }: { onRefresh?: () => Promise<unknown
       }
       setPhase('refreshing');
       setPull(HOLD_AT);
-      navigator.vibrate?.(8);
+      haptic(8);
       const started = Date.now();
       try {
         await (refreshRef.current ? refreshRef.current() : queryClient.refetchQueries({ type: 'active' }));

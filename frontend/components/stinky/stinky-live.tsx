@@ -24,6 +24,8 @@ import { Avatar, type AvatarHandle } from '@oneworks/avatar-react/renderer'
 import '@oneworks/avatar-react/renderer.css'
 import type { AvatarAnimationClip, AvatarAnimationLibrary, AvatarDefinition } from '@oneworks/avatar'
 
+import { haptic } from '@/lib/native/haptics'
+
 import { Stinky, type StinkyProps } from './stinky'
 import { BITE_FX_MS, StinkyBiteFx } from './stinky-bite-fx'
 import { STINKY_PET_VIBRATION, pickPetReaction, type StinkyPetReaction } from './stinky-pet'
@@ -246,7 +248,7 @@ export default function StinkyLive(props: StinkyLiveProps) {
     petHistory.current = [...petHistory.current, reaction].slice(-4)
     setShown(reaction)
     setPetFx({ kind: reaction, key: now })
-    navigator.vibrate?.([...STINKY_PET_VIBRATION[reaction]])
+    haptic(STINKY_PET_VIBRATION[reaction])
     onPet?.(reaction)
   }
   const decorative = !isInteractive && label === ''

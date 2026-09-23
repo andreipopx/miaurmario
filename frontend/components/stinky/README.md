@@ -36,8 +36,10 @@ definition during those clips and shows exactly one of them per tick. First/last
 
 **Petting.** `interactive` (default when `size >= 48`) renders a `<button aria-label="Acariciar a Stinky">`:
 click/tap/Enter/Space plays `purr` (~65%: eyes close, head tilt, content mouth, 25 Hz micro-vibration, hearts + "prrr") or `bite` (~35%:
-lean-in, two playful chomps, "¡ñam!" + tooth marks), calls `navigator.vibrate?.(…)` unless reduced motion, fires
-`onPet(reaction)`, then returns to the previous state. Pets are throttled (1.2s, and ignored while reacting).
+lean-in, two playful chomps, "¡ñam!" + tooth marks), buzzes the phone through `haptic()` (`lib/native/haptics.ts`:
+`navigator.vibrate` on Android, the hidden iOS 17.4+ `<input type="checkbox" switch>` tap otherwise, nothing with
+reduced motion), fires `onPet(reaction)`, then returns to the previous state. Pets are throttled (1.2s, and ignored
+while reacting).
 
 Look (matched to the real Stinky): warm black coat `#151515`, white flame-shaped blaze from the muzzle up the forehead,
 white muzzle/chin, amber-green almond eyes `#cdb44e` with black vertical slit pupils, pink nose `#e6a1a6`, pink ":3"

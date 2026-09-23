@@ -55,6 +55,10 @@ class TestCatalogue:
         for card in STYLE_CARDS:
             assert not any(w in card.label_es.casefold() for w in BODY_WORDS)
 
+    @pytest.mark.skipif(
+        not FRONTEND_CARDS.is_file(),
+        reason="no frontend checkout next to the backend (backend-only image/CI job)",
+    )
     def test_frontend_deck_matches_the_backend_catalogue(self):
         """The copy lives in the frontend; the meaning here. Ids must agree."""
         source = FRONTEND_CARDS.read_text(encoding="utf-8")

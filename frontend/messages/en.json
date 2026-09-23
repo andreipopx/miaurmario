@@ -286,7 +286,8 @@
     "integrations": "Integrations",
     "general": "General",
     "install": "Install app",
-    "howItWorks": "How it works"
+    "howItWorks": "How it works",
+    "selfie": "What I'm wearing"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
@@ -2459,7 +2460,8 @@
         "suggest": "The Stylist needs AI to suggest looks. Meanwhile you can build and plan outfits by hand.",
         "tagging": "Without AI your clothes are saved untagged and you can fill in the details yourself.",
         "pairings": "Automatic pairings need AI. You can build outfits by hand any time.",
-        "chat": "Chatting with Stinky needs AI. Turn it on and I'll help with your looks, the weather and what you're missing."
+        "chat": "Chatting with Stinky needs AI. Turn it on and I'll help with your looks, the weather and what you're missing.",
+        "selfie": "Reading your photo to tell you what you're wearing needs AI. In the meantime you can log your look by hand."
       },
       "cta": "Turn on AI"
     },
@@ -3284,5 +3286,52 @@
       "progressHint": "Ideally a top and a bottom, or a dress and some shoes.",
       "progressCta": "Add another item"
     }
+  },
+  "selfie": {
+    "title": "What am I wearing",
+    "subtitle": "Take a full-body photo and I'll tell you which of your garments you have on.",
+    "privacy": {
+      "title": "What happens to your photo",
+      "body": "The photo is only read to recognise the clothes and is dropped as soon as that is done: it is not stored here or on the server. Camera data (date and location) is stripped, and only the garments are described, never the person."
+    },
+    "takePhoto": "Take a photo",
+    "choosePhoto": "Choose from gallery",
+    "photoReady": "Your photo, ready to analyse",
+    "removePhoto": "Remove the photo",
+    "analyze": "See what I'm wearing",
+    "analyzing": "Looking at your clothes…",
+    "tooLarge": "That photo is too big (max {max} MB).",
+    "notAnImage": "That is not a photo. Try an image.",
+    "analyzeFailed": "I couldn't read the photo. Please try again.",
+    "resultTitle": "Here's what I see",
+    "startOver": "Another photo",
+    "nothingFound": {
+      "title": "I couldn't see any clothes",
+      "description": "Try a full-body photo, with good light and the clothes in view."
+    },
+    "isYours": "This is your {name}",
+    "notInWardrobe": "This one isn't in your wardrobe",
+    "otherOptions": "Not that one? Pick the garment",
+    "chooseOther": "Find another garment",
+    "clearPick": "None of these",
+    "addToWardrobe": "Add to wardrobe",
+    "adding": "Adding…",
+    "added": "Added",
+    "addedToast": "{name} is now in your wardrobe",
+    "addFailed": "The garment could not be added",
+    "addPhotoLater": "Saved without a garment photo: yours is never cropped. You can add a photo whenever you like.",
+    "pickerTitle": "Pick the garment",
+    "pickerDescription": "Find the garment you're wearing in your wardrobe.",
+    "pickerEmpty": "No garments match.",
+    "selectedCount": "{count, plural, =0 {No garments picked} one {# garment in this look} other {# garments in this look}}",
+    "occasionLabel": "What is this look for?",
+    "wearToday": "I'm wearing it today",
+    "saveLook": "Save as a look",
+    "savedWorn": "Logged in your day",
+    "savedLook": "Saved to your looks",
+    "saveFailed": "It could not be saved",
+    "tooManySaves": "That was quick. Wait a moment and try again.",
+    "needItems": "Pick at least one garment from your wardrobe.",
+    "defaultLookName": "Look from {date}"
   }
 }

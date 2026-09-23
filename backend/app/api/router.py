@@ -24,6 +24,7 @@ from app.api.notifications import router as notifications_router
 from app.api.outfits import router as outfits_router
 from app.api.pairings import router as pairings_router
 from app.api.preferences import router as preferences_router
+from app.api.selfie import router as selfie_router
 from app.api.social import friends_router, social_router
 from app.api.stinky import router as stinky_router
 from app.api.users import router as users_router
@@ -58,6 +59,7 @@ api_router.include_router(spotify_router)
 api_router.include_router(lastfm_router)
 api_router.include_router(music_router)
 api_router.include_router(stinky_router)
+api_router.include_router(selfie_router)
 api_router.include_router(friends_router)
 api_router.include_router(social_router)
 api_router.include_router(waitlist_router)

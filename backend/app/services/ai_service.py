@@ -659,6 +659,34 @@ class AIService:
 
         return tags
 
+    async def analyze_vision_json(
+        self, image_base64: str, system_prompt: str, task_name: str = "vision"
+    ) -> str:
+        """Run one vision call with a caller-supplied prompt; return the raw content.
+
+        For features whose answer is not the single-garment tagging schema (the
+        selfie garment list, for example). Parsing/validation is the caller's,
+        so each feature owns its own contract.
+        """
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"},
+                    },
+                ],
+            },
+        ]
+        content, err, _ = await self._call_with_fallback(messages, task_name)
+        if content:
+            return content
+        if err:
+            raise err
+        raise AIResponseError(f"AI {task_name} returned no content", reason="empty")
+
     async def check_health(self) -> dict:
         """Check health of all configured AI endpoints."""
         endpoints_health = []

@@ -284,6 +284,58 @@ async def test_style_profile_prompt_includes_the_memory(db_session, user):
     assert "le gusta el lino" in block
 
 
+async def test_style_profile_prompt_carries_the_quiz_and_the_memory_together(db_session, user):
+    """The swipe deck and the notebook are two different features writing the
+    same block: both must survive, and the notebook must stay inside its cap.
+    """
+    from app.utils.style_profile import format_style_profile_for_prompt
+    from app.utils.style_quiz import stamp_now
+
+    # More notes than fit, so the digest has to drop some rather than overflow.
+    for i in range(40):
+        await memory.remember(
+            db_session, user.id, "preference", f"le gustan los tejidos naturales {i:02d}"
+        )
+    await db_session.commit()
+
+    quiz = stamp_now(
+        {
+            "liked": ["minimal", "tailored"],
+            "disliked": ["boho"],
+            "fit": "holgado",
+            "garment_pref": "femenina",
+            "never_wear": ["crop tops"],
+        }
+    )
+
+    class _Prefs:
+        taste_profile = quiz
+        color_favorites = ["navy"]
+        color_avoid: list[str] = []
+        style_profile: dict = {}
+        layering_preference = None
+
+    digest = await memory.stylist_memory_lines(db_session, user.id)
+    assert len(digest) <= 400
+
+    block = format_style_profile_for_prompt(_Prefs, memory_text=digest)
+
+    # The quiz answers.
+    assert "test de estilo" in block
+    assert "minimalismo limpio" in block
+    assert "No le va: bohemio" in block
+    assert "holgado y con aire" in block
+    assert "sección femenina" in block
+    assert "crop tops" in block
+    # The notebook, under its own header and indented beneath it.
+    assert "Lo que le ha contado a Stinky hablando con él:" in block
+    memory_lines = [ln for ln in block.splitlines() if ln.startswith("  - ")]
+    assert memory_lines
+    assert all("tejidos naturales" in ln for ln in memory_lines)
+    # The notebook stays a hint: it never crowds out the rest of the block.
+    assert sum(len(ln) for ln in memory_lines) < len(block) // 2
+
+
 # --- Chat tools ---------------------------------------------------------------------------
 
 

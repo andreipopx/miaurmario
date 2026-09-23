@@ -112,9 +112,10 @@ class StyleQuizProfile(BaseModel):
 
     Only taste and which clothes to propose, never the person: no body, size or
     "what flatters you" field exists here by design (habitual sizes live with
-    the other measurements on the user, not in this block). Unknown card ids and over-long chips are cleaned up
-    server-side (``app.utils.style_quiz.normalize_quiz``) instead of rejected,
-    so an older or newer client never gets a 422 in the middle of onboarding.
+    the other measurements on the user, not in this block). Unknown card ids and
+    over-long chips are cleaned up server-side
+    (``app.utils.style_quiz.normalize_quiz``) instead of rejected, so an older
+    or newer client never gets a 422 in the middle of onboarding.
     """
 
     liked: Chips = Field(default_factory=list, description="Card ids swiped right")

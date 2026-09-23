@@ -915,7 +915,17 @@
       "resultVibrate": "¿Lo has notado? Eso era el ronroneo de Stinky.",
       "resultSwitch": "Enviado. En iPhone puede que no se note: depende de tu versión de iOS.",
       "resultNone": "Este navegador no puede hacer vibrar el móvil.",
-      "resultReducedMotion": "Tienes activado \u201cReducir movimiento\u201d, así que la vibración está apagada."
+      "resultReducedMotion": "Tienes activado \u201cReducir movimiento\u201d, así que la vibración está apagada.",
+      "notifyLabel": "Vibración por aviso (experimental · iPhone)",
+      "notifyHelp": "Cuando acaricies a Stinky, el iPhone muestra un aviso brevísimo que se cierra solo: la vibración la pone el sistema, no la web.",
+      "notifyNote": "Es un experimento: puede dejar rastro en el centro de notificaciones, no siempre funciona y puedes apagarlo cuando quieras.",
+      "notifyTest": "Probar aviso",
+      "notifyNeedsPermission": "Para probar esto, activa antes las notificaciones en Ajustes → Notificaciones.",
+      "notifyOnToast": "Activado. Acaricia a Stinky y mira si el iPhone vibra.",
+      "notifyOffToast": "Desactivado. No se enviará ningún aviso más.",
+      "notifySent": "Aviso enviado. Si tu iPhone ha vibrado, funciona.",
+      "notifyThrottled": "Espera unos segundos: los avisos están limitados para no llenarte el centro de notificaciones.",
+      "notifyError": "No se ha podido mostrar el aviso en este dispositivo."
     },
     "family": {
       "title": "Familia",

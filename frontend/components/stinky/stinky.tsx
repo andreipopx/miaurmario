@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { haptic } from '@/lib/native/haptics'
+import { notificationHaptic } from '@/lib/native/notification-haptic'
 import { cn } from '@/lib/utils'
 
 import {
@@ -255,7 +256,11 @@ export function Stinky({
     if (petFxTimer.current) clearTimeout(petFxTimer.current)
     petFxTimer.current = setTimeout(() => setPetFx(null), PET_FX_MS[reaction])
     // `haptic` covers Android (Vibration API) and iOS 17.4+ (hidden switch tap); it checks Reduce Motion itself.
-    if (!latest.current.reducedMotion) haptic(STINKY_PET_VIBRATION[reaction])
+    if (!latest.current.reducedMotion) {
+      haptic(STINKY_PET_VIBRATION[reaction])
+      // Opt-in iPhone fallback: a notification that closes itself. No-op unless switched on here.
+      void notificationHaptic()
+    }
     latest.current.onPet?.(reaction)
   }, [show])
 

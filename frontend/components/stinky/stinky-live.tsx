@@ -25,6 +25,7 @@ import '@oneworks/avatar-react/renderer.css'
 import type { AvatarAnimationClip, AvatarAnimationLibrary, AvatarDefinition } from '@oneworks/avatar'
 
 import { haptic } from '@/lib/native/haptics'
+import { notificationHaptic } from '@/lib/native/notification-haptic'
 
 import { Stinky, type StinkyProps } from './stinky'
 import { BITE_FX_MS, StinkyBiteFx } from './stinky-bite-fx'
@@ -249,6 +250,8 @@ export default function StinkyLive(props: StinkyLiveProps) {
     setShown(reaction)
     setPetFx({ kind: reaction, key: now })
     haptic(STINKY_PET_VIBRATION[reaction])
+    // Opt-in iPhone fallback: a notification that closes itself. No-op unless switched on here.
+    void notificationHaptic()
     onPet?.(reaction)
   }
   const decorative = !isInteractive && label === ''

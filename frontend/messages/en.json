@@ -915,7 +915,17 @@
       "resultVibrate": "Feel that? That was Stinky purring.",
       "resultSwitch": "Sent. On iPhone you may feel nothing \u2014 it depends on your iOS version.",
       "resultNone": "This browser cannot vibrate your phone.",
-      "resultReducedMotion": "\u201cReduce Motion\u201d is on, so vibration is switched off."
+      "resultReducedMotion": "\u201cReduce Motion\u201d is on, so vibration is switched off.",
+      "notifyLabel": "Buzz via notification (experimental · iPhone)",
+      "notifyHelp": "When you pet Stinky, your iPhone shows a tiny notification that closes itself: the buzz comes from the system, not the web app.",
+      "notifyNote": "This is an experiment: it may leave a trace in Notification Centre, it does not always work, and you can switch it off whenever you like.",
+      "notifyTest": "Test notification",
+      "notifyNeedsPermission": "To try this, turn notifications on first in Settings → Notifications.",
+      "notifyOnToast": "On. Pet Stinky and see whether your iPhone buzzes.",
+      "notifyOffToast": "Off. No more notifications will be sent.",
+      "notifySent": "Notification sent. If your iPhone buzzed, it works.",
+      "notifyThrottled": "Give it a few seconds: notifications are rate-limited so they do not fill up Notification Centre.",
+      "notifyError": "This device could not show the notification."
     },
     "family": {
       "title": "Family",

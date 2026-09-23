@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import {
@@ -44,10 +44,25 @@ import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useColorLabel } from '@/lib/tag-labels';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
+import { CareLabelField } from '@/components/add-item/care-label-field';
+import { LinkImportTab } from '@/components/add-item/link-import-tab';
+import { CareDraft } from '@/lib/hooks/use-intake';
+import { supportsShareTarget } from '@/lib/pwa/platform';
 
 interface AddItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Pre-filled intake, e.g. a photo or a link the system share sheet sent us.
+   * It only fills the form in — the user still reviews and saves.
+   */
+  initial?: AddItemInitial | null;
+}
+
+export interface AddItemInitial {
+  file?: File | null;
+  link?: string | null;
+  name?: string | null;
 }
 
 interface FileWithPreview {
@@ -56,8 +71,9 @@ interface FileWithPreview {
   id: string;
 }
 
-export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
+export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProps) {
   const t = useTranslations('wardrobe.add');
+  const tShare = useTranslations('wardrobe.share');
   const colorLabel = useColorLabel();
   const typeLabel = useClothingTypeLabel();
   // Single upload state
@@ -68,6 +84,8 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
   const [brand, setBrand] = useState('');
   const [primaryColor, setPrimaryColor] = useState('');
   const [notes, setNotes] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [care, setCare] = useState<CareDraft | null>(null);
 
   // Bulk upload state
   const [bulkFiles, setBulkFiles] = useState<FileWithPreview[]>([]);
@@ -78,6 +96,13 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
 
   // Track blob URLs for cleanup on unmount
   const blobUrlsRef = useRef<Set<string>>(new Set());
+
+  // On iOS (and Firefox) nothing can be shared into the app, so say so here
+  // instead of letting people hunt for a share option that does not exist.
+  const [noShareTarget, setNoShareTarget] = useState(false);
+  useEffect(() => {
+    setNoShareTarget(!supportsShareTarget(navigator.userAgent, navigator.maxTouchPoints || 0));
+  }, []);
 
   const createItem = useCreateItem();
   const { data: aiStatus } = useAIStatus();
@@ -94,6 +119,21 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
       blobUrlsRef.current.clear();
     };
   }, []);
+
+  // A shared photo or link (Web Share Target) lands in the right tab, filled in.
+  useEffect(() => {
+    if (!open || !initial) return;
+    if (initial.file) {
+      setFile(initial.file);
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(initial.file);
+    }
+    if (initial.name) setName(initial.name.slice(0, 100));
+    if (initial.link) {
+      setActiveTab('link');
+    }
+  }, [open, initial]);
 
   // Single file drop handler
   const onDropSingle = useCallback((acceptedFiles: File[]) => {
@@ -152,6 +192,8 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
     if (brand) formData.append('brand', brand);
     if (primaryColor) formData.append('primary_color', primaryColor);
     if (notes) formData.append('notes', notes);
+    if (sourceUrl) formData.append('source_url', sourceUrl);
+    if (care) formData.append('care', JSON.stringify(care));
 
     try {
       await createItem.mutateAsync(formData);
@@ -206,6 +248,8 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
     setBrand('');
     setPrimaryColor('');
     setNotes('');
+    setSourceUrl('');
+    setCare(null);
 
     // Bulk upload cleanup - also clean up from the ref
     bulkFiles.forEach((f) => {
@@ -263,10 +307,40 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="single">{t('tabSingle')}</TabsTrigger>
-            <TabsTrigger value="bulk">{t('tabBulk')}</TabsTrigger>
+          {/* Three tabs have to fit a 320px phone at 125% font: let them
+              shrink and ellipsize instead of pushing the dialog wider. */}
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="single" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
+              {t('tabSingle')}
+            </TabsTrigger>
+            <TabsTrigger value="link" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
+              {t('tabLink')}
+            </TabsTrigger>
+            <TabsTrigger value="bulk" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
+              {t('tabBulk')}
+            </TabsTrigger>
           </TabsList>
+
+          {/* Paste a shop link: read on the server, reviewed here */}
+          <TabsContent value="link" className="space-y-4">
+            <LinkImportTab
+              initialUrl={initial?.link ?? null}
+              onCancel={handleCloseRequest}
+              onUse={(prefill) => {
+                if (prefill.file) {
+                  setFile(prefill.file);
+                  const reader = new FileReader();
+                  reader.onloadend = () => setPreview(reader.result as string);
+                  reader.readAsDataURL(prefill.file);
+                }
+                if (prefill.name) setName(prefill.name.slice(0, 100));
+                if (prefill.brand) setBrand(prefill.brand.slice(0, 100));
+                if (prefill.primaryColor) setPrimaryColor(prefill.primaryColor);
+                setSourceUrl(prefill.sourceUrl);
+                setActiveTab('single');
+              }}
+            />
+          </TabsContent>
 
           {/* Single Item Upload */}
           <TabsContent value="single" className="space-y-4">
@@ -291,6 +365,9 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {t('acceptedFormats')}
                   </p>
+                  {noShareTarget && (
+                    <p className="mt-2 text-xs text-muted-foreground">{tShare('iosHint')}</p>
+                  )}
                 </div>
               ) : (
                 <div className="relative rounded-tile bg-panel">
@@ -382,6 +459,27 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                     placeholder={t('notesPlaceholder')}
                   />
                 </div>
+
+                {sourceUrl && (
+                  <div className="flex items-center gap-2 rounded-lg bg-panel px-3 py-2">
+                    <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                    <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                      {sourceUrl}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      onClick={() => setSourceUrl('')}
+                      aria-label={t('removeLink')}
+                    >
+                      <X className="h-4 w-4" strokeWidth={1.75} />
+                    </Button>
+                  </div>
+                )}
+
+                <CareLabelField value={care} onChange={setCare} idPrefix="add-care" />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

@@ -16,6 +16,45 @@ export interface ItemTags {
   logprobs_confidence?: number;
 }
 
+/** One fibre of a garment's composition, e.g. 60% cotton. */
+export interface CareComposition {
+  fiber: string;
+  percent?: number | null;
+}
+
+/**
+ * Care-label data. Everything is optional: a label read by AI and one typed in
+ * by hand produce the same shape, just filled in to different depths.
+ */
+export interface CareInfo {
+  composition: CareComposition[];
+  wash?: {
+    machine?: boolean | null;
+    hand_wash?: boolean | null;
+    do_not_wash?: boolean | null;
+    max_temp_c?: number | null;
+    cycle?: 'normal' | 'gentle' | 'delicate' | null;
+  } | null;
+  bleach?: 'any' | 'non_chlorine' | 'none' | null;
+  dry?: {
+    tumble_dry?: boolean | null;
+    tumble_heat?: 'low' | 'medium' | 'high' | null;
+    line_dry?: boolean | null;
+    flat_dry?: boolean | null;
+  } | null;
+  iron?: {
+    allowed?: boolean | null;
+    max_temp_c?: number | null;
+    steam?: boolean | null;
+  } | null;
+  professional?: {
+    dry_clean?: boolean | null;
+    code?: string | null;
+  } | null;
+  notes?: string | null;
+  source: 'ai' | 'manual';
+}
+
 export interface Item {
   id: string;
   user_id: string;
@@ -54,6 +93,9 @@ export interface Item {
   wash_interval?: number;
   needs_wash: boolean;
   effective_wash_interval: number;
+  source_url?: string | null;
+  care?: CareInfo | null;
+  care_hints: string[];
   additional_images: ItemImage[];
   is_archived: boolean;
   archived_at?: string;

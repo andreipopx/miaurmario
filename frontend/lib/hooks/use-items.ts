@@ -4,12 +4,18 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, getAccessToken, setAccessToken, ApiError, NetworkError } from '@/lib/api';
-import { Item, ItemListResponse, ItemFilter, WashHistoryEntry, ItemImage } from '@/lib/types';
+import { CareInfo, Item, ItemListResponse, ItemFilter, WashHistoryEntry, ItemImage } from '@/lib/types';
+import { CareDraft } from '@/lib/hooks/use-intake';
 import { chunkArray } from '@/lib/utils';
 
 // Must not exceed the backend's MAX_BULK_UPLOAD_COUNT setting, or every chunk
 // larger than the server's limit fails with a 400.
 const BULK_UPLOAD_CHUNK_SIZE = 20;
+
+/** PATCH body: an item's fields, with care accepted as a draft too. */
+export type ItemUpdatePayload = Partial<Omit<Item, 'care'>> & {
+  care?: CareDraft | CareInfo | null;
+};
 
 // Helper to set token if available (for NextAuth mode)
 function useSetTokenIfAvailable() {
@@ -113,7 +119,9 @@ export function useUpdateItem() {
   const { data: session } = useSession();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Item> }) => {
+    // `care` may carry composition as the text the user typed; the backend
+    // parses it the same way it parses what the vision model reads.
+    mutationFn: async ({ id, data }: { id: string; data: ItemUpdatePayload }) => {
       if (session?.accessToken) {
         setAccessToken(session.accessToken as string);
       }

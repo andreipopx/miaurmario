@@ -28,6 +28,7 @@ import {
   Plus,
   Star,
   ImageIcon,
+  Link2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -67,6 +68,18 @@ import { ColorEyedropper } from '@/components/color-eyedropper';
 import { GeneratePairingsDialog } from '@/components/generate-pairings-dialog';
 import { useFeatures } from '@/lib/hooks/use-features';
 import { useTagLabel } from '@/lib/tag-labels';
+import { CarePanel } from '@/components/care-panel';
+import { CareLabelField } from '@/components/add-item/care-label-field';
+import { CareDraft } from '@/lib/hooks/use-intake';
+
+/** "https://www.zara.com/es/…" -> "zara.com" */
+function sourceHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
 
 interface ItemDetailDialogProps {
   item: Item | null;
@@ -95,6 +108,10 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
     favorite: false,
     wash_interval: undefined as number | undefined,
   });
+  // Care is edited through its own field (it can also be read off a photo), so
+  // it lives beside editForm and is only sent when the user actually touched it.
+  const [careDraft, setCareDraft] = useState<CareDraft | null>(null);
+  const [careTouched, setCareTouched] = useState(false);
   const [showWashHistory, setShowWashHistory] = useState(false);
   const [showWearHistory, setShowWearHistory] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -130,6 +147,8 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
       });
       setIsEditing(false);
       setActiveImageIndex(0);
+      setCareDraft(null);
+      setCareTouched(false);
     }
   }, [item?.id]);
 
@@ -148,9 +167,11 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
           notes: editForm.notes || undefined,
           favorite: editForm.favorite,
           wash_interval: editForm.wash_interval,
+          ...(careTouched ? { care: careDraft } : {}),
         },
       });
       setIsEditing(false);
+      setCareTouched(false);
     } catch (error) {
       console.error('Failed to update item:', error);
     }
@@ -679,6 +700,16 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       {t('form.washIntervalHelp')}
                     </p>
                   </div>
+                  <CareLabelField
+                    key={item.id}
+                    initialValue={item.care}
+                    value={careDraft}
+                    onChange={(next) => {
+                      setCareDraft(next);
+                      setCareTouched(true);
+                    }}
+                    idPrefix="edit-care"
+                  />
                   <div className="flex gap-2 pt-2">
                     <Button
                       variant="secondary"
@@ -983,6 +1014,22 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         ))}
                       </div>}
                     </div>
+                  )}
+
+                  {/* Care label */}
+                  <CarePanel care={item.care} hints={item.care_hints} />
+
+                  {/* Where it came from */}
+                  {item.source_url && (
+                    <a
+                      href={item.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="flex items-center gap-2 text-sm font-semibold text-foreground underline-offset-4 hover:underline"
+                    >
+                      <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="min-w-0 truncate">{sourceHost(item.source_url)}</span>
+                    </a>
                   )}
 
                   {/* Notes */}

@@ -7,6 +7,7 @@ that the API layer serialises as Server-Sent Events:
 * ``status``  {phase: "thinking" | "tool", tool?}   (also works as keep-alive)
 * ``delta``   {text}                                   visible answer only
 * ``outfit``  {card}                                   outfit card to render inline
+* ``memory``  {note}                                   "Stinky ha tomado nota: ..."
 * ``ping``    {}                                       keep-alive while a tool runs
 * ``done``    {message_id, outfit_created, tokens}
 * ``error``   {code, message}
@@ -52,6 +53,7 @@ from app.services.stinky_chat.tools import (
     clean_text,
     run_tool,
 )
+from app.services.stinky_memory import build_digest, get_call_name
 from app.utils.prompts import load_prompt
 
 logger = logging.getLogger(__name__)
@@ -70,20 +72,40 @@ def _event(name: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
     return {"event": name, "data": data or {}}
 
 
-def build_system_prompt(user: User, locale: str) -> str:
+def build_system_prompt(
+    user: User,
+    locale: str,
+    memory_digest: str = "",
+    call_name: str | None = None,
+) -> str:
+    """The Stinky system prompt for this user, this locale and this notebook.
+
+    ``memory_digest`` is the capped «Stinky recuerda» block (see
+    ``app.services.stinky_memory``); it is empty until he has written something.
+    ``call_name`` is the name the person asked to be called, which wins over the
+    account display name in greetings.
+    """
     try:
         tz = ZoneInfo(user.timezone or "UTC")
     except Exception:
         tz = ZoneInfo("UTC")
     now = datetime.now(UTC).astimezone(tz)
     weekdays = _WEEKDAYS_EN if locale == "en" else _WEEKDAYS_ES
-    name = clean_text(user.display_name, 40) or ("—")
+    account_name = clean_text(user.display_name, 40) or ("—")
+    preferred = clean_text(call_name, 40)
     replacements = {
         "{language}": "inglés" if locale == "en" else "español",
         "{weekday}": weekdays[now.weekday()],
         "{today}": now.date().isoformat(),
         "{timezone}": str(tz),
-        "{user_name}": json.dumps(name, ensure_ascii=False),
+        "{user_name}": json.dumps(account_name, ensure_ascii=False),
+        "{call_name}": (
+            json.dumps(preferred, ensure_ascii=False)
+            if preferred
+            else "— (no te lo ha dicho; usa el nombre de la cuenta o ninguno)"
+        ),
+        "{memory_digest}": memory_digest
+        or "(Tu cuaderno está vacío: todavía no has anotado nada de esta persona.)",
     }
     prompt = load_prompt("stinky_chat")
     for key, value in replacements.items():
@@ -235,13 +257,23 @@ async def run_turn(
     turn_start = user_msg.seq
 
     rows = await load_history(db, conversation.id, settings.stinky_chat_history_messages)
+    # What Stinky already wrote down about this person (capped, pinned first).
+    try:
+        digest = await build_digest(db, user.id, mark_used=True)
+        call_name = await get_call_name(db, user.id)
+        await db.commit()
+    except Exception:  # the notebook is a nice-to-have: never break a turn over it
+        logger.warning("Could not load Stinky memory", exc_info=True)
+        await db.rollback()
+        digest, call_name = "", None
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": build_system_prompt(user, locale)},
+        {"role": "system", "content": build_system_prompt(user, locale, digest, call_name)},
         *history_to_messages(rows, turn_start),
     ]
 
-    ctx = ToolContext(db=db, user=user)
+    ctx = ToolContext(db=db, user=user, conversation_id=conversation.id)
     emitted_cards = 0
+    emitted_notes = 0
     rounds = 0
     tokens_used = 0
     visible_text = ""
@@ -278,7 +310,12 @@ async def run_turn(
         except ProviderError as e:
             logger.warning("Stinky chat provider error: %s", e)
             if visible_text.strip():
-                turn.add(role=CHAT_ROLE_ASSISTANT, content=visible_text, attachments=ctx.cards)
+                turn.add(
+                    role=CHAT_ROLE_ASSISTANT,
+                    content=visible_text,
+                    attachments=ctx.cards,
+                    notes=ctx.notes or None,
+                )
                 await turn.commit()
             yield _event(
                 "error",
@@ -338,6 +375,9 @@ async def run_turn(
                 while emitted_cards < len(ctx.cards):
                     yield _event("outfit", {"card": ctx.cards[emitted_cards]})
                     emitted_cards += 1
+                while emitted_notes < len(ctx.notes):
+                    yield _event("memory", {"note": ctx.notes[emitted_notes]})
+                    emitted_notes += 1
             for fields in pending:
                 turn.add(**fields)
             await turn.commit()
@@ -354,6 +394,7 @@ async def run_turn(
             content=content or None,
             reasoning=result.reasoning or None,
             attachments=ctx.cards or None,
+            notes=ctx.notes or None,
             prompt_tokens=result.prompt_tokens,
             completion_tokens=result.completion_tokens,
         )

@@ -132,13 +132,16 @@ def format_style_profile_for_prompt(
     preferences: Any = None,
     learned_prefs: Mapping[str, Any] | None = None,
     body_measurements: Mapping[str, Any] | None = None,
+    memory_text: str | None = None,
 ) -> str:
     """Spanish, gender-neutral bullet list of the user's taste.
 
     ``preferences`` is a ``UserPreference`` (or any object/dict with the same
-    attribute names). Always returns text: an explicit "not set yet" line when
-    the user has told us nothing, so the prompt never falls back to anybody
-    else's taste.
+    attribute names). ``memory_text`` is the already-capped subset of «Stinky
+    recuerda» (see ``app.services.stinky_memory.stylist_memory_lines``) — what
+    Stinky wrote down while chatting, which counts as the person telling us
+    directly. Always returns text: an explicit "not set yet" line when the user
+    has told us nothing, so the prompt never falls back to anybody else's taste.
     """
     # Imported here, not at module level: style_quiz reads COLOR_NAMES_ES from
     # this module, and the cycle would bite on import.
@@ -197,6 +200,10 @@ def format_style_profile_for_prompt(
         if learned_prefs.get("learned_preferred_styles"):
             styles = ", ".join(_style_tag(s) for s in learned_prefs["learned_preferred_styles"])
             lines.append(f"- Estilos que más acepta (aprendido): {styles}")
+
+    if memory_text:
+        lines.append("- Lo que le ha contado a Stinky hablando con él:")
+        lines.extend(f"  {line}" for line in memory_text.splitlines() if line.strip())
 
     body = _body_notes(body_measurements)
     if body:

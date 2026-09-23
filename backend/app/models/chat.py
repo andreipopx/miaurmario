@@ -46,6 +46,10 @@ class ChatMessage(Base):
     shown in the UI). Tool rows carry ``tool_call_id`` + ``tool_name`` and the
     JSON result in ``content``.
 
+    ``notes`` holds the memory notes Stinky wrote during the turn, as
+    ``{"kind": ..., "text": ..., "action": "created" | "updated"}``, so the chat
+    can show "Stinky ha tomado nota: ..." inline, also on reload.
+
     ``reasoning`` stores the provider's ``reasoning_content`` because DeepSeek's
     thinking mode requires it to be passed back on later requests that carry
     ``tools``. It is server-only: never returned by the API.
@@ -68,6 +72,9 @@ class ChatMessage(Base):
     tool_call_id: Mapped[str | None] = mapped_column(String(100))
     tool_name: Mapped[str | None] = mapped_column(String(64))
     attachments: Mapped[list | None] = mapped_column(JSONB)
+    # "Stinky ha tomado nota: ..." — what he wrote to «Stinky recuerda» during
+    # this turn, so the note stays visible when the conversation is reloaded.
+    notes: Mapped[list | None] = mapped_column(JSONB)
     prompt_tokens: Mapped[int | None] = mapped_column(Integer)
     completion_tokens: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

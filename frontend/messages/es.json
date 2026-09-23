@@ -1140,6 +1140,11 @@
       "title": "Tu estilo con Stinky",
       "description": "El test de tarjetas: lo que te gusta, lo que no y cómo te gusta que te quede.",
       "cta": "Ver tu estilo"
+    },
+    "stinkyMemory": {
+      "title": "Stinky recuerda",
+      "description": "Lo que Stinky ha apuntado de ti mientras habláis. Míralo, cámbialo o bórralo.",
+      "cta": "Ver lo que recuerda"
     }
   },
   "invite": {
@@ -3079,6 +3084,8 @@
       "show_outfit": "Montando el look…",
       "create_outfit": "Guardando el look…",
       "suggest_outfit": "Preparando un outfit…",
+      "remember": "Apuntándolo en su cuaderno…",
+      "forget": "Tachándolo del cuaderno…",
       "default": "Un momento…"
     },
     "greeting1": "Miau. ¿Qué nos ponemos hoy?",
@@ -3113,7 +3120,65 @@
     "offline": "Parece que no hay conexión.",
     "loadError": "No se pudo cargar la conversación",
     "tooLong": "Máximo {max} caracteres",
-    "disclaimer": "Stinky usa tu armario, el tiempo y tu música. Puede equivocarse."
+    "disclaimer": "Stinky usa tu armario, el tiempo y tu música. Puede equivocarse.",
+    "memoryNote": "Stinky ha tomado nota: {text}",
+    "memoryForgot": "Stinky lo ha olvidado: {text}",
+    "memoryManage": "Ver lo que recuerda"
+  },
+  "stinkyMemory": {
+    "backToSettings": "← Ajustes",
+    "pageTitle": "Stinky recuerda",
+    "pageDescription": "Lo que Stinky ha apuntado sobre ti mientras habláis. Tú mandas: cámbialo, fíjalo o bórralo.",
+    "how": {
+      "title": "Cómo funciona",
+      "body": "Stinky escribe estas notas él mismo cuando charláis, para no preguntarte lo mismo cada semana.",
+      "point1": "Solo anota cosas que le sirven para vestirte: estilos, colores, cómo te gusta que te quede la ropa, planes que se repiten, tallas o materiales.",
+      "point2": "Nunca anota nada sobre tu salud, tu cuerpo, tu peso, tu religión, tu sexualidad, tu política ni tu dinero. Si lo intenta, se lo bloqueamos.",
+      "point3": "Sus notas son solo tuyas: no se comparten con amigos ni con tu familia, ni aparecen en ninguna página pública."
+    },
+    "name": {
+      "title": "¿Cómo quieres que te llame?",
+      "body": "El nombre que usa Stinky al hablar contigo. No cambia el nombre de tu cuenta ni tu @usuario.",
+      "label": "Llámame…",
+      "placeholder": "Andrea",
+      "saved": "Hecho, te llamará así."
+    },
+    "list": {
+      "title": "Sus notas",
+      "count": "{count} de {max} notas.",
+      "empty": "Todavía no ha apuntado nada. Habla con él y lo irá escribiendo solo.",
+      "emptyCta": "Hablar con Stinky"
+    },
+    "kinds": {
+      "preference": "Lo que te gusta",
+      "dislike": "Lo que no te va",
+      "context": "Tu contexto",
+      "plan": "Planes que se repiten",
+      "fact": "Otros datos"
+    },
+    "clear": {
+      "title": "Borrar todo",
+      "body": "Stinky se olvida de todo lo que ha apuntado, incluido cómo te llama. No se puede deshacer.",
+      "cta": "Borrar todo",
+      "confirmTitle": "¿Que lo olvide todo?",
+      "confirmBody": "Se borran todas sus notas y el nombre que usa contigo. Volverá a empezar de cero.",
+      "confirm": "Sí, que lo olvide",
+      "done": "Stinky lo ha olvidado todo."
+    },
+    "edit": "Editar la nota",
+    "editLabel": "Texto de la nota",
+    "delete": "Borrar la nota",
+    "pin": "Fijar la nota",
+    "unpin": "Dejar de fijarla",
+    "pinnedTag": "Fijada.",
+    "sourceChat": "La escribió Stinky hablando contigo.",
+    "sourceUser": "La editaste tú.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "saved": "Guardado.",
+    "saveError": "No he podido guardarlo. Inténtalo otra vez.",
+    "deleteError": "No he podido borrarlo. Inténtalo otra vez.",
+    "loading": "Cargando…"
   },
   "tagValues": {
     "colors": {

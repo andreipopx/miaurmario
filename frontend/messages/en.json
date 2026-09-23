@@ -1140,6 +1140,11 @@
       "title": "Your style with Stinky",
       "description": "The card quiz: what you like, what you don't and how you like things to sit.",
       "cta": "See your style"
+    },
+    "stinkyMemory": {
+      "title": "Stinky remembers",
+      "description": "What Stinky has written down about you while you talk. See it, change it or delete it.",
+      "cta": "See what he remembers"
     }
   },
   "invite": {
@@ -3079,6 +3084,8 @@
       "show_outfit": "Putting the look together…",
       "create_outfit": "Saving the look…",
       "suggest_outfit": "Preparing an outfit…",
+      "remember": "Writing it in his notebook…",
+      "forget": "Crossing it out of his notebook…",
       "default": "One moment…"
     },
     "greeting1": "Miau. What are we wearing today?",
@@ -3113,7 +3120,65 @@
     "offline": "You seem to be offline.",
     "loadError": "Could not load the conversation",
     "tooLong": "Up to {max} characters",
-    "disclaimer": "Stinky uses your wardrobe, the weather and your music. It can make mistakes."
+    "disclaimer": "Stinky uses your wardrobe, the weather and your music. It can make mistakes.",
+    "memoryNote": "Stinky took note: {text}",
+    "memoryForgot": "Stinky forgot it: {text}",
+    "memoryManage": "See what he remembers"
+  },
+  "stinkyMemory": {
+    "backToSettings": "← Settings",
+    "pageTitle": "Stinky remembers",
+    "pageDescription": "What Stinky has written down about you while you talk. You're in charge: edit it, pin it or delete it.",
+    "how": {
+      "title": "How this works",
+      "body": "Stinky writes these notes himself while you chat, so he doesn't ask you the same thing every week.",
+      "point1": "He only notes things that help him dress you: styles, colours, how you like clothes to sit, recurring plans, sizes or materials.",
+      "point2": "He never notes anything about your health, your body, your weight, your religion, your sexuality, your politics or your money. If he tries, we block it.",
+      "point3": "His notes are yours alone: they aren't shared with friends or your family, and they never appear on any public page."
+    },
+    "name": {
+      "title": "What should he call you?",
+      "body": "The name Stinky uses when he talks to you. It doesn't change your account name or your @handle.",
+      "label": "Call me…",
+      "placeholder": "Andrea",
+      "saved": "Done, that's what he'll call you."
+    },
+    "list": {
+      "title": "His notes",
+      "count": "{count} of {max} notes.",
+      "empty": "He hasn't written anything yet. Talk to him and he'll start taking notes.",
+      "emptyCta": "Talk to Stinky"
+    },
+    "kinds": {
+      "preference": "What you like",
+      "dislike": "What isn't for you",
+      "context": "Your context",
+      "plan": "Recurring plans",
+      "fact": "Other details"
+    },
+    "clear": {
+      "title": "Delete everything",
+      "body": "Stinky forgets everything he has written down, including what he calls you. This can't be undone.",
+      "cta": "Delete everything",
+      "confirmTitle": "Should he forget everything?",
+      "confirmBody": "All his notes and the name he uses with you will be deleted. He'll start from scratch.",
+      "confirm": "Yes, let him forget",
+      "done": "Stinky has forgotten everything."
+    },
+    "edit": "Edit the note",
+    "editLabel": "Note text",
+    "delete": "Delete the note",
+    "pin": "Pin the note",
+    "unpin": "Unpin it",
+    "pinnedTag": "Pinned.",
+    "sourceChat": "Stinky wrote it while talking to you.",
+    "sourceUser": "You edited it.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Saved.",
+    "saveError": "I couldn't save that. Try again.",
+    "deleteError": "I couldn't delete that. Try again.",
+    "loading": "Loading…"
   },
   "tagValues": {
     "colors": {

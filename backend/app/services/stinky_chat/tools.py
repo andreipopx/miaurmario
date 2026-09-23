@@ -29,7 +29,9 @@ from sqlalchemy.orm import selectinload
 from app.models.item import ClothingItem, ItemStatus
 from app.models.outfit import Outfit, OutfitItem, OutfitSource
 from app.models.preference import UserPreference
+from app.models.stinky_memory import MAX_MEMORIES_PER_USER, MEMORY_KINDS
 from app.models.user import User
+from app.services import stinky_memory
 from app.services.ai_service import AIDisabledError
 from app.services.studio_service import ItemOwnershipError, StudioService
 from app.services.weather_service import (
@@ -47,6 +49,11 @@ DEFAULT_WARDROBE_ITEMS = 60
 MAX_OUTFIT_ITEMS = 8
 MAX_RECENT_DAYS = 60
 MAX_TOOL_RESULT_CHARS = 12000
+#: How many notes Stinky may write in one user message...
+MAX_MEMORY_WRITES_PER_TURN = 3
+#: ...and in one conversation, per hour (Redis-backed; fails open).
+MAX_MEMORY_WRITES_PER_CONVERSATION = 15
+MEMORY_WRITE_WINDOW_SECONDS = 3600
 
 _CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]+")
 
@@ -73,6 +80,11 @@ class ToolContext:
     # Outfit cards produced during this turn (shown inline in the chat UI).
     cards: list[dict[str, Any]] = field(default_factory=list)
     outfit_created: bool = False
+    # "Stinky ha tomado nota: ..." written during this turn (shown inline too).
+    notes: list[dict[str, Any]] = field(default_factory=list)
+    # Which conversation this turn belongs to (rate-limits the memory writes).
+    conversation_id: UUID | None = None
+    memory_writes: int = 0
 
 
 # --- Tool schemas (OpenAI function-calling format) ----------------------------------
@@ -253,6 +265,69 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
                     "date": {"type": "string", "description": _DATE_DESC},
                 },
                 "required": ["occasion"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "remember",
+            "description": (
+                "Write one short, durable note about this person to your notebook "
+                "(«Stinky recuerda»), so you still know it in future conversations. Only "
+                "for stable things that help dress them: the name they want to be called, "
+                "styles/colours/materials they love or refuse, fit preferences, recurring "
+                "plans (office on Tuesdays), climate, sizes, material allergies, upcoming "
+                "events. NEVER for health, body, weight, religion, sexuality, politics, "
+                "money problems, secrets, third parties, or anything said once in passing. "
+                "Saying nearly the same thing again updates the existing note. The user "
+                "sees every note and can edit or delete it."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "enum": list(MEMORY_KINDS),
+                        "description": (
+                            "name = what to call them; preference = what they like; "
+                            "dislike = what they refuse; context = their routine/climate; "
+                            "plan = a recurring or upcoming plan; fact = anything else "
+                            "useful for dressing them (sizes, materials)."
+                        ),
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": (
+                            "The note, in the user's language, third person, at most 200 "
+                            'characters. E.g. "prefiere pantalón ancho", "no lleva rojo", '
+                            '"trabaja en oficina los martes".'
+                        ),
+                    },
+                },
+                "required": ["kind", "text"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "forget",
+            "description": (
+                "Delete a note from your notebook when the person says it is wrong or no "
+                "longer true. Pass the id from a previous remember, or the text of the note."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "Id returned by remember."},
+                    "text": {
+                        "type": "string",
+                        "description": "The note's text, if you have no id.",
+                    },
+                },
                 "additionalProperties": False,
             },
         },
@@ -689,6 +764,82 @@ async def suggest_outfit(ctx: ToolContext, args: dict[str, Any]) -> dict[str, An
     }
 
 
+async def _check_memory_budget(ctx: ToolContext) -> None:
+    """Stinky may not turn a conversation into a note-taking machine."""
+    if ctx.memory_writes >= MAX_MEMORY_WRITES_PER_TURN:
+        raise ToolError(
+            "You have already noted enough in this message. Keep talking; note the rest later."
+        )
+    if ctx.conversation_id is None:
+        return
+    from fastapi import HTTPException
+
+    from app.utils.rate_limit import rate_limit_by_user
+
+    try:
+        await rate_limit_by_user(
+            ctx.conversation_id,
+            "stinky_memory_conv",
+            max_requests=MAX_MEMORY_WRITES_PER_CONVERSATION,
+            window_seconds=MEMORY_WRITE_WINDOW_SECONDS,
+        )
+    except HTTPException:
+        raise ToolError(
+            "You have written too many notes in this conversation. Carry on without noting."
+        ) from None
+
+
+async def remember(ctx: ToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    await _check_memory_budget(ctx)
+    try:
+        memory, action = await stinky_memory.remember(
+            ctx.db,
+            ctx.user.id,
+            str(args.get("kind") or ""),
+            str(args.get("text") or ""),
+            source="chat",
+        )
+    except stinky_memory.MemoryRefused as e:
+        raise ToolError(str(e)) from None
+    await ctx.db.commit()
+    ctx.memory_writes += 1
+    if action != "unchanged":
+        ctx.notes.append({"kind": memory.kind, "text": memory.text, "action": action})
+    return {
+        "saved": True,
+        "action": action,
+        "id": str(memory.id),
+        "kind": memory.kind,
+        "text": memory.text,
+        "total": await stinky_memory.count_memories(ctx.db, ctx.user.id),
+        "max_total": MAX_MEMORIES_PER_USER,
+        "note": (
+            "Saved. The user can see and edit it in Ajustes → Stinky recuerda. Do not "
+            "recite the note back; just keep talking naturally."
+        ),
+    }
+
+
+async def forget(ctx: ToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    memory_id: UUID | None = None
+    raw_id = args.get("id")
+    if raw_id not in (None, ""):
+        try:
+            memory_id = UUID(str(raw_id))
+        except ValueError:
+            raise ToolError("That is not a note id. Pass the note's text instead.") from None
+    try:
+        removed = await stinky_memory.forget(
+            ctx.db, ctx.user.id, memory_id=memory_id, text=args.get("text")
+        )
+    except stinky_memory.MemoryRefused as e:
+        raise ToolError(str(e)) from None
+    await ctx.db.commit()
+    if removed:
+        ctx.notes.append({"kind": "forgotten", "text": removed[0], "action": "deleted"})
+    return {"forgotten": len(removed), "texts": removed[:5]}
+
+
 async def create_chat_outfit(
     db: AsyncSession,
     user: User,
@@ -728,6 +879,8 @@ TOOLS: dict[str, ToolFn] = {
     "show_outfit": show_outfit,
     "create_outfit": create_outfit,
     "suggest_outfit": suggest_outfit,
+    "remember": remember,
+    "forget": forget,
 }
 assert set(TOOLS) == TOOL_NAMES
 

@@ -30,6 +30,7 @@ from app.services.music_service import (
     format_song_context_for_prompt,
     resolve_music_context,
 )
+from app.services.stinky_memory import stylist_memory_lines
 from app.services.suggestion_cache import pop_suggestion, push_suggestions
 from app.services.weather_service import (
     GeocodingServiceError,
@@ -927,6 +928,7 @@ class RecommendationService:
             preferences,
             learned_prefs,
             body_measurements=getattr(user, "body_measurements", None),
+            memory_text=await stylist_memory_lines(self.db, user.id),
         )
 
         song_context_text = format_song_context_for_prompt(song_context) if song_context else ""

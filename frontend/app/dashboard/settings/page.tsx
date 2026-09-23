@@ -475,6 +475,19 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Stinky recuerda: the notebook Stinky writes while you chat */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('stinkyMemory.title')}</CardTitle>
+            <CardDescription>{t('stinkyMemory.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/settings/memory">{t('stinkyMemory.cta')}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Integrations Section */}
         <Card>
           <CardHeader>

@@ -20,11 +20,19 @@ export interface ChatOutfitCard {
   items: ChatCardItem[];
 }
 
+/** "Stinky ha tomado nota: ..." — a line he wrote to «Stinky recuerda». */
+export interface ChatMemoryNote {
+  kind: string;
+  text: string;
+  action: 'created' | 'updated' | 'deleted';
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   cards: ChatOutfitCard[];
+  notes?: ChatMemoryNote[];
   created_at?: string;
   /** Client-only: the reply is still streaming. */
   streaming?: boolean;
@@ -53,6 +61,7 @@ export type ChatStreamEvent =
   | { event: 'status'; data: { phase: 'thinking' | 'tool'; tool?: string } }
   | { event: 'delta'; data: { text: string } }
   | { event: 'outfit'; data: { card: ChatOutfitCard } }
+  | { event: 'memory'; data: { note: ChatMemoryNote } }
   | {
       event: 'done';
       data: { message_id: string; outfit_created: boolean; tool_rounds?: number; tokens?: number };
@@ -92,7 +101,7 @@ export function nextRotationSeed(key: string): number {
   }
 }
 
-const KNOWN_EVENTS = new Set(['meta', 'status', 'delta', 'outfit', 'done', 'error']);
+const KNOWN_EVENTS = new Set(['meta', 'status', 'delta', 'outfit', 'memory', 'done', 'error']);
 
 /**
  * Incremental SSE parser. Feed it arbitrary text chunks (they may split lines or
@@ -245,6 +254,8 @@ export function applyStreamEvent(message: ChatMessage, event: ChatStreamEvent): 
       return { ...message, content: message.content + event.data.text };
     case 'outfit':
       return { ...message, cards: [...message.cards, event.data.card] };
+    case 'memory':
+      return { ...message, notes: [...(message.notes ?? []), event.data.note] };
     case 'done':
       return { ...message, id: event.data.message_id || message.id, streaming: false };
     case 'error':

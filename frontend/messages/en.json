@@ -148,6 +148,73 @@
       "rateLimited": "Too many attempts. Wait a bit before trying again."
     }
   },
+  "landing": {
+    "metaTitle": "Miaurmario — your wardrobe on your phone",
+    "metaDescription": "Photograph your clothes and Stinky, a cat with taste, tells you what to wear. Nothing to download: it opens in your browser. Free while in beta.",
+    "ogImageAlt": "Miaurmario: your wardrobe on your phone, with Stinky the cat.",
+    "hero": {
+      "pitch": "Your wardrobe on your phone: photograph your clothes and Stinky tells you what to wear",
+      "sub": "Nothing to download and no app store: it opens in your phone's browser, like any other website.",
+      "signUp": "Create account",
+      "signIn": "Sign in",
+      "betaInviteOnly": "We're in beta and opening up slowly: leave your email and we'll write to you as soon as there's room for you.",
+      "betaOpen": "We're in beta: it's free and you can create your account right now.",
+      "stinkyLabel": "Stinky, the Miaurmario cat, waving"
+    },
+    "features": {
+      "eyebrow": "What you can do",
+      "title": "Your clothes, sorted — and someone to advise you",
+      "wardrobe": {
+        "title": "Your wardrobe, one photo at a time",
+        "body": "Photograph each garment and Stinky files it away tagged: type, colour, season. Search for \"black shirts\" and there they are, without digging through the real wardrobe.",
+        "alt": "The wardrobe inside Miaurmario: a grid of photographed garments with filters by clothing type."
+      },
+      "today": {
+        "title": "Today's look, moment by moment",
+        "body": "Morning, afternoon and evening: Stinky suggests a look for each moment of the day using what you already own, checking the weather and what you wore this week.",
+        "alt": "Miaurmario's \"today's look\" screen, with the moments of the day and the garments in the suggested outfit."
+      },
+      "chat": {
+        "title": "Just ask Stinky",
+        "body": "\"What do I wear to dinner on Friday?\" Tell him in the chat and he puts the look together from your clothes, not from a catalogue.",
+        "alt": "The chat with Stinky inside Miaurmario, with a question about what to wear and his answer."
+      },
+      "friends": {
+        "title": "And let your friends weigh in",
+        "body": "Share looks with whoever you choose and ask for a second opinion before going out. What you don't share, nobody sees.",
+        "alt": "The friends feed in Miaurmario, with shared looks and reactions."
+      }
+    },
+    "install": {
+      "eyebrow": "The usual question",
+      "title": "Is it an app? Where do I download it?",
+      "lead": "Nowhere: there is nothing to download and no App Store or Google Play involved. Miaurmario is a website. Open the link in your phone's browser and you're in.",
+      "lead2": "If you want it one tap away, like any other app, you can add it to your home screen in two steps. It opens full screen, with its own icon, takes up almost nothing and updates itself.",
+      "iosTitle": "On iPhone and iPad (Safari)",
+      "iosStep1": "Open <strong>miaurmario.andreipop.org</strong> in <strong>Safari</strong>.",
+      "iosStep2": "Tap <strong>Share</strong> <icon></icon> and choose <strong>Add to Home Screen</strong>.",
+      "shareIcon": "Share",
+      "androidTitle": "On Android (Chrome)",
+      "androidStep1": "Open <strong>miaurmario.andreipop.org</strong> in <strong>Chrome</strong>.",
+      "androidStep2": "Tap the <strong>⋮</strong> menu and choose <strong>Install app</strong>.",
+      "note": "On a computer it works the same in any modern browser, with nothing to install."
+    },
+    "trust": {
+      "title": "The important bits, plainly",
+      "priceTitle": "Free while the beta lasts",
+      "priceBody": "No card asked for and no ads.",
+      "photosTitle": "The photos of your clothes are yours",
+      "photosBody": "They stay in your account. We don't sell them, nobody you haven't shown them to sees them, and we don't train models on them. You can delete a garment, or the whole account, whenever you want.",
+      "whoTitle": "Who's behind it",
+      "whoBody": "A personal project by Andrei Pop, with the data on his own server in the European Union."
+    },
+    "footer": {
+      "tagline": "Your wardrobe, with feline judgement.",
+      "legal": "Privacy and terms",
+      "signIn": "Sign in",
+      "detail": "Privacy and terms has the detail: what is stored, who it's shared with to tag your garments and how to ask us to delete it."
+    }
+  },
   "onboarding": {
     "username": {
       "title": "Pick your handle",

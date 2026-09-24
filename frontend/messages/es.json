@@ -148,6 +148,73 @@
       "rateLimited": "Demasiados intentos. Espera un rato antes de volver a probar."
     }
   },
+  "landing": {
+    "metaTitle": "Miaurmario — tu armario en el móvil",
+    "metaDescription": "Haz fotos de tu ropa y Stinky, un gato con criterio, te dice qué ponerte. Sin descargas: se abre en el navegador. Beta gratuita.",
+    "ogImageAlt": "Miaurmario: tu armario en el móvil, con Stinky el gato.",
+    "hero": {
+      "pitch": "Tu armario en el móvil: haz fotos de tu ropa y Stinky te dice qué ponerte",
+      "sub": "Nada que descargar ni ninguna tienda de apps: se abre en el navegador del móvil, como cualquier web.",
+      "signUp": "Crear cuenta",
+      "signIn": "Iniciar sesión",
+      "betaInviteOnly": "Estamos en beta y abrimos poco a poco: apúntate y te avisamos por correo en cuanto haya sitio para ti.",
+      "betaOpen": "Estamos en beta: es gratis y puedes crear tu cuenta ahora mismo.",
+      "stinkyLabel": "Stinky, el gato de Miaurmario, saludando"
+    },
+    "features": {
+      "eyebrow": "Qué puedes hacer",
+      "title": "Tu ropa, ordenada y con quien te aconseje",
+      "wardrobe": {
+        "title": "Tu armario, foto a foto",
+        "body": "Haz una foto a cada prenda y Stinky la guarda etiquetada: tipo, color, temporada. Buscas «camisas negras» y ahí están, sin revolver el armario de verdad.",
+        "alt": "El armario dentro de Miaurmario: una cuadrícula de prendas fotografiadas con filtros por tipo de ropa."
+      },
+      "today": {
+        "title": "El look de hoy, momento a momento",
+        "body": "Mañana, tarde y noche: Stinky propone un look para cada momento del día con lo que ya tienes, mirando el tiempo que hace y lo que te pusiste esta semana.",
+        "alt": "La pantalla «tu look de hoy» de Miaurmario, con los momentos del día y las prendas del conjunto propuesto."
+      },
+      "chat": {
+        "title": "Pregúntale a Stinky",
+        "body": "«¿Qué me pongo para una cena el viernes?» Se lo cuentas en el chat y te arma el look con tu ropa, no con ropa de catálogo.",
+        "alt": "El chat con Stinky dentro de Miaurmario, con una pregunta sobre qué ponerse y su respuesta."
+      },
+      "friends": {
+        "title": "Y que opinen tus amigas",
+        "body": "Comparte los looks con quien tú elijas y pide opinión antes de salir. Lo que no compartes no lo ve nadie.",
+        "alt": "El feed de amigas en Miaurmario, con looks compartidos y reacciones."
+      }
+    },
+    "install": {
+      "eyebrow": "La duda de siempre",
+      "title": "¿Es una app? ¿De dónde se descarga?",
+      "lead": "De ningún sitio: no hay nada que descargar ni que pasar por App Store o Google Play. Miaurmario es una web. Abres el enlace en el navegador del móvil y ya estás dentro.",
+      "lead2": "Si la quieres a un toque, como una app más, se añade a la pantalla de inicio en dos pasos. Se abre a pantalla completa, con su icono, ocupa casi nada y se actualiza sola.",
+      "iosTitle": "En iPhone y iPad (Safari)",
+      "iosStep1": "Abre <strong>miaurmario.andreipop.org</strong> en <strong>Safari</strong>.",
+      "iosStep2": "Toca <strong>Compartir</strong> <icon></icon> y elige <strong>Añadir a pantalla de inicio</strong>.",
+      "shareIcon": "Compartir",
+      "androidTitle": "En Android (Chrome)",
+      "androidStep1": "Abre <strong>miaurmario.andreipop.org</strong> en <strong>Chrome</strong>.",
+      "androidStep2": "Toca el menú <strong>⋮</strong> y elige <strong>Instalar aplicación</strong>.",
+      "note": "En el ordenador funciona igual desde cualquier navegador moderno, sin instalar nada."
+    },
+    "trust": {
+      "title": "Lo importante, en claro",
+      "priceTitle": "Gratis mientras dure la beta",
+      "priceBody": "No pedimos tarjeta y no hay anuncios.",
+      "photosTitle": "Las fotos de tu ropa son tuyas",
+      "photosBody": "Se quedan en tu cuenta. No las vendemos, no las ve nadie a quien tú no se las enseñes y no entrenamos modelos con ellas. Puedes borrar una prenda, o la cuenta entera, cuando quieras.",
+      "whoTitle": "Quién está detrás",
+      "whoBody": "Un proyecto personal de Andrei Pop, con los datos en un servidor propio en la Unión Europea."
+    },
+    "footer": {
+      "tagline": "Tu armario, con criterio felino.",
+      "legal": "Privacidad y condiciones",
+      "signIn": "Iniciar sesión",
+      "detail": "En Privacidad y condiciones está el detalle: qué se guarda, con quién se comparte para etiquetar las prendas y cómo pedir que lo borremos."
+    }
+  },
   "onboarding": {
     "username": {
       "title": "Elige tu nombre",

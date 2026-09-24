@@ -1,0 +1,5 @@
+node_modules
+out
+# Generated from frontend/public/brand/stinky by `npm run assets`
+public/stinky
+public/stinky-head.svg

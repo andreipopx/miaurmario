@@ -1,0 +1,32 @@
+{
+ "idle": {
+  "frames": 65,
+  "durationMs": 3350,
+  "loop": true
+ },
+ "happy": {
+  "frames": 65,
+  "durationMs": 3350,
+  "loop": false
+ },
+ "wave": {
+  "frames": 43,
+  "durationMs": 2700,
+  "loop": false
+ },
+ "thinking": {
+  "frames": 65,
+  "durationMs": 3350,
+  "loop": true
+ },
+ "sleepy": {
+  "frames": 65,
+  "durationMs": 3350,
+  "loop": true
+ },
+ "purr": {
+  "frames": 27,
+  "durationMs": 2600,
+  "loop": false
+ }
+}

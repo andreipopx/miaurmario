@@ -12,6 +12,7 @@ import { Stylist } from './scenes/Stylist';
 import { Chat } from './scenes/Chat';
 import { Friends } from './scenes/Friends';
 import { Outro } from './scenes/Outro';
+import { Soundtrack, type SceneStarts } from './Soundtrack';
 import { FPS } from './theme';
 
 const T = 14;
@@ -40,17 +41,32 @@ const PRESENTATIONS: TransitionPresentation<any>[] = [
 
 export const TOTAL = SCENES.reduce((s, x) => s + x.d, 0) - T * (SCENES.length - 1);
 
+const starts = SCENES.map((_, i) => SCENES.slice(0, i).reduce((s, x) => s + x.d, 0) - T * i);
+const STARTS: SceneStarts = {
+  hook: starts[0],
+  brand: starts[1],
+  snap: starts[2],
+  wardrobe: starts[3],
+  stylist: starts[4],
+  chat: starts[5],
+  friends: starts[6],
+  outro: starts[7],
+};
+
 const Promo: React.FC = () => (
-  <TransitionSeries>
-    {SCENES.map(({ C, d }, i) => (
-      <React.Fragment key={i}>
-        <TransitionSeries.Sequence durationInFrames={d}>
-          <C />
-        </TransitionSeries.Sequence>
-        {i < PRESENTATIONS.length ? <TransitionSeries.Transition presentation={PRESENTATIONS[i]} timing={timing} /> : null}
-      </React.Fragment>
-    ))}
-  </TransitionSeries>
+  <>
+    <Soundtrack starts={STARTS} />
+    <TransitionSeries>
+      {SCENES.map(({ C, d }, i) => (
+        <React.Fragment key={i}>
+          <TransitionSeries.Sequence durationInFrames={d}>
+            <C />
+          </TransitionSeries.Sequence>
+          {i < PRESENTATIONS.length ? <TransitionSeries.Transition presentation={PRESENTATIONS[i]} timing={timing} /> : null}
+        </React.Fragment>
+      ))}
+    </TransitionSeries>
+  </>
 );
 
 export const RemotionRoot: React.FC = () => (

@@ -6,7 +6,7 @@ import { AppHeader, Dock, PillChip, u } from '../components/Phone';
 import { Headline, PhoneStage, Tap, popStyle, usePop } from '../components/anim';
 import { C } from '../theme';
 
-const LIKE = 40;
+export const LIKE = 40;
 const LOOK: { kind: GarmentKind; color: string; x: number; y: number; s: number; r: number }[] = [
   { kind: 'dress', color: C.mint, x: 20, y: 20, s: 230, r: -3 },
   { kind: 'bag', color: C.pink, x: 210, y: 40, s: 130, r: 10 },

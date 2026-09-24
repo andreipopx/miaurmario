@@ -7,8 +7,8 @@ import { Stinky } from '../components/Stinky';
 import { Headline, PhoneStage, Tap, popStyle, usePop } from '../components/anim';
 import { C } from '../theme';
 
-const READY = 42;
-const WEAR = 112;
+export const READY = 42;
+export const WEAR = 112;
 
 const LOOK: { kind: GarmentKind; color: string; x: number; y: number; s: number; r: number }[] = [
   { kind: 'shirt', color: C.sky, x: 22, y: 18, s: 190, r: -4 },

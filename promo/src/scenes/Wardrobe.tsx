@@ -6,7 +6,7 @@ import { AppHeader, Dock, PillChip, u } from '../components/Phone';
 import { Headline, PhoneStage, popStyle, usePop } from '../components/anim';
 import { C } from '../theme';
 
-const ITEMS: { kind: GarmentKind; color: string; name: string; wash?: boolean }[] = [
+export const ITEMS: { kind: GarmentKind; color: string; name: string; wash?: boolean }[] = [
   { kind: 'shirt', color: C.sky, name: 'Camisa de lino' },
   { kind: 'jeans', color: '#3B5B8C', name: 'Vaqueros rectos' },
   { kind: 'sweater', color: C.amber, name: 'Jersey mostaza', wash: true },

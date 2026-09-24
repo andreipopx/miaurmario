@@ -7,10 +7,10 @@ import { Stinky } from '../components/Stinky';
 import { FadeUp, Headline, PhoneStage, popStyle, usePop } from '../components/anim';
 import { C } from '../theme';
 
-const QUESTION = '¿Qué me pongo para cenar el viernes?';
+export const QUESTION = '¿Qué me pongo para cenar el viernes?';
 const ANSWER = 'Miau. Vaqueros rectos, la camiseta negra y tu gabardina camel. Elegante sin pasarte.';
-const TYPE_END = 40;
-const ANSWER_AT = 78;
+export const TYPE_END = 40;
+export const ANSWER_AT = 78;
 
 const PICK: { kind: GarmentKind; color: string }[] = [
   { kind: 'jeans', color: '#3B5B8C' },

@@ -7,8 +7,8 @@ import { Stinky } from '../components/Stinky';
 import { Headline, PhoneStage, Tap, popStyle, usePop } from '../components/anim';
 import { C, POP } from '../theme';
 
-const SHOT = 38;
-const TAGS = ['Camisa', 'Lino', 'Azul cielo', 'Primavera', 'Casual'];
+export const SHOT = 38;
+export const TAGS = ['Camisa', 'Lino', 'Azul cielo', 'Primavera', 'Casual'];
 
 const Camera: React.FC = () => {
   const frame = useCurrentFrame();

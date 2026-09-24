@@ -5,7 +5,7 @@ import { Stinky } from '../components/Stinky';
 import { FadeUp } from '../components/anim';
 import { C, sans } from '../theme';
 
-const PILE: { kind: GarmentKind; color: string; x: number; y: number; r: number; d: number; s: number }[] = [
+export const PILE: { kind: GarmentKind; color: string; x: number; y: number; r: number; d: number; s: number }[] = [
   { kind: 'jeans', color: '#3B5B8C', x: 40, y: 1250, r: -18, d: 0, s: 380 },
   { kind: 'sweater', color: C.amber, x: 640, y: 1230, r: 22, d: 4, s: 400 },
   { kind: 'dress', color: C.mint, x: 330, y: 1150, r: -6, d: 8, s: 360 },

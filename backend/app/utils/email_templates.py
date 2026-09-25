@@ -742,8 +742,53 @@ def render_waitlist_approved_email(
 
 
 # --------------------------------------------------------------------------- #
-# Waitlist: heads-up for site admins (Spanish only; admins are the owner)
+# Heads-up emails for site admins (Spanish only; admins are the owner):
+# a new waitlist request, and someone asking for a Spotify seat
 # --------------------------------------------------------------------------- #
+
+
+def render_spotify_seat_email(
+    *,
+    spotify_email: str,
+    requester_name: str | None,
+    requester_email: str | None,
+    cta_url: str,
+    origin: str | None = None,
+) -> RenderedEmail:
+    """A user asks to be added to the Spotify app's User Management allowlist.
+
+    Spotify's Development Mode caps the app at a handful of manually added
+    accounts, so the only way in is the owner pasting ``spotify_email`` into the
+    Spotify dashboard. This email is that to-do.
+    """
+    name = (requester_name or "").strip()
+    who = name or requester_email or "Alguien"
+    subject = f"{who} pide plaza de Spotify"
+    heading = "Plaza de Spotify pedida"
+    lines = [
+        f"<strong>{escape(who)}</strong> quiere conectar Spotify en Miaurmario.",
+        f"Correo de su cuenta de Spotify: <strong>{escape(spotify_email)}</strong>",
+        "Añádelo en el panel de Spotify (tu app → User Management) y avísale cuando esté.",
+    ]
+    body = "".join(_p(line) for line in lines)
+    html = _layout(
+        locale="es",
+        title=subject,
+        preheader=f"Añade {spotify_email} en User Management.",
+        heading=heading,
+        body_html=body,
+        cta_label="Abrir el panel de Spotify",
+        cta_url=cta_url,
+        origin=origin,
+    )
+    text = _text(
+        heading,
+        f"{who} quiere conectar Spotify en Miaurmario.",
+        f"Correo de su cuenta de Spotify: {spotify_email}",
+        "Añádelo en el panel de Spotify (tu app -> User Management) y avísale cuando esté.",
+        f"Panel de Spotify: {cta_url}",
+    )
+    return RenderedEmail(subject=subject, html=html, text=text)
 
 
 def render_waitlist_admin_email(

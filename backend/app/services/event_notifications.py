@@ -36,6 +36,7 @@ from app.utils.email_templates import (
     RenderedEmail,
     render_friend_accepted_email,
     render_friend_request_email,
+    render_spotify_seat_email,
 )
 from app.utils.unsubscribe import make_unsubscribe_token
 
@@ -333,6 +334,63 @@ async def notify_admins_of_waitlist_request(db: AsyncSession, request_id: UUID) 
                     body=f"{who} quiere entrar en Miaurmario",
                     url="/dashboard/admin?tab=signup",
                     tag="waitlist",
+                ),
+            )
+            if getattr(result, "sent", 0):
+                sent.append(f"push:{admin.id}")
+    await db.flush()
+    return {"status": "sent" if sent else "no_channel", "channels": sent}
+
+
+SPOTIFY_DASHBOARD_URL = "https://developer.spotify.com/dashboard"
+
+
+async def notify_admins_of_spotify_seat_request(
+    db: AsyncSession, user_id: UUID, spotify_email: str
+) -> dict:
+    """Ask the site admins to add ``spotify_email`` to the Spotify app's allowlist.
+
+    Spotify Development Mode caps the app at a handful of manually added accounts
+    (dashboard → User Management), so a seat is a human to-do for the owner. Same
+    shape as :func:`notify_admins_of_waitlist_request`; nothing is stored, the
+    request lives only in the admins' inbox.
+    """
+    from sqlalchemy import func
+
+    admins = sorted(get_settings().admin_email_set())
+    if not admins:
+        return {"status": "skipped", "reason": "no_admins"}
+
+    requester = await db.get(User, user_id)
+    email = render_spotify_seat_email(
+        spotify_email=spotify_email,
+        requester_name=requester.display_name if requester else None,
+        requester_email=requester.email if requester else None,
+        cta_url=SPOTIFY_DASHBOARD_URL,
+        origin=public_origin(),
+    )
+    who = (requester.display_name if requester else None) or "Alguien"
+    sent: list[str] = []
+    for address in admins:
+        try:
+            await send_email(address, email)
+            sent.append(f"email:{address}")
+        except Exception as exc:
+            logger.warning("Spotify seat admin email to %s failed: %s", address, exc)
+
+    if push_available():
+        admin_users = (
+            await db.execute(select(User).where(func.lower(User.email).in_(admins)))
+        ).scalars()
+        for admin in admin_users:
+            result = await send_web_push(
+                db,
+                admin.id,
+                PushPayload(
+                    title="Plaza de Spotify pedida",
+                    body=f"{who} quiere conectar Spotify",
+                    url="/dashboard/settings/integrations/spotify",
+                    tag="spotify-seat",
                 ),
             )
             if getattr(result, "sent", 0):

@@ -18,6 +18,7 @@ from app.services.ai_access import AIAccessError
 from app.services.ai_service import AIDisabledError
 from app.services.event_notifications import (
     default_channels_for,
+    notify_admins_of_spotify_seat_request,
     notify_admins_of_waitlist_request,
     notify_friendship_event,
 )
@@ -97,6 +98,22 @@ async def send_waitlist_admin_notification(ctx: dict, request_id: str) -> dict:
         return result
     except Exception:
         logger.exception("Failed to notify admins of waitlist request %s", request_id)
+        await db.rollback()
+        raise
+    finally:
+        await db.close()
+
+
+async def send_spotify_seat_request_notification(ctx: dict, user_id: str, email: str) -> dict:
+    """Pedir plaza de Spotify -> email (and push) to the site admins."""
+    db = get_db_session(ctx)
+    try:
+        result = await notify_admins_of_spotify_seat_request(db, uuid.UUID(user_id), email)
+        await db.commit()
+        logger.info("Spotify seat request for %s: %s", user_id, result["status"])
+        return result
+    except Exception:
+        logger.exception("Failed to notify admins of Spotify seat request for %s", user_id)
         await db.rollback()
         raise
     finally:

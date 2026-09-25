@@ -1,6 +1,7 @@
 """Tests for the Spotify integration (OAuth, token refresh, mood signal, API)."""
 
 import json
+import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlparse
@@ -490,6 +491,100 @@ class TestSpotifyAPI:
     async def test_requires_auth(self, client: AsyncClient):
         resp = await client.get("/api/v1/integrations/spotify/status")
         assert resp.status_code == 401
+
+
+SEAT_URL = "/api/v1/integrations/spotify/seat-request"
+
+
+class TestSeatRequest:
+    """Pedir plaza de Spotify: Development Mode means a human has to allowlist the
+    account, so the ask goes to ADMIN_EMAILS."""
+
+    async def test_queues_one_admin_alert_and_leaks_nothing(
+        self, client: AsyncClient, auth_headers, enqueued_spotify_seat_requests, test_user: User
+    ):
+        resp = await client.post(
+            SEAT_URL, json={"email": " Fan@Spotify.example "}, headers=auth_headers
+        )
+        assert resp.status_code == 202
+        assert resp.json() == {"status": "ok"}
+        # No address, no admin, no queue state in the answer.
+        assert "@" not in resp.text
+        # Pydantic trims the input and lower-cases the domain before we hand it on.
+        assert enqueued_spotify_seat_requests == [(test_user.id, "Fan@spotify.example")]
+
+    async def test_requires_auth(self, client: AsyncClient):
+        resp = await client.post(SEAT_URL, json={"email": "fan@spotify.example"})
+        assert resp.status_code == 401
+
+    async def test_rejects_a_non_email(self, client: AsyncClient, auth_headers):
+        resp = await client.post(SEAT_URL, json={"email": "not-an-email"}, headers=auth_headers)
+        assert resp.status_code == 422
+
+    async def test_rate_limited_per_user(
+        self, client: AsyncClient, auth_headers, enqueued_spotify_seat_requests
+    ):
+        codes = [
+            (
+                await client.post(
+                    SEAT_URL, json={"email": f"fan{i}@spotify.example"}, headers=auth_headers
+                )
+            ).status_code
+            for i in range(4)
+        ]
+        assert codes == [202, 202, 202, 429]
+        assert len(enqueued_spotify_seat_requests) == 3
+
+    async def test_emails_every_admin_address(self, db_session: AsyncSession, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        from app.services import event_notifications as ev
+
+        user = User(
+            external_id=f"seat-{uuid.uuid4()}",
+            email=f"asker-{uuid.uuid4()}@example.com",
+            display_name="Lucía",
+            timezone="UTC",
+            is_active=True,
+        )
+        db_session.add(user)
+        await db_session.flush()
+        monkeypatch.setattr(ev.get_settings(), "admin_emails", "boss@example.com, hola@example.com")
+        send = AsyncMock()
+        monkeypatch.setattr(ev, "send_email", send)
+
+        result = await ev.notify_admins_of_spotify_seat_request(
+            db_session, user.id, "fan@spotify.example"
+        )
+
+        assert result["status"] == "sent"
+        assert sorted(c.args[0] for c in send.await_args_list) == [
+            "boss@example.com",
+            "hola@example.com",
+        ]
+        rendered = send.await_args_list[0].args[1]
+        assert rendered.subject == "Lucía pide plaza de Spotify"
+        assert "fan@spotify.example" in rendered.text
+        assert "User Management" in rendered.text
+        assert "developer.spotify.com/dashboard" in rendered.text
+
+    async def test_no_admins_configured_sends_nothing(
+        self, db_session: AsyncSession, test_user: User, monkeypatch
+    ):
+        from unittest.mock import AsyncMock
+
+        from app.services import event_notifications as ev
+
+        monkeypatch.setattr(ev.get_settings(), "admin_emails", "")
+        send = AsyncMock()
+        monkeypatch.setattr(ev, "send_email", send)
+
+        result = await ev.notify_admins_of_spotify_seat_request(
+            db_session, test_user.id, "fan@spotify.example"
+        )
+
+        assert result == {"status": "skipped", "reason": "no_admins"}
+        send.assert_not_awaited()
 
 
 class TestPublicAppUrl:

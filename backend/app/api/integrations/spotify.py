@@ -6,7 +6,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,9 +28,10 @@ from app.integrations.spotify import (
 )
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
-from app.services import music_source, spotify_mood
+from app.services import music_source, notification_queue, spotify_mood
 from app.services.music_overview import clear_user_cache as clear_music_cache
 from app.utils.auth import get_current_user
+from app.utils.rate_limit import rate_limit_by_user
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +39,24 @@ router = APIRouter(prefix="/integrations/spotify", tags=["integrations"])
 
 SETTINGS_PATH = "/dashboard/settings/integrations/spotify"
 
+# The Spotify app is in Development Mode: only accounts the owner adds by hand in
+# the dashboard (User Management) can connect. A few asks a day is plenty.
+SEAT_REQUESTS_PER_DAY = 3
+SEAT_REQUEST_WINDOW = 24 * 3600
+
 
 class SpotifySettingsUpdate(BaseModel):
     use_for_mood: bool
+
+
+class SpotifySeatRequest(BaseModel):
+    """The email of the *Spotify* account to allowlist — nothing else is asked for."""
+
+    email: EmailStr = Field(max_length=254)
+
+
+class SpotifySeatAccepted(BaseModel):
+    status: str = "ok"
 
 
 def _configured() -> bool:
@@ -78,6 +94,29 @@ async def connect(
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Spotify not configured")
     state = await create_state(str(current_user.id))
     return {"authorize_url": build_authorize_url(state)}
+
+
+@router.post(
+    "/seat-request",
+    response_model=SpotifySeatAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def request_seat(
+    body: SpotifySeatRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> SpotifySeatAccepted:
+    """Pedir plaza de Spotify: alert the site admins so they can add this Spotify
+    account to the app's allowlist.
+
+    The answer never says anything about the address, the admins or whether the
+    alert went out — just "we asked". Nothing is stored: the address only travels
+    in the job payload and the admins' email.
+    """
+    await rate_limit_by_user(
+        current_user.id, "spotify_seat_request", SEAT_REQUESTS_PER_DAY, SEAT_REQUEST_WINDOW
+    )
+    await notification_queue.enqueue_spotify_seat_request(current_user.id, str(body.email))
+    return SpotifySeatAccepted()
 
 
 @router.get("/callback")

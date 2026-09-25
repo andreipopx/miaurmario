@@ -128,6 +128,20 @@ def enqueued_waitlist_notifications(monkeypatch) -> list[Any]:
     return calls
 
 
+@pytest.fixture(autouse=True)
+def enqueued_spotify_seat_requests(monkeypatch) -> list[tuple[Any, str]]:
+    """Record "pedir plaza de Spotify" alerts instead of pushing them to arq."""
+    from app.services import notification_queue
+
+    calls: list[tuple[Any, str]] = []
+
+    async def fake_enqueue(user_id, spotify_email):
+        calls.append((user_id, spotify_email))
+
+    monkeypatch.setattr(notification_queue, "enqueue_spotify_seat_request", fake_enqueue)
+    return calls
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def _clear_rate_limits():
     settings = get_settings()

@@ -21,6 +21,7 @@ from app.workers.notifications import (
     retry_failed_notifications,
     send_notification,
     send_social_notification,
+    send_spotify_seat_request_notification,
     send_waitlist_admin_notification,
     update_learning_profiles,
 )
@@ -73,6 +74,7 @@ class WorkerSettings:
         tag_item_image,
         send_notification,
         send_social_notification,
+        send_spotify_seat_request_notification,
         send_waitlist_admin_notification,
         retry_failed_notifications,
         check_scheduled_notifications,

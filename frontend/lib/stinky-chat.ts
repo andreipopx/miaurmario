@@ -211,7 +211,7 @@ export async function streamChat({
     const msg =
       typeof detail === 'string'
         ? detail
-        : (detail as { message?: string } | undefined)?.message || 'An error occurred';
+        : (detail as { message?: string } | undefined)?.message || 'Request failed';
     throw new ApiError(msg, response.status, data);
   }
 

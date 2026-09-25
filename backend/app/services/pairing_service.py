@@ -15,6 +15,7 @@ from app.services.ai_access import require_ai_client
 from app.services.ai_service import AIResponseError
 from app.services.stinky_memory import stylist_memory_lines
 from app.utils.clothing import deduplicate_by_body_slot
+from app.utils.error_codes import CodedValueError
 from app.utils.prompts import load_prompt
 from app.utils.style_profile import format_style_profile_for_prompt
 from app.utils.timezone import get_user_today
@@ -189,14 +190,15 @@ class PairingService:
         # Get source item
         source_item = await self.get_source_item(user.id, source_item_id)
         if not source_item:
-            raise ValueError("Source item not found or not available")
+            raise CodedValueError(
+                "Source item not found or not available.",
+                code="pairing_source_not_found",
+            )
 
         # Get available items
         available_items = await self.get_available_items(user, source_item_id)
         if len(available_items) < 2:
-            raise InsufficientItemsError(
-                "Not enough items in wardrobe for pairing. Add more items."
-            )
+            raise InsufficientItemsError("Wardrobe has fewer than two pairable items.")
 
         # Format items for prompt
         source_desc, items_text, source_num, number_map = self._format_items_for_prompt(
@@ -229,9 +231,7 @@ class PairingService:
             raise AIGenerationError(str(e)) from e
         except Exception as e:
             logger.error(f"AI pairing generation failed: {e}")
-            raise AIGenerationError(
-                "AI service is not available. Check your AI endpoint configuration."
-            ) from e
+            raise AIGenerationError("AI text generation failed.") from e
 
         # Create outfit records for each pairing
         created_outfits = []
@@ -404,8 +404,12 @@ class PairingService:
 
 
 class InsufficientItemsError(Exception):
-    pass
+    """Too few usable items to build pairings. Shown to the user as a code."""
+
+    code = "insufficient_items_for_pairing"
 
 
 class AIGenerationError(Exception):
-    pass
+    """The AI could not produce usable pairings."""
+
+    code = "ai_pairing_failed"

@@ -3,7 +3,15 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { api, getAccessToken, setAccessToken, ApiError, NetworkError } from '@/lib/api';
+import {
+  api,
+  getAccessToken,
+  setAccessToken,
+  getGenericErrorMessage,
+  resolveErrorMessage,
+  ApiError,
+  NetworkError,
+} from '@/lib/api';
 import { CareInfo, Item, ItemListResponse, ItemFilter, WashHistoryEntry, ItemImage } from '@/lib/types';
 import { CareDraft } from '@/lib/hooks/use-intake';
 import { chunkArray } from '@/lib/utils';
@@ -92,9 +100,9 @@ export function useCreateItem() {
         });
       } catch {
         if (!navigator.onLine) {
-          throw new NetworkError('You appear to be offline. Please check your connection.');
+          throw new NetworkError('offline');
         }
-        throw new NetworkError('Unable to connect to server. Please try again.');
+        throw new NetworkError('unreachable');
       }
 
       if (!response.ok) {
@@ -748,14 +756,14 @@ function uploadBulkItemsChunk(
 
     xhr.addEventListener('error', () => {
       if (!navigator.onLine) {
-        reject(new NetworkError('You appear to be offline. Please check your connection.'));
+        reject(new NetworkError('offline'));
       } else {
-        reject(new NetworkError('Unable to connect to server. Please try again.'));
+        reject(new NetworkError('unreachable'));
       }
     });
 
     xhr.addEventListener('abort', () => {
-      reject(new NetworkError('Upload was cancelled.'));
+      reject(new NetworkError('cancelled'));
     });
 
     xhr.open('POST', '/api/v1/items/bulk');
@@ -780,10 +788,8 @@ export function mergeBulkUploadResponses(responses: BulkUploadResponse[]): BulkU
 }
 
 function failedChunkResponse(files: File[], error: unknown): BulkUploadResponse {
-  const message =
-    error instanceof ApiError || error instanceof NetworkError
-      ? error.message
-      : 'Failed to upload items';
+  // Shown per file in the upload summary, so it has to be translated copy.
+  const message = resolveErrorMessage(error) ?? getGenericErrorMessage();
   return {
     total: files.length,
     successful: 0,

@@ -32,6 +32,7 @@ from app.services.notification_providers import (
 )
 from app.services.web_push import PushPayload
 from app.utils.email_templates import render_outfit_email
+from app.utils.occasions import ascii_fold, occasion_label_es
 
 logger = logging.getLogger(__name__)
 
@@ -349,7 +350,7 @@ class NotificationDispatcher:
 
     def _outfit_push(self, outfit: Outfit, for_tomorrow: bool) -> PushPayload:
         day = "de mañana" if for_tomorrow else "de hoy"
-        occasion = outfit.occasion.replace("_", " ")
+        occasion = occasion_label_es(outfit.occasion)
         weather = outfit.weather_data or {}
         temp = weather.get("temperature")
         title = f"Tu look {day} está listo"
@@ -559,13 +560,14 @@ class NotificationDispatcher:
         condition = weather.get("condition", "").lower()
 
         # Day prefix for messages
-        day_label = "Tomorrow" if for_tomorrow else "Today"
+        day_label = "manana" if for_tomorrow else "hoy"
+        occasion_es = ascii_fold(occasion_label_es(outfit.occasion))
 
-        # Build title with weather (ASCII-safe for HTTP headers)
+        # Build title with weather (ASCII-safe for HTTP headers, so no accents)
         if temp is not None:
-            title = f"{day_label}'s {outfit.occasion.title()} - {temp}C"
+            title = f"Tu look de {day_label}: {occasion_es} - {temp}C"
         else:
-            title = f"{day_label}'s {outfit.occasion.title()} Outfit"
+            title = f"Tu look de {day_label}: {occasion_es}"
 
         # Build message body with structured data
         parts = []
@@ -586,9 +588,9 @@ class NotificationDispatcher:
 
         # Add styling tip if available
         if outfit.style_notes:
-            parts.append(f"Tip: {outfit.style_notes}")
+            parts.append(f"Truco: {outfit.style_notes}")
 
-        message = "\n\n".join(parts) if parts else "Your outfit is ready."
+        message = "\n\n".join(parts) if parts else "Stinky ya te ha dejado el look preparado."
 
         # Choose a single contextual tag based on weather
         tag = "shirt"  # default
@@ -689,20 +691,21 @@ class NotificationDispatcher:
     ) -> ExpoPushMessage:
         weather = outfit.weather_data or {}
         temp = weather.get("temperature")
-        day_label = "Tomorrow" if for_tomorrow else "Today"
+        day_label = "ma\u00f1ana" if for_tomorrow else "hoy"
+        occasion_es = occasion_label_es(outfit.occasion)
 
         if temp is not None:
-            title = f"{day_label}'s {outfit.occasion.title()} - {temp}\u00b0C"
+            title = f"Tu look de {day_label}: {occasion_es} \u00b7 {temp}\u00b0C"
         else:
-            title = f"{day_label}'s {outfit.occasion.title()} Outfit"
+            title = f"Tu look de {day_label}: {occasion_es}"
 
         parts = []
         if outfit.reasoning:
             parts.append(outfit.reasoning)
         if outfit.style_notes:
-            parts.append(f"Tip: {outfit.style_notes}")
+            parts.append(f"Truco: {outfit.style_notes}")
 
-        body = " \u2022 ".join(parts) if parts else "Your outfit is ready!"
+        body = " \u2022 ".join(parts) if parts else "Stinky ya te ha dejado el look preparado."
 
         return ExpoPushMessage(
             to="",  # Provider uses its stored token

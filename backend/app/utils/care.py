@@ -226,16 +226,45 @@ _HINT_TEXT = {
 }
 
 
-def care_hint_text(care: dict | None, limit: int = 3) -> str | None:
-    """A short human fragment for notification bodies, or None when unknown."""
+# Push/email bodies are composed here, not in the frontend, so the user-facing
+# copy needs its own Spanish labels (the app UI translates the slugs itself).
+_HINT_TEXT_ES = {
+    "do_not_wash": "no lavar",
+    "hand_wash": "lavar a mano",
+    "machine_wash": "lavadora",
+    "cycle_gentle": "ciclo suave",
+    "cycle_delicate": "ciclo delicado",
+    "no_tumble": "nada de secadora",
+    "tumble_low": "secadora baja",
+    "tumble_medium": "secadora media",
+    "tumble_high": "secadora alta",
+    "flat_dry": "secar en plano",
+    "line_dry": "secar en tendedero",
+    "no_iron": "no planchar",
+    "dry_clean": "tintorería",
+    "no_dry_clean": "nada de tintorería",
+    "no_bleach": "sin lejía",
+}
+
+_IRON_PREFIX = {"en": "iron", "es": "plancha"}
+
+
+def care_hint_text(care: dict | None, limit: int = 3, lang: str = "en") -> str | None:
+    """A short human fragment for notification bodies, or None when unknown.
+
+    ``lang="es"`` is what the app's own notifications use; English stays the
+    default, for logs and for API clients.
+    """
+    labels = _HINT_TEXT_ES if lang == "es" else _HINT_TEXT
+    iron = _IRON_PREFIX.get(lang, _IRON_PREFIX["en"])
     parts: list[str] = []
     for hint in care_hints(care):
         if hint.startswith("wash_"):
             parts.append(f"{hint.removeprefix('wash_')}°C")
         elif hint.startswith("iron_"):
-            parts.append(f"iron {hint.removeprefix('iron_')}°C")
+            parts.append(f"{iron} {hint.removeprefix('iron_')}°C")
         else:
-            parts.append(_HINT_TEXT.get(hint, hint.replace("_", " ")))
+            parts.append(labels.get(hint, hint.replace("_", " ")))
         if len(parts) >= limit:
             break
     return ", ".join(parts) or None

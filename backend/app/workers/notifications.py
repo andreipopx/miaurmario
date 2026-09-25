@@ -458,15 +458,17 @@ async def _check_wash_reminders_inner(ctx: dict):
                 count = len(items)
                 summary = ", ".join(item_names)
                 if count > 5:
-                    summary += f" and {count - 5} more"
+                    summary += f" y {count - 5} más"
 
-                title = "Laundry Reminder"
-                body = f"{count} item{'s' if count != 1 else ''} need washing: {summary}"
+                title = "Stinky huele colada pendiente"
+                body = (
+                    f"{count} {'prenda pide' if count == 1 else 'prendas piden'} lavado: {summary}"
+                )
 
                 # A read care label tells the user *how* to wash, not just when.
                 care_notes = []
                 for item in items[:5]:
-                    hint = care_hint_text(item.care)
+                    hint = care_hint_text(item.care, lang="es")
                     if hint:
                         care_notes.append(f"{item.name or item.type}: {hint}")
                 care_notes = care_notes[:3]

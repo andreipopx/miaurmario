@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from html import escape
 
 from app.config import get_settings
+from app.utils.occasions import occasion_label_es
 
 PINK = "#FF7EB6"
 PINK_SOFT = "#FFE4F0"
@@ -457,7 +458,8 @@ def render_outfit_email(
     loc = normalize_locale(locale)
     c = _OUTFIT[loc]
     day = c["tomorrow"] if for_tomorrow else c["today"]
-    occasion_t = occasion.replace("_", " ").title()
+    raw_occasion = occasion_label_es(occasion) if loc == "es" else occasion.replace("_", " ")
+    occasion_t = raw_occasion.title()
     subject = c["subject"].format(day=day, occasion=occasion_t)
     heading = c["heading"].format(day=day)
     reasoning_t = reasoning or c["fallback"]

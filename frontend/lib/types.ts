@@ -225,13 +225,15 @@ export const CLOTHING_TYPES = [
   { label: 'Accessories', value: 'accessories' },
 ] as const;
 
+// Slugs only: the labels live in messages `suggest.occasions.<value>` so the
+// Spanish UI never shows the raw English slug.
 export const OCCASIONS = [
-  { label: 'Casual', value: 'casual' },
-  { label: 'Office', value: 'office' },
-  { label: 'Formal', value: 'formal' },
-  { label: 'Date', value: 'date' },
-  { label: 'Sporty', value: 'sporty' },
-  { label: 'Outdoor', value: 'outdoor' },
+  { value: 'casual' },
+  { value: 'office' },
+  { value: 'formal' },
+  { value: 'date' },
+  { value: 'sporty' },
+  { value: 'outdoor' },
 ] as const;
 
 // Family types

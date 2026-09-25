@@ -294,7 +294,7 @@ async def test_suggest_returns_503_when_text_disabled(client, auth_headers, monk
         "/api/v1/outfits/suggest", json={"occasion": "casual"}, headers=auth_headers
     )
     assert resp.status_code == 503
-    assert "external agent" in resp.json()["detail"]
+    assert resp.json()["detail"]["code"] == "ai_internal_disabled"
 
 
 @pytest.mark.asyncio
@@ -313,7 +313,7 @@ async def test_pairings_returns_503_when_text_disabled(client, auth_headers, mon
         headers=auth_headers,
     )
     assert resp.status_code == 503
-    assert "external agent" in resp.json()["detail"]
+    assert resp.json()["detail"]["code"] == "ai_internal_disabled"
 
 
 # --- Service guards run first: deferred contract is unconditional ------------

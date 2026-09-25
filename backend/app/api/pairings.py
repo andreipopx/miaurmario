@@ -20,6 +20,7 @@ from app.services.pairing_service import (
     PairingService,
 )
 from app.utils.auth import get_current_user
+from app.utils.error_codes import code_of, error_detail
 from app.utils.signed_urls import sign_image_url
 
 logger = logging.getLogger(__name__)
@@ -236,9 +237,10 @@ async def generate_pairings(
             num_pairings=request.num_pairings,
         )
     except InsufficientItemsError as e:
+        logger.info(f"Pairing refused: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail=error_detail("insufficient_items_for_pairing"),
         ) from None
     except AIAccessError as e:
         code, detail = ai_error_detail(e)
@@ -246,18 +248,19 @@ async def generate_pairings(
     except AIDisabledError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Internal AI is disabled; pairings are deferred to an external agent.",
+            detail=error_detail("ai_internal_disabled"),
         ) from None
     except AIGenerationError as e:
         logger.error(f"AI pairing generation error: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(e),
+            detail=error_detail("ai_pairing_failed"),
         ) from None
     except ValueError as e:
+        logger.info(f"Pairing rejected: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail=error_detail(code_of(e, "invalid_request")),
         ) from None
 
     return GeneratePairingsResponse(

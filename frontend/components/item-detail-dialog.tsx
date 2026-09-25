@@ -476,7 +476,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       <Image
                         key={`${currentImage.id}-${imageKey}`}
                         src={currentImage.url}
-                        alt={item.name || item.type}
+                        alt={item.name || tagLabel('types', item.type)}
                         fill
                         className="object-contain p-4"
                         sizes="(max-width: 640px) 100vw, 50vw"
@@ -914,12 +914,12 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                                       <div
                                         key={oi.id}
                                         className="h-6 w-6 overflow-hidden rounded-full border-2 border-panel bg-background"
-                                        title={oi.name || oi.type}
+                                        title={oi.name || tagLabel('types', oi.type)}
                                       >
                                         {oi.thumbnail_url && (
                                           <Image
                                             src={oi.thumbnail_url}
-                                            alt={oi.name || oi.type}
+                                            alt={oi.name || tagLabel('types', oi.type)}
                                             width={20}
                                             height={20}
                                             className="h-full w-full object-contain"
@@ -1072,7 +1072,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
           <AlertDialogHeader>
             <AlertDialogTitle>{t('deleteConfirm.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('deleteConfirm.descriptionWithName', { name: item.name || item.type })}
+              {t('deleteConfirm.descriptionWithName', { name: item.name || tagLabel('types', item.type) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

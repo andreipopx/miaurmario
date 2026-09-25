@@ -14,6 +14,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { ArrowDownToLine, ArrowUpFromLine, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 
 import { cn } from '@/lib/utils';
 import type { StudioItem } from '@/lib/studio/editor-state';
@@ -45,6 +46,7 @@ function DraggableCanvasItem({
   isSelected,
   onSelect,
 }: DraggableCanvasItemProps) {
+  const typeLabel = useClothingTypeLabel();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: item.id });
 
@@ -83,13 +85,13 @@ function DraggableCanvasItem({
         isSelected && 'ring-2 ring-signature ring-offset-2 ring-offset-panel',
         isDragging && 'opacity-90 drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)]'
       )}
-      aria-label={item.name ?? item.type}
+      aria-label={item.name ?? typeLabel(item.type)}
       aria-pressed={isSelected}
     >
       {src ? (
         <Image
           src={src}
-          alt={item.name ?? item.type}
+          alt={item.name ?? typeLabel(item.type)}
           fill
           className="object-contain pointer-events-none drop-shadow-[0_3px_6px_rgba(0,0,0,0.18)]"
           sizes="(max-width: 640px) 30vw, 20vw"
@@ -97,7 +99,7 @@ function DraggableCanvasItem({
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center rounded-tile bg-background">
-          <span className="text-xs text-muted-foreground">{item.type}</span>
+          <span className="text-xs text-muted-foreground">{typeLabel(item.type)}</span>
         </div>
       )}
     </button>
@@ -116,6 +118,7 @@ export function CanvasPanel({
   onSendToBack,
 }: CanvasPanelProps) {
   const t = useTranslations('studioCanvas');
+  const typeLabel = useClothingTypeLabel();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -226,7 +229,7 @@ export function CanvasPanel({
               <ArrowDownToLine className="h-4 w-4" />
             </button>
             <span className="mx-1 max-w-[8rem] truncate text-[13px] font-semibold text-primary-foreground/80">
-              {selected.name ?? selected.type}
+              {selected.name ?? typeLabel(selected.type)}
             </span>
             <button
               type="button"
@@ -260,6 +263,7 @@ export function CanvasPanel({
  * caller should render the classic grid instead).
  */
 export function CanvasPreview({ items }: { items: StudioItem[] }) {
+  const typeLabel = useClothingTypeLabel();
   if (items.length === 0) return null;
   return (
     <div
@@ -285,7 +289,7 @@ export function CanvasPreview({ items }: { items: StudioItem[] }) {
             {src ? (
               <Image
                 src={src}
-                alt={item.name ?? item.type}
+                alt={item.name ?? typeLabel(item.type)}
                 fill
                 className="object-contain drop-shadow-[0_3px_6px_rgba(0,0,0,0.18)]"
                 sizes="(max-width: 640px) 30vw, 20vw"
@@ -294,7 +298,7 @@ export function CanvasPreview({ items }: { items: StudioItem[] }) {
             ) : (
               <div className="flex h-full w-full items-center justify-center rounded-tile bg-background">
                 <span className="text-xs text-muted-foreground">
-                  {item.type}
+                  {typeLabel(item.type)}
                 </span>
               </div>
             )}

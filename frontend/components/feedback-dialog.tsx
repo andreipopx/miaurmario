@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Star, Check, X, ChevronLeft, Search, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -83,6 +84,7 @@ interface AccumulatedItem {
 
 export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
   const t = useTranslations('feedback');
+  const typeLabel = useClothingTypeLabel();
   const [step, setStep] = useState<FeedbackStep>('wear-question');
   const [actuallyWorn, setActuallyWorn] = useState<boolean | null>(null);
   const [rating, setRating] = useState(0);
@@ -349,7 +351,7 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
                       >
                         <Image
                           src={item.thumbnail_url || item.image_url || item.image_path}
-                          alt={item.name || item.type}
+                          alt={item.name || typeLabel(item.type)}
                           fill
                           className="object-contain p-2"
                           sizes="(max-width: 640px) 33vw, 25vw"
@@ -362,7 +364,7 @@ export function FeedbackDialog({ outfit, open, onClose }: FeedbackDialogProps) {
                         )}
                       </div>
                       <span className="mt-1 block truncate px-0.5 text-xs font-semibold">
-                        {item.name || item.type}
+                        {item.name || typeLabel(item.type)}
                       </span>
                     </button>
                   ))}

@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { Bookmark, ChevronRight, Loader2, Shirt } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ interface ChatOutfitCardProps {
 export function ChatOutfitCardView({ card, onSave, saving }: ChatOutfitCardProps) {
   const t = useTranslations('stinkyChat');
   const tOccasions = useTranslations('suggest.occasions');
+  const typeLabel = useClothingTypeLabel();
   const visible = card.items.slice(0, 4);
   const overflow = card.items.length - visible.length;
   const occasion =
@@ -34,7 +36,7 @@ export function ChatOutfitCardView({ card, onSave, saving }: ChatOutfitCardProps
             {item.thumbnail_url || item.image_url ? (
               <Image
                 src={(item.thumbnail_url || item.image_url) as string}
-                alt={item.name || item.type || ''}
+                alt={item.name || (item.type ? typeLabel(item.type) : '')}
                 fill
                 sizes="80px"
                 className="object-contain p-1 mix-blend-multiply dark:mix-blend-normal"

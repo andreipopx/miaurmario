@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFormatter, useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useFamily } from '@/lib/hooks/use-family';
 import { useFamilyOutfits, type Outfit, type OutfitSource } from '@/lib/hooks/use-outfits';
 import { FamilyRatingForm, FamilyRatingsDisplay } from '@/components/family-ratings';
@@ -74,6 +75,7 @@ function FeedOutfitCard({
 }) {
   const t = useTranslations('familyFeed');
   const format = useFormatter();
+  const typeLabel = useClothingTypeLabel();
   const [showRatingForm, setShowRatingForm] = useState(false);
   const myRating = outfit.family_ratings?.find((r) => r.user_id === currentMemberId);
 
@@ -113,14 +115,14 @@ function FeedOutfitCard({
               {item.thumbnail_url ? (
                 <Image
                   src={item.thumbnail_url}
-                  alt={item.name || item.type}
+                  alt={item.name || typeLabel(item.type)}
                   fill
                   className="object-cover"
                   sizes="80px"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center p-1 text-center text-xs text-muted-foreground">
-                  {item.type}
+                  {typeLabel(item.type)}
                 </div>
               )}
             </div>

@@ -30,6 +30,15 @@ type ItemLike = ImageLike & {
 
 type OutfitLike = { id: string; items?: ItemLike[] };
 
+/**
+ * Type and colour arrive as English tag values, so a caller must hand in the
+ * localized labels (`useTagLabel`) or the caption would read "t-shirt · navy".
+ */
+export interface LightboxLabels {
+  type?: (value: string) => string;
+  color?: (value: string) => string;
+}
+
 type PairingLike = {
   source_item: ItemLike;
   paired_items?: ItemLike[];
@@ -45,11 +54,14 @@ function pickPlaceholder(img: ImageLike | null | undefined): string | undefined 
   return img.medium_url || img.thumbnail_url || undefined;
 }
 
-function itemCategory(item: ItemLike): string | undefined {
-  return item.category || [item.type, item.primary_color].filter(Boolean).join(' · ') || undefined;
+function itemCategory(item: ItemLike, labels?: LightboxLabels): string | undefined {
+  if (item.category) return item.category;
+  const type = item.type ? (labels?.type?.(item.type) ?? item.type) : null;
+  const color = item.primary_color ? (labels?.color?.(item.primary_color) ?? item.primary_color) : null;
+  return [type, color].filter(Boolean).join(' · ') || undefined;
 }
 
-export function itemToLightboxImages(item: ItemLike): AdapterResult {
+export function itemToLightboxImages(item: ItemLike, labels?: LightboxLabels): AdapterResult {
   const images: LightboxImage[] = [];
   const primary = pickUri(item);
   if (primary) {
@@ -58,7 +70,7 @@ export function itemToLightboxImages(item: ItemLike): AdapterResult {
       placeholderUri: pickPlaceholder(item),
       itemId: item.id,
       itemName: item.name,
-      itemCategory: itemCategory(item),
+      itemCategory: itemCategory(item, labels),
     });
   }
   for (const extra of item.additional_images ?? []) {
@@ -69,7 +81,7 @@ export function itemToLightboxImages(item: ItemLike): AdapterResult {
       placeholderUri: pickPlaceholder(extra),
       itemId: item.id,
       itemName: item.name,
-      itemCategory: itemCategory(item),
+      itemCategory: itemCategory(item, labels),
     });
   }
   return {
@@ -78,7 +90,7 @@ export function itemToLightboxImages(item: ItemLike): AdapterResult {
   };
 }
 
-export function outfitToLightboxImages(outfit: OutfitLike): AdapterResult {
+export function outfitToLightboxImages(outfit: OutfitLike, labels?: LightboxLabels): AdapterResult {
   const images: LightboxImage[] = [];
   const idToIndex = new Map<string, number>();
   for (const item of outfit.items ?? []) {
@@ -90,7 +102,7 @@ export function outfitToLightboxImages(outfit: OutfitLike): AdapterResult {
       placeholderUri: pickPlaceholder(item),
       itemId: item.id,
       itemName: item.name,
-      itemCategory: itemCategory(item),
+      itemCategory: itemCategory(item, labels),
     });
   }
   return { images, indexOf: (id: string) => idToIndex.get(id) ?? -1 };
@@ -101,8 +113,8 @@ export function localUrisToLightboxImages(uris: string[]): AdapterResult {
   return { images, indexOf: () => -1 };
 }
 
-export function pairingToLightboxImages(pairing: PairingLike): AdapterResult {
+export function pairingToLightboxImages(pairing: PairingLike, labels?: LightboxLabels): AdapterResult {
   const items: ItemLike[] = [pairing.source_item, ...(pairing.paired_items ?? [])];
   const fauxOutfit: OutfitLike = { id: 'pairing', items };
-  return outfitToLightboxImages(fauxOutfit);
+  return outfitToLightboxImages(fauxOutfit, labels);
 }

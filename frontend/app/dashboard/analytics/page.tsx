@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useColorLabel } from '@/lib/tag-labels';
 
 function StatCard({
@@ -139,6 +140,7 @@ function ColorBar({ color, percentage }: { color: string; percentage: number }) 
 }
 
 function ItemCard({ item }: { item: { id: string; name: string | null; type: string; thumbnail_url: string | null; wear_count: number } }) {
+  const typeLabel = useClothingTypeLabel();
   return (
     <Link
       href={`/dashboard/wardrobe?item=${item.id}`}
@@ -148,7 +150,7 @@ function ItemCard({ item }: { item: { id: string; name: string | null; type: str
         {item.thumbnail_url ? (
           <Image
             src={item.thumbnail_url}
-            alt={item.name || item.type}
+            alt={item.name || typeLabel(item.type)}
             fill
             className="object-contain p-1"
             sizes="48px"
@@ -160,8 +162,8 @@ function ItemCard({ item }: { item: { id: string; name: string | null; type: str
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold">{item.name || item.type}</p>
-        <p className="text-sm capitalize text-muted-foreground">{item.type}</p>
+        <p className="truncate font-semibold">{item.name || typeLabel(item.type)}</p>
+        <p className="text-sm text-muted-foreground">{typeLabel(item.type)}</p>
       </div>
       <Badge variant="secondary">{item.wear_count}x</Badge>
     </Link>
@@ -209,6 +211,7 @@ function SectionIcon({ icon: Icon, color }: { icon: LucideIcon; color: PopColor 
 
 export default function AnalyticsPage() {
   const t = useTranslations('analytics');
+  const typeLabel = useClothingTypeLabel();
   const { data, isLoading, isError } = useAnalytics(60);
 
   if (isLoading) {
@@ -325,7 +328,7 @@ export default function AnalyticsPage() {
               <div className="space-y-3">
                 {type_distribution.map((type) => (
                   <div key={type.type} className="flex items-center justify-between gap-3">
-                    <span className="font-semibold capitalize">{type.type}</span>
+                    <span className="font-semibold">{typeLabel(type.type)}</span>
                     <div className="flex items-center gap-2">
                       <Progress value={type.percentage} className="h-2 w-24" />
                       <span className="w-10 text-right text-sm text-muted-foreground">

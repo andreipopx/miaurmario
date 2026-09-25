@@ -120,7 +120,7 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
                   <Image
                     key={`${currentItem.id}-${imageKey}`}
                     src={currentItem.image_url}
-                    alt={currentItem.name || currentItem.type}
+                    alt={currentItem.name || tagLabel('types', currentItem.type)}
                     fill
                     className="object-contain p-4"
                     sizes="(max-width: 512px) 100vw, 512px"
@@ -163,8 +163,8 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
           <div className="space-y-3 px-5 py-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="capitalize">
-                  {currentItem.type}
+                <Badge variant="secondary" className="first-letter:uppercase">
+                  {tagLabel('types', currentItem.type)}
                 </Badge>
                 {currentItem.subtype && (
                   <Badge variant="outline" className="capitalize">
@@ -234,7 +234,7 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
                     key={item.id}
                     type="button"
                     onClick={() => setCurrentIndex(index)}
-                    aria-label={item.name || item.type}
+                    aria-label={item.name || tagLabel('types', item.type)}
                     aria-current={index === currentIndex ? 'true' : undefined}
                     className={cn(
                       'relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[14px] bg-panel transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
@@ -253,7 +253,7 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                        {item.type.charAt(0).toUpperCase()}
+                        {tagLabel('types', item.type).charAt(0).toUpperCase()}
                       </div>
                     )}
                   </button>

@@ -84,14 +84,14 @@ export function PairingCard({ pairing, onFeedback, onPreview }: PairingCardProps
                 {pairing.source_item.thumbnail_url ? (
                   <Image
                     src={pairing.source_item.thumbnail_url}
-                    alt={pairing.source_item.name || pairing.source_item.type}
+                    alt={pairing.source_item.name || tagLabel('types', pairing.source_item.type)}
                     fill
                     className="object-contain p-1"
                     sizes="48px"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                    {pairing.source_item.type}
+                    {tagLabel('types', pairing.source_item.type)}
                   </div>
                 )}
               </div>
@@ -124,14 +124,14 @@ export function PairingCard({ pairing, onFeedback, onPreview }: PairingCardProps
               {item.thumbnail_url ? (
                 <Image
                   src={item.thumbnail_url}
-                  alt={item.name || item.type}
+                  alt={item.name || tagLabel('types', item.type)}
                   fill
                   className="object-contain p-1.5"
                   sizes="64px"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                  {item.type}
+                  {tagLabel('types', item.type)}
                 </div>
               )}
             </div>

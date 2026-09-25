@@ -5,6 +5,7 @@ import { TransitionLink } from '@/components/native/transition-link';
 import Image from 'next/image';
 import { formatDistanceToNow, parseISO, type Locale } from 'date-fns';
 import { useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import {
   BookmarkCheck,
   Layers,
@@ -99,6 +100,7 @@ function formatRelative(outfit: Outfit, dateFnsLocale: Locale): string | null {
 
 export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
   const t = useTranslations('outfitCard');
+  const typeLabel = useClothingTypeLabel();
   const tOccasions = useTranslations('suggest.occasions');
   const dateFnsLocale = useDateFnsLocale();
   const badge = getSourceBadge(outfit);
@@ -136,7 +138,7 @@ export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
               {item.thumbnail_url || item.image_url ? (
                 <Image
                   src={(item.thumbnail_url || item.image_url)!}
-                  alt={item.name || item.type}
+                  alt={item.name || typeLabel(item.type)}
                   fill
                   className="object-contain p-1.5"
                   sizes="(max-width: 640px) 25vw, 15vw"
@@ -145,7 +147,7 @@ export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
                   <span className="text-[11px] text-muted-foreground">
-                    {item.type}
+                    {typeLabel(item.type)}
                   </span>
                 </div>
               )}

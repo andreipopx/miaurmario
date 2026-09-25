@@ -3184,7 +3184,15 @@
     "disclaimer": "Stinky uses your wardrobe, the weather and your music. It can make mistakes.",
     "memoryNote": "Stinky took note: {text}",
     "memoryForgot": "Stinky forgot it: {text}",
-    "memoryManage": "See what he remembers"
+    "memoryManage": "See what he remembers",
+    "emptyWardrobe": {
+      "title": "Send me items, not photos in here",
+      "body": "With an empty wardrobe I cannot dress you. Upload a few photos at once and I take the background off and tag them.",
+      "cta": "Upload items",
+      "tagTitle": "Tell me what those photos are",
+      "tagBody": "You have {count, plural, one {# untagged photo} other {# untagged photos}}: without knowing what they are, I cannot see them. Type and colour, one tap each.",
+      "tagCta": "Tag them now"
+    }
   },
   "stinkyMemory": {
     "backToSettings": "← Settings",

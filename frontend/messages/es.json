@@ -3184,7 +3184,15 @@
     "disclaimer": "Stinky usa tu armario, el tiempo y tu música. Puede equivocarse.",
     "memoryNote": "Stinky ha tomado nota: {text}",
     "memoryForgot": "Stinky lo ha olvidado: {text}",
-    "memoryManage": "Ver lo que recuerda"
+    "memoryManage": "Ver lo que recuerda",
+    "emptyWardrobe": {
+      "title": "Mándame prendas, no fotos por aquí",
+      "body": "Con el armario vacío no puedo vestirte. Sube unas cuantas fotos de golpe y yo les quito el fondo y las etiqueto.",
+      "cta": "Subir prendas",
+      "tagTitle": "Dime qué son esas fotos",
+      "tagBody": "Tienes {count, plural, one {# foto sin etiquetar} other {# fotos sin etiquetar}}: sin saber qué son, no las veo. Tipo y color, un toque cada uno.",
+      "tagCta": "Etiquetar ahora"
+    }
   },
   "stinkyMemory": {
     "backToSettings": "← Ajustes",

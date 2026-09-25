@@ -20,7 +20,21 @@ vi.mock('@/components/native/lazy-stinky', () => ({
   LazyStinky: () => <span data-testid="lazy-stinky" />,
 }))
 
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...rest }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}))
+
+const stats = vi.hoisted(() => ({ value: undefined as unknown }))
+vi.mock('@/lib/hooks/use-wardrobe-stats', () => ({
+  useWardrobeStats: () => ({ data: stats.value }),
+}))
+
 import { UploadQueueList } from '@/components/bulk-upload/upload-queue-list'
+import { EmptyWardrobeCta } from '@/components/stinky-chat/empty-wardrobe-cta'
 
 function fileOf(name: string, bytes: number, type = 'image/jpeg'): File {
   const file = new File([new Uint8Array(1)], name, { type })
@@ -164,6 +178,41 @@ describe('UploadQueueList', () => {
       />
     )
     expect(screen.queryByRole('button', { name: /Quitar/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('EmptyWardrobeCta', () => {
+  const base = { total: 0, usable: 0, untyped: 0, processing: 0, min_for_looks: 2, variety_target: 12, max_batch: 30 }
+
+  it('says nothing until the stats arrive', () => {
+    stats.value = undefined
+    renderWithIntl(<EmptyWardrobeCta />)
+    expect(screen.queryByTestId('stinky-empty-wardrobe')).not.toBeInTheDocument()
+  })
+
+  it('asks for photos when there are none', () => {
+    stats.value = base
+    renderWithIntl(<EmptyWardrobeCta />)
+    expect(screen.getByRole('link', { name: /Subir prendas/ })).toHaveAttribute(
+      'href',
+      '/dashboard/wardrobe?bulk=1'
+    )
+  })
+
+  it('asks for types, not photos, when the photos are already there', () => {
+    stats.value = { ...base, total: 9, untyped: 9 }
+    renderWithIntl(<EmptyWardrobeCta />)
+    expect(screen.getByText(/9 fotos sin etiquetar/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Etiquetar ahora/ })).toHaveAttribute(
+      'href',
+      '/dashboard/wardrobe?bulk=review'
+    )
+  })
+
+  it('stands down once the stylist can actually work', () => {
+    stats.value = { ...base, total: 4, usable: 2 }
+    renderWithIntl(<EmptyWardrobeCta />)
+    expect(screen.queryByTestId('stinky-empty-wardrobe')).not.toBeInTheDocument()
   })
 })
 

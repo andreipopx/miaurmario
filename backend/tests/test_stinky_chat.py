@@ -432,6 +432,76 @@ async def test_the_memory_digest_reaches_the_system_prompt(
     assert "No le gusta: no lleva rojo" in system
 
 
+def _wardrobe_line(system: str) -> str:
+    """The CONTEXTO line describing the wardrobe, without the section that names it."""
+    for line in system.splitlines():
+        if line.startswith("- Armario: "):
+            return line.removeprefix("- Armario: ")
+    raise AssertionError("the prompt has no wardrobe line")
+
+
+async def test_an_empty_wardrobe_is_in_the_prompt_before_he_opens_his_mouth(
+    client, alice, mock_provider
+):
+    """He must not need a tool call to know there is nothing to dress anyone in."""
+    prov = mock_provider([reasoning_then_text("Mándame fotos.")])
+    await client.post("/api/v1/stinky/chat", json={"message": "hola"}, headers=_headers(alice))
+    system = prov.requests[0]["messages"][0]["content"]
+    assert _wardrobe_line(system).startswith("VACÍO")
+    # And the instruction that tells him what to do about it, with the real cap.
+    assert "ARMARIO CASI VACÍO" in system
+    assert "Subir prendas" in system
+    assert str(get_settings().max_batch_upload_count) in system
+    # No placeholder ever reaches the model.
+    assert "{wardrobe_state}" not in system
+    assert "{max_batch}" not in system
+
+
+async def test_untagged_photos_are_reported_as_invisible_to_him(
+    client, db_session, alice, mock_provider
+):
+    """A wardrobe of raw photos is the trap: he sees none of them."""
+    db_session.add_all(
+        [
+            ClothingItem(
+                user_id=alice.id, type="unknown", image_path="a.jpg", status=ItemStatus.ready
+            ),
+            ClothingItem(
+                user_id=alice.id, type="jeans", image_path="b.jpg", status=ItemStatus.ready
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    prov = mock_provider([reasoning_then_text("Dime qué son.")])
+    await client.post("/api/v1/stinky/chat", json={"message": "hola"}, headers=_headers(alice))
+    system = prov.requests[0]["messages"][0]["content"]
+    state = _wardrobe_line(system)
+    assert "1 prenda(s) que puedes usar" in state
+    assert "1 foto(s) sin etiquetar" in state
+    assert "CASI VACÍO" in state
+
+
+async def test_a_full_wardrobe_is_not_flagged_as_nearly_empty(
+    client, db_session, alice, mock_provider
+):
+    db_session.add_all(
+        [
+            ClothingItem(user_id=alice.id, type=t, image_path=f"{t}.jpg", status=ItemStatus.ready)
+            for t in ("jeans", "t-shirt", "coat")
+        ]
+    )
+    await db_session.commit()
+
+    prov = mock_provider([reasoning_then_text("Vale.")])
+    await client.post("/api/v1/stinky/chat", json={"message": "hola"}, headers=_headers(alice))
+    system = prov.requests[0]["messages"][0]["content"]
+    # The section heading also says "CASI VACÍO", so read the context line itself.
+    state = _wardrobe_line(system)
+    assert "3 prenda(s) que puedes usar" in state
+    assert "VACÍO" not in state
+
+
 async def test_provider_error_yields_error_event(client, alice, monkeypatch):
     def handler(request):
         return httpx.Response(500, json={"error": "boom"})

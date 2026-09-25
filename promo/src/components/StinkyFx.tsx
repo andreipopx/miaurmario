@@ -29,7 +29,14 @@ const Heart: React.FC<{ px: number; color: string; stroke: string }> = ({ px, co
 );
 
 /** `ink`: particle colour (pink on white, ink on the pink stage). */
-export const StinkyPurrFx: React.FC<{ size: number; from: number; ink?: string; outline?: string }> = ({ size, from, ink = C.pink, outline = '#fff' }) => {
+/** `rise`: how far particles float up, as a fraction of `size` (the app uses 0.75). */
+export const StinkyPurrFx: React.FC<{ size: number; from: number; ink?: string; outline?: string; rise?: number }> = ({
+  size,
+  from,
+  ink = C.pink,
+  outline = '#fff',
+  rise = 0.75,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const ms = ((frame - from) / fps) * 1000;
@@ -50,7 +57,7 @@ export const StinkyPurrFx: React.FC<{ size: number; from: number; ink?: string; 
               left: `${p.x}%`,
               top: '18%',
               opacity,
-              transform: `translate(${(p.dx / 100) * size * t}px, ${-0.75 * size * t}px) rotate(${p.rotate}deg) scale(${scale})`,
+              transform: `translate(${(p.dx / 100) * size * t}px, ${-rise * size * t}px) rotate(${p.rotate}deg) scale(${scale})`,
             }}
           >
             {p.kind === 'heart' ? (

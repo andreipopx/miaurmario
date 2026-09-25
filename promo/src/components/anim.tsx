@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
-import { C, sans } from '../theme';
-import { Phone } from './Phone';
+import { C, SAFE_BOTTOM, SAFE_TOP, sans } from '../theme';
+import { Phone, SCREEN_H, SCREEN_W } from './Phone';
 
 export const usePop = (delay = 0, damping = 12) => {
   const frame = useCurrentFrame();
@@ -26,17 +26,17 @@ export const FadeUp: React.FC<{ delay?: number; distance?: number; children: Rea
 
 /** Step badge + headline + subline above the phone. */
 export const Headline: React.FC<{ step: string; color: string; title: string; sub: string }> = ({ step, color, title, sub }) => (
-  <div style={{ position: 'absolute', top: 190, left: 60, right: 60, textAlign: 'center', fontFamily: sans, color: C.ink }}>
+  <div style={{ position: 'absolute', top: SAFE_TOP, left: 60, right: 60, textAlign: 'center', fontFamily: sans, color: C.ink }}>
     <FadeUp delay={2}>
       <div
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          height: 60,
-          padding: '0 28px',
+          height: 56,
+          padding: '0 26px',
           borderRadius: 999,
           background: color,
-          fontSize: 32,
+          fontSize: 30,
           fontWeight: 800,
         }}
       >
@@ -44,13 +44,19 @@ export const Headline: React.FC<{ step: string; color: string; title: string; su
       </div>
     </FadeUp>
     <FadeUp delay={6}>
-      <div style={{ fontSize: 86, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.02, marginTop: 26 }}>{title}</div>
+      <div style={{ fontSize: 76, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.02, marginTop: 20 }}>{title}</div>
     </FadeUp>
     <FadeUp delay={11}>
-      <div style={{ fontSize: 40, fontWeight: 500, color: C.muted, marginTop: 16 }}>{sub}</div>
+      <div style={{ fontSize: 36, fontWeight: 500, color: C.muted, marginTop: 12 }}>{sub}</div>
     </FadeUp>
   </div>
 );
+
+// The phone is scaled so its bottom edge sits on the safe-zone line.
+const PHONE_W = SCREEN_W + 40;
+const PHONE_H = SCREEN_H + 40;
+const PHONE_TOP = 480;
+const PHONE_SCALE = (SAFE_BOTTOM - PHONE_TOP) / PHONE_H;
 
 /** White stage with a soft colour blob, a headline and the phone rising in. */
 export const PhoneStage: React.FC<{ accent: string; headline: React.ReactNode; children: React.ReactNode; lightStatus?: boolean }> = ({
@@ -79,7 +85,15 @@ export const PhoneStage: React.FC<{ accent: string; headline: React.ReactNode; c
         }}
       />
       {headline}
-      <div style={{ position: 'absolute', left: 208, top: 520 + (1 - p) * 700 + bob }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: (1080 - PHONE_W * PHONE_SCALE) / 2,
+          top: PHONE_TOP + (1 - p) * 700 + bob,
+          transform: `scale(${PHONE_SCALE})`,
+          transformOrigin: 'top left',
+        }}
+      >
         <Phone lightStatus={lightStatus}>{children}</Phone>
       </div>
     </AbsoluteFill>

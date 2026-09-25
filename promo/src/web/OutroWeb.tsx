@@ -15,28 +15,28 @@ export const OutroWeb: React.FC = () => {
   const word = usePop(12, 9);
   return (
     <AbsoluteFill style={{ background: C.pink, fontFamily: sans, color: C.ink, alignItems: 'center', overflow: 'hidden' }}>
-      <FadeUp delay={2} style={{ position: 'absolute', top: 200, width: '100%', textAlign: 'center' }}>
+      <FadeUp delay={2} style={{ position: 'absolute', top: 270, width: '100%', textAlign: 'center' }}>
         <div style={{ fontSize: 76, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.05 }}>
           Sin tienda.
           <br />
           Sin descargas.
         </div>
       </FadeUp>
-      <div style={{ position: 'absolute', top: 440, width: 560, height: 560, borderRadius: '50%', background: 'rgba(255,255,255,0.35)', transform: `scale(${cat * (1 + Math.sin(frame / 14) * 0.02)})` }} />
-      <div style={{ position: 'absolute', top: 450, transform: `scale(${cat})` }}>
+      <div style={{ position: 'absolute', top: 480, width: 560, height: 560, borderRadius: '50%', background: 'rgba(255,255,255,0.35)', transform: `scale(${cat * (1 + Math.sin(frame / 14) * 0.02)})` }} />
+      <div style={{ position: 'absolute', top: 490, transform: `scale(${cat})` }}>
         <div style={{ position: 'relative' }}>
           <Stinky state={frame < PURR_AT ? 'happy' : frame < BITE_AT ? 'purr' : 'bite'} size={540} from={frame < PURR_AT ? 0 : frame < BITE_AT ? PURR_AT : BITE_AT} />
-          <StinkyPurrFx size={540} from={PURR_AT} ink="#fff" outline={C.ink} />
+          <StinkyPurrFx size={540} from={PURR_AT} ink="#fff" outline={C.ink} rise={0.35} />
           <StinkyBiteFx size={540} from={BITE_AT} ink="#fff" outline={C.ink} />
         </div>
       </div>
-      <div style={{ position: 'absolute', top: 1050, fontFamily: wordmark, fontSize: 170, lineHeight: 1, transform: `scale(${0.4 + 0.6 * word}) rotate(-2deg)`, opacity: Math.min(1, word * 2) }}>
+      <div style={{ position: 'absolute', top: 1070, fontFamily: wordmark, fontSize: 170, lineHeight: 1, transform: `scale(${0.4 + 0.6 * word}) rotate(-2deg)`, opacity: Math.min(1, word * 2) }}>
         miaurmario
       </div>
-      <FadeUp delay={24} style={{ position: 'absolute', top: 1290, width: '100%', display: 'flex', justifyContent: 'center' }}>
+      <FadeUp delay={24} style={{ position: 'absolute', top: 1300, width: '100%', display: 'flex', justifyContent: 'center' }}>
         <div style={{ height: 96, padding: '0 44px', borderRadius: 999, background: C.ink, color: '#fff', display: 'flex', alignItems: 'center', fontSize: 42, fontWeight: 700 }}>{URL}</div>
       </FadeUp>
-      <FadeUp delay={34} style={{ position: 'absolute', top: 1420, width: '100%', textAlign: 'center' }}>
+      <FadeUp delay={34} style={{ position: 'absolute', top: 1425, width: '100%', textAlign: 'center' }}>
         <div style={{ fontSize: 44, fontWeight: 700 }}>Ábrela y añádela a tu inicio.</div>
       </FadeUp>
     </AbsoluteFill>

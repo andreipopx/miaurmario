@@ -10,9 +10,13 @@ import { GO, OpenInBrowser, TYPE_FROM, TYPE_TO } from './OpenInBrowser';
 import { ADD_TAP, ICON_IN, Install, OPEN_TAP, SHARE_TAP } from './Install';
 import { Everywhere } from './Everywhere';
 import { CONNECT_TAP, Connect } from './Connect';
-import { LOOK_AT, MOOD_AT, SongLook, TIP_AT } from './SongLook';
+import { LOOK_AT, MOOD_AT, SongLook } from './SongLook';
+import { LOOK_AT as M_LOOK_AT, ManualSong, PICK, SUGGEST, TYPE_FROM as M_TYPE_FROM, TYPE_TO as M_TYPE_TO } from './ManualSong';
+import { DROP_FROM, SWAP, WeatherLook } from './WeatherLook';
+import { LOOK_AT as R_LOOK_AT, PICK_AT as R_PICK, Revive } from './Revive';
+import { AllFactors, HAPPY_AT } from './AllFactors';
 import { BITE_AT, OutroWeb, PURR_AT } from './OutroWeb';
-import { INTRO, SONGS } from './songs';
+import { INTRO, PICKED, SONGS } from './songs';
 
 export type WebPromoProps = {
   /** false renders only the UI sounds, for posting with the platform's own music. */
@@ -20,60 +24,71 @@ export type WebPromoProps = {
 };
 
 const T = 14;
-const SONG_D = 150;
 const timing = springTiming({ config: { damping: 200 }, durationInFrames: T });
 
-const SCENES: { el: React.ReactNode; d: number }[] = [
-  { el: <HookWeb />, d: 92 },
-  { el: <OpenInBrowser />, d: 120 },
-  { el: <Install />, d: 176 },
-  { el: <Everywhere />, d: 110 },
-  { el: <Connect />, d: 104 },
-  ...SONGS.map((song, i) => ({ el: <SongLook song={song} index={i} count={SONGS.length} />, d: SONG_D })),
-  { el: <OutroWeb />, d: 124 },
+const SCENES: { key: string; el: React.ReactNode; d: number }[] = [
+  { key: 'hook', el: <HookWeb />, d: 92 },
+  { key: 'browser', el: <OpenInBrowser />, d: 110 },
+  { key: 'install', el: <Install />, d: 160 },
+  { key: 'everywhere', el: <Everywhere />, d: 90 },
+  { key: 'connect', el: <Connect />, d: 96 },
+  ...SONGS.map((song, i) => ({ key: `song${i}`, el: <SongLook song={song} />, d: i === 0 ? 118 : 104 })),
+  { key: 'manual', el: <ManualSong />, d: 172 },
+  { key: 'weather', el: <WeatherLook />, d: 130 },
+  { key: 'revive', el: <Revive />, d: 130 },
+  { key: 'factors', el: <AllFactors />, d: 100 },
+  { key: 'outro', el: <OutroWeb />, d: 116 },
 ];
-const FIRST_SONG = 5;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const presentation = (i: number): TransitionPresentation<any> =>
   i === 0 ? wipe({ direction: 'from-bottom' }) : i === 2 ? slide({ direction: 'from-bottom' }) : i === SCENES.length - 2 ? fade() : slide({ direction: 'from-right' });
 
 export const WEB_TOTAL = SCENES.reduce((s, x) => s + x.d, 0) - T * (SCENES.length - 1);
-const START = SCENES.map((_, i) => SCENES.slice(0, i).reduce((s, x) => s + x.d, 0) - T * i);
-const [hook, browser, install, everywhere, connect] = START;
-const outro = START[START.length - 1];
+const START: Record<string, number> = {};
+SCENES.forEach((sc, i) => (START[sc.key] = SCENES.slice(0, i).reduce((s, x) => s + x.d, 0) - T * i));
+const at = (key: string) => START[key];
+/** Songs switch mid-transition, like skipping a track. */
+const cut = (key: string) => at(key) + Math.round(T / 2);
 
 /** "¡ñam!" pop and two chomps, on the bite clip's own beats (120 / 470 / 800 ms). */
-const bite = (at: number): [number, Sfx, number][] => [
-  [at + 4, 'pop-high', 0.5],
-  [at + 14, 'chomp', 0.9],
-  [at + 24, 'chomp', 0.8],
+const bite = (f: number): [number, Sfx, number][] => [
+  [f + 4, 'pop-high', 0.5],
+  [f + 14, 'chomp', 0.9],
+  [f + 24, 'chomp', 0.8],
 ];
 
 const CUES: [number, Sfx, number][] = [
-  ...START.slice(1).map((s): [number, Sfx, number] => [s - 2, 'whoosh', 0.35]),
-  [hook + 12, 'pop', 0.6],
-  [hook + ANSWER, 'boing', 0.5],
-  ...bite(hook + ANSWER),
-  ...Array.from({ length: 10 }, (_, i): [number, Sfx, number] => [browser + TYPE_FROM + Math.round((i * (TYPE_TO - TYPE_FROM)) / 10), 'key', 0.3]),
-  [browser + GO, 'send', 0.6],
-  [install + SHARE_TAP, 'pop', 0.5],
-  [install + ADD_TAP, 'pop-high', 0.5],
-  [install + ICON_IN, 'chime', 0.6],
-  [install + OPEN_TAP, 'pop', 0.6],
-  [everywhere + 30, 'tick', 0.35],
-  [everywhere + 36, 'tick', 0.35],
-  [everywhere + 42, 'tick', 0.35],
-  [connect + CONNECT_TAP, 'pop', 0.5],
-  [connect + CONNECT_TAP + 8, 'success', 0.7],
+  ...SCENES.slice(1).map((sc): [number, Sfx, number] => [at(sc.key) - 2, 'whoosh', 0.35]),
+  [at('hook') + 12, 'pop', 0.6],
+  [at('hook') + ANSWER, 'boing', 0.5],
+  ...bite(at('hook') + ANSWER),
+  ...Array.from({ length: 10 }, (_, i): [number, Sfx, number] => [at('browser') + TYPE_FROM + Math.round((i * (TYPE_TO - TYPE_FROM)) / 10), 'key', 0.3]),
+  [at('browser') + GO, 'send', 0.6],
+  [at('install') + SHARE_TAP, 'pop', 0.5],
+  [at('install') + ADD_TAP, 'pop-high', 0.5],
+  [at('install') + ICON_IN, 'chime', 0.6],
+  [at('install') + OPEN_TAP, 'pop', 0.6],
+  ...[30, 36, 42].map((f): [number, Sfx, number] => [at('everywhere') + f, 'tick', 0.35]),
+  [at('connect') + CONNECT_TAP, 'pop', 0.5],
+  [at('connect') + CONNECT_TAP + 8, 'success', 0.7],
   ...SONGS.flatMap((_, i): [number, Sfx, number][] => [
-    [START[FIRST_SONG + i] + MOOD_AT, 'pop-high', 0.5],
-    [START[FIRST_SONG + i] + TIP_AT, 'chime', 0.35],
-    [START[FIRST_SONG + i] + LOOK_AT, 'pop', 0.5],
+    [at(`song${i}`) + MOOD_AT, 'pop-high', 0.5],
+    [at(`song${i}`) + LOOK_AT, 'pop', 0.5],
   ]),
-  [outro + 12, 'pop-high', 0.5],
-  [outro + PURR_AT, 'purr', 0.9],
-  ...bite(outro + BITE_AT),
+  ...Array.from({ length: 8 }, (_, i): [number, Sfx, number] => [at('manual') + M_TYPE_FROM + Math.round((i * (M_TYPE_TO - M_TYPE_FROM)) / 8), 'key', 0.3]),
+  [at('manual') + SUGGEST, 'pop-high', 0.4],
+  [at('manual') + PICK, 'pop', 0.6],
+  [at('manual') + M_LOOK_AT, 'chime', 0.5],
+  ...[0, 4, 8, 12].map((f): [number, Sfx, number] => [at('weather') + DROP_FROM + f * 2, 'tick', 0.3]),
+  [at('weather') + SWAP, 'chime', 0.5],
+  [at('revive') + R_PICK - 2, 'pop', 0.6],
+  [at('revive') + R_LOOK_AT + 10, 'success', 0.6],
+  ...[0, 1, 2, 3, 4, 5].map((i): [number, Sfx, number] => [at('factors') + 8 + i * 6, 'tick', 0.35]),
+  [at('factors') + HAPPY_AT, 'purr', 0.8],
+  [at('outro') + 12, 'pop-high', 0.5],
+  [at('outro') + PURR_AT, 'purr', 0.9],
+  ...bite(at('outro') + BITE_AT),
 ];
 
 /** A song clip that fades in/out over `fade` frames. */
@@ -96,25 +111,22 @@ const Clip: React.FC<{ src: string; startSec: number; from: number; to: number; 
 );
 
 const Music: React.FC = () => {
-  // Songs switch mid-transition, like skipping a track.
-  const cut = (i: number) => START[i] + Math.round(T / 2);
+  const pick = at('manual') + PICK;
   return (
     <>
-      <Clip src={INTRO.src} startSec={INTRO.startSec} from={0} to={cut(FIRST_SONG) + 6} fadeIn={2} volume={0.68} />
-      {SONGS.map((song, i) => {
-        const last = i === SONGS.length - 1;
-        return (
-          <Clip
-            key={song.src + i}
-            src={song.src}
-            startSec={song.startSec - (T / 2) / 30}
-            from={cut(FIRST_SONG + i) - 6}
-            to={last ? WEB_TOTAL : cut(FIRST_SONG + i + 1) + 6}
-            fadeOut={last ? 36 : 12}
-            volume={0.68}
-          />
-        );
-      })}
+      <Clip src={INTRO.src} startSec={INTRO.startSec} from={0} to={cut('song0') + 6} fadeIn={2} volume={0.68} />
+      {SONGS.map((song, i) => (
+        <Clip
+          key={song.src}
+          src={song.src}
+          startSec={song.startSec - T / 2 / 30}
+          from={cut(`song${i}`) - 6}
+          to={(i === SONGS.length - 1 ? pick : cut(`song${i + 1}`)) + 6}
+          volume={0.68}
+        />
+      ))}
+      {/* Mode 2: the typed song starts on the tap and plays to the end. */}
+      <Clip src={PICKED.src} startSec={PICKED.startSec} from={pick} to={WEB_TOTAL} fadeIn={4} fadeOut={36} volume={0.68} />
     </>
   );
 };
@@ -128,8 +140,8 @@ export const WebPromo: React.FC<WebPromoProps> = ({ withMusic }) => (
       </Sequence>
     ))}
     <TransitionSeries>
-      {SCENES.map(({ el, d }, i) => (
-        <React.Fragment key={i}>
+      {SCENES.map(({ key, el, d }, i) => (
+        <React.Fragment key={key}>
           <TransitionSeries.Sequence durationInFrames={d}>{el}</TransitionSeries.Sequence>
           {i < SCENES.length - 1 ? <TransitionSeries.Transition presentation={presentation(i)} timing={timing} /> : null}
         </React.Fragment>

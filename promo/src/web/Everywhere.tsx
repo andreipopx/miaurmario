@@ -84,16 +84,16 @@ export const Everywhere: React.FC = () => {
     <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', width: 1300, height: 1300, left: -110, top: 700, borderRadius: '50%', background: C.amber, opacity: 0.2 }} />
       <Headline step="En todas partes" color={C.amber} title="Móvil u ordenador." sub="La misma cuenta, siempre al día." />
-      <div style={{ position: 'absolute', left: 30, top: 600 + (1 - lap) * 400, transform: `rotate(${Math.sin(frame / 30) * 0.5}deg)`, opacity: Math.min(1, lap * 1.5) }}>
+      <div style={{ position: 'absolute', left: 30, top: 520 + (1 - lap) * 400, transform: `rotate(${Math.sin(frame / 30) * 0.5}deg)`, opacity: Math.min(1, lap * 1.5) }}>
         <Laptop_ />
       </div>
-      <div style={{ position: 'absolute', left: 700, top: 820 + (1 - ph) * 600, transform: 'scale(0.46)', transformOrigin: 'top left' }}>
+      <div style={{ position: 'absolute', left: 700, top: 700 + (1 - ph) * 600, transform: 'scale(0.46)', transformOrigin: 'top left' }}>
         <Phone>
           <AppHome />
           <Dock active="hoy" />
         </Phone>
       </div>
-      <div style={{ position: 'absolute', top: 1530, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 22, fontFamily: sans }}>
+      <div style={{ position: 'absolute', top: 1360, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 22, fontFamily: sans }}>
         {CHIPS.map(([l, icon, c], i) => (
           <div
             key={l}
@@ -115,7 +115,7 @@ export const Everywhere: React.FC = () => {
           </div>
         ))}
       </div>
-      <FadeUp delay={52} style={{ position: 'absolute', top: 1650, left: 0, right: 0, textAlign: 'center', fontFamily: sans }}>
+      <FadeUp delay={52} style={{ position: 'absolute', top: 1470, left: 0, right: 0, textAlign: 'center', fontFamily: sans }}>
         <div style={{ fontSize: 40, fontWeight: 600, color: C.muted }}>Ocupa casi nada y se actualiza sola.</div>
       </FadeUp>
     </AbsoluteFill>

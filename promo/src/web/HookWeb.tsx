@@ -13,7 +13,7 @@ export const HookWeb: React.FC = () => {
   const cat = usePop(10, 14);
   return (
     <AbsoluteFill style={{ background: C.pink, fontFamily: sans, color: C.ink, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 230, left: 70, right: 70 }}>
+      <div style={{ position: 'absolute', top: 280, left: 70, right: 70 }}>
         <FadeUp delay={2}>
           <div style={{ fontSize: 60, fontWeight: 700, opacity: 0.75 }}>Me preguntáis mucho…</div>
         </FadeUp>

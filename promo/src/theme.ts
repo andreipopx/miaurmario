@@ -31,3 +31,11 @@ loadFont({
 loadFont({ family: wordmark, url: staticFile('fonts/bagel-fat-one-latin.woff2') });
 
 export const FPS = 30;
+
+/**
+ * Instagram Stories/Reels safe zone on a 1080×1920 canvas: the top ~250 px hold the progress
+ * bar and profile, the bottom ~340 px the reply box / caption and buttons. Keep text and
+ * anything tappable-looking between SAFE_TOP and SAFE_BOTTOM.
+ */
+export const SAFE_TOP = 250;
+export const SAFE_BOTTOM = 1580;

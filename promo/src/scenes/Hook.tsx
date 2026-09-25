@@ -32,7 +32,7 @@ export const Hook: React.FC = () => {
           </div>
         );
       })}
-      <div style={{ position: 'absolute', top: 210, left: 70, right: 70 }}>
+      <div style={{ position: 'absolute', top: 270, left: 70, right: 70 }}>
         <FadeUp delay={4}>
           <div style={{ fontSize: 124, fontWeight: 800, letterSpacing: '-0.035em', lineHeight: 0.98 }}>Armario lleno.</div>
         </FadeUp>

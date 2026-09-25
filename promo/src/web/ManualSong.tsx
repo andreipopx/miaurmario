@@ -97,7 +97,9 @@ export const ManualSong: React.FC = () => {
                 ) : null}
               </LookPanel>
               <LookCaption title={s.lookTitle} weather={s.weather} p={caption} />
-              <MoodRow song={s} p={mood} />
+              <div style={{ opacity: frame >= LOOK_AT + 14 ? 1 : 0 }}>
+                <MoodRow song={s} p={mood} />
+              </div>
               <StinkyLine text={s.line} from={LOOK_AT + 22} typeFrames={30} />
             </div>
           ) : null}

@@ -87,7 +87,7 @@ export function useBulkUpload(): BulkUploadContextValue {
 }
 
 /** Turn a dead request into a row the user can read and act on. */
-function failureOf(error: unknown): { state: 'error'; errorCode: string; error?: string } {
+export function failureOf(error: unknown): { state: 'error'; errorCode: string; error?: string } {
   if (error instanceof ApiError) {
     const detail = (error.data as { detail?: unknown } | undefined)?.detail;
     const code =
@@ -108,7 +108,8 @@ function failureOf(error: unknown): { state: 'error'; errorCode: string; error?:
     return { state: 'error', errorCode: code ?? 'failed', error: message };
   }
   if (error instanceof NetworkError) {
-    return { state: 'error', errorCode: error.message === 'offline' ? 'offline' : 'network' };
+    // `code`, not `message`: the message is the internal `network_<code>` string.
+    return { state: 'error', errorCode: error.code === 'offline' ? 'offline' : 'network' };
   }
   return { state: 'error', errorCode: 'failed' };
 }

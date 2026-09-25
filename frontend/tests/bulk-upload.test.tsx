@@ -13,6 +13,8 @@ import {
   type QueuedPhoto,
 } from '@/lib/bulk-upload/queue'
 import { OTHER_COLORS, OTHER_TYPES, QUICK_COLORS, QUICK_TYPES, needsType } from '@/components/bulk-upload/tag-choices'
+import { failureOf } from '@/lib/bulk-upload/bulk-upload-context'
+import { ApiError, NetworkError } from '@/lib/api'
 import es from '@/messages/es.json'
 import en from '@/messages/en.json'
 
@@ -269,6 +271,17 @@ describe('bulk upload copy', () => {
       expect(es.bulkUpload.queue.errors).toHaveProperty(code)
       expect(en.bulkUpload.queue.errors).toHaveProperty(code)
     }
+  })
+
+  it('tells «sin conexión» apart from «no se pudo conectar»', () => {
+    // NetworkError carries the reason in `code`; its `message` is the internal
+    // `network_<code>` string, so matching on the message silently never hits.
+    expect(failureOf(new NetworkError('offline')).errorCode).toBe('offline')
+    expect(failureOf(new NetworkError('unreachable')).errorCode).toBe('network')
+    expect(failureOf(new ApiError('nope', 429, {})).errorCode).toBe('rate_limited')
+    expect(
+      failureOf(new ApiError('nope', 400, { detail: { code: 'too_big' } })).errorCode
+    ).toBe('too_big')
   })
 
   it('keeps the batch cap in the copy honest', () => {

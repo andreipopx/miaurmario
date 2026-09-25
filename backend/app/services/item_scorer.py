@@ -261,7 +261,35 @@ def _preference_score(
     return max(0.3, min(1.2, score))
 
 
-def _usage_score(item: ClothingItem, median_wear: float) -> float:
+#: «Sácala más»: a nudge stronger than anything the wear counts produce on their
+#: own (1.15 at most), because the owner asked for this garment by name.
+USAGE_PREFERENCE_BOOST = 1.25
+
+USAGE_PREFERENCE_MORE = "more"
+USAGE_PREFERENCE_NORMAL = "normal"
+USAGE_PREFERENCE_REST = "rest"
+USAGE_PREFERENCES = (USAGE_PREFERENCE_MORE, USAGE_PREFERENCE_NORMAL, USAGE_PREFERENCE_REST)
+
+
+def _usage_score(item: ClothingItem, median_wear: float, use_median: bool = True) -> float:
+    """How much the wear counts should tilt this item, 1.0 meaning "not at all".
+
+    The owner's per-garment setting wins over the automatic nudge, and over the
+    wardrobe-wide `prefer_underused_items` switch, because it was typed in about
+    this exact garment. Neither branch ever returns 0: nothing here removes an
+    item from the suggestions, it only reorders them.
+    """
+    preference = (getattr(item, "usage_preference", None) or USAGE_PREFERENCE_NORMAL).lower()
+    if preference == USAGE_PREFERENCE_REST:
+        # «Déjala tranquila»: no boost for being forgotten, no penalty for being
+        # a favourite. The stylist can still reach for it.
+        return 1.0
+    if preference == USAGE_PREFERENCE_MORE:
+        return USAGE_PREFERENCE_BOOST
+
+    if not use_median:
+        return 1.0
+
     wear_count = item.wear_count or 0
     if median_wear <= 1:
         return 1.0
@@ -336,7 +364,9 @@ def score_items(
     quiz = quiz_bias(getattr(preferences, "taste_profile", None)) if preferences else None
 
     use_underused = preferences.prefer_underused_items if preferences else True
-    median_wear = median([i.wear_count or 0 for i in items]) if use_underused and items else 0
+    # The median is cheap and the per-garment settings need a score even when the
+    # wardrobe-wide nudge is off, so it is always computed.
+    median_wear = median([i.wear_count or 0 for i in items]) if items else 0
 
     scored = []
     for item in items:
@@ -345,7 +375,7 @@ def score_items(
         ss = _season_score(item, current_season)
         rs = _recency_score(item, user_today, avoid_days, recently_worn_dates)
         ps = _preference_score(item, preferences, learned_prefs, quiz)
-        us = _usage_score(item, median_wear) if use_underused else 1.0
+        us = _usage_score(item, median_wear, use_median=use_underused)
 
         total = ws * fs * ss * rs * ps * us
 

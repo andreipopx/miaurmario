@@ -38,6 +38,7 @@ from app.schemas.item import (
     ItemListResponse,
     ItemResponse,
     ItemUpdate,
+    ItemUsageResponse,
     LinkPreviewImage,
     LinkPreviewRequest,
     LinkPreviewResponse,
@@ -55,9 +56,11 @@ from app.services.care_label import parse_care_label
 from app.services.image_service import ImageService
 from app.services.item_service import ItemService
 from app.services.recommendation_service import MIN_CANDIDATES_FOR_OUTFIT
+from app.services.wardrobe_usage import item_usage
 from app.utils.auth import get_current_user
 from app.utils.care import care_hints, dominant_material
 from app.utils.rate_limit import rate_limit_by_user
+from app.utils.timezone import get_user_today
 from app.workers.settings import get_redis_settings
 
 logger = logging.getLogger(__name__)
@@ -1017,8 +1020,10 @@ async def log_item_wear(
         notes=request.notes,
     )
 
-    # Refresh to get updated wear_count
-    await db.refresh(item)
+    # Re-fetch rather than refresh(): a plain refresh drops the eagerly loaded
+    # `additional_images`, and serialising the response then lazy-loads it on an
+    # async session, which is a hard error.
+    item = await item_service.get_by_id(item_id, current_user.id)
     return ItemResponse.model_validate(item)
 
 
@@ -1105,6 +1110,30 @@ async def get_item_wear_stats(
         )
 
     return await item_service.get_wear_stats(item, current_user.timezone or "UTC")
+
+
+@router.get("/{item_id}/usage", response_model=ItemUsageResponse)
+async def get_item_usage(
+    item_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> ItemUsageResponse:
+    """Veces puesta, última vez, coste por uso y con qué suele combinarse.
+
+    Co-wear is counted over looks the user confirmed as worn — see
+    ``app.services.wardrobe_usage``.
+    """
+    item_service = ItemService(db)
+    item = await item_service.get_by_id(item_id, current_user.id)
+
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item not found",
+        )
+
+    usage = await item_usage(db, item, get_user_today(current_user))
+    return ItemUsageResponse.model_validate(usage, from_attributes=True)
 
 
 @router.post("/{item_id}/wash", response_model=ItemResponse)

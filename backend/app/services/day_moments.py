@@ -187,18 +187,30 @@ def compose_outfit(
     weather: WeatherData,
     occasion: str,
     base: list[ClothingItem] | None = None,
+    pinned: ClothingItem | None = None,
 ) -> ComposedOutfit:
     """Build one look from items ranked best-first (item, score).
 
     With ``base`` (a transition) keep that look and change at most two things:
     swap one piece for a better fit for the new occasion (outer layer first,
     then shoes...) and add an accessory.
+
+    With ``pinned`` (a rescue) that garment is the look's starting point: it wins
+    its own body slot outright and, if its role would not have been filled at
+    all, it is added anyway. ``pinned`` must be one of the ``ranked`` items.
     """
     by_role: dict[str, list[tuple[ClothingItem, float]]] = {}
     for item, score in ranked:
         role = _role(item)
         if role:
             by_role.setdefault(role, []).append((item, score))
+
+    if pinned is not None:
+        pinned_role = _role(pinned)
+        if pinned_role:
+            slot = by_role.setdefault(pinned_role, [])
+            others = [(i, sc) for i, sc in slot if i.id != pinned.id]
+            by_role[pinned_role] = [(pinned, float("inf"))] + others
 
     def best(role: str, exclude: set[UUID]) -> ClothingItem | None:
         for item, _ in by_role.get(role, []):
@@ -248,9 +260,19 @@ def compose_outfit(
     scores = {item.id: score for item, score in ranked}
     top, bottom = best("base_top", set()), best("bottom", set())
     full = best("full_body", set())
-    if full is not None and (
-        top is None or bottom is None or scores[full.id] >= (scores[top.id] + scores[bottom.id]) / 2
-    ):
+    pinned_role = _role(pinned) if pinned is not None else None
+    if pinned_role == "full_body":
+        # A pinned dress is the look; a top and a bottom would fight it for the slot.
+        wear_full = True
+    elif pinned_role in ("base_top", "bottom"):
+        wear_full = False
+    else:
+        wear_full = full is not None and (
+            top is None
+            or bottom is None
+            or scores[full.id] >= (scores[top.id] + scores[bottom.id]) / 2
+        )
+    if wear_full and full is not None:
         picked.append(full)
     else:
         picked += [i for i in (top, bottom) if i is not None]
@@ -270,6 +292,11 @@ def compose_outfit(
         accessory = best("accessory", set())
         if accessory is not None:
             picked.append(accessory)
+
+    if pinned is not None and all(i.id != pinned.id for i in picked):
+        # Its role never came up (an accessory on a plain day, a type we have no
+        # role for). A rescue is about this garment, so it goes in regardless.
+        picked.append(pinned)
 
     if len(picked) < MIN_CANDIDATES_FOR_OUTFIT:
         raise InsufficientWardrobeError("Wardrobe has fewer than two usable items.")

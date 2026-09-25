@@ -21,6 +21,8 @@ USER_FACING_ERROR_CODES: dict[str, str] = {
     "location_not_set": "No location set for this account.",
     "location_unresolved": "The saved location could not be resolved.",
     "weather_unavailable": "Weather data is unavailable right now.",
+    # Items
+    "item_not_found": "That garment is not in this wardrobe.",
     # Pairings
     "insufficient_items_for_pairing": "Not enough items in the wardrobe to build pairings.",
     "pairing_source_not_found": "The item to pair is not available.",

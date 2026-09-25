@@ -357,6 +357,9 @@ function FamilyAside() {
   if (isLoading) return null;
 
   const noFamily = isError || !family;
+  // Hidden from the nav for now (it overlaps with Amigos): only people who are
+  // already in a family see this card, nobody is invited into one from here.
+  if (noFamily) return null;
   const memberCount = family?.members.length ?? 0;
 
   return (

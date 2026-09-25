@@ -29,6 +29,8 @@ import {
  */
 
 export interface NavItem {
+  /** Kept for routing (the page still works) but never rendered in the nav. */
+  hidden?: boolean;
   /** Key in the `nav` messages namespace. */
   key: string;
   href: string;
@@ -72,7 +74,7 @@ export const INSPO: NavSection = {
   socialBadge: true,
   tabs: [
     { key: 'friends', href: '/dashboard/friends', icon: UserRound, socialBadge: true },
-    { key: 'family', href: '/dashboard/family/feed', icon: Users },
+    { key: 'family', href: '/dashboard/family/feed', icon: Users, hidden: true },
     { key: 'music', href: '/dashboard/music', icon: Music },
     { key: 'pins', href: '/dashboard/pins', icon: Pin },
   ],
@@ -86,7 +88,13 @@ export const STINKY: NavSection = {
   tabs: [],
 };
 
-/** Ajustes: reached from the profile menu, never from the dock/sidebar. Admin lives in the profile menu. */
+/**
+ * Ajustes: reached from the profile menu, never from the dock/sidebar. Admin lives in the profile menu.
+ *
+ * «Familia» (its feed and its settings) is hidden from the nav on purpose: it
+ * overlaps with Amigos and confused people. The routes still work for anyone
+ * already in a family or holding an invite link; nothing was deleted.
+ */
 export const SETTINGS: NavSection = {
   key: 'settings',
   href: '/dashboard/settings',
@@ -94,8 +102,8 @@ export const SETTINGS: NavSection = {
   tabs: [
     { key: 'general', href: '/dashboard/settings', icon: Settings },
     { key: 'notifications', href: '/dashboard/notifications', icon: Bell },
+    { key: 'familySettings', href: '/dashboard/family', icon: Users, hidden: true },
     { key: 'integrations', href: '/dashboard/settings/integrations', icon: Plug },
-    { key: 'familySettings', href: '/dashboard/family', icon: Users },
   ],
 };
 

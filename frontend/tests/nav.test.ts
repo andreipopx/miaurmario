@@ -35,8 +35,9 @@ describe('information architecture', () => {
     };
     walk(root, '/dashboard');
     // Detail pages ([id], new, integration sub-pages, AI setup) are reached from their parent screen;
-    // Admin is in the profile menu; the install guide is linked from Hoy and Notificaciones.
-    const top = pages.filter((p) => !/\[|\/new$|\/integrations\/|\/settings\/ai$|\/admin$|\/install$/.test(p));
+    // Admin is in the profile menu; the install guide is linked from Hoy and Notificaciones;
+    // Familia is hidden from the nav for now but its routes still work.
+    const top = pages.filter((p) => !/\[|\/new$|\/integrations\/|\/settings\/ai$|\/admin$|\/install$|\/family(\/|$)/.test(p));
     for (const p of top) expect(where(p), p).not.toBeNull();
   });
 

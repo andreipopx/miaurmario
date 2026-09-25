@@ -108,7 +108,7 @@ export function Sidebar() {
                   <NavRow item={section} active={open} label={tNav(section.key)} current={current} />
                   {open && section.tabs.length > 1 && (
                     <ul className="mt-1 space-y-0.5" aria-label={tNav(section.key)}>
-                      {section.tabs.map((tab) => (
+                      {section.tabs.filter((tab) => !tab.hidden).map((tab) => (
                         <li key={tab.href}>
                           <SubRow item={tab} active={resolved?.tab?.href === tab.href} label={tNav(tab.key)} />
                         </li>

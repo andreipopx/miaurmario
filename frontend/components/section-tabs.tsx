@@ -34,7 +34,7 @@ export function SectionTabs() {
   }, [pathname]);
 
   if (!show || !section) return null;
-  const tabs = section.tabs;
+  const tabs = section.tabs.filter((tab) => !tab.hidden);
   const desktopToo = section.key === SETTINGS.key;
 
   return (

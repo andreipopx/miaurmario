@@ -52,6 +52,8 @@ def service(tmp_path: Path) -> ImageService:
 
 def test_is_cutout_path_reads_the_extension() -> None:
     assert is_cutout_path("u/1.webp")
+    # PNG carries alpha too, and seeded and imported garments arrive as PNGs.
+    assert is_cutout_path("u/1.PNG")
     assert not is_cutout_path("u/1.jpg")
     assert not is_cutout_path(None)
 

@@ -13,7 +13,11 @@ from pathlib import Path
 #: just a photo of a white card.
 CUTOUT_SUFFIX = ".webp"
 
+#: Formats that can carry alpha, so an image stored as one may be a cut-out.
+#: WebP is what the pipeline writes; PNG shows up in seeded and imported items.
+CUTOUT_SUFFIXES = frozenset({CUTOUT_SUFFIX, ".png"})
+
 
 def is_cutout_path(path: str | None) -> bool:
     """True for a stored image that keeps its alpha channel."""
-    return bool(path) and Path(str(path)).suffix.lower() == CUTOUT_SUFFIX
+    return bool(path) and Path(str(path)).suffix.lower() in CUTOUT_SUFFIXES

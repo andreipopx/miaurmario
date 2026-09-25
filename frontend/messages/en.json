@@ -3946,7 +3946,7 @@
     "cta": "Upload items",
     "title": "Upload items",
     "subtitle": "Several photos at once. You can close this: the upload carries on.",
-    "reviewSubtitle": "Confirm the type and the colour. Leave whatever is already right.",
+    "reviewSubtitle": "Tell me what they are and how you wear them. Leave what's already right.",
     "progress": "{done} of {total} done",
     "finished": "{saved} of {total} in the wardrobe",
     "loading": "Loading the items…",
@@ -4038,7 +4038,8 @@
       "open": "Open the item upload",
       "uploading": "Uploading items · {done} of {total}",
       "failed": "{count, plural, one {# photo not uploaded} other {# photos not uploaded}}"
-    }
+    },
+    "reviewTitle": "Name your garments"
   },
   "imageCrop": {
     "title": "Frame the garment",

@@ -3946,7 +3946,7 @@
     "cta": "Subir prendas",
     "title": "Subir prendas",
     "subtitle": "Varias fotos de golpe. Puedes cerrar esto: la subida sigue.",
-    "reviewSubtitle": "Confirma el tipo y el color. Lo que ya esté bien, déjalo.",
+    "reviewSubtitle": "Dime qué son y cómo las usas. Lo que ya esté bien, déjalo.",
     "progress": "{done} de {total} listas",
     "finished": "{saved} de {total} en el armario",
     "loading": "Cargando las prendas…",
@@ -4038,7 +4038,8 @@
       "open": "Abrir la subida de prendas",
       "uploading": "Subiendo prendas · {done} de {total}",
       "failed": "{count, plural, one {# foto sin subir} other {# fotos sin subir}}"
-    }
+    },
+    "reviewTitle": "Poner nombre a tus prendas"
   },
   "imageCrop": {
     "title": "Encuadra la prenda",

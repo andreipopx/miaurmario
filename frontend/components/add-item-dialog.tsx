@@ -83,6 +83,7 @@ export function AddItemDialog({
 }: AddItemDialogProps) {
   const t = useTranslations('wardrobe.add');
   const tShare = useTranslations('wardrobe.share');
+  const tBulk = useTranslations('bulkUpload');
   const colorLabel = useColorLabel();
   const typeLabel = useClothingTypeLabel();
   // Single upload state
@@ -116,6 +117,9 @@ export function AddItemDialog({
   useEffect(() => {
     setNoShareTarget(!supportsShareTarget(navigator.userAgent, navigator.maxTouchPoints || 0));
   }, []);
+
+  /** The quick pass over garments the tagger never named: tagging, not uploading. */
+  const taggingBacklog = activeTab === 'bulk' && bulkMode === 'untagged';
 
   const createItem = useCreateItem();
   const { data: aiStatus } = useAIStatus();
@@ -246,13 +250,16 @@ export function AddItemDialog({
     <Dialog open={open} onOpenChange={handleCloseRequest}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('dialogTitle')}</DialogTitle>
+          <DialogTitle>{taggingBacklog ? tBulk('reviewTitle') : t('dialogTitle')}</DialogTitle>
           <DialogDescription>
-            {t('description')}
+            {taggingBacklog ? tBulk('reviewSubtitle') : t('description')}
           </DialogDescription>
         </DialogHeader>
 
-        {noVisionAi && (
+        {/* The backlog pass is the screen you tag by hand on. Opening it with a
+            card about the AI you do not have — and a button to go and buy some —
+            pushes the actual work a third of a phone screen down for no reason. */}
+        {noVisionAi && !taggingBacklog && (
           <AIUnavailableNotice feature="tagging" reason={aiStatus?.blocked_reason} />
         )}
 

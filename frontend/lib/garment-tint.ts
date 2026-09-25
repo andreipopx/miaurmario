@@ -31,8 +31,15 @@ export interface GarmentTint {
  */
 const MIN_CHROMA = 0.12;
 
-const LIGHT = { saturation: 0.3, lightness: 0.955, maxSaturation: 0.26 };
-const DARK = { saturation: 0.22, lightness: 0.8, maxSaturation: 0.2 };
+/**
+ * Saturation follows the square root of the garment's chroma, not the chroma
+ * itself: a linear map leaves the dull half of a real wardrobe — navy, olive,
+ * burgundy — indistinguishable from the neutral panel, while the vivid few run
+ * away with it. The root lifts the muted colours into view and flattens the
+ * bright ones, so every tile reads as tinted and none reads as coloured.
+ */
+const LIGHT = { maxSaturation: 0.4, lightness: 0.93 };
+const DARK = { maxSaturation: 0.3, lightness: 0.76 };
 
 function rgbToHsl(hex: string): { h: number; s: number; l: number } | null {
   let rgb;
@@ -58,7 +65,7 @@ function rgbToHsl(hex: string): { h: number; s: number; l: number } | null {
 }
 
 function plate(h: number, chroma: number, spec: typeof LIGHT): string {
-  const s = Math.min(spec.maxSaturation, chroma * spec.saturation);
+  const s = spec.maxSaturation * Math.sqrt(Math.min(1, chroma));
   return `hsl(${Math.round(h)} ${(s * 100).toFixed(1)}% ${(spec.lightness * 100).toFixed(1)}%)`;
 }
 
@@ -97,16 +104,27 @@ export function garmentTint(
   };
 }
 
+/** The untinted plate: what a garment with no usable colour sits on. */
+export const NEUTRAL_TINT: GarmentTint = {
+  light: 'var(--panel)',
+  dark: `hsl(0 0% ${(DARK.lightness * 100).toFixed(1)}%)`,
+};
+
 /**
- * Style + class for a tile that holds a garment cut-out.
+ * Style + class for a tile that holds a garment.
  *
  * Returned together because they have to agree: the custom properties carry the
- * two plates and the class picks one per theme, falling back to the panel colour
- * when there is no tint.
+ * two plates and the class picks one per theme.
+ *
+ * Every tile gets a plate, tinted or not, and in the dark theme they are all
+ * light. That is not a decoration: a cut-out has no background of its own, so a
+ * dark tile would swallow a black jacket whole, and a grid where only the red
+ * garments have a light plate is a patchwork rather than a surface. The page
+ * around the tiles stays dark; the garments sit on cards, the way they do on a
+ * shop rail.
  */
 export function garmentTileTint(color: string | null | undefined, hex?: string | null) {
-  const tint = garmentTint(color, hex);
-  if (!tint) return { className: 'bg-panel', style: undefined };
+  const tint = garmentTint(color, hex) ?? NEUTRAL_TINT;
   return {
     className: 'bg-[var(--tile-tint)] dark:bg-[var(--tile-tint-dark)]',
     style: {

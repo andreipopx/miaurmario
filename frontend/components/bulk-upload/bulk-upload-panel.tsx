@@ -220,9 +220,13 @@ export function BulkUploadPanel({
 
   return (
     <div className="flex min-w-0 flex-col" data-testid="bulk-panel">
-      <p className="pb-3 text-[13px] leading-snug text-muted-foreground">
-        {phase === 'review' || phase === 'stepper' ? t('reviewSubtitle') : t('subtitle')}
-      </p>
+      {/* In the backlog pass the dialog header already says this; repeating it
+          costs a line of a phone screen that the garments could be using. */}
+      {!(reviewingBacklog && (phase === 'review' || phase === 'stepper')) && (
+        <p className="pb-3 text-[13px] leading-snug text-muted-foreground">
+          {phase === 'review' || phase === 'stepper' ? t('reviewSubtitle') : t('subtitle')}
+        </p>
+      )}
 
       {/* A plain scroller rather than ScrollArea: Radix lays its viewport out as
           a table, which lets wide rows push past the dialog at 320 px. */}

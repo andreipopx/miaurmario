@@ -154,13 +154,24 @@ describe('quarter turns', () => {
 })
 
 describe('garment tint', () => {
-  it('is the garment hue, barely there', () => {
+  it('is the garment hue as a wash, never as a colour', () => {
     const tint = garmentTint('red')
     expect(tint).not.toBeNull()
-    // Low saturation and very high lightness: a wash, not a colour.
-    const [, saturation, lightness] = tint!.light.match(/hsl\((\d+) ([\d.]+)% ([\d.]+)%\)/)!.slice(1)
-    expect(Number(saturation)).toBeLessThan(27)
-    expect(Number(lightness)).toBeGreaterThan(90)
+    const [saturation, lightness] = tint!.light
+      .match(/hsl\(\d+ ([\d.]+)% ([\d.]+)%\)/)!
+      .slice(1)
+      .map(Number)
+    expect(saturation).toBeLessThan(45)
+    expect(lightness).toBeGreaterThan(88)
+  })
+
+  it('lifts the dull colours a real wardrobe is full of into view', () => {
+    // A linear map on chroma leaves navy and olive indistinguishable from the
+    // neutral panel, which is the same as having no tint at all.
+    for (const value of ['navy', 'olive', 'burgundy', 'teal']) {
+      const saturation = Number(garmentTint(value)!.light.match(/hsl\(\d+ ([\d.]+)%/)![1])
+      expect(saturation).toBeGreaterThan(8)
+    }
   })
 
   it('keeps a plate light enough in the dark theme for multiply to work', () => {
@@ -168,6 +179,16 @@ describe('garment tint', () => {
     const lightness = Number(tint.dark.match(/([\d.]+)%\)$/)![1])
     expect(lightness).toBeGreaterThan(70)
     expect(lightness).toBeLessThan(90)
+  })
+
+  it('is deeper and duller in the dark theme than in the light one', () => {
+    const tint = garmentTint('green')!
+    const read = (value: string) =>
+      value.match(/hsl\(\d+ ([\d.]+)% ([\d.]+)%\)/)!.slice(1).map(Number)
+    const [lightS, lightL] = read(tint.light)
+    const [darkS, darkL] = read(tint.dark)
+    expect(darkL).toBeLessThan(lightL)
+    expect(darkS).toBeLessThan(lightS)
   })
 
   it('leaves the greys alone: a tinted black jumper is just a dirty tile', () => {
@@ -180,7 +201,19 @@ describe('garment tint', () => {
     expect(garmentTint(null)).toBeNull()
     expect(garmentTint(undefined)).toBeNull()
     expect(garmentTint('not-a-colour')).toBeNull()
-    expect(garmentTileTint(null)).toEqual({ className: 'bg-panel', style: undefined })
+    expect(garmentTileTint(null).style).toMatchObject({ '--tile-tint': 'var(--panel)' })
+  })
+
+  it('gives every tile a plate, so the dark grid is one surface not a patchwork', () => {
+    // A cut-out brings no background of its own: a dark tile would swallow a
+    // black jacket, and tinting only the red garments would leave a patchwork.
+    const untinted = garmentTileTint('black').style as Record<string, string>
+    const tinted = garmentTileTint('red').style as Record<string, string>
+    const lightness = (value: string) => Number(value.match(/([\d.]+)%\)$/)![1])
+    expect(lightness(untinted['--tile-tint-dark'])).toBeCloseTo(
+      lightness(tinted['--tile-tint-dark']),
+      1
+    )
   })
 
   it('prefers a measured hex over the named swatch', () => {

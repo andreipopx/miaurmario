@@ -52,8 +52,31 @@ export interface WardrobeStats {
   total_wears: number;
 }
 
+/**
+ * «Tu armario en números»: how much of the wardrobe actually gets worn.
+ *
+ * The thresholds ride along with the counts so the page never hardcodes a number
+ * the backend does not use. `enough_data` false means say so, do not conclude.
+ */
+export interface UsageSummary {
+  tracked_items: number;
+  never_worn: number;
+  idle_3m: number;
+  idle_6m: number;
+  worn_recently: number;
+  idle_percentage: number;
+  total_wears: number;
+  tracking_days: number;
+  enough_data: boolean;
+  idle_days: number;
+  long_idle_days: number;
+  recent_days: number;
+  min_tracking_days: number;
+}
+
 export interface AnalyticsData {
   wardrobe: WardrobeStats;
+  usage: UsageSummary;
   color_distribution: ColorDistribution[];
   type_distribution: TypeDistribution[];
   most_worn: WearStats[];

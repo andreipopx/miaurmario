@@ -55,6 +55,13 @@ export interface CareInfo {
   source: 'ai' | 'manual';
 }
 
+/**
+ * What the owner told us to do with one garment: «sácala más», «normal» or
+ * «déjala tranquila». `rest` only silences the nudging — archiving is what takes
+ * a garment out of the suggestions.
+ */
+export type UsagePreference = 'more' | 'normal' | 'rest';
+
 export interface Item {
   id: string;
   user_id: string;
@@ -84,6 +91,7 @@ export interface Item {
   tagged_by?: 'auto' | 'manual' | null;
   tagged_at?: string | null;
   wear_count: number;
+  usage_preference: UsagePreference;
   last_worn_at?: string;
   last_suggested_at?: string;
   suggestion_count: number;
@@ -102,6 +110,30 @@ export interface Item {
   archive_reason?: string;
   created_at: string;
   updated_at: string;
+}
+
+/** A garment this one goes out with, and how many worn looks they shared. */
+export interface CoWornItem {
+  id: string;
+  name: string | null;
+  type: string;
+  thumbnail_path: string | null;
+  thumbnail_url: string | null;
+  times: number;
+}
+
+/** GET /items/:id/usage — veces puesta, coste por uso y con qué se combina. */
+export interface ItemUsage {
+  wear_count: number;
+  last_worn_at: string | null;
+  days_since_last_worn: number | null;
+  purchase_price: number | string | null;
+  /** null means we cannot say: no price saved, or nothing worn yet. */
+  cost_per_wear: number | string | null;
+  usage_preference: UsagePreference;
+  co_worn: CoWornItem[];
+  /** How many worn looks the co-wear counts come from. */
+  co_worn_looks: number;
 }
 
 export interface ItemListResponse {

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
+import { Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -82,16 +82,28 @@ export default function PinterestIntegrationPage() {
             <CardDescription>{t('connectDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!status.data.configured ? (
-              <p className="text-sm text-muted-foreground">{t('notConfigured')}</p>
-            ) : (
-              <Button onClick={() => connect.mutate()} disabled={connect.isPending}>
-                {connect.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
-                ) : null}
-                {t('connectButton')}
-              </Button>
+            {/* No Pinterest secret on the server means the app is still waiting for
+                Pinterest to approve it. Same card, button just can't be pressed —
+                the day the secret arrives it starts working with no other change. */}
+            {!status.data.configured && (
+              <p
+                id="pinterest-pending"
+                className="flex items-start gap-2 text-sm leading-snug text-muted-foreground"
+              >
+                <Clock className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+                {t('notConfigured')}
+              </p>
             )}
+            <Button
+              onClick={() => connect.mutate()}
+              disabled={!status.data.configured || connect.isPending}
+              aria-describedby={!status.data.configured ? 'pinterest-pending' : undefined}
+            >
+              {connect.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+              ) : null}
+              {t('connectButton')}
+            </Button>
             <p className="eyebrow">{t('scopesNote')}</p>
           </CardContent>
         </Card>

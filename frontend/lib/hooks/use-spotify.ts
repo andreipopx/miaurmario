@@ -81,6 +81,19 @@ export function useSpotifyConnect() {
   });
 }
 
+/**
+ * "Pedir plaza de Spotify" — the app is in Development Mode, so a human has to
+ * add the account in the Spotify dashboard. This just alerts the site admins;
+ * the address is not stored anywhere.
+ */
+export function useSpotifySeatRequest() {
+  useSetTokenIfAvailable();
+  return useMutation({
+    mutationFn: (email: string) =>
+      api.post<{ status: string }>('/integrations/spotify/seat-request', { email }),
+  });
+}
+
 export function useSpotifyUpdateSettings() {
   const qc = useQueryClient();
   useSetTokenIfAvailable();

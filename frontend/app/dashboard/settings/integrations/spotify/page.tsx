@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { DisconnectMusicDialog } from '@/components/music/disconnect-music-dialog';
 import { MusicPrefsCard } from '@/components/music/music-prefs-card';
+import { SpotifySeatRequest } from '@/components/music/spotify-seat-request';
 import {
   useSpotifyConnect,
   useSpotifyDisconnect,
@@ -106,6 +107,11 @@ export default function SpotifyIntegrationPage() {
             )}
             <p className="eyebrow">{t('scopesNote')}</p>
             <p className="text-sm text-muted-foreground">{t('allowlistNote')}</p>
+            {/* Development Mode: the only way in is Andrei adding the account by hand.
+                Opens itself when Spotify has just rejected an account. */}
+            {status.data.configured && (
+              <SpotifySeatRequest defaultOpen={errorParam === 'not_allowlisted'} />
+            )}
           </CardContent>
         </Card>
       )}

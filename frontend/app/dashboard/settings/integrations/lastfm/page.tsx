@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { PageHeader } from '@/components/page-header';
 import { DisconnectMusicDialog } from '@/components/music/disconnect-music-dialog';
+import { LastfmGuide } from '@/components/music/lastfm-guide';
 import { MusicPrefsCard } from '@/components/music/music-prefs-card';
 import {
   LASTFM_USERNAME_RE,
@@ -74,6 +75,11 @@ export default function LastfmIntegrationPage() {
 
   const connected = status.data?.connected ?? false;
   const connectCode = lastfmErrorCode(connect.error);
+
+  // Reachable from the Last.fm card with ?guide=1, and open by default for someone
+  // who has no music connected at all.
+  const showGuide = params.get('guide') === '1';
+  const guideOpen = showGuide || (!connected && !spotify.data?.connected);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,22 +204,15 @@ export default function LastfmIntegrationPage() {
                 )}
               </>
             )}
-
-            <div className="space-y-1 rounded-quick bg-panel p-4">
-              <p className="text-sm font-bold">{t('howTitle')}</p>
-              <p className="text-sm text-muted-foreground">{t('howBody')}</p>
-              <a
-                href="https://www.last.fm/settings/applications"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 text-sm font-bold underline-offset-4 hover:underline"
-              >
-                {t('howLink')}
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-              </a>
-            </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* The 3-step guide: most people have never heard of Last.fm or scrobbling.
+          Waits for the Spotify status so "nothing connected" is known before it
+          decides whether to start open. */}
+      {status.data && !spotify.isLoading && (!connected || showGuide) && (
+        <LastfmGuide defaultOpen={guideOpen} />
       )}
 
       {status.data && connected && (

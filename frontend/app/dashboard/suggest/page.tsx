@@ -38,7 +38,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { api, ApiError, setAccessToken } from '@/lib/api';
+import { api, getErrorMessage, setAccessToken } from '@/lib/api';
 import { OCCASIONS, Outfit, SuggestRequest } from '@/lib/types';
 import { useWeather, Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
@@ -473,10 +473,9 @@ export default function SuggestPage() {
       const aiCode = getAiAccessErrorCode(err);
       if (aiCode) {
         setAiBlocked(aiCode);
-      } else if (err instanceof ApiError) {
-        setError(err.message);
       } else {
-        setError(t('generateError'));
+        // Never the backend's own prose: the code decides the (Spanish) copy.
+        setError(getErrorMessage(err, t('generateError')));
       }
       console.error('Suggestion error:', err);
     } finally {

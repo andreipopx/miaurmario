@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { getErrorMessage } from '@/lib/api';
 import { CLOTHING_COLORS } from '@/lib/types';
 import { nearestClothingColor } from '@/lib/colors';
 import { useColorLabel } from '@/lib/tag-labels';
@@ -134,7 +135,7 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
           img.src = blobUrl;
         })
         .catch(err => {
-          setError(err.message || t('loadFailedGeneric'));
+          setError(getErrorMessage(err, t('loadFailedGeneric')));
           setIsLoading(false);
         });
     }, 100); // Small delay to ensure DOM is ready

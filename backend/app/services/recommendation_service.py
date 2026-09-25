@@ -39,6 +39,7 @@ from app.services.weather_service import (
     WeatherServiceError,
 )
 from app.utils.clothing import deduplicate_by_body_slot
+from app.utils.error_codes import CodedValueError
 from app.utils.prompts import load_prompt
 from app.utils.style_profile import (
     VARIETY_ES,
@@ -375,9 +376,9 @@ class RecommendationService:
         mandatory_numbers_sorted = sorted(mandatory_numbers)
         mandatory_refs = ", ".join(f"[{n}]" for n in mandatory_numbers_sorted)
         return (
-            f"MANDATORY ITEMS (MUST include in every outfit):\n"
-            f"The following items are already selected and MUST appear in all 3 outfit suggestions: {mandatory_refs}\n\n"
-            f"Complete each outfit with complementary pieces from the available items above."
+            f"PRENDAS OBLIGATORIAS (van en TODOS los looks):\n"
+            f"Estas ya est\u00e1n elegidas y DEBEN aparecer en las 3 propuestas: {mandatory_refs}\n\n"
+            f"Completa cada look con piezas que las acompa\u00f1en, de la lista de arriba."
         )
 
     def _format_preferences_for_prompt(
@@ -705,21 +706,20 @@ class RecommendationService:
                 geocoded = await self.weather_service.geocode_location_name(user.location_name)
             except GeocodingServiceError as e:
                 logger.error(f"Geocoding failed for outfit generation: {e}")
-                raise ValueError(
-                    "Could not resolve location. Please update your location in settings."
+                raise CodedValueError(
+                    "Could not resolve the saved location name.",
+                    code="location_unresolved",
                 ) from e
             if geocoded:
                 lat, lon, _ = geocoded
 
         if lat is None or lon is None:
-            raise ValueError("User location not set. Please set location in settings.")
+            raise CodedValueError("User location not set.", code="location_not_set")
         try:
             return await self.weather_service.get_current_weather(lat, lon)
         except WeatherServiceError as e:
             logger.error(f"Weather service failed: {e}")
-            raise ValueError(
-                "Could not fetch weather data. Please try again or provide weather manually."
-            ) from e
+            raise CodedValueError("Weather lookup failed.", code="weather_unavailable") from e
 
     async def ensure_items_in_candidates(
         self, user: User, candidates: list[ClothingItem], item_ids: list[UUID]
@@ -839,10 +839,7 @@ class RecommendationService:
             candidates = await self.ensure_items_in_candidates(user, candidates, transition_ids)
 
         if len(candidates) < 2:
-            raise InsufficientWardrobeError(
-                "Not enough items in wardrobe for recommendation. "
-                "Please add more items or adjust filters."
-            )
+            raise InsufficientWardrobeError("Wardrobe has fewer than two usable items.")
 
         # Check cache for pre-generated suggestions
         if use_cache:
@@ -1038,9 +1035,7 @@ class RecommendationService:
             raise AIRecommendationError(str(e)) from e
         except Exception as e:
             logger.error(f"AI recommendation failed: {e}")
-            raise AIRecommendationError(
-                "AI service is not available. Please check your AI endpoint configuration in Settings."
-            ) from e
+            raise AIRecommendationError("AI text generation failed.") from e
 
 
 def apply_moment(outfit: Outfit, moment: MomentSpec | None) -> None:
@@ -1055,8 +1050,12 @@ def apply_moment(outfit: Outfit, moment: MomentSpec | None) -> None:
 
 
 class InsufficientWardrobeError(Exception):
-    pass
+    """Too few usable items to build an outfit. Shown to the user as a code."""
+
+    code = "insufficient_wardrobe"
 
 
 class AIRecommendationError(Exception):
-    pass
+    """The AI could not produce a usable suggestion."""
+
+    code = "ai_recommendation_failed"

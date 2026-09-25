@@ -1,7 +1,7 @@
 // Per-user AI access (free plan / admin grant / bring-your-own-key).
 // Pure helpers live here so they can be unit-tested without React.
 
-import { ApiError } from '@/lib/api';
+import { getApiErrorCode } from '@/lib/api';
 
 export type AIAccess = 'none' | 'platform' | 'byok';
 
@@ -216,17 +216,7 @@ const AI_ERROR_CODES = new Set([
   'ai_provider_blocked',
 ]);
 
-/** Machine code from an API error body ({detail: {code}}), if any. */
-export function getApiErrorCode(err: unknown): string | null {
-  if (!(err instanceof ApiError)) return null;
-  const data = err.data as { detail?: unknown } | undefined;
-  const detail = data?.detail;
-  if (detail && typeof detail === 'object' && 'code' in detail) {
-    const code = (detail as { code?: unknown }).code;
-    return typeof code === 'string' ? code : null;
-  }
-  return null;
-}
+export { getApiErrorCode };
 
 /** The code if this error means "this user can't use AI right now". */
 export function getAiAccessErrorCode(err: unknown): string | null {

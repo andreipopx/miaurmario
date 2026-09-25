@@ -16,9 +16,17 @@ class ApiError extends Error {
   }
 }
 
+/** Why a request never reached the API. Translated via `errors.api.network_<code>`. */
+export type NetworkErrorCode = 'offline' | 'unreachable' | 'cancelled';
+
 class NetworkError extends Error {
-  constructor(message: string = 'Network error. Please check your connection.') {
-    super(message);
+  code: NetworkErrorCode;
+
+  // `message` stays English and internal (logs, Sentry): what the user sees comes
+  // from the message catalogue, keyed by `code`.
+  constructor(code: NetworkErrorCode = 'unreachable') {
+    super(`network_${code}`);
+    this.code = code;
     this.name = 'NetworkError';
   }
 }
@@ -60,16 +68,18 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
     });
   } catch (err) {
     if (!navigator.onLine) {
-      throw new NetworkError('You appear to be offline. Please check your connection.');
+      throw new NetworkError('offline');
     }
-    throw new NetworkError('Unable to connect to server. Please try again.');
+    throw new NetworkError('unreachable');
   }
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
+    // The backend sends a machine `code` plus an English `message`. The message is
+    // for logs and non-browser clients only; the UI renders `errors.api.<code>`.
     const message = (typeof data.detail === 'string' ? data.detail : data.detail?.message)
       || data.error?.message
-      || 'An error occurred';
+      || 'Request failed';
     throw new ApiError(message, response.status, data);
   }
 
@@ -111,10 +121,48 @@ export const api = {
 
 const handledErrors = new WeakSet<object>();
 
+/** The machine code in an API error body: `{detail: {code}}` or `{detail: {error_code}}`. */
+export function getApiErrorCode(error: unknown): string | null {
+  if (error instanceof NetworkError) return `network_${error.code}`;
+  if (!(error instanceof ApiError)) return null;
+  const detail = (error.data as { detail?: unknown } | undefined)?.detail;
+  if (!detail || typeof detail !== 'object') return null;
+  const { code, error_code: errorCode } = detail as { code?: unknown; error_code?: unknown };
+  if (typeof code === 'string' && code) return code;
+  if (typeof errorCode === 'string' && errorCode) return errorCode;
+  return null;
+}
+
+// The UI is Spanish-first and the backend is not localized, so error copy lives in
+// messages/{es,en}.json under `errors.api.<code>`. <ApiErrorMessages> (rendered by
+// <Providers>) registers the lookup so non-React code can translate too.
+type ApiErrorCatalogue = { translate: (code: string) => string | null; generic: string };
+
+let catalogue: ApiErrorCatalogue = { translate: () => null, generic: '' };
+
+export function setApiErrorCatalogue(next: ApiErrorCatalogue | null) {
+  catalogue = next ?? { translate: () => null, generic: '' };
+}
+
+/** Translated copy for a thrown error, or null when we have nothing better than a fallback. */
+export function resolveErrorMessage(error: unknown): string | null {
+  const code = getApiErrorCode(error);
+  return code ? catalogue.translate(code) : null;
+}
+
+/** Last-resort translated copy ("Algo ha salido mal"). */
+export function getGenericErrorMessage(): string {
+  return catalogue.generic;
+}
+
+/**
+ * What to show the user for a failed request: the translated message for the
+ * backend's error code, else the caller's own translated `fallback`. The
+ * backend's English `message` is deliberately never rendered.
+ */
 export function getErrorMessage(error: unknown, fallback: string): string {
   if (error && typeof error === 'object') handledErrors.add(error);
-  if (error instanceof ApiError && error.status < 500) return error.message;
-  return fallback;
+  return resolveErrorMessage(error) ?? fallback;
 }
 
 export function isErrorHandled(error: unknown): boolean {

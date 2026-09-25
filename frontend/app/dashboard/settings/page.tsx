@@ -22,6 +22,7 @@ import {
 import { usePreferences, useUpdatePreferences, useResetPreferences } from '@/lib/hooks/use-preferences';
 import { AISettingsCard } from '@/components/ai/ai-settings-card';
 import { useUserProfile, useUpdateUserProfile } from '@/lib/hooks/use-user';
+import { getErrorMessage } from '@/lib/api';
 import { OCCASIONS, Preferences, StyleProfile } from '@/lib/types';
 import type { SavedLocation } from '@/lib/geo';
 import { LocationPicker } from '@/components/settings/location-picker';
@@ -65,10 +66,6 @@ const SIZE_FIELDS = [
   { key: 'shoe_size', labelKey: 'shoeSize', placeholder: '10, 42' },
 ] as const;
 
-function getErrorMessage(e: unknown, fallback: string): string {
-  if (e instanceof Error) return e.message;
-  return fallback;
-}
 
 const THEME_OPTIONS = [
   { value: 'light', labelKey: 'themeLight', Icon: Sun },
@@ -157,6 +154,7 @@ export default function SettingsPage() {
   const tRecommendations = useTranslations('settings.recommendations');
   const tAccount = useTranslations('settings.account');
   const tAppearance = useTranslations('settings.appearance');
+  const tOccasions = useTranslations('suggest.occasions');
 
   const [formData, setFormData] = useState<Partial<Preferences>>({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -819,7 +817,7 @@ export default function SettingsPage() {
                   <SelectContent>
                     {OCCASIONS.map((o) => (
                       <SelectItem key={o.value} value={o.value}>
-                        {o.label}
+                        {tOccasions(o.value)}
                       </SelectItem>
                     ))}
                   </SelectContent>

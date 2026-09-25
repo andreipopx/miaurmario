@@ -50,35 +50,12 @@ from app.services.weather_service import (
     wmo_condition_label_es,
 )
 from app.utils.auth import get_current_user
+from app.utils.error_codes import code_of, error_detail
+from app.utils.occasions import VALID_OCCASIONS  # re-exported: imported elsewhere
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.signed_urls import sign_image_url
 
 logger = logging.getLogger(__name__)
-
-VALID_OCCASIONS = {
-    "casual",
-    "office",
-    "work",
-    "formal",
-    "smart-casual",
-    "business-casual",
-    "date",
-    "party",
-    "sporty",
-    "sport",
-    "outdoor",
-    "travel",
-    "lounge",
-    "beach",
-    "interview",
-    "wedding",
-    "dinner",
-    "brunch",
-    "gym",
-    "running",
-    "hiking",
-    "weekend",
-}
 
 
 def get_user_today(user: User) -> date:
@@ -514,9 +491,10 @@ async def suggest_outfit(
             song_track_id=request.song_track_id,
         )
     except InsufficientWardrobeError as e:
+        logger.info(f"Suggestion refused: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail=error_detail("insufficient_wardrobe"),
         ) from None
     except AIAccessError as e:
         code, detail = ai_error_detail(e)
@@ -524,18 +502,19 @@ async def suggest_outfit(
     except AIDisabledError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Internal AI is disabled; outfit suggestions are deferred to an external agent.",
+            detail=error_detail("ai_internal_disabled"),
         ) from None
     except AIRecommendationError as e:
         logger.error(f"AI recommendation error: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(e),
+            detail=error_detail("ai_recommendation_failed"),
         ) from None
     except ValueError as e:
+        logger.info(f"Suggestion rejected: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail=error_detail(code_of(e, "invalid_request")),
         ) from None
 
     item_service = ItemService(db)

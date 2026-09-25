@@ -80,7 +80,7 @@ export function useCareLabel() {
           headers,
         });
       } catch {
-        throw new NetworkError('Unable to connect to server. Please try again.');
+        throw new NetworkError('unreachable');
       }
 
       if (!response.ok) {

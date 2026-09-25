@@ -57,9 +57,9 @@ export function useAnalyzeSelfie() {
         });
       } catch {
         if (typeof navigator !== 'undefined' && !navigator.onLine) {
-          throw new NetworkError('You appear to be offline. Please check your connection.');
+          throw new NetworkError('offline');
         }
-        throw new NetworkError('Unable to connect to server. Please try again.');
+        throw new NetworkError('unreachable');
       }
 
       if (!response.ok) {

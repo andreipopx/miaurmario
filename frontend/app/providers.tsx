@@ -6,7 +6,13 @@ import { useState } from 'react';
 import { toast, Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/auth-provider';
-import { ApiError, NetworkError } from '@/lib/api';
+import {
+  ApiError,
+  NetworkError,
+  getGenericErrorMessage,
+  resolveErrorMessage,
+} from '@/lib/api';
+import { ApiErrorMessages } from '@/components/api-error-messages';
 import { getAiAccessErrorCode } from '@/lib/ai-access';
 import { useCaptureInstallPrompt } from '@/lib/pwa/install-prompt';
 
@@ -14,6 +20,12 @@ import { useCaptureInstallPrompt } from '@/lib/pwa/install-prompt';
 // (e.g. user has no family, no location set) should tag themselves with
 //   useQuery({ meta: { silent404: true } })
 // so we don't spam the user with red toasts on first login.
+// Toast copy always comes from the message catalogue: the backend's English
+// `message` is for logs only (see lib/api.ts).
+function toastText(error: unknown): string {
+  return resolveErrorMessage(error) ?? getGenericErrorMessage();
+}
+
 function handleQueryError(error: unknown, query: Query<unknown, unknown, unknown>) {
   const meta = (query.meta ?? {}) as { silent404?: boolean; silentStatuses?: number[] };
   if (error instanceof ApiError) {
@@ -21,14 +33,14 @@ function handleQueryError(error: unknown, query: Query<unknown, unknown, unknown
     if (meta.silent404 && error.status === 404) return;
     if (meta.silentStatuses?.includes(error.status)) return;
     if (error.status === 503) {
-      toast.error(error.message, { duration: 8000 });
+      toast.error(toastText(error), { duration: 8000 });
       return;
     }
-    toast.error(error.message);
+    toast.error(toastText(error));
     return;
   }
   if (error instanceof NetworkError) {
-    toast.error(error.message);
+    toast.error(toastText(error));
   }
 }
 
@@ -44,13 +56,13 @@ function handleMutationError(
   // feature lives, never as a red toast.
   if (getAiAccessErrorCode(error)) return;
   if (error instanceof NetworkError) {
-    toast.error(error.message);
+    toast.error(toastText(error));
   } else if (error instanceof ApiError) {
     if (error.status === 401) return;
     if (error.status === 503) {
-      toast.error(error.message, { duration: 8000 });
+      toast.error(toastText(error), { duration: 8000 });
     } else {
-      toast.error(error.message);
+      toast.error(toastText(error));
     }
   }
 }
@@ -99,6 +111,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             enableSystem
             disableTransitionOnChange
           >
+            <ApiErrorMessages />
             {children}
             <Toaster position="top-center" />
           </ThemeProvider>

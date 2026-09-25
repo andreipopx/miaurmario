@@ -408,7 +408,10 @@ function ScheduleCard({
   const tDays = useTranslations('dashboard.days');
   const tCommon = useTranslations('common');
   const day = DAYS.find((d) => d.value === schedule.day_of_week);
-  const occasion = OCCASIONS.find((o) => o.value === schedule.occasion);
+  const tOccasions = useTranslations('suggest.occasions');
+  const occasionLabel = tOccasions.has(schedule.occasion as never)
+    ? tOccasions(schedule.occasion as never)
+    : schedule.occasion;
 
   // Calculate which day the notification actually comes
   const notifyDay = schedule.notify_day_before
@@ -426,7 +429,7 @@ function ScheduleCard({
           <div className="min-w-0">
             <p className="font-bold">{day ? tDays(day.labelKey) : ''}</p>
             <p className="text-sm text-muted-foreground">
-              {schedule.notification_time} - {occasion?.label || schedule.occasion}
+              {schedule.notification_time} - {occasionLabel}
             </p>
           </div>
         </div>
@@ -487,6 +490,7 @@ function AddScheduleDialog({
   const t = useTranslations('notifications.addSchedule');
   const tCommon = useTranslations('common');
   const tDays = useTranslations('dashboard.days');
+  const tOccasions = useTranslations('suggest.occasions');
   const [open, setOpen] = useState(false);
   const [time, setTime] = useState('07:00');
   const [occasion, setOccasion] = useState('casual');
@@ -578,7 +582,7 @@ function AddScheduleDialog({
                 <SelectContent>
                   {OCCASIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
-                      {o.label}
+                      {tOccasions(o.value)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -681,7 +685,7 @@ export default function NotificationsPage() {
     setTestingId(id);
     try {
       const result = await testSetting.mutateAsync(id);
-      toast.success(result.message || tToasts('testSent'));
+      toast.success(tToasts('testSent'));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : tToasts('testFailed');
       toast.error(message);

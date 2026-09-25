@@ -271,10 +271,7 @@ def compose_outfit(
             picked.append(accessory)
 
     if len(picked) < 2:
-        raise InsufficientWardrobeError(
-            "Not enough items in wardrobe for recommendation. "
-            "Please add more items or adjust filters."
-        )
+        raise InsufficientWardrobeError("Wardrobe has fewer than two usable items.")
     return ComposedOutfit(item_ids=[i.id for i in picked])
 
 
@@ -421,10 +418,7 @@ class DayMomentService:
                 user, candidates, [i.id for i in base_items]
             )
         if len(candidates) < 2:
-            raise InsufficientWardrobeError(
-                "Not enough items in wardrobe for recommendation. "
-                "Please add more items or adjust filters."
-            )
+            raise InsufficientWardrobeError("Wardrobe has fewer than two usable items.")
 
         user_today = get_user_today(user)
         lat = float(user.location_lat) if user.location_lat is not None else None

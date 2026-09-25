@@ -36,6 +36,7 @@ from app.services.day_moments import (
 )
 from app.services.recommendation_service import InsufficientWardrobeError
 from app.utils.auth import get_current_user
+from app.utils.error_codes import code_of, error_detail
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.timezone import get_user_today
 
@@ -175,10 +176,18 @@ async def suggest_moment(
             detail={"error_code": "MOMENT_WORN", "message": "This moment is already worn"},
         ) from None
     except InsufficientWardrobeError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+        logger.info(f"Moment suggestion refused: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_detail("insufficient_wardrobe"),
+        ) from None
     except ValueError as e:
         # Location/weather problems on the AI path (same contract as /outfits/suggest).
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+        logger.info(f"Moment suggestion rejected: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_detail(code_of(e, "invalid_request")),
+        ) from None
 
     moments = await service.get_day(me.id, target)
     return MomentSuggestResponse(

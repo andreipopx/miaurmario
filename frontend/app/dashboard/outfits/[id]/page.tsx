@@ -29,6 +29,8 @@ import { StinkyTip } from '@/components/stinky-tip';
 import { CloneToLookbookDialog } from '@/components/shared/clone-to-lookbook-dialog';
 import { CanvasPreview } from '@/components/studio/canvas-panel';
 import { hasCanvasLayout } from '@/lib/studio/editor-state';
+import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useDeleteOutfit, useOutfit, useOutfits } from '@/lib/hooks/use-outfits';
 import { useWearToday } from '@/lib/hooks/use-studio';
 import { getErrorMessage } from '@/lib/api';
@@ -38,6 +40,7 @@ export default function OutfitDetailPage() {
   const tOccasions = useTranslations('suggest.occasions');
   const dateFnsLocale = useDateFnsLocale();
   const formatDate = useFormatDate();
+  const typeLabel = useClothingTypeLabel();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const outfitId = params?.id;
@@ -154,7 +157,7 @@ export default function OutfitDetailPage() {
 
       <LineageCard outfit={outfit} />
 
-      {hasCanvasLayout(outfit.items) && (
+      {hasCanvasLayout(outfit.items) ? (
         <div className="pb-2">
           <CanvasPreview
             items={outfit.items.map((item) => ({
@@ -170,6 +173,15 @@ export default function OutfitDetailPage() {
               rotation: item.rotation,
               z_index: item.z_index,
             }))}
+          />
+        </div>
+      ) : (
+        /* No hand-made arrangement: compose one from the garments' roles. */
+        <div className="pb-2">
+          <OutfitFlatLay
+            items={outfit.items}
+            className="mx-auto max-w-md"
+            hrefForItem={(item) => `/dashboard/wardrobe?item=${item.id}`}
           />
         </div>
       )}
@@ -189,7 +201,7 @@ export default function OutfitDetailPage() {
                 {item.thumbnail_url || item.image_url ? (
                   <Image
                     src={(item.thumbnail_url || item.image_url)!}
-                    alt={item.name || item.type}
+                    alt={item.name || typeLabel(item.type)}
                     fill
                     className="object-contain p-2 transition-transform duration-200 group-hover:scale-[1.03]"
                     sizes="(max-width: 640px) 33vw, 20vw"
@@ -197,13 +209,13 @@ export default function OutfitDetailPage() {
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
                     <span className="text-xs text-muted-foreground">
-                      {item.type}
+                      {typeLabel(item.type)}
                     </span>
                   </div>
                 )}
               </div>
               <p className="mt-1.5 truncate text-[13px] font-semibold">
-                {item.name || item.type}
+                {item.name || typeLabel(item.type)}
               </p>
             </Link>
           ))}

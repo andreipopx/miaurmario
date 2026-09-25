@@ -2541,6 +2541,12 @@
     "bag": "Bag",
     "accessories": "Accessories"
   },
+  "flatLay": {
+    "label": "The whole look",
+    "empty": "A look with no garments yet",
+    "more": "+{count} more",
+    "open": "View {name}"
+  },
   "outfitCard": {
     "badgeReplacement": "Replacement",
     "badgeWorn": "Worn",

@@ -2,10 +2,9 @@
 
 import { useId, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { ArrowRightLeft, Check, Loader2, MessageCircle, Music, Plus, RefreshCw, Shirt, Sparkles, X } from 'lucide-react';
+import { ArrowRightLeft, Check, Loader2, MessageCircle, Music, Plus, RefreshCw, Sparkles, X } from 'lucide-react';
 import { TransitionLink } from '@/components/native/transition-link';
 import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/api';
@@ -18,6 +17,7 @@ import { StinkyTip } from '@/components/stinky-tip';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { LazyStinky } from '@/components/native/lazy-stinky';
 import { ShareLookPrompt } from '@/components/social/share-look-prompt';
+import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useDayPlan, useDeleteMoment, useSuggestMoment, useWearMomentLook } from '@/lib/hooks/use-day-moments';
 import {
@@ -65,8 +65,7 @@ function MomentCard({
   const isTransition = moment.transition_from_order !== null;
   const summary = isTransition ? transitionSummary(moment) : null;
   const shared = new Set(moment.shared_item_ids);
-  const items = outfit?.items.slice(0, 4) ?? [];
-  const extra = (outfit?.items.length ?? 0) - items.length;
+  const items = outfit?.items ?? [];
   const music = outfit?.music_inspiration;
   const musicLabel = music ? music.track || music.artist || music.label : null;
   const tip =
@@ -153,40 +152,14 @@ function MomentCard({
           <TransitionLink
             href={`/dashboard/outfits/${outfit.id}`}
             aria-label={t('viewLook', { name: title })}
-            className={cn(
-              'pressable mt-2 grid gap-2 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              single ? 'h-[208px] sm:h-[280px]' : 'h-[168px] sm:h-[220px]',
-              items.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
-              items.length > 2 ? 'grid-rows-2' : 'grid-rows-1'
-            )}
+            className="pressable mt-2 block rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {items.map((item, i) => (
-              <div key={item.id} className="relative min-h-0">
-                {item.thumbnail_url ? (
-                  <Image
-                    src={item.thumbnail_url}
-                    alt={item.name || item.type}
-                    fill
-                    className="object-contain p-1 mix-blend-multiply dark:mix-blend-normal"
-                    sizes="(max-width: 1024px) 45vw, 25vw"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center rounded-tile bg-background/60">
-                    <Shirt className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-                  </div>
-                )}
-                {isTransition && !shared.has(item.id) && (
-                  <span className="absolute left-1 top-1 rounded-full bg-signature px-2 py-0.5 text-[11px] font-bold text-signature-foreground">
-                    {t('newPiece')}
-                  </span>
-                )}
-                {i === items.length - 1 && extra > 0 && (
-                  <span className="absolute bottom-1 right-1 rounded-full bg-background px-2 py-0.5 text-[11px] font-bold">
-                    +{extra}
-                  </span>
-                )}
-              </div>
-            ))}
+            {/* The whole card is the link, so the pieces are not links here. */}
+            <OutfitFlatLay
+              items={items}
+              className={cn('mx-auto', single ? 'max-w-[280px] sm:max-w-[320px]' : 'max-w-[220px] sm:max-w-[260px]')}
+              badgeForItem={(item) => (isTransition && !shared.has(item.id) ? t('newPiece') : null)}
+            />
           </TransitionLink>
           <StinkyTip className="mt-3" clamp>
             {tip}

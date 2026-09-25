@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useWeatherConditionLabel } from '@/lib/weather-condition';
 import {
-  Shirt,
   Sparkles,
   RefreshCw,
   ThumbsUp,
@@ -54,6 +52,8 @@ import { OccasionChips } from '@/components/shared/occasion-chips';
 import { PageHeader } from '@/components/page-header';
 import { StinkyTip } from '@/components/stinky-tip';
 import { Stinky } from '@/components/stinky/stinky';
+import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import type { StinkyState } from '@/components/stinky/stinky-states';
 
 // Weather condition to icon mapping
@@ -253,6 +253,7 @@ function OutfitResult({
   const t = useTranslations('suggest');
   const format = useFormatter();
   const conditionLabel = useWeatherConditionLabel();
+  const typeLabel = useClothingTypeLabel();
   return (
     <div className="space-y-4">
       {/* Occasion, date, start over */}
@@ -319,36 +320,27 @@ function OutfitResult({
           </ul>
         )}
 
-        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          {outfit.items.map((item) => (
-            <Link
-              key={item.id}
-              href={`/dashboard/wardrobe?item=${item.id}`}
-              className="group block rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <div className="relative aspect-square overflow-hidden rounded-tile bg-background">
-                {item.thumbnail_url ? (
-                  <Image
-                    src={item.thumbnail_url}
-                    alt={item.name || item.type}
-                    fill
-                    className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                    sizes="(max-width: 640px) 50vw, 33vw"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <Shirt className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-                  </div>
-                )}
-                {item.layer_type && (
-                  <Badge variant="secondary" className="absolute left-2 top-2 bg-panel capitalize">
-                    {item.layer_type}
-                  </Badge>
-                )}
-              </div>
-              <p className="mt-1.5 truncate px-1 text-sm font-semibold">{item.name || item.type}</p>
-            </Link>
-          ))}
+        {/* The pieces as one composed image; the chips below keep every
+            garment reachable by name for anyone who cannot aim at a cut-out. */}
+        <div className="mt-4 space-y-3">
+          <OutfitFlatLay
+            items={outfit.items}
+            className="mx-auto max-w-[320px]"
+            hrefForItem={(item) => `/dashboard/wardrobe?item=${item.id}`}
+            priority
+          />
+          <ul className="flex flex-wrap justify-center gap-1.5">
+            {outfit.items.map((item) => (
+              <li key={item.id} className="min-w-0">
+                <Link
+                  href={`/dashboard/wardrobe?item=${item.id}`}
+                  className="inline-flex max-w-[11rem] items-center rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span className="truncate">{item.name || typeLabel(item.type)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {outfit.style_notes && <StinkyTip className="mt-4">{outfit.style_notes}</StinkyTip>}

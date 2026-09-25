@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { TransitionLink } from '@/components/native/transition-link';
 import Image from 'next/image';
 import { useFormatter, useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
+import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
 import { addDays, isSameDay, startOfWeek } from 'date-fns';
 import {
   BarChart3,
@@ -199,6 +201,7 @@ function WeekStrip() {
 
 function WardrobeSection() {
   const t = useTranslations('dashboard.editorial');
+  const typeLabel = useClothingTypeLabel();
   const { data, isLoading } = useItems({}, 1, 8);
   const total = data?.total ?? 0;
   const items = data?.items ?? [];
@@ -234,13 +237,13 @@ function WardrobeSection() {
               {item.thumbnail_url ? (
                 <Image
                   src={item.thumbnail_url}
-                  alt={item.name || item.type}
+                  alt={item.name || typeLabel(item.type)}
                   fill
                   className="object-contain p-1.5 mix-blend-multiply transition-transform duration-300 group-hover:scale-105 dark:mix-blend-normal"
                   sizes="(max-width: 640px) 25vw, 15vw"
                 />
               ) : (
-                <span className="sr-only">{item.name || item.type}</span>
+                <span className="sr-only">{item.name || typeLabel(item.type)}</span>
               )}
             </Link>
           ))}
@@ -250,8 +253,16 @@ function WardrobeSection() {
   );
 }
 
+/** Occasions are English slugs on the wire; never show one raw. */
+function useOccasionLabel() {
+  const tOccasions = useTranslations('suggest.occasions');
+  return (occasion: string) =>
+    tOccasions.has(occasion as never) ? tOccasions(occasion as never) : occasion;
+}
+
 function OutfitsSection() {
   const t = useTranslations('dashboard.editorial');
+  const occasionLabel = useOccasionLabel();
   const { data, isLoading } = useOutfits({ status: 'accepted' }, 1, 6);
   const outfits = data?.outfits ?? [];
 
@@ -279,22 +290,10 @@ function OutfitsSection() {
               href={`/dashboard/outfits/${o.id}`}
               className="pressable group w-32 flex-shrink-0 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
             >
-              <div className="grid aspect-[4/5] grid-cols-2 grid-rows-2 gap-1 overflow-hidden rounded-tile bg-panel p-1.5">
-                {o.items.slice(0, 4).map((item) => (
-                  <div key={item.id} className="relative">
-                    {item.thumbnail_url ? (
-                      <Image
-                        src={item.thumbnail_url}
-                        alt={item.name || item.type}
-                        fill
-                        className="object-contain mix-blend-multiply dark:mix-blend-normal"
-                        sizes="80px"
-                      />
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-              <p className="mt-1.5 px-1 text-sm font-semibold capitalize">{o.occasion}</p>
+              <OutfitFlatLay items={o.items} max={5} sizes="160px" />
+              <p className="mt-1.5 px-1 text-sm font-semibold first-letter:uppercase">
+                {occasionLabel(o.occasion)}
+              </p>
             </TransitionLink>
           ))}
         </div>
@@ -306,6 +305,7 @@ function OutfitsSection() {
 function LibrarySection() {
   const t = useTranslations('dashboard.editorial');
   const format = useFormatter();
+  const occasionLabel = useOccasionLabel();
   const { data, isLoading } = useOutfits({ was_worn: true }, 1, 5);
   const items = data?.outfits ?? [];
 
@@ -334,7 +334,7 @@ function LibrarySection() {
                 className="pressable flex min-h-[56px] items-center justify-between rounded-2xl bg-panel px-4 py-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div>
-                  <p className="text-[15px] font-bold capitalize">{o.occasion}</p>
+                  <p className="text-[15px] font-bold first-letter:uppercase">{occasionLabel(o.occasion)}</p>
                   {o.scheduled_for && (
                     <p className="text-xs text-muted-foreground">
                       {format.dateTime(new Date(o.scheduled_for + 'T00:00:00'), { day: 'numeric', month: 'long' })}

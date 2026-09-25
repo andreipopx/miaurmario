@@ -1,8 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { Shirt } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
+import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
 import type { SocialOutfitItem } from '@/lib/hooks/use-social';
 
 function hasLayout(items: SocialOutfitItem[]): boolean {
@@ -11,8 +12,11 @@ function hasLayout(items: SocialOutfitItem[]): boolean {
 
 /**
  * Read-only outfit thumbnail for social cards: the Studio canvas when the look
- * has a free-form layout, otherwise a 2×2 garment grid on the gray panel.
+ * has a free-form layout, otherwise an automatic flat lay so a friend's look
+ * reads as one composed image instead of a 2×2 grid of thumbnails.
  * Image URLs come pre-signed from the API (only for outfits we may see).
+ *
+ * The garments are not links here — they are someone else's wardrobe.
  */
 export function OutfitComposition({
   items,
@@ -23,6 +27,8 @@ export function OutfitComposition({
   className?: string;
   sizes?: string;
 }) {
+  const typeLabel = useClothingTypeLabel();
+
   if (hasLayout(items)) {
     return (
       <div className={cn('relative aspect-[3/4] w-full overflow-hidden rounded-tile bg-panel', className)}>
@@ -42,7 +48,7 @@ export function OutfitComposition({
               {src && (
                 <Image
                   src={src}
-                  alt={item.name || item.type}
+                  alt={item.name || typeLabel(item.type)}
                   fill
                   className="object-contain drop-shadow-[0_3px_6px_rgba(0,0,0,0.15)]"
                   sizes="30vw"
@@ -56,41 +62,5 @@ export function OutfitComposition({
     );
   }
 
-  const shown = items.slice(0, 4);
-  return (
-    <div
-      className={cn(
-        'grid aspect-[3/4] w-full gap-1.5 overflow-hidden rounded-tile bg-panel p-2',
-        shown.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
-        shown.length > 2 ? 'grid-rows-2' : 'grid-rows-1',
-        className
-      )}
-    >
-      {shown.length === 0 && (
-        <div className="flex items-center justify-center">
-          <Shirt className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-        </div>
-      )}
-      {shown.map((item) => {
-        const src = item.thumbnail_url ?? item.image_url;
-        return (
-          <div key={item.id} className="relative min-h-0">
-            {src ? (
-              <Image
-                src={src}
-                alt={item.name || item.type}
-                fill
-                className="object-contain p-1 mix-blend-multiply dark:mix-blend-normal"
-                sizes={sizes}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center rounded-tile bg-background/60">
-                <Shirt className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+  return <OutfitFlatLay items={items} ratio="3/4" className={className} sizes={sizes} />;
 }

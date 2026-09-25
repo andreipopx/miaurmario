@@ -37,6 +37,39 @@ class ItemService:
         )
         return result.scalar() or 0
 
+    async def get_wardrobe_counts(self, user_id: UUID) -> dict[str, int]:
+        """How full the wardrobe is, split the way the onboarding nudge has to say it.
+
+        `usable` is the count that decides whether the stylist can work at all: it
+        mirrors RecommendationService.get_candidate_items, which throws away items
+        that are not ready and items whose type is still unknown. A wardrobe of
+        thirty untagged photos looks full and suggests nothing, so the two numbers
+        have to be reported separately.
+        """
+        is_typed = and_(ClothingItem.type.is_not(None), ClothingItem.type != "unknown")
+        result = await self.db.execute(
+            select(
+                func.count(),
+                func.count().filter(ClothingItem.status == ItemStatus.processing),
+                func.count().filter(and_(ClothingItem.status == ItemStatus.ready, is_typed)),
+                func.count().filter(~is_typed),
+            )
+            .select_from(ClothingItem)
+            .where(
+                and_(
+                    ClothingItem.user_id == user_id,
+                    ClothingItem.is_archived.is_(False),
+                )
+            )
+        )
+        total, processing, usable, untyped = result.one()
+        return {
+            "total": total or 0,
+            "processing": processing or 0,
+            "usable": usable or 0,
+            "untyped": untyped or 0,
+        }
+
     async def get_list(
         self,
         user_id: UUID,
@@ -52,6 +85,8 @@ class ItemService:
         )
 
         # Apply filters
+        if filters.ids is not None:
+            query = query.where(ClothingItem.id.in_(filters.ids))
         if filters.type:
             query = query.where(ClothingItem.type == filters.type)
         if filters.subtype:

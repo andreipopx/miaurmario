@@ -242,6 +242,9 @@ class ItemListResponse(BaseModel):
 
 
 class ItemFilter(BaseModel):
+    # An explicit id list, so a client that knows exactly which items it wants
+    # (the batch it just uploaded) can poll only those.
+    ids: list[UUID] | None = None
     type: str | None = None
     subtype: str | None = None
     colors: list[str] | None = None
@@ -277,6 +280,61 @@ class BulkUploadResponse(BaseModel):
     successful: int
     failed: int
     results: list[BulkUploadResult]
+
+
+class WardrobeStats(BaseModel):
+    """How full the wardrobe is, and what "full enough" means.
+
+    The thresholds travel with the counts so the UI never hardcodes a number the
+    stylist does not actually use.
+    """
+
+    total: int
+    # Ready and with a real type: what the suggestion engine can build an outfit from.
+    usable: int
+    # Still "unknown": uploaded but waiting for the AI or for the manual pass.
+    untyped: int
+    processing: int
+    # The suggestion engine's hard floor (RecommendationService).
+    min_for_looks: int
+    # Not a requirement — the size at which suggestions stop repeating themselves.
+    variety_target: int
+    # How many photos one batch of the bulk upload may carry.
+    max_batch: int
+
+
+class BatchItemResponse(BaseModel):
+    """One photo of a bulk-upload batch, uploaded on its own request.
+
+    `state` is what the queue row shows: a duplicate is not a failure, it is a
+    photo the wardrobe already has, and `item` then points at the existing one.
+    """
+
+    filename: str
+    state: Literal["created", "duplicate"]
+    item: ItemResponse
+    # "queued" means a worker is tagging it; "skipped" means the user has no AI
+    # vision, so the item is ready but untagged and wants the manual pass.
+    tagging: Literal["queued", "skipped"]
+    background_removed: bool = False
+
+
+class BatchTagEntry(BaseModel):
+    item_id: UUID
+    type: str | None = Field(None, max_length=50)
+    primary_color: str | None = Field(None, max_length=50)
+
+
+class BatchTagRequest(BaseModel):
+    """The quick review / manual tagging pass over a batch."""
+
+    items: list[BatchTagEntry] = Field(..., min_length=1, max_length=100)
+
+
+class BatchTagResponse(BaseModel):
+    updated: int
+    failed: int
+    errors: list[str] = Field(default_factory=list)
 
 
 class BulkFilters(BaseModel):

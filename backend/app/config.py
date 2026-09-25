@@ -154,6 +154,9 @@ class Settings(BaseSettings):
     storage_path: str = Field(default="/data/wardrobe")
     max_upload_size_mb: int = Field(default=10)
     max_bulk_upload_count: int = Field(default=20)
+    # One batch of the bulk-upload flow: the client uploads these one photo at a
+    # time, so this is only how many the picker lets you queue at once.
+    max_batch_upload_count: int = Field(default=30, ge=1, le=100)
 
     # Importing a garment from a pasted shop link. The page is fetched
     # server-side (https only, public addresses only, no JavaScript executed);

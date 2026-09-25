@@ -36,6 +36,7 @@ from app.models.user import User
 from app.services.ai_service import AIDisabledError
 from app.services.item_scorer import get_season, score_items
 from app.services.recommendation_service import (
+    MIN_CANDIDATES_FOR_OUTFIT,
     AIRecommendationError,
     InsufficientWardrobeError,
     MomentSpec,
@@ -270,7 +271,7 @@ def compose_outfit(
         if accessory is not None:
             picked.append(accessory)
 
-    if len(picked) < 2:
+    if len(picked) < MIN_CANDIDATES_FOR_OUTFIT:
         raise InsufficientWardrobeError(
             "Not enough items in wardrobe for recommendation. "
             "Please add more items or adjust filters."
@@ -420,7 +421,7 @@ class DayMomentService:
             candidates = await rec.ensure_items_in_candidates(
                 user, candidates, [i.id for i in base_items]
             )
-        if len(candidates) < 2:
+        if len(candidates) < MIN_CANDIDATES_FOR_OUTFIT:
             raise InsufficientWardrobeError(
                 "Not enough items in wardrobe for recommendation. "
                 "Please add more items or adjust filters."

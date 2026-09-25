@@ -49,6 +49,13 @@ from app.utils.timezone import get_user_today
 
 logger = logging.getLogger(__name__)
 
+# The smallest wardrobe an outfit can be made of. A "candidate" is a garment that
+# is ready, not archived, not in the wash and has a real type — an untagged item
+# is invisible to the stylist, which is why the onboarding nudge counts typed
+# garments rather than photos. GET /items/stats reports this number so the UI
+# never has to guess it.
+MIN_CANDIDATES_FOR_OUTFIT = 2
+
 # Marker that opens the response-format section of prompts/recommendation.txt.
 # In single-outfit mode (notifications) everything from this marker to the end
 # of the prompt is swapped for SINGLE_OUTFIT_FORMAT.
@@ -838,7 +845,7 @@ class RecommendationService:
         if transition_ids:
             candidates = await self.ensure_items_in_candidates(user, candidates, transition_ids)
 
-        if len(candidates) < 2:
+        if len(candidates) < MIN_CANDIDATES_FOR_OUTFIT:
             raise InsufficientWardrobeError(
                 "Not enough items in wardrobe for recommendation. "
                 "Please add more items or adjust filters."

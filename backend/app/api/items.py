@@ -22,6 +22,9 @@ from app.models.item import ClothingItem, ItemStatus, TaggedBy, TaggingStatus
 from app.models.user import User
 from app.schemas.item import (
     ArchiveRequest,
+    BatchItemResponse,
+    BatchTagRequest,
+    BatchTagResponse,
     BulkAnalyzeRequest,
     BulkAnalyzeResponse,
     BulkDeleteRequest,
@@ -43,6 +46,7 @@ from app.schemas.item import (
     LogWearRequest,
     RemoveBackgroundRequest,
     ReorderImagesRequest,
+    WardrobeStats,
     WashHistoryResponse,
 )
 from app.services import link_import
@@ -51,6 +55,7 @@ from app.services.ai_service import AIDisabledError
 from app.services.care_label import parse_care_label
 from app.services.image_service import ImageService
 from app.services.item_service import ItemService
+from app.services.recommendation_service import MIN_CANDIDATES_FOR_OUTFIT
 from app.utils.auth import get_current_user
 from app.utils.care import care_hints, dominant_material
 from app.utils.rate_limit import rate_limit_by_user
@@ -64,6 +69,18 @@ router = APIRouter(prefix="/items", tags=["Items"])
 TAG_WRITEBACK_FIELDS = {"type", "subtype", "colors", "primary_color", "tags"}
 _EMPTY_TAG_VALUES = (None, "", [], {})
 
+# Filling an empty wardrobe means many photos in a short burst, so the budgets are
+# counted in photos (a multi-photo /bulk call charges one unit per photo) and are
+# generous enough that a full batch never trips them: a 30-photo batch plus a
+# retry pass fits in the minute, and the hour still caps a runaway client.
+BATCH_UPLOAD_BURST = (60, 60)
+BATCH_UPLOAD_HOURLY = (300, 3600)
+BATCH_TAG_LIMIT = (60, 60)
+
+# Not a gate, a goal: two garments is all the stylist strictly needs, but below
+# roughly a dozen it keeps proposing the same look. The nudge says both numbers.
+VARIETY_TARGET_ITEMS = 12
+
 
 async def _can_auto_tag(db: AsyncSession, user: User) -> bool:
     """Whether uploads should be queued for AI tagging for this user.
@@ -75,6 +92,19 @@ async def _can_auto_tag(db: AsyncSession, user: User) -> bool:
         return False
     access = await get_ai_access(db, user, check_network=False)
     return access.supports("vision")
+
+
+def _parse_id_list(raw: str | None) -> list[UUID] | None:
+    """Comma-separated ids from the query string; a malformed one is a 400, not a 500."""
+    if not raw or not raw.strip():
+        return None
+    try:
+        return [UUID(part.strip()) for part in raw.split(",") if part.strip()] or None
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_ids", "message": "ids must be a comma-separated id list"},
+        ) from None
 
 
 def _has_tag_content(field: str, value: Any) -> bool:
@@ -124,6 +154,7 @@ async def list_items(
     current_user: Annotated[User, Depends(get_current_user)],
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    ids: str | None = Query(None, description="Comma-separated item ids to restrict the list to"),
     type: str | None = None,
     subtype: str | None = None,
     colors: str | None = None,
@@ -139,6 +170,7 @@ async def list_items(
     color_list = colors.split(",") if colors else None
 
     filters = ItemFilter(
+        ids=_parse_id_list(ids),
         type=type,
         subtype=subtype,
         colors=color_list,
@@ -384,6 +416,193 @@ async def create_item(
     return ItemResponse.model_validate(item)
 
 
+async def _charge_batch_upload(user_id: UUID, photos: int) -> None:
+    """Both upload budgets, charged in photos rather than in requests."""
+    await rate_limit_by_user(user_id, "item_batch_upload_burst", *BATCH_UPLOAD_BURST, cost=photos)
+    await rate_limit_by_user(user_id, "item_batch_upload", *BATCH_UPLOAD_HOURLY, cost=photos)
+
+
+async def _queue_tagging(db: AsyncSession, item: ClothingItem, image_path: str) -> bool:
+    """Hand the item to the tagging worker. Returns whether the job was accepted.
+
+    Tagging is never done in the request: a batch of thirty photos would otherwise
+    hold the connection open for minutes.
+    """
+    try:
+        redis = await create_pool(get_redis_settings())
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis to queue tagging: {e}")
+        return False
+    try:
+        job = await redis.enqueue_job(
+            "tag_item_image",
+            str(item.id),
+            f"{settings.storage_path}/{image_path}",
+            _queue_name="arq:tagging",
+        )
+        item.ai_job_id = job.job_id if job is not None else None
+        await db.commit()
+        await db.refresh(item, attribute_names=["updated_at"])
+        logger.info(f"Queued AI tagging for item {item.id}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to queue AI tagging for {item.id}: {e}")
+        return False
+    finally:
+        await redis.aclose()
+
+
+@router.post("/batch", response_model=BatchItemResponse, status_code=status.HTTP_201_CREATED)
+async def create_batch_item(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    image: UploadFile = File(..., description="One photo of the batch"),
+    remove_background: bool = Form(True),
+    skip_ai: bool = Form(False),
+) -> BatchItemResponse:
+    """Create one item from one photo of a bulk-upload batch.
+
+    The client sends a batch photo by photo instead of all at once so that each row
+    of its queue has its own progress, its own error and its own retry, and so one
+    bad photo never costs the other twenty-nine. Everything after the upload runs
+    on the shared path: ItemService creates the item, the background is removed in
+    the request (rembg is warm in this process), and tagging goes to the worker.
+    """
+    await _charge_batch_upload(current_user.id, 1)
+
+    image_service = ImageService()
+    item_service = ItemService(db)
+    filename = image.filename or "upload.jpg"
+
+    content = await image.read()
+    content_type = image.content_type or "application/octet-stream"
+
+    if not image_service.validate_image(content, content_type):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "invalid_image",
+                "message": "Invalid image file. Supported formats: JPEG, PNG, WebP, HEIC",
+            },
+        )
+
+    # A photo the wardrobe already has is not a failure: the queue row says
+    # "already yours" and points at the item that is already there.
+    try:
+        image_hash = image_service.compute_phash(content, filename)
+        existing = await item_service.find_duplicate_by_hash(current_user.id, image_hash)
+    except Exception as e:
+        logger.warning(f"Failed to compute image hash for {filename}: {e}")
+        existing = None
+    if existing is not None:
+        # Re-read it: the duplicate lookup does not eager-load additional_images,
+        # and serialising it lazily would explode outside the greenlet.
+        loaded = await item_service.get_by_id(existing.id, current_user.id)
+        return BatchItemResponse(
+            filename=filename,
+            state="duplicate",
+            item=ItemResponse.model_validate(loaded or existing),
+            tagging="skipped",
+        )
+
+    try:
+        image_paths = await image_service.process_and_store(
+            user_id=current_user.id,
+            image_data=content,
+            original_filename=filename,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_image", "message": str(e)},
+        ) from None
+
+    item = await item_service.create(
+        user_id=current_user.id,
+        item_data=ItemCreate(type="unknown"),
+        image_paths=image_paths,
+    )
+
+    background_removed = False
+    if remove_background:
+        try:
+            result = await asyncio.to_thread(
+                image_service.remove_background, image_paths["image_path"]
+            )
+            item.original_image_path = result["original_backup_path"]
+            await db.commit()
+            await db.refresh(item, attribute_names=["original_image_path", "updated_at"])
+            background_removed = True
+        except Exception as e:
+            # No provider installed, or a photo rembg chokes on: the item keeps its
+            # original image and the batch carries on. Losing the cut-out is not
+            # worth losing the garment.
+            logger.warning(f"Background removal skipped for item {item.id}: {e}")
+
+    queued = False
+    if not skip_ai and await _can_auto_tag(db, current_user):
+        queued = await _queue_tagging(db, item, image_paths["image_path"])
+    if not queued:
+        # No AI, or the queue is down: the item is usable right away and waits for
+        # the manual "tipo + color" pass instead of sitting in "processing".
+        item = await item_service.mark_pending(item, set_ready=True)
+
+    return BatchItemResponse(
+        filename=filename,
+        state="created",
+        item=ItemResponse.model_validate(item),
+        tagging="queued" if queued else "skipped",
+        background_removed=background_removed,
+    )
+
+
+@router.post("/batch/tag", response_model=BatchTagResponse)
+async def tag_batch_items(
+    request: BatchTagRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> BatchTagResponse:
+    """The quick review pass: type and colour for a handful of items at once.
+
+    Used both by the manual stepper (no AI: the items arrive untagged) and by the
+    post-batch review (AI guessed: the user only sends the rows they touched or
+    explicitly confirmed). Either way the item ends up user-tagged.
+    """
+    await rate_limit_by_user(current_user.id, "item_batch_tag", *BATCH_TAG_LIMIT)
+
+    item_service = ItemService(db)
+    now = datetime.now(UTC)
+    updated = 0
+    failed = 0
+    errors: list[str] = []
+
+    for entry in request.items:
+        item = await item_service.get_by_id(entry.item_id, current_user.id)
+        if item is None:
+            errors.append(f"Item {entry.item_id} not found or not owned by user")
+            failed += 1
+            continue
+
+        if entry.type:
+            item.type = entry.type
+        if entry.primary_color:
+            item.primary_color = entry.primary_color
+            if not item.colors:
+                item.colors = [entry.primary_color]
+
+        item.tagging_status = TaggingStatus.tagged
+        item.tagged_by = TaggedBy.manual
+        item.tagged_at = now
+        # An item whose AI job died is still a perfectly good garment once the user
+        # has named it, so the manual pass also rescues it out of the error state.
+        if item.status == ItemStatus.error:
+            item.status = ItemStatus.ready
+        updated += 1
+
+    await db.commit()
+    return BatchTagResponse(updated=updated, failed=failed, errors=errors)
+
+
 @router.post("/bulk", response_model=BulkUploadResponse, status_code=status.HTTP_201_CREATED)
 async def bulk_create_items(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -402,6 +621,9 @@ async def bulk_create_items(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one image is required",
         )
+
+    # Charged per photo, so this call and /items/batch share one honest budget.
+    await _charge_batch_upload(current_user.id, len(images))
 
     image_service = ImageService()
     item_service = ItemService(db)
@@ -674,6 +896,21 @@ async def bulk_analyze_items(
             await redis.aclose()
 
     return BulkAnalyzeResponse(queued=queued, failed=failed, errors=errors)
+
+
+@router.get("/stats", response_model=WardrobeStats)
+async def get_wardrobe_stats(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> WardrobeStats:
+    """What the "your wardrobe is still small" nudge needs to be honest about."""
+    counts = await ItemService(db).get_wardrobe_counts(current_user.id)
+    return WardrobeStats(
+        **counts,
+        min_for_looks=MIN_CANDIDATES_FOR_OUTFIT,
+        variety_target=VARIETY_TARGET_ITEMS,
+        max_batch=settings.max_batch_upload_count,
+    )
 
 
 @router.get("/types")

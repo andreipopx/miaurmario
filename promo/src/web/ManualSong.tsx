@@ -62,8 +62,8 @@ export const ManualSong: React.FC = () => {
   const drop = usePop(SUGGEST, 16);
   const chipP = usePop(PICK, 10);
   const think = usePop(PICK + 4, 15);
-  const mood = usePop(LOOK_AT + 14, 11);
-  const caption = usePop(LOOK_AT + 18, 15);
+  const mood = usePop(LOOK_AT + 32, 11);
+  const caption = usePop(LOOK_AT + 22, 15);
   const s = PICKED;
   return (
     <PhoneStage accent={s.moodColor} headline={<Headline step={s.step} color={s.moodColor} title={s.headline} sub={s.sub} />}>
@@ -84,7 +84,7 @@ export const ManualSong: React.FC = () => {
         <div style={{ position: 'absolute', left: u(16), right: u(16), top: u(DROP_Y + 50) }}>
           {picked ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: u(12) }}>
-              <LookPanel look={s.look} from={LOOK_AT} height={250}>
+              <LookPanel look={s.look} from={LOOK_AT} height={220}>
                 {frame < LOOK_AT ? (
                   <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', padding: u(22), textAlign: 'center', opacity: think }}>
                     <div style={{ width: u(120), height: u(120), borderRadius: '50%', background: C.pinkSoft }}>
@@ -97,10 +97,10 @@ export const ManualSong: React.FC = () => {
                 ) : null}
               </LookPanel>
               <LookCaption title={s.lookTitle} weather={s.weather} p={caption} />
-              <div style={{ opacity: frame >= LOOK_AT + 14 ? 1 : 0 }}>
+              <div style={{ opacity: frame >= LOOK_AT + 32 ? 1 : 0 }}>
                 <MoodRow song={s} p={mood} />
               </div>
-              <StinkyLine text={s.line} from={LOOK_AT + 22} typeFrames={30} />
+              <StinkyLine text={s.line} from={LOOK_AT + 40} typeFrames={40} />
             </div>
           ) : null}
         </div>

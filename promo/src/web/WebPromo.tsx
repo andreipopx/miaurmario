@@ -14,8 +14,8 @@ import { LOOK_AT, MOOD_AT, SongLook } from './SongLook';
 import { LOOK_AT as M_LOOK_AT, ManualSong, PICK, SUGGEST, TYPE_FROM as M_TYPE_FROM, TYPE_TO as M_TYPE_TO } from './ManualSong';
 import { DROP_FROM, SWAP, WeatherLook } from './WeatherLook';
 import { LOOK_AT as R_LOOK_AT, PICK_AT as R_PICK, Revive } from './Revive';
-import { AllFactors, HAPPY_AT } from './AllFactors';
-import { BITE_AT, OutroWeb, PURR_AT } from './OutroWeb';
+import { AllFactors } from './AllFactors';
+import { BITE_AT, OutroWeb } from './OutroWeb';
 import { INTRO, PICKED, SONGS } from './songs';
 
 export type WebPromoProps = {
@@ -32,10 +32,10 @@ const SCENES: { key: string; el: React.ReactNode; d: number }[] = [
   { key: 'install', el: <Install />, d: 160 },
   { key: 'everywhere', el: <Everywhere />, d: 90 },
   { key: 'connect', el: <Connect />, d: 96 },
-  ...SONGS.map((song, i) => ({ key: `song${i}`, el: <SongLook song={song} />, d: i === 0 ? 118 : 104 })),
-  { key: 'manual', el: <ManualSong />, d: 172 },
-  { key: 'weather', el: <WeatherLook />, d: 130 },
-  { key: 'revive', el: <Revive />, d: 130 },
+  ...SONGS.map((song, i) => ({ key: `song${i}`, el: <SongLook song={song} />, d: 176 })),
+  { key: 'manual', el: <ManualSong />, d: 222 },
+  { key: 'weather', el: <WeatherLook />, d: 170 },
+  { key: 'revive', el: <Revive />, d: 164 },
   { key: 'factors', el: <AllFactors />, d: 100 },
   { key: 'outro', el: <OutroWeb />, d: 116 },
 ];
@@ -85,9 +85,7 @@ const CUES: [number, Sfx, number][] = [
   [at('revive') + R_PICK - 2, 'pop', 0.6],
   [at('revive') + R_LOOK_AT + 10, 'success', 0.6],
   ...[0, 1, 2, 3, 4, 5].map((i): [number, Sfx, number] => [at('factors') + 8 + i * 6, 'tick', 0.35]),
-  [at('factors') + HAPPY_AT, 'purr', 0.8],
   [at('outro') + 12, 'pop-high', 0.5],
-  [at('outro') + PURR_AT, 'purr', 0.9],
   ...bite(at('outro') + BITE_AT),
 ];
 

@@ -18,7 +18,7 @@ export const WeatherLook: React.FC = () => {
   const temp = Math.round(interpolate(frame, [DROP_FROM, DROP_TO], [21, 9], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
   const rainy = frame >= (DROP_FROM + DROP_TO) / 2;
   const outA = interpolate(frame, [SWAP - 8, SWAP], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const caption = usePop(SWAP + 16, 15);
+  const caption = usePop(SWAP + 18, 15);
   const cardP = usePop(0, 15);
   const Icon = rainy ? CloudRain : Sun;
   return (
@@ -57,9 +57,9 @@ export const WeatherLook: React.FC = () => {
           </div>
           <div style={{ position: 'relative' }}>
             {frame < SWAP ? (
-              <LookPanel look={PICKED.look} from={-30} height={230} out={outA} />
+              <LookPanel look={PICKED.look} from={-30} height={210} out={outA} />
             ) : (
-              <LookPanel look={RAINY.look} from={SWAP} height={230} />
+              <LookPanel look={RAINY.look} from={SWAP} height={210} />
             )}
             {rainy ? (
               <div style={{ position: 'absolute', inset: 0, borderRadius: u(24), overflow: 'hidden', pointerEvents: 'none' }}>
@@ -72,7 +72,7 @@ export const WeatherLook: React.FC = () => {
             ) : null}
           </div>
           <LookCaption title={frame < SWAP ? PICKED.lookTitle : RAINY.lookTitle} weather={frame < SWAP ? PICKED.weather : RAINY.weather} p={frame < SWAP ? 1 : caption} />
-          <StinkyLine text={RAINY.line} from={SWAP + 10} typeFrames={34} />
+          <StinkyLine text={RAINY.line} from={SWAP + 34} typeFrames={42} />
         </div>
         <Dock active="estilista" />
       </AbsoluteFill>

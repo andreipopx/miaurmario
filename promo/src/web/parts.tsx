@@ -122,13 +122,16 @@ export const WeatherChip: React.FC<{ text: string; color?: string; style?: React
   );
 };
 
-/** "Tu look: …" with the weather it was made for. */
+/** "Tu look: …" and, on its own line, the weather it was made for. */
 export const LookCaption: React.FC<{ title: string; weather: string; p: number }> = ({ title, weather, p }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: u(8), ...popStyle(p, 0.6), transformOrigin: 'left center' }}>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: u(6), minWidth: 0 }}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: u(7), ...popStyle(p, 0.6), transformOrigin: 'left center' }}>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: u(6) }}>
       <span style={{ fontSize: u(13), color: C.muted, fontWeight: 700, whiteSpace: 'nowrap' }}>Tu look:</span>
-      <span style={{ fontSize: u(16.5), fontWeight: 800, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>{title}</span>
+      <span style={{ fontSize: u(17), fontWeight: 800, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>{title}</span>
     </div>
-    <WeatherChip text={weather} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: u(8) }}>
+      <span style={{ fontSize: u(13), color: C.muted, fontWeight: 700 }}>Pensado para</span>
+      <WeatherChip text={weather} />
+    </div>
   </div>
 );

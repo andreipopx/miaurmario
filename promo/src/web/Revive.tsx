@@ -30,7 +30,7 @@ export const Revive: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const tiles = FORGOTTEN.map((_, i) => usePop(4 + i * 5, 12));
-  const caption = usePop(LOOK_AT + 18, 15);
+  const caption = usePop(LOOK_AT + 22, 15);
   const fly = spring({ frame: frame - PICK_AT, fps, config: { damping: 16 } });
   const picked = frame >= PICK_AT;
   return (
@@ -71,7 +71,7 @@ export const Revive: React.FC = () => {
             })}
           </div>
           <div style={{ position: 'relative' }}>
-            <LookPanel look={LOOK} from={LOOK_AT} height={220}>
+            <LookPanel look={LOOK} from={LOOK_AT} height={200}>
               {frame < LOOK_AT ? (
                 <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', fontSize: u(14.5), color: C.muted, fontWeight: 600, opacity: interpolate(frame, [PICK_AT, PICK_AT + 10], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) }}>
                   Montando un look alrededor…
@@ -85,7 +85,7 @@ export const Revive: React.FC = () => {
             </LookPanel>
           </div>
           <LookCaption title="Rescate de armario" weather="19° · Soleado" p={caption} />
-          <StinkyLine text="Esta falda lleva meses esperándote en el armario: hoy sale a pasear." from={LOOK_AT + 22} typeFrames={30} />
+          <StinkyLine text="Esta falda lleva meses esperándote en el armario: hoy sale a pasear." from={LOOK_AT + 40} typeFrames={40} />
         </div>
         <Dock active="estilista" />
         <Tap at={PICK_AT - 2} x={u(16 + TILE / 2)} y={u(112 + 50 + 12 + (TILE * 1.1) / 2)} />

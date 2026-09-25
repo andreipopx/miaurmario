@@ -14,6 +14,7 @@ import { Friends } from './scenes/Friends';
 import { Outro } from './scenes/Outro';
 import { Soundtrack, type SceneStarts } from './Soundtrack';
 import { FPS } from './theme';
+import { WEB_TOTAL, WebPromo } from './web/WebPromo';
 
 const T = 14;
 const timing = springTiming({ config: { damping: 200 }, durationInFrames: T });
@@ -70,5 +71,8 @@ const Promo: React.FC = () => (
 );
 
 export const RemotionRoot: React.FC = () => (
-  <Composition id="Promo" component={Promo} durationInFrames={TOTAL} fps={FPS} width={1080} height={1920} />
+  <>
+    <Composition id="Promo" component={Promo} durationInFrames={TOTAL} fps={FPS} width={1080} height={1920} />
+    <Composition id="WebPromo" component={WebPromo} defaultProps={{ withMusic: true }} durationInFrames={WEB_TOTAL} fps={FPS} width={1080} height={1920} />
+  </>
 );

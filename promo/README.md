@@ -1,4 +1,4 @@
-# Miaurmario — vídeo promo
+# Miaurmario — vídeos promo
 
 Vídeo vertical (1080×1920, 30 fps, ~30 s) para Reels / TikTok / Shorts, hecho con
 [Remotion](https://www.remotion.dev/). Recrea la interfaz "Stinky pop" (tokens de
@@ -32,3 +32,22 @@ constantes de tiempo que exporta cada escena.
 
 Si quieres usar un sonido en tendencia en Instagram/TikTok, baja el volumen del audio
 original en la app o quita `<Soundtrack />` de `src/Root.tsx`.
+
+## Vídeo 2: "¿Es una app?" (`WebPromo`)
+
+Explica que Miaurmario es una web (se abre en el navegador, se instala desde
+Compartir → Añadir a pantalla de inicio, funciona en móvil y ordenador) y enseña la
+música: conectar Spotify/Last.fm y una escena por canción con su mood y su outfit
+(`src/web/songs.ts`).
+
+Las canciones **no están en git** (copyright): pon los MP3 en `public/music/` con los
+nombres de `src/web/songs.ts` (`lana-doin-time.mp3`, `barry-b-carolina-durante.mp3`,
+`bad-bunny-eoo.mp3`).
+
+```bash
+npx remotion render WebPromo out/miaurmario-web-canciones.mp4
+npx remotion render WebPromo out/miaurmario-web-sin-musica.mp4 --props='{"withMusic":false}'
+```
+
+La versión sin música lleva solo los efectos, para subirla con el audio de la
+biblioteca de Instagram/TikTok si la plataforma silencia la otra.

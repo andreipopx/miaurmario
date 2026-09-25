@@ -22,4 +22,5 @@ for (const state of STATES) {
 }
 fs.writeFileSync(path.join(root, 'src/stinky-meta.json'), JSON.stringify(meta, null, 1) + '\n');
 fs.copyFileSync(path.join(head, 'stinky-head.svg'), path.join(root, 'public/stinky-head.svg'));
+fs.copyFileSync(path.join(root, '../frontend/public/icon-512.png'), path.join(root, 'public/app-icon.png'));
 console.log(meta);

@@ -11,8 +11,16 @@ from app.database import get_db
 from app.models.item import ClothingItem, ItemStatus
 from app.models.outfit import Outfit, OutfitStatus, UserFeedback
 from app.models.user import User
+from app.services.wardrobe_usage import (
+    IDLE_DAYS,
+    LONG_IDLE_DAYS,
+    MIN_TRACKING_DAYS,
+    RECENT_DAYS,
+    wardrobe_usage,
+)
 from app.utils.auth import get_current_user
 from app.utils.signed_urls import sign_image_url
+from app.utils.timezone import get_user_today
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -65,8 +73,32 @@ class WardrobeStats(BaseModel):
     total_wears: int
 
 
+class UsageSummary(BaseModel):
+    """«Tu armario en números»: how much of it actually gets worn.
+
+    Thresholds travel with the counts so the UI never hardcodes a number the
+    backend does not use. ``enough_data`` is False while the wardrobe is too new
+    for any of this to mean something — say so rather than draw conclusions.
+    """
+
+    tracked_items: int
+    never_worn: int
+    idle_3m: int
+    idle_6m: int
+    worn_recently: int
+    idle_percentage: float
+    total_wears: int
+    tracking_days: int
+    enough_data: bool
+    idle_days: int = IDLE_DAYS
+    long_idle_days: int = LONG_IDLE_DAYS
+    recent_days: int = RECENT_DAYS
+    min_tracking_days: int = MIN_TRACKING_DAYS
+
+
 class AnalyticsResponse(BaseModel):
     wardrobe: WardrobeStats
+    usage: UsageSummary
     color_distribution: list[ColorDistribution]
     type_distribution: list[TypeDistribution]
     most_worn: list[WearStats]
@@ -152,6 +184,12 @@ async def get_analytics(
         acceptance_rate=round(acceptance_rate, 1) if acceptance_rate else None,
         average_rating=average_rating,
         total_wears=total_wears,
+    )
+
+    # === Wardrobe in numbers ===
+    usage = UsageSummary.model_validate(
+        await wardrobe_usage(db, current_user.id, get_user_today(current_user)),
+        from_attributes=True,
     )
 
     # === Color Distribution ===
@@ -318,26 +356,37 @@ async def get_analytics(
     # Textos en español: la app es actualmente Spanish-only. Cuando se reactive
     # el switcher de idioma, mover estos textos a algún mecanismo i18n del
     # backend (Accept-Language, o mover la generación al frontend).
+    # Ninguna de estas frases empuja a comprar nada ni riñe a nadie: cuentan lo
+    # que hay en el armario y lo que se ha puesto, y ahí se quedan.
     insights = []
 
     if total_items == 0:
-        insights.append("Empieza añadiendo algunas prendas a tu armario.")
+        insights.append("Empieza subiendo unas cuantas prendas a tu armario.")
+    elif not usage.enough_data:
+        insights.append(
+            "Todavía hay poco que contar: apunta lo que te pones y en dos semanas "
+            "esto empezará a decir algo."
+        )
     else:
         # Wardrobe insights
-        if len(never_worn) > 0:
+        if usage.never_worn > 0:
             insights.append(
-                f"Tienes {len(never_worn)} prendas que aún no has estrenado. ¡Anímate a combinarlas!"
+                f"Tienes {usage.never_worn} prendas sin estrenar. Cuando quieras, "
+                "pídele al Estilista un look con una de ellas."
+            )
+        if usage.idle_3m > 0 and usage.tracked_items > 0:
+            insights.append(
+                f"El {usage.idle_percentage:.0f}% de tu armario no ha salido en "
+                f"los últimos {IDLE_DAYS // 30} meses."
             )
 
         # Color insights
-        if color_distribution:
+        if color_distribution and color_distribution[0].percentage > 40:
             top_color = color_distribution[0].color
-            if color_distribution[0].percentage > 40:
-                insights.append(
-                    f"Tu armario tira mucho al {top_color} ({color_distribution[0].percentage}%). Prueba a variar la paleta."
-                )
-            elif len(color_distribution) <= 3 and ready_items > 10:
-                insights.append("Tu armario tiene poca variedad de color. Explora nuevos tonos.")
+            insights.append(
+                f"Casi todo tira al {top_color} ({color_distribution[0].percentage}%), "
+                "así que los conjuntos se van a parecer bastante entre sí."
+            )
 
         # Type insights
         if type_distribution:
@@ -355,11 +404,13 @@ async def get_analytics(
                 ratio = tops / bottoms
                 if ratio > 3:
                     insights.append(
-                        "Tienes muchos más tops que prendas inferiores. Considera añadir pantalones o faldas."
+                        "Tienes muchos más tops que prendas de abajo, así que el "
+                        "pantalón va a repetirse en casi todos los looks."
                     )
                 elif ratio < 0.5:
                     insights.append(
-                        "Tienes más prendas inferiores que tops. Considera añadir algunas camisas o tops."
+                        "Tienes más prendas de abajo que tops, así que la camiseta "
+                        "va a repetirse en casi todos los looks."
                     )
 
         # Outfit insights
@@ -378,6 +429,7 @@ async def get_analytics(
 
     return AnalyticsResponse(
         wardrobe=wardrobe_stats,
+        usage=usage,
         color_distribution=color_distribution,
         type_distribution=type_distribution,
         most_worn=most_worn,

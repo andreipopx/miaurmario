@@ -132,6 +132,51 @@ export interface FeedbackResponse {
   created_at: string;
 }
 
+/** A plain reason a rescue could not happen, as a code the UI turns into a sentence. */
+export interface RescueHint {
+  code: string;
+  value: string | null;
+}
+
+export interface RescueResponse {
+  rescued: boolean;
+  /** Which engine built the look: the AI stylist, or the heuristic composer. */
+  engine: 'ai' | 'heuristic' | null;
+  outfit: Outfit | null;
+  /** 'item_unavailable' | 'no_combination' when nothing could be built. */
+  reason: string | null;
+  hints: RescueHint[];
+}
+
+/**
+ * «Rescátala»: ask for a look built around one forgotten garment.
+ *
+ * A refusal is a 200 with `rescued: false` and the reasons, not an error — the
+ * honest "esto no combina con nada, y esto es por qué" is a result too.
+ */
+export function useRescueItem() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({ itemId, occasion }: { itemId: string; occasion?: string }) => {
+      if (session?.accessToken) {
+        setAccessToken(session.accessToken as string);
+      }
+      return api.post<RescueResponse>('/outfits/rescue', {
+        item_id: itemId,
+        occasion: occasion ?? null,
+      });
+    },
+    onSuccess: (result) => {
+      if (result.rescued) {
+        queryClient.invalidateQueries({ queryKey: ['outfits'] });
+        queryClient.invalidateQueries({ queryKey: ['pendingOutfits'] });
+      }
+    },
+  });
+}
+
 export function useOutfits(filters: OutfitFilters = {}, page = 1, pageSize = 20) {
   const { status } = useSession();
   useSetTokenIfAvailable();

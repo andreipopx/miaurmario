@@ -31,6 +31,11 @@ DEFAULT_WASH_INTERVALS: dict[str, int] = {
 }
 
 
+#: What the owner told us to do with one garment. "rest" («déjala tranquila»)
+#: only stops the nudging — archiving is what takes a garment out of play.
+UsagePreference = Literal["more", "normal", "rest"]
+
+
 class ItemTags(BaseModel):
     colors: list[str] = Field(default_factory=list)
     primary_color: str | None = None
@@ -175,6 +180,7 @@ class ItemUpdate(BaseModel):
     # The sampled shade of the garment, "#rrggbb". Display only: `primary_color`
     # stays the family everything else reasons on.
     primary_color_hex: str | None = Field(None, max_length=7)
+    usage_preference: UsagePreference | None = None
 
     @field_validator("primary_color_hex", mode="before")
     @classmethod
@@ -215,6 +221,7 @@ class ItemResponse(ItemBase):
     tagged_by: str | None = None
     tagged_at: datetime | None = None
     wear_count: int = 0
+    usage_preference: UsagePreference = "normal"
     last_worn_at: date | None = None
     last_suggested_at: date | None = None
     suggestion_count: int = 0
@@ -481,6 +488,37 @@ class LogWashRequest(BaseModel):
     washed_at: date | None = None  # If None, use user's timezone to determine today
     method: str | None = Field(None, max_length=50)
     notes: str | None = None
+
+
+class CoWornItemResponse(BaseModel):
+    """A garment this one goes out with, and how many worn looks they shared."""
+
+    id: UUID
+    name: str | None = None
+    type: str
+    thumbnail_path: str | None = None
+    times: int
+
+    @computed_field
+    @property
+    def thumbnail_url(self) -> str | None:
+        if self.thumbnail_path:
+            return sign_image_url(self.thumbnail_path)
+        return None
+
+
+class ItemUsageResponse(BaseModel):
+    """Veces puesta, última vez, coste por uso y con qué suele combinarse."""
+
+    wear_count: int
+    last_worn_at: date | None = None
+    days_since_last_worn: int | None = None
+    purchase_price: Decimal | None = None
+    #: None means "we cannot say": no price saved, or nothing worn yet.
+    cost_per_wear: Decimal | None = None
+    usage_preference: UsagePreference = "normal"
+    co_worn: list[CoWornItemResponse] = Field(default_factory=list)
+    co_worn_looks: int = 0
 
 
 class WashHistoryResponse(BaseModel):

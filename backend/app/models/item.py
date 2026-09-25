@@ -96,6 +96,12 @@ class ClothingItem(Base):
 
     # Usage tracking
     wear_count: Mapped[int] = mapped_column(Integer, default=0)
+    #: What the owner told us to do with this one garment: "more" (sácala más),
+    #: "normal" (let the stats decide) or "rest" (déjala tranquila — stop nudging
+    #: it either way). Never a hard exclusion; archiving is what hides a garment.
+    usage_preference: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="normal", server_default="normal"
+    )
     last_worn_at: Mapped[date | None] = mapped_column(Date)
     last_suggested_at: Mapped[date | None] = mapped_column(Date)
     suggestion_count: Mapped[int] = mapped_column(Integer, default=0)

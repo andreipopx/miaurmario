@@ -244,6 +244,10 @@ class ItemService:
             else:
                 update_data["tags"] = tags.model_dump(exclude_none=True)
 
+        # A missing setting is the default, not a cleared column.
+        if "usage_preference" in update_data and update_data["usage_preference"] is None:
+            update_data["usage_preference"] = "normal"
+
         for field, value in update_data.items():
             setattr(item, field, value)
 

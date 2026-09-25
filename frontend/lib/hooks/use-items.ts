@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, getAccessToken, setAccessToken, ApiError, NetworkError } from '@/lib/api';
-import { CareInfo, Item, ItemListResponse, ItemFilter, WashHistoryEntry, ItemImage } from '@/lib/types';
+import { CareInfo, Item, ItemListResponse, ItemFilter, ItemUsage, WashHistoryEntry, ItemImage } from '@/lib/types';
 import { CareDraft } from '@/lib/hooks/use-intake';
 
 /** PATCH body: an item's fields, with care accepted as a draft too. */
@@ -124,6 +124,8 @@ export function useUpdateItem() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['item', variables.id] });
+      // The price and the per-garment setting both feed the usage panel.
+      queryClient.invalidateQueries({ queryKey: ['item-usage', variables.id] });
     },
   });
 }
@@ -291,6 +293,9 @@ export function useLogWear() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['item', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['item-usage', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['wear-stats', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 }
@@ -351,6 +356,23 @@ export function useItemWearStats(itemId: string) {
   return useQuery({
     queryKey: ['wear-stats', itemId],
     queryFn: () => api.get<WearStats>(`/items/${itemId}/wear-stats`),
+    enabled: !!itemId && status !== 'loading',
+  });
+}
+
+/**
+ * Veces puesta, última vez, coste por uso y con qué suele combinarse.
+ *
+ * Kept separate from `useItemWearStats` (the months/weekdays chart) because this
+ * one is read every time the detail opens and is cheap enough to be.
+ */
+export function useItemUsage(itemId: string) {
+  const { status } = useSession();
+  useSetTokenIfAvailable();
+
+  return useQuery({
+    queryKey: ['item-usage', itemId],
+    queryFn: () => api.get<ItemUsage>(`/items/${itemId}/usage`),
     enabled: !!itemId && status !== 'loading',
   });
 }

@@ -70,6 +70,7 @@ import { GeneratePairingsDialog } from '@/components/generate-pairings-dialog';
 import { useFeatures } from '@/lib/hooks/use-features';
 import { useTagLabel } from '@/lib/tag-labels';
 import { CarePanel } from '@/components/care-panel';
+import { ItemUsagePanel } from '@/components/item-usage-panel';
 import { CareLabelField } from '@/components/add-item/care-label-field';
 import { CareDraft } from '@/lib/hooks/use-intake';
 
@@ -755,20 +756,12 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         <span>{tagLabel('colors', item.primary_color)}</span>
                       </div>
                     )}
-                    {item.wear_count > 0 && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {t('info.wornTimesWithLast', { count: item.wear_count })}
-                          {item.last_worn_at && (
-                            <span className="text-muted-foreground">
-                              {' '}• {t('info.lastLabel', { date: new Date(item.last_worn_at).toLocaleDateString(locale) })}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Cuánto la usas: veces puesta, coste por uso, con qué combina,
+                      qué hacer con ella y «Rescátala». Replaces the one-line wear
+                      count that used to sit in the info rows above. */}
+                  <ItemUsagePanel item={item} />
 
                   {/* Wash Status */}
                   <div className="space-y-2.5 rounded-lg bg-panel p-4">

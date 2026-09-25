@@ -27,6 +27,7 @@ from app.schemas.item import DEFAULT_WASH_INTERVALS
 from app.services.ai_access import AIAccessError, ai_error_detail
 from app.services.ai_service import AIDisabledError
 from app.services.avatar_service import avatar_thumb_url
+from app.services.item_rescue import ItemRescueService
 from app.services.item_service import ItemService
 from app.services.learning_service import LearningService
 from app.services.outfit_service import OutfitListFilters, OutfitService
@@ -523,6 +524,89 @@ async def suggest_outfit(
 
     wore_instead_map = await fetch_wore_instead_items_map(db, [outfit], user_id=current_user.id)
     return outfit_to_response(outfit, wore_instead_map, is_starter_suggestion=is_starter)
+
+
+class RescueRequest(BaseModel):
+    """«Rescátala»: a look built around one garment the owner never reaches for."""
+
+    item_id: UUID
+    occasion: str | None = None
+
+    @field_validator("occasion")
+    @classmethod
+    def validate_occasion(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip().lower()
+        if v not in VALID_OCCASIONS:
+            raise ValueError(
+                f"Invalid occasion '{v}'. Must be one of: {', '.join(sorted(VALID_OCCASIONS))}"
+            )
+        return v
+
+
+class RescueHintResponse(BaseModel):
+    """A plain reason, as a code the frontend turns into a sentence."""
+
+    code: str
+    value: str | None = None
+
+
+class RescueResponse(BaseModel):
+    rescued: bool
+    #: "ai" or "heuristic" when a look came out; None otherwise.
+    engine: Literal["ai", "heuristic"] | None = None
+    outfit: OutfitResponse | None = None
+    #: "item_unavailable" | "no_combination" when nothing could be built.
+    reason: str | None = None
+    hints: list[RescueHintResponse] = Field(default_factory=list)
+
+
+@router.post("/rescue", response_model=RescueResponse)
+async def rescue_item(
+    request: RescueRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> RescueResponse:
+    """Build a look around one garment, or say plainly why it cannot be done.
+
+    The AI stylist when the user has one, the heuristic composer otherwise; the
+    garment is pinned either way.
+    """
+    await rate_limit_by_user(str(current_user.id), "rescue", max_requests=10, window_seconds=60)
+
+    item_service = ItemService(db)
+    item = await item_service.get_by_id(request.item_id, current_user.id)
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=error_detail("item_not_found"),
+        )
+
+    occasion = request.occasion
+    if occasion is None:
+        if current_user.preferences and current_user.preferences.default_occasion:
+            occasion = current_user.preferences.default_occasion
+        else:
+            occasion = "casual"
+
+    result = await ItemRescueService(db).rescue(current_user, item, occasion)
+
+    if result.outfit is None:
+        return RescueResponse(
+            rescued=False,
+            reason=result.reason,
+            hints=[RescueHintResponse(code=h.code, value=h.value) for h in result.hints],
+        )
+
+    wore_instead_map = await fetch_wore_instead_items_map(
+        db, [result.outfit], user_id=current_user.id
+    )
+    return RescueResponse(
+        rescued=True,
+        engine=result.engine,
+        outfit=outfit_to_response(result.outfit, wore_instead_map),
+    )
 
 
 @router.get("", response_model=OutfitListResponse)

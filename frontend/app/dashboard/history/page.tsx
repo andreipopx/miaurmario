@@ -95,6 +95,7 @@ function CalendarSkeleton() {
 
 export default function HistoryPage() {
   const t = useTranslations('history');
+  const tOccasions = useTranslations('suggest.occasions');
   const formatDate = useFormatDate();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -113,6 +114,18 @@ export default function HistoryPage() {
       outfit.scheduled_for && isSameDay(parseISO(outfit.scheduled_for), selectedDate)
     );
   }, [data?.outfits, selectedDate]);
+
+  // Only offer occasions the user actually has looks for: the backend knows 22
+  // of them, and a filter full of empty options is worse than a short one. The
+  // active filter stays listed even when this month has none of it.
+  const occasionOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const outfit of data?.outfits ?? []) {
+      if (outfit.occasion) seen.add(outfit.occasion);
+    }
+    if (filters.occasion) seen.add(filters.occasion);
+    return Array.from(seen).sort((a, b) => a.localeCompare(b));
+  }, [data?.outfits, filters.occasion]);
 
   const handleMonthChange = (newYear: number, newMonth: number) => {
     setYear(newYear);
@@ -151,11 +164,11 @@ export default function HistoryPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('allOccasions')}</SelectItem>
-            <SelectItem value="casual">{t('occasions.casual')}</SelectItem>
-            <SelectItem value="office">{t('occasions.office')}</SelectItem>
-            <SelectItem value="formal">{t('occasions.formal')}</SelectItem>
-            <SelectItem value="date">{t('occasions.date')}</SelectItem>
-            <SelectItem value="workout">{t('occasions.workout')}</SelectItem>
+            {occasionOptions.map((occasion) => (
+              <SelectItem key={occasion} value={occasion}>
+                {tOccasions.has(occasion) ? tOccasions(occasion) : occasion}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={filters.status || 'all'} onValueChange={handleStatusChange}>

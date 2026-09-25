@@ -41,11 +41,23 @@ class User(Base):
     avatar_thumb_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20), default="member")
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")
+    # Who chose the zone: "auto" (detected from the device or the chosen city)
+    # or "manual" (the user picked it). Detection never overwrites "manual".
+    # See app/services/location_service.py.
+    timezone_source: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="auto", server_default="auto"
+    )
 
-    # Location for weather
+    # Location for weather. City level only: the coordinates are rounded to 2
+    # decimals (~1 km) before they are ever stored, so this is the city centre
+    # and never the device's exact position.
     location_lat: Mapped[Decimal | None] = mapped_column(Numeric(10, 8))
     location_lon: Mapped[Decimal | None] = mapped_column(Numeric(11, 8))
     location_name: Mapped[str | None] = mapped_column(String(100))
+    # When we last asked "¿Estás en Lisboa?" — caps that prompt to once a day.
+    travel_prompt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # Optional password (argon2id). NULL = magic-link only.

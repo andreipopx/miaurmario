@@ -23,6 +23,7 @@ from app.services.avatar_service import (
     render_avatar,
     store_avatar,
 )
+from app.services.location_service import TIMEZONE_SOURCE_MANUAL, round_city_coord
 from app.services.user_service import UserService
 from app.utils.auth import get_current_user
 from app.utils.passwords import (
@@ -59,6 +60,9 @@ class UserProfileResponse(BaseModel):
     # True when the avatar is a photo the user uploaded (can be removed).
     has_avatar_photo: bool = False
     timezone: str
+    # "auto" (detected) or "manual" (the user picked it). Ajustes shows
+    # "detectada automáticamente" for "auto"; detection skips "manual".
+    timezone_source: str = "auto"
     location_lat: float | None = None
     location_lon: float | None = None
     location_name: str | None = None
@@ -135,6 +139,18 @@ async def update_profile(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserProfileResponse:
     update_data = data.model_dump(exclude_unset=True)
+
+    # Picking a zone here is a deliberate choice, so detection must never touch
+    # it again — but only when the value really changes, or saving the city
+    # (which submits the zone alongside it) would freeze detection by accident.
+    if update_data.get("timezone") and update_data["timezone"] != current_user.timezone:
+        update_data["timezone_source"] = TIMEZONE_SOURCE_MANUAL
+
+    # City level only, wherever the coordinates came from: the stored position is
+    # always ~1 km granular, never a precise one.
+    for key in ("location_lat", "location_lon"):
+        if update_data.get(key) is not None:
+            update_data[key] = round_city_coord(update_data[key])
 
     if "body_measurements" in update_data and update_data["body_measurements"] is not None:
         numeric_keys = {"chest", "waist", "hips", "inseam", "height", "weight"}
@@ -229,6 +245,7 @@ def _user_response(user: User) -> UserProfileResponse:
         avatar_thumb_url=avatar_thumb_url(user),
         has_avatar_photo=bool(user.avatar_path),
         timezone=user.timezone,
+        timezone_source=user.timezone_source,
         location_lat=float(user.location_lat) if user.location_lat else None,
         location_lon=float(user.location_lon) if user.location_lon else None,
         location_name=user.location_name,

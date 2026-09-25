@@ -235,8 +235,10 @@ class TestReverseEndpoint:
         body = r.json()
         assert body["label"] == "Madrid, Comunidad de Madrid, España"
         assert body["timezone"] == "Europe/Madrid"
-        assert body["latitude"] == pytest.approx(40.4168)
+        # City precision only, in and out: see test_location_auto.py.
+        assert body["latitude"] == pytest.approx(40.42)
         assert calls[0].url.host == "nominatim.openstreetmap.org"
+        assert calls[0].url.params["lat"] == "40.42"
         assert calls[0].url.params["accept-language"] == "es"
         assert calls[0].headers["user-agent"] == (
             "Miaurmario/1.0 (+https://github.com/andreipopx/miaurmario)"

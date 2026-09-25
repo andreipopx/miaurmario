@@ -5,7 +5,9 @@
 - Reverse geocoding goes to Nominatim (OpenStreetMap), which Open-Meteo does
   not offer. Nominatim's usage policy requires an identifying User-Agent and
   at most 1 request per second per application, enforced here with a small
-  Redis-backed throttle shared by every worker process.
+  Redis-backed throttle shared by every worker process. The point is rounded
+  to city precision before it is sent, so an exact device position never
+  reaches the provider or our logs.
 - The timezone for a reverse-geocoded point is looked up through the
   Open-Meteo forecast API (``timezone=auto``), which reports the zone of the
   grid cell.
@@ -34,6 +36,10 @@ SEARCH_CACHE_PREFIX = "geo:search:"
 SEARCH_CACHE_TTL = 60 * 60 * 24 * 7  # a week; place names do not move
 REVERSE_CACHE_PREFIX = "geo:reverse:"
 REVERSE_CACHE_TTL = 60 * 60 * 24 * 30
+# Reverse geocoding answers with a city, so it only ever needs city precision:
+# 2 decimals ≈ 1 km. Rounding here (not at the call site) means an exact device
+# position cannot reach Nominatim, the logs or the cache even by accident.
+REVERSE_COORD_DECIMALS = 2
 SEARCH_RESULT_COUNT = 8
 MIN_QUERY_LENGTH = 2
 MAX_QUERY_LENGTH = 100
@@ -277,9 +283,16 @@ def _parse_nominatim_reverse(data: object, latitude: float, longitude: float) ->
 
 
 async def reverse_geocode(latitude: float, longitude: float, language: str = "es") -> Place | None:
+    """City for a point, at city precision only.
+
+    The coordinates are rounded to :data:`REVERSE_COORD_DECIMALS` (~1 km) as the
+    first thing that happens, and only the rounded pair is sent upstream,
+    logged, cached and returned. A caller may hand this a precise device fix:
+    the precise value dies here.
+    """
     lang = language if language in {"es", "en"} else "es"
-    # ~1 km grid: good enough for a city name and keeps the cache useful.
-    lat_r, lon_r = round(latitude, 2), round(longitude, 2)
+    lat_r = round(latitude, REVERSE_COORD_DECIMALS)
+    lon_r = round(longitude, REVERSE_COORD_DECIMALS)
     cache_key = f"{REVERSE_CACHE_PREFIX}{lang}:{lat_r},{lon_r}"
 
     cached = await _cache_get(cache_key)
@@ -292,8 +305,8 @@ async def reverse_geocode(latitude: float, longitude: float, language: str = "es
 
     await wait_for_nominatim_slot()
     params = {
-        "lat": f"{latitude:.5f}",
-        "lon": f"{longitude:.5f}",
+        "lat": f"{lat_r:.{REVERSE_COORD_DECIMALS}f}",
+        "lon": f"{lon_r:.{REVERSE_COORD_DECIMALS}f}",
         "format": "jsonv2",
         "zoom": 10,
         "addressdetails": 1,
@@ -307,11 +320,12 @@ async def reverse_geocode(latitude: float, longitude: float, language: str = "es
             response.raise_for_status()
             data = response.json()
         except (httpx.HTTPError, ValueError) as e:
-            logger.warning("Nominatim reverse failed for %s,%s: %s", latitude, longitude, e)
+            # Rounded coordinates only: logs must not hold a precise position.
+            logger.warning("Nominatim reverse failed for %s,%s: %s", lat_r, lon_r, e)
             raise GeocodingError(f"Reverse geocoding failed: {e}") from None
 
-    place = _parse_nominatim_reverse(data, latitude, longitude)
+    place = _parse_nominatim_reverse(data, lat_r, lon_r)
     if place is not None:
-        place.timezone = await lookup_timezone(latitude, longitude)
+        place.timezone = await lookup_timezone(lat_r, lon_r)
     await _cache_set(cache_key, json.dumps(asdict(place) if place else None), REVERSE_CACHE_TTL)
     return place

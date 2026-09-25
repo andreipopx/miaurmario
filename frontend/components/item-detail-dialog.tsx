@@ -69,10 +69,19 @@ import { ColorCaptureField } from '@/components/color-capture-field';
 import { GeneratePairingsDialog } from '@/components/generate-pairings-dialog';
 import { useFeatures } from '@/lib/hooks/use-features';
 import { useTagLabel } from '@/lib/tag-labels';
+import {
+  FORMALITY_LEVELS,
+  QUICK_STYLES,
+  SEASONS,
+  asTagList,
+  toggleStyle,
+} from '@/components/bulk-upload/tag-choices';
 import { CarePanel } from '@/components/care-panel';
 import { ItemUsagePanel } from '@/components/item-usage-panel';
 import { CareLabelField } from '@/components/add-item/care-label-field';
 import { CareDraft } from '@/lib/hooks/use-intake';
+import { cn } from '@/lib/utils';
+import { garmentTileTint } from '@/lib/garment-tint';
 
 /** "https://www.zara.com/es/…" -> "zara.com" */
 function sourceHost(url: string): string {
@@ -90,6 +99,14 @@ interface ItemDetailDialogProps {
 }
 
 // Images now use signed URLs from backend (item.image_url, item.thumbnail_url)
+
+/** The one-tap tag chip, same shape as the quick review pass uses. */
+function tagChipClass(active: boolean): string {
+  return cn(
+    'min-h-[44px] rounded-full px-3 text-[14px] font-semibold transition-colors active:scale-[0.97]',
+    active ? 'bg-primary text-primary-foreground' : 'bg-panel text-foreground hover:bg-secondary'
+  );
+}
 
 export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogProps) {
   const t = useTranslations('wardrobe.item');
@@ -110,6 +127,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
     notes: '',
     favorite: false,
     wash_interval: undefined as number | undefined,
+    style: [] as string[],
+    formality: '',
+    season: [] as string[],
   });
   // Care is edited through its own field (it can also be read off a photo), so
   // it lives beside editForm and is only sent when the user actually touched it.
@@ -148,6 +168,12 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
         notes: item.notes || '',
         favorite: item.favorite,
         wash_interval: item.wash_interval ?? undefined,
+        // The tagger writes these into `tags`; the API mirrors them onto columns.
+        // Read whichever is filled in, so a hand-tagged garment edits as cleanly
+        // as an AI-tagged one, and both are empty when there is no AI at all.
+        style: asTagList(item.tags?.style ?? item.style),
+        formality: item.tags?.formality ?? item.formality ?? '',
+        season: asTagList(item.tags?.season ?? item.season),
       });
       setIsEditing(false);
       setActiveImageIndex(0);
@@ -174,6 +200,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
           notes: editForm.notes || undefined,
           favorite: editForm.favorite,
           wash_interval: editForm.wash_interval,
+          style: editForm.style,
+          formality: editForm.formality || undefined,
+          season: editForm.season,
           ...(careTouched ? { care: careDraft } : {}),
         },
       });
@@ -284,6 +313,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   // The shade sampled off this garment when there is one, the palette's version of
   // the family otherwise. The name beside it is always the family.
   const swatch = swatchHex(item.primary_color, item.primary_color_hex);
+  // The same plate the grid uses, off the same shade the swatch shows, so opening a
+  // garment does not change its colour.
+  const detailTint = garmentTileTint(item.primary_color, swatch);
 
   // AI-generated tags
   const tags = item.tags || {};
@@ -312,6 +344,23 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                 <X className="h-5 w-5" strokeWidth={1.75} />
               </Button>
             </div>
+            {/* Editing used to be an unlabelled pencil at the far end of a strip
+                that scrolls off screen on a phone, which is the same as not being
+                there. It is now a named button that never scrolls away, and the
+                rest of the photo tools keep the strip to themselves. */}
+            <Button
+              variant={isEditing ? 'secondary' : 'default'}
+              className="w-full justify-center"
+              onClick={() => setIsEditing(!isEditing)}
+              aria-pressed={isEditing}
+            >
+              {isEditing ? (
+                <X className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+              ) : (
+                <Pencil className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+              )}
+              {isEditing ? t('toolbar.cancelEditing') : t('toolbar.editTags')}
+            </Button>
             <div
               role="toolbar"
               aria-label={t('toolbar.label')}
@@ -450,21 +499,6 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   e.target.value = '';
                 }}
               />
-              <Button
-                variant="secondary"
-                size="icon"
-                className="shrink-0"
-                onClick={() => setIsEditing(!isEditing)}
-                aria-pressed={isEditing}
-                title={isEditing ? t('toolbar.cancelEditing') : t('toolbar.editItem')}
-                aria-label={isEditing ? t('toolbar.cancelEditing') : t('toolbar.editItem')}
-              >
-                {isEditing ? (
-                  <X className="h-5 w-5" strokeWidth={1.75} />
-                ) : (
-                  <Pencil className="h-5 w-5" strokeWidth={1.75} />
-                )}
-              </Button>
             </div>
           </DialogHeader>
 
@@ -473,7 +507,13 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
             <div className="grid gap-6 sm:grid-cols-2 [&>*]:min-w-0">
             {/* Image Gallery */}
             <div className="space-y-2">
-              <div className="relative aspect-square overflow-hidden rounded-tile bg-panel">
+              <div
+                className={cn(
+                  'relative aspect-square overflow-hidden rounded-tile',
+                  detailTint.className
+                )}
+                style={detailTint.style}
+              >
                 {(() => {
                   const allImages = [
                     { url: `${imageUrl}&v=${imageKey}`, id: 'primary' },
@@ -487,7 +527,12 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         src={currentImage.url}
                         alt={item.name || tagLabel('types', item.type)}
                         fill
-                        className="object-contain p-4"
+                        className={cn(
+                          'object-contain p-4',
+                          // Only a white-backed photo needs multiplying for the
+                          // tint to show; a real cut-out is already transparent.
+                          !item.has_cutout && 'mix-blend-multiply'
+                        )}
                         sizes="(max-width: 640px) 100vw, 50vw"
                       />
                       {allImages.length > 1 && (
@@ -675,6 +720,83 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       }
                     />
                   </div>
+                  {/* The three tags that decide when the stylist reaches for this
+                      garment. Chips rather than selects: one tap each, and with no
+                      AI they start empty rather than pre-filled with a guess. */}
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-bold">
+                      {t('form.style')}{' '}
+                      <span className="font-normal text-muted-foreground">{t('form.styleHint')}</span>
+                    </legend>
+                    <div className="flex flex-wrap gap-1.5">
+                      {QUICK_STYLES.map((value) => {
+                        const active = editForm.style.includes(value);
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() =>
+                              setEditForm({ ...editForm, style: toggleStyle(editForm.style, value) })
+                            }
+                            className={tagChipClass(active)}
+                          >
+                            {tagLabel('styles', value)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-bold">{t('form.formality')}</legend>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FORMALITY_LEVELS.map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={editForm.formality === value}
+                          onClick={() =>
+                            setEditForm({
+                              ...editForm,
+                              formality: editForm.formality === value ? '' : value,
+                            })
+                          }
+                          className={tagChipClass(editForm.formality === value)}
+                        >
+                          {tagLabel('formality', value)}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-bold">{t('form.season')}</legend>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SEASONS.map((value) => {
+                        const active = editForm.season.includes(value);
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() =>
+                              setEditForm({
+                                ...editForm,
+                                season: active
+                                  ? editForm.season.filter((s) => s !== value)
+                                  : [...editForm.season, value],
+                              })
+                            }
+                            className={tagChipClass(active)}
+                          >
+                            {tagLabel('seasons', value)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
                   <div className="space-y-2">
                     <Label className="font-bold">{t('form.notes')}</Label>
                     <Textarea

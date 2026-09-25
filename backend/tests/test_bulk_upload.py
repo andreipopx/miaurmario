@@ -69,7 +69,13 @@ def _redis_patch(job_id: str = "fake-job-id"):
 def _no_background_removal():
     """rembg is not installed in the test image; assert on it being attempted instead."""
     with patch("app.api.items.ImageService.remove_background") as remove_bg:
-        remove_bg.return_value = {"original_backup_path": "user/photo_orig.jpg"}
+        # A real cut-out is WebP under a new name, so the item's paths change too.
+        remove_bg.return_value = {
+            "image_path": "user/photo.webp",
+            "medium_path": "user/photo_medium.webp",
+            "thumbnail_path": "user/photo_thumb.webp",
+            "original_backup_path": "user/photo_orig.jpg",
+        }
         yield remove_bg
 
 
@@ -138,9 +144,15 @@ class TestBulkUpload:
             response = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
 
         assert response.status_code == 201
-        assert _only(response)["background_removed"] is True
+        body = _only(response)
+        assert body["background_removed"] is True
         _no_background_removal.assert_called_once()
         assert mock_redis.enqueue_job.called
+        # The item now points at the cut-out, and the tagger was pointed at the
+        # same file rather than at the photo the cut-out replaced.
+        assert body["item"]["image_path"] == "user/photo.webp"
+        assert body["item"]["has_cutout"] is True
+        assert mock_redis.enqueue_job.call_args.args[2].endswith("user/photo.webp")
 
     @pytest.mark.asyncio
     async def test_remove_background_false_leaves_the_photo_alone(

@@ -152,17 +152,23 @@ describe('the review grid', () => {
       <QuickReview
         items={[itemOf({ primary_color: 'brown', primary_color_hex: CAMEL })]}
         edits={{}}
-        onEditOne={vi.fn()}
-        onPickColor={vi.fn()}
+        openId={null}
+        onOpen={vi.fn()}
+        onEdit={vi.fn()}
+        onRotate={vi.fn()}
+        rotating={null}
         onStartStepper={vi.fn()}
       />
     )
-    // Tapping the garment samples its colour; the row underneath still opens the
-    // one-by-one editor. Both are real buttons, so a keyboard reaches them.
-    expect(
-      screen.getByRole('button', { name: es.bulkUpload.review.pickColour })
-    ).toBeTruthy()
-    expect(screen.getByTestId('bulk-review-edit')).toBeTruthy()
+    // The pipette on the corner of the photo goes straight to the colour; the tile
+    // itself opens the garment's tags. Both are real buttons, so a keyboard reaches
+    // them, and neither is nested inside the other.
+    const pipette = screen.getByRole('button', { name: es.bulkUpload.review.pickColour })
+    const tile = screen.getByTestId('bulk-review-tile')
+    expect(pipette).toBeTruthy()
+    expect(tile).toBeTruthy()
+    expect(tile.contains(pipette)).toBe(false)
+    expect(pipette.contains(tile)).toBe(false)
   })
 
   it('paints the garment’s own shade, not the palette’s', () => {
@@ -170,8 +176,11 @@ describe('the review grid', () => {
       <QuickReview
         items={[itemOf({ primary_color: 'brown', primary_color_hex: CAMEL })]}
         edits={{}}
-        onEditOne={vi.fn()}
-        onPickColor={vi.fn()}
+        openId={null}
+        onOpen={vi.fn()}
+        onEdit={vi.fn()}
+        onRotate={vi.fn()}
+        rotating={null}
         onStartStepper={vi.fn()}
       />
     )
@@ -184,8 +193,11 @@ describe('the review grid', () => {
       <QuickReview
         items={[itemOf({ primary_color: 'brown', primary_color_hex: null })]}
         edits={{}}
-        onEditOne={vi.fn()}
-        onPickColor={vi.fn()}
+        openId={null}
+        onOpen={vi.fn()}
+        onEdit={vi.fn()}
+        onRotate={vi.fn()}
+        rotating={null}
         onStartStepper={vi.fn()}
       />
     )
@@ -265,5 +277,124 @@ describe('colour capture copy', () => {
     expect(es.wardrobe.add.takePhoto).toBe('Hacer foto')
     expect(es.wardrobe.add.takePhoto).toBe(es.bulkUpload.picker.camera)
     expect(en.wardrobe.add.takePhoto).not.toBe(es.wardrobe.add.takePhoto)
+  })
+})
+
+/**
+ * Where the colour work and the photo work meet.
+ *
+ * Two features landed on the same tiles: one gives a garment a plate the colour of
+ * the garment, the other gives it the shade actually sampled off its photo. They
+ * have to agree — one measurement, read by both — and the tags the review grid
+ * gained must still be reachable now that the colour field is there.
+ */
+describe('the tile and its swatch', () => {
+  function tileTintOf(item: Item): string {
+    const { container } = renderWithIntl(
+      <QuickReview
+        items={[item]}
+        edits={{}}
+        openId={null}
+        onOpen={vi.fn()}
+        onEdit={vi.fn()}
+        onRotate={vi.fn()}
+        rotating={null}
+        onStartStepper={vi.fn()}
+      />
+    )
+    const plate = container.querySelector('[style*="--tile-tint"]')
+    return plate?.getAttribute('style') ?? ''
+  }
+
+  it('plates the garment with the shade it shows, not with the family average', () => {
+    // Two garments a person calls «marrón». The palette has one brown, so before
+    // this the two tiles were identical; the measurement is what tells them apart.
+    const chocolate = tileTintOf(itemOf({ primary_color: 'brown', primary_color_hex: CHOCOLATE }))
+    const camel = tileTintOf(itemOf({ id: 'i2', primary_color: 'brown', primary_color_hex: CAMEL }))
+    expect(chocolate).toContain('--tile-tint')
+    expect(camel).toContain('--tile-tint')
+    expect(chocolate).not.toBe(camel)
+  })
+
+  it('still plates a garment that was never sampled', () => {
+    // Every garment uploaded before the column existed: the family's own hex is
+    // what the plate is derived from, exactly as it was.
+    const named = tileTintOf(itemOf({ primary_color: 'brown', primary_color_hex: null }))
+    expect(named).toContain('--tile-tint')
+    expect(named).toContain('hsl(')
+  })
+
+  it('shows the plate and the measured dot at the same time', () => {
+    const { container } = renderWithIntl(
+      <QuickReview
+        items={[itemOf({ primary_color: 'brown', primary_color_hex: CAMEL })]}
+        edits={{}}
+        openId={null}
+        onOpen={vi.fn()}
+        onEdit={vi.fn()}
+        onRotate={vi.fn()}
+        rotating={null}
+        onStartStepper={vi.fn()}
+      />
+    )
+    expect(container.querySelector('[style*="--tile-tint"]')).toBeTruthy()
+    const dot = container.querySelector('[style*="background-color"]')
+    expect(dot?.getAttribute('style')).toContain('169, 118, 75')
+  })
+})
+
+describe('the review grid, with the colour field on it', () => {
+  function openTile(item: Item) {
+    const onEdit = vi.fn()
+    const rendered = renderWithIntl(
+      <QuickReview
+        items={[item]}
+        edits={{}}
+        openId={item.id}
+        onOpen={vi.fn()}
+        onEdit={onEdit}
+        onRotate={vi.fn()}
+        rotating={null}
+        onStartStepper={vi.fn()}
+      />
+    )
+    return { ...rendered, onEdit }
+  }
+
+  it('still asks tipo, color, estilo and formalidad', () => {
+    openTile(itemOf({ primary_color: 'brown' }))
+    expect(screen.getByTestId('tag-fields')).toBeTruthy()
+    for (const legend of [
+      es.bulkUpload.stepper.typeLegend,
+      es.bulkUpload.stepper.colorLegend,
+      es.bulkUpload.stepper.styleLegend,
+      es.bulkUpload.stepper.formalityLegend,
+    ]) {
+      expect(screen.getAllByText(legend, { exact: false }).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('offers the eyedropper in the colour row, beside the swatches', () => {
+    openTile(itemOf({ primary_color: 'brown' }))
+    // Two of them now: the pipette on the photo and the one in the colour row.
+    // Both lead to the same picker.
+    expect(
+      screen.getAllByRole('button', { name: es.bulkUpload.stepper.pickColour }).length
+    ).toBeGreaterThanOrEqual(1)
+  })
+
+  it('drops the sampled shade when a family is picked off the swatches', () => {
+    const { onEdit } = openTile(itemOf({ primary_color: 'brown', primary_color_hex: CAMEL }))
+    screen.getByRole('button', { name: es.tagValues.colors.black }).click()
+    expect(onEdit).toHaveBeenCalledWith('i1', {
+      primaryColor: 'black',
+      primaryColorHex: null,
+    })
+  })
+
+  it('keeps editing the other tags without touching the colour', () => {
+    const { onEdit } = openTile(itemOf({ primary_color: 'brown', primary_color_hex: CAMEL }))
+    screen.getByRole('button', { name: es.tagValues.styles.elegant }).click()
+    expect(onEdit).toHaveBeenCalledWith('i1', { style: ['elegant'] })
   })
 })

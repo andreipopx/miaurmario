@@ -1,7 +1,17 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { AlertCircle, Check, CopyCheck, Loader2, RotateCcw, Scissors, Tag, X } from 'lucide-react';
+import {
+  AlertCircle,
+  Check,
+  CopyCheck,
+  Loader2,
+  RotateCcw,
+  RotateCw,
+  Scissors,
+  Tag,
+  X,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { type PhotoState, type QueuedPhoto, isTerminal } from '@/lib/bulk-upload/queue';
@@ -34,12 +44,25 @@ export function UploadQueueList({
   photos,
   onRetry,
   onRemove,
+  onRotate,
+  turns = {},
+  rotating,
 }: {
   photos: readonly QueuedPhoto[];
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
+  /**
+   * Straighten a photo whose garment is already in the wardrobe. Rows still on
+   * their way up have no garment to rotate yet, so they do not offer it.
+   */
+  onRotate?: (photo: QueuedPhoto, direction: 'cw' | 'ccw') => void;
+  /** Quarter turns saved so far, per row, so the thumbnail matches what is stored. */
+  turns?: Readonly<Record<string, number>>;
+  /** The row waiting on the server. */
+  rotating?: string | null;
 }) {
   const t = useTranslations('bulkUpload.queue');
+  const tCrop = useTranslations('imageCrop');
 
   /**
    * Say what actually went wrong. "No se pudo subir" tells the user nothing they
@@ -56,6 +79,8 @@ export function UploadQueueList({
       {photos.map((photo) => {
         const Icon = STATE_ICON[photo.state];
         const spinning = photo.state === 'uploading' || photo.state === 'pending';
+        const canRotate = Boolean(photo.itemId) && photo.state !== 'error';
+        const busy = rotating === photo.id;
         return (
           <li
             key={photo.id}
@@ -70,7 +95,12 @@ export function UploadQueueList({
                 <img
                   src={photo.previewUrl}
                   alt=""
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform duration-200 motion-reduce:transition-none"
+                  style={
+                    turns[photo.id]
+                      ? { transform: `rotate(${turns[photo.id] * 90}deg)` }
+                      : undefined
+                  }
                   aria-hidden
                 />
               )}
@@ -108,6 +138,38 @@ export function UploadQueueList({
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
+              {/* Straightening saves immediately, so the row says so rather than
+                  leaving the user to wonder whether it took. */}
+              {onRotate && canRotate && (
+                <>
+                  {(['ccw', 'cw'] as const).map((direction) => (
+                    <Button
+                      key={direction}
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9"
+                      disabled={busy}
+                      onClick={() => onRotate(photo, direction)}
+                      aria-label={tCrop(direction === 'cw' ? 'rotateRightOne' : 'rotateLeftOne', {
+                        name: photo.name,
+                      })}
+                      title={tCrop(direction === 'cw' ? 'rotateRight' : 'rotateLeft')}
+                    >
+                      {busy ? (
+                        <Loader2
+                          className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                          aria-hidden
+                        />
+                      ) : direction === 'cw' ? (
+                        <RotateCw className="h-4 w-4" strokeWidth={2} aria-hidden />
+                      ) : (
+                        <RotateCcw className="h-4 w-4" strokeWidth={2} aria-hidden />
+                      )}
+                    </Button>
+                  ))}
+                </>
+              )}
               {photo.state === 'error' && (
                 <Button
                   type="button"

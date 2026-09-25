@@ -80,6 +80,13 @@ export interface Item {
   image_url?: string;
   thumbnail_url?: string;
   medium_url?: string;
+  /**
+   * True when the stored image keeps its transparency (a real cut-out) rather
+   * than having a white background baked in. The grid needs to know: a white-backed
+   * photo is drawn with `mix-blend-multiply` so the tile's tint shows through,
+   * which would darken a genuine cut-out instead.
+   */
+  has_cutout?: boolean;
   tags: ItemTags;
   colors: string[];
   primary_color?: string;
@@ -90,6 +97,10 @@ export interface Item {
    * uploaded before this existed — use `swatchHex` rather than reading it raw.
    */
   primary_color_hex?: string | null;
+  /** Mirrored from `tags` by the API; editable by hand as well as by the tagger. */
+  style?: string[];
+  formality?: string;
+  season?: string[];
   status: 'processing' | 'ready' | 'error' | 'archived';
   ai_processed: boolean;
   ai_confidence?: number;

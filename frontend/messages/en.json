@@ -618,7 +618,8 @@
         "close": "Close",
         "setAsPrimary": "Set as primary",
         "deleteImage": "Delete image",
-        "label": "Item actions"
+        "label": "Item actions",
+        "editTags": "Edit item and tags"
       },
       "analyzing": "Stinky is having a sniff…",
       "form": {
@@ -635,7 +636,11 @@
         "washIntervalHelp": "How many wears before this piece needs washing. Leave blank to use the default.",
         "washIntervalDefault": "Default: {days}",
         "cancel": "Cancel",
-        "save": "Save"
+        "save": "Save",
+        "style": "Style",
+        "styleHint": "(up to two)",
+        "formality": "Formality",
+        "season": "Season"
       },
       "info": {
         "wornTimesWithLast": "Worn {count, plural, one {# time} other {# times}}",
@@ -4029,7 +4034,7 @@
     "cta": "Upload items",
     "title": "Upload items",
     "subtitle": "Several photos at once. You can close this: the upload carries on.",
-    "reviewSubtitle": "Confirm the type and the colour. Leave whatever is already right.",
+    "reviewSubtitle": "Tell me what they are and how you wear them. Leave what's already right.",
     "progress": "{done} of {total} done",
     "finished": "{saved} of {total} in the wardrobe",
     "loading": "Loading the items…",
@@ -4086,14 +4091,20 @@
     "review": {
       "needsWork": "{count, plural, one {# still needs a type} other {# still need a type}}",
       "allGood": "All tagged. Have a look anyway.",
-      "hint": "Tap an item to change its type or colour.",
+      "hint": "Tap a garment to set its type, colour, style and formality.",
       "oneByOne": "Review one by one",
       "unknownType": "What is it?",
       "noColour": "No colour",
       "save": "Save {count, plural, one {# change} other {# changes}}",
       "saved": "Saved. {count, plural, one {# item ready} other {# items ready}}.",
       "done": "Done",
-      "pickColour": "Take the colour off the photo"
+      "pickColour": "Take the colour off the photo",
+      "noFormality": "No formality",
+      "closeTags": "Close",
+      "nextGarment": "Next one",
+      "rotated": "Rotated and saved.",
+      "rotateHint": "Sideways? Rotate it — it saves straight away.",
+      "rotateFailed": "Couldn't rotate it. Try again."
     },
     "stepper": {
       "position": "Item {current} of {total}",
@@ -4108,12 +4119,44 @@
       "next": "Next",
       "finish": "Finish",
       "backToGrid": "Back to the grid",
-      "pickColour": "Take the colour off the photo"
+      "pickColour": "Take the colour off the photo",
+      "styleLegend": "Style",
+      "styleHint": "(up to two)",
+      "formalityLegend": "Formality"
     },
     "statusBar": {
       "open": "Open the item upload",
       "uploading": "Uploading items · {done} of {total}",
       "failed": "{count, plural, one {# photo not uploaded} other {# photos not uploaded}}"
+    },
+    "reviewTitle": "Name your garments"
+  },
+  "imageCrop": {
+    "title": "Frame the garment",
+    "area": "Photo crop: drag or use the arrow keys to move, + and - to zoom",
+    "zoom": "Zoom",
+    "shape": "Crop shape",
+    "resize": "Resize the crop (or Alt and the arrow keys)",
+    "tools": "Rotate and crop",
+    "straighten": "Straighten the photo",
+    "noPreview": "I can't show this photo here, but it saves fine",
+    "crop": "Crop",
+    "recrop": "Change the crop",
+    "cropped": "Cropped",
+    "apply": "Use this crop",
+    "cancel": "Leave it as it was",
+    "rotateLeft": "Rotate left",
+    "rotateRight": "Rotate right",
+    "rotateLeftOne": "Rotate {name} left",
+    "rotateRightOne": "Rotate {name} right",
+    "willSave": "It'll be saved like this.",
+    "asIs": "If it's sideways or has too much room around it, rotate or crop it.",
+    "keyboardHint": "Arrows to move, + and - to zoom, Alt and arrows to resize.",
+    "presets": {
+      "free": "Free",
+      "square": "Square",
+      "portrait": "Portrait",
+      "landscape": "Landscape"
     }
   }
 }

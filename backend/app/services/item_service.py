@@ -251,20 +251,31 @@ class ItemService:
         for field, value in update_data.items():
             setattr(item, field, value)
 
+        mirrored = (
+            "colors",
+            "primary_color",
+            "pattern",
+            "material",
+            "style",
+            "season",
+            "formality",
+        )
+
         if "tags" in update_data:
             attributes.flag_modified(item, "tags")
             tag_data = update_data["tags"] or {}
-            for column in (
-                "colors",
-                "primary_color",
-                "pattern",
-                "material",
-                "style",
-                "season",
-                "formality",
-            ):
+            for column in mirrored:
                 if column in tag_data:
                     setattr(item, column, tag_data[column])
+        elif any(column in update_data for column in mirrored):
+            # A hand edit writes the columns; `tags` is what the item page reads,
+            # so it has to follow or the garment looks untagged on its own page.
+            tags = dict(item.tags or {})
+            for column in mirrored:
+                if column in update_data:
+                    tags[column] = update_data[column]
+            item.tags = tags
+            attributes.flag_modified(item, "tags")
 
         await self.db.flush()
         # Re-fetch with eager loading to ensure relationships are properly loaded

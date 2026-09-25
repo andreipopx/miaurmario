@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validat
 
 from app.utils.care import MAX_FIBERS, care_hints, normalize_fiber, parse_composition
 from app.utils.colors import normalize_hex
+from app.utils.image_formats import is_cutout_path
 from app.utils.signed_urls import sign_image_url
 
 # Default wash intervals by clothing type (wears between washes)
@@ -174,6 +175,10 @@ class ItemUpdate(BaseModel):
     tags: ItemTags | None = None
     colors: list[str] | None = None
     primary_color: str | None = None
+    # Editable by hand, not only by the tagger: the detail editor offers all three.
+    style: list[str] | None = None
+    formality: str | None = Field(None, max_length=50)
+    season: list[str] | None = None
     wash_interval: int | None = None
     source_url: str | None = Field(None, max_length=2048)
     care: CareInfo | None = None
@@ -248,6 +253,17 @@ class ItemResponse(ItemBase):
         if self.thumbnail_path:
             return sign_image_url(self.thumbnail_path)
         return None
+
+    @computed_field
+    @property
+    def has_cutout(self) -> bool:
+        """True when the stored image keeps its transparency.
+
+        The grid draws a flat white-backed photo with `mix-blend-multiply` so the
+        tile's tint shows through the white; a real cut-out needs no such trick and
+        must not be multiplied, or its own colours would be darkened by the tint.
+        """
+        return is_cutout_path(self.thumbnail_path or self.image_path)
 
     @computed_field
     @property
@@ -359,12 +375,23 @@ class WardrobeStats(BaseModel):
 
 
 class BulkTagEntry(BaseModel):
+    """One garment's worth of the quick pass.
+
+    Type and colour are the two the stylist cannot work without; style and
+    formality are what makes the difference between "a shirt" and "a shirt for the
+    office", and the review grid asks for each of them. `primary_color_hex` is the
+    shade sampled off the photo — display only, beside the colour family.
+    """
+
     item_id: UUID
     type: str | None = Field(None, max_length=50)
     primary_color: str | None = Field(None, max_length=50)
     # The sampled shade of the garment, "#rrggbb". Display only: `primary_color`
     # stays the family everything else reasons on.
     primary_color_hex: str | None = Field(None, max_length=7)
+    style: list[str] | None = Field(None, max_length=6)
+    formality: str | None = Field(None, max_length=50)
+    season: list[str] | None = Field(None, max_length=6)
 
     @field_validator("primary_color_hex", mode="before")
     @classmethod
@@ -463,6 +490,17 @@ class ItemImageResponse(BaseModel):
         if self.thumbnail_path:
             return sign_image_url(self.thumbnail_path)
         return None
+
+    @computed_field
+    @property
+    def has_cutout(self) -> bool:
+        """True when the stored image keeps its transparency.
+
+        The grid draws a flat white-backed photo with `mix-blend-multiply` so the
+        tile's tint shows through the white; a real cut-out needs no such trick and
+        must not be multiplied, or its own colours would be darkened by the tint.
+        """
+        return is_cutout_path(self.thumbnail_path or self.image_path)
 
     @computed_field
     @property

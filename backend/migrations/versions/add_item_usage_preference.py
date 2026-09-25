@@ -12,7 +12,7 @@ The price a cost-per-use needs already lives in ``clothing_items.purchase_price`
 (added with the shop-link intake), so nothing is added for it here.
 
 Revision ID: wearusage2509
-Revises: autoloc2509
+Revises: colorhex2509
 Create Date: 2026-09-25
 """
 
@@ -22,7 +22,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "wearusage2509"
-down_revision: str | None = "autoloc2509"
+down_revision: str | None = "colorhex2509"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

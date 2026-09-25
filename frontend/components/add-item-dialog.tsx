@@ -48,6 +48,7 @@ import { LinkImportTab } from '@/components/add-item/link-import-tab';
 import { ColorCaptureField } from '@/components/color-capture-field';
 import { BulkUploadPanel } from '@/components/bulk-upload/bulk-upload-panel';
 import { CareDraft } from '@/lib/hooks/use-intake';
+import { NO_FRAMING, PhotoPreview, type PhotoFraming } from '@/components/add-item/photo-preview';
 import { supportsShareTarget } from '@/lib/pwa/platform';
 
 interface AddItemDialogProps {
@@ -82,6 +83,7 @@ export function AddItemDialog({
 }: AddItemDialogProps) {
   const t = useTranslations('wardrobe.add');
   const tShare = useTranslations('wardrobe.share');
+  const tBulk = useTranslations('bulkUpload');
   const typeLabel = useClothingTypeLabel();
   // Single upload state
   const [file, setFile] = useState<File | null>(null);
@@ -96,6 +98,8 @@ export function AddItemDialog({
   const [notes, setNotes] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [care, setCare] = useState<CareDraft | null>(null);
+  /** Turns and crop the user chose in the preview; applied server-side on save. */
+  const [framing, setFraming] = useState<PhotoFraming>(NO_FRAMING);
 
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -115,6 +119,9 @@ export function AddItemDialog({
   useEffect(() => {
     setNoShareTarget(!supportsShareTarget(navigator.userAgent, navigator.maxTouchPoints || 0));
   }, []);
+
+  /** The quick pass over garments the tagger never named: tagging, not uploading. */
+  const taggingBacklog = activeTab === 'bulk' && bulkMode === 'untagged';
 
   const createItem = useCreateItem();
   const { data: aiStatus } = useAIStatus();
@@ -136,6 +143,7 @@ export function AddItemDialog({
     if (!open || !initial) return;
     if (initial.file) {
       setFile(initial.file);
+      setFraming(NO_FRAMING);
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result as string);
       reader.readAsDataURL(initial.file);
@@ -151,8 +159,10 @@ export function AddItemDialog({
     const file = acceptedFiles[0];
     if (file) {
       setFile(file);
-      // A new photo means the old sample describes a different garment.
+      // A new photo means the old sample describes a different garment, and the
+      // crop and rotation belonged to the old one too.
       setPrimaryColorHex(undefined);
+      setFraming(NO_FRAMING);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
@@ -195,6 +205,15 @@ export function AddItemDialog({
     if (notes) formData.append('notes', notes);
     if (sourceUrl) formData.append('source_url', sourceUrl);
     if (care) formData.append('care', JSON.stringify(care));
+    // The server straightens and crops: no canvas re-encode here, so nothing is
+    // lost and a HEIC the browser cannot decode is still saved correctly.
+    if (framing.quarters) formData.append('rotate', String(framing.quarters));
+    if (framing.crop) {
+      formData.append('crop_x', String(framing.crop.x));
+      formData.append('crop_y', String(framing.crop.y));
+      formData.append('crop_w', String(framing.crop.width));
+      formData.append('crop_h', String(framing.crop.height));
+    }
 
     try {
       await createItem.mutateAsync(formData);
@@ -228,6 +247,7 @@ export function AddItemDialog({
     setNotes('');
     setSourceUrl('');
     setCare(null);
+    setFraming(NO_FRAMING);
 
     setActiveTab(initialTab);
     setShowCloseConfirm(false);
@@ -238,6 +258,7 @@ export function AddItemDialog({
   const clearSingleFile = () => {
     setFile(null);
     setPreview(null);
+    setFraming(NO_FRAMING);
   };
 
   return (
@@ -245,13 +266,16 @@ export function AddItemDialog({
     <Dialog open={open} onOpenChange={handleCloseRequest}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('dialogTitle')}</DialogTitle>
+          <DialogTitle>{taggingBacklog ? tBulk('reviewTitle') : t('dialogTitle')}</DialogTitle>
           <DialogDescription>
-            {t('description')}
+            {taggingBacklog ? tBulk('reviewSubtitle') : t('description')}
           </DialogDescription>
         </DialogHeader>
 
-        {noVisionAi && (
+        {/* The backlog pass is the screen you tag by hand on. Opening it with a
+            card about the AI you do not have — and a button to go and buy some —
+            pushes the actual work a third of a phone screen down for no reason. */}
+        {noVisionAi && !taggingBacklog && (
           <AIUnavailableNotice feature="tagging" reason={aiStatus?.blocked_reason} />
         )}
 
@@ -279,6 +303,7 @@ export function AddItemDialog({
               onUse={(prefill) => {
                 if (prefill.file) {
                   setFile(prefill.file);
+                  setFraming(NO_FRAMING);
                   const reader = new FileReader();
                   reader.onloadend = () => setPreview(reader.result as string);
                   reader.readAsDataURL(prefill.file);
@@ -357,23 +382,12 @@ export function AddItemDialog({
                   )}
                 </div>
               ) : (
-                <div className="relative rounded-tile bg-panel">
-                  <img
-                    src={preview}
-                    alt={t('previewAlt')}
-                    className="h-48 w-full rounded-tile object-contain p-3"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="absolute right-2 top-2 border-0 bg-background/90 shadow-sm"
-                    onClick={clearSingleFile}
-                    aria-label={t('removePhoto')}
-                  >
-                    <X className="h-4 w-4" strokeWidth={1.75} />
-                  </Button>
-                </div>
+                <PhotoPreview
+                  src={preview}
+                  framing={framing}
+                  onFramingChange={setFraming}
+                  onClear={clearSingleFile}
+                />
               )}
 
               <div className="space-y-3">

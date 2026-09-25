@@ -9,22 +9,29 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useBatchItems, useBatchTagItems, useUntaggedItems } from '@/lib/hooks/use-wardrobe-stats';
+import { useRotateImage } from '@/lib/hooks/use-items';
 import { useBulkUpload } from '@/lib/bulk-upload/bulk-upload-context';
 import { PhotoPicker } from '@/components/bulk-upload/photo-picker';
 import { UploadQueueList } from '@/components/bulk-upload/upload-queue-list';
 import { QuickReview, type ReviewEdit, draftOf } from '@/components/bulk-upload/quick-review';
 import { TagStepper } from '@/components/bulk-upload/tag-stepper';
 import { needsType } from '@/components/bulk-upload/tag-choices';
+import type { TagChanges } from '@/components/bulk-upload/tag-fields';
+import type { QueuedPhoto } from '@/lib/bulk-upload/queue';
 import { MAX_BATCH_PHOTOS } from '@/lib/bulk-upload/queue';
 
 type Phase = 'pick' | 'queue' | 'review' | 'stepper';
 
 /**
- * Whether a row is worth sending. A shade on its own counts: tapping the photo to
- * get the real brown is a change even when the family stays "marrón".
+ * An edit worth sending. An empty style list is a deliberate "none", and so is a
+ * `null` shade: pointing at the garment to get the real brown is a change even
+ * when the family stays "marrón", and so is dropping that shade again.
  */
-function hasEdit(edit: ReviewEdit): boolean {
-  return Boolean(edit.type || edit.primaryColor || edit.primaryColorHex);
+function hasContent(edit: ReviewEdit): boolean {
+  return (
+    Boolean(edit.type || edit.primaryColor || edit.formality || edit.style) ||
+    edit.primaryColorHex !== undefined
+  );
 }
 
 /**
@@ -72,7 +79,18 @@ export function BulkUploadPanel({
 
   const [phase, setPhase] = useState<Phase>('pick');
   const [edits, setEdits] = useState<Record<string, ReviewEdit>>({});
-  const [stepperStart, setStepperStart] = useState(0);
+  /** Which review tile has its tag editor open. */
+  const [openTile, setOpenTile] = useState<string | null>(null);
+  /**
+   * Turns already saved on the server, per garment.
+   *
+   * The signed image URL changes on every read, so a refetch does show the turned
+   * photo — but not before it arrives. Tracking the turns lets the thumbnail move
+   * the instant the button is pressed, which is the whole point of a rotate button.
+   */
+  const [turns, setTurns] = useState<Record<string, number>>({});
+  const [rotating, setRotating] = useState<string | null>(null);
+  const rotateImage = useRotateImage();
 
   // Read back from the server, so the grid shows the tags the worker wrote rather
   // than whatever the client happened to see last.
@@ -119,13 +137,57 @@ export function BulkUploadPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, resumedBatch]);
 
-  const editOne = useCallback((itemId: string, changes: ReviewEdit) => {
+  const editOne = useCallback((itemId: string, changes: TagChanges) => {
     setEdits((current) => ({ ...current, [itemId]: { ...current[itemId], ...changes } }));
   }, []);
 
+  /**
+   * Straightening is the one change on this screen that is not a draft: it is a
+   * file on disk, so it is saved on the spot and said so.
+   */
+  const rotate = useCallback(
+    async (itemId: string, direction: 'cw' | 'ccw') => {
+      setRotating(itemId);
+      try {
+        await rotateImage.mutateAsync({ id: itemId, direction });
+        setTurns((current) => ({
+          ...current,
+          [itemId]: (((current[itemId] ?? 0) + (direction === 'cw' ? 1 : -1)) % 4 + 4) % 4,
+        }));
+        toast.success(t('review.rotated'));
+      } catch {
+        toast.error(t('review.rotateFailed'));
+      } finally {
+        setRotating(null);
+      }
+    },
+    [rotateImage, t]
+  );
+
+  const rotatePhoto = useCallback(
+    (photo: QueuedPhoto, direction: 'cw' | 'ccw') => {
+      if (!photo.itemId) return;
+      const itemId = photo.itemId;
+      setRotating(photo.id);
+      void rotateImage
+        .mutateAsync({ id: itemId, direction })
+        .then(() => {
+          setTurns((current) => ({
+            ...current,
+            [photo.id]: (((current[photo.id] ?? 0) + (direction === 'cw' ? 1 : -1)) % 4 + 4) % 4,
+            [itemId]: (((current[itemId] ?? 0) + (direction === 'cw' ? 1 : -1)) % 4 + 4) % 4,
+          }));
+          toast.success(t('review.rotated'));
+        })
+        .catch(() => toast.error(t('review.rotateFailed')))
+        .finally(() => setRotating(null));
+    },
+    [rotateImage, t]
+  );
+
   const save = useCallback(async () => {
     const entries = Object.entries(edits)
-      .filter(([, edit]) => hasEdit(edit))
+      .filter(([, edit]) => hasContent(edit))
       .map(([itemId, edit]) => ({
         item_id: itemId,
         type: edit.type,
@@ -133,6 +195,8 @@ export function BulkUploadPanel({
         // `null` is meaningful here — "drop the shade the tagger sampled" — so it
         // goes over the wire, while `undefined` means the user never touched it.
         primary_color_hex: edit.primaryColorHex ?? null,
+        style: edit.style,
+        formality: edit.formality,
       }));
     if (entries.length === 0) {
       if (!reviewingBacklog) reset();
@@ -155,18 +219,24 @@ export function BulkUploadPanel({
   const startOver = useCallback(() => {
     reset();
     setEdits({});
+    setOpenTile(null);
+    setTurns({});
     setPhase('pick');
   }, [reset]);
 
   const busy = counts.busy > 0;
-  const editCount = Object.values(edits).filter(hasEdit).length;
+  const editCount = Object.values(edits).filter(hasContent).length;
   const hasEdits = editCount > 0;
 
   return (
     <div className="flex min-w-0 flex-col" data-testid="bulk-panel">
-      <p className="pb-3 text-[13px] leading-snug text-muted-foreground">
-        {phase === 'review' || phase === 'stepper' ? t('reviewSubtitle') : t('subtitle')}
-      </p>
+      {/* In the backlog pass the dialog header already says this; repeating it
+          costs a line of a phone screen that the garments could be using. */}
+      {!(reviewingBacklog && (phase === 'review' || phase === 'stepper')) && (
+        <p className="pb-3 text-[13px] leading-snug text-muted-foreground">
+          {phase === 'review' || phase === 'stepper' ? t('reviewSubtitle') : t('subtitle')}
+        </p>
+      )}
 
       {/* A plain scroller rather than ScrollArea: Radix lays its viewport out as
           a table, which lets wide rows push past the dialog at 320 px. */}
@@ -214,7 +284,14 @@ export function BulkUploadPanel({
                   </Button>
                 )}
 
-                <UploadQueueList photos={photos} onRetry={retry} onRemove={remove} />
+                <UploadQueueList
+                  photos={photos}
+                  onRetry={retry}
+                  onRemove={remove}
+                  onRotate={rotatePhoto}
+                  turns={turns}
+                  rotating={rotating}
+                />
 
                 <Button
                   type="button"
@@ -236,25 +313,23 @@ export function BulkUploadPanel({
                 <QuickReview
                   items={items}
                   edits={edits}
-                  onPickColor={(itemId, color, hex) =>
-                    editOne(itemId, { primaryColor: color, primaryColorHex: hex })
-                  }
-                  onEditOne={(index) => {
-                    setStepperStart(index);
-                    setPhase('stepper');
-                  }}
-                  onStartStepper={() => {
-                    setStepperStart(0);
-                    setPhase('stepper');
-                  }}
+                  openId={openTile}
+                  onOpen={setOpenTile}
+                  onEdit={editOne}
+                  onRotate={rotate}
+                  rotating={rotating}
+                  turns={turns}
+                  onStartStepper={() => setPhase('stepper')}
                 />
               ))}
 
             {phase === 'stepper' && (
               <TagStepper
                 drafts={items.map((item) => draftOf(item, edits[item.id]))}
-                startAt={stepperStart}
                 onChange={editOne}
+                onRotate={rotate}
+                rotating={rotating}
+                turns={turns}
                 onDone={() => setPhase('review')}
               />
             )}

@@ -76,7 +76,11 @@ class TestRemoveBackgroundBackup:
         backup_full = svc.get_image_path(backup_path)
         assert backup_full.exists()
         assert backup_full.read_bytes() == original_bytes
-        assert _close(_pixel(svc.get_image_path(item_with_image.image_path)), BLUE)
+        # The cut-out is written as WebP under a new name so it can keep its alpha
+        # channel; the .jpg it came from is left for the caller to bin once the new
+        # paths are committed.
+        assert result["image_path"].endswith(".webp")
+        assert _close(_pixel(svc.get_image_path(result["image_path"])), BLUE)
 
     @pytest.mark.asyncio
     async def test_double_removal_keeps_first_backup(self, item_with_image: ClothingItem):

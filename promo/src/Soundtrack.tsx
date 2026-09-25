@@ -7,7 +7,7 @@ import { READY, WEAR } from './scenes/Stylist';
 import { ANSWER_AT, QUESTION, TYPE_END } from './scenes/Chat';
 import { LIKE } from './scenes/Friends';
 
-export type Sfx = 'pop' | 'pop-high' | 'thud' | 'whoosh' | 'shutter' | 'tick' | 'key' | 'chime' | 'success' | 'heart' | 'boing' | 'send';
+export type Sfx = 'pop' | 'pop-high' | 'thud' | 'whoosh' | 'shutter' | 'tick' | 'key' | 'chime' | 'success' | 'heart' | 'boing' | 'send' | 'purr' | 'chomp';
 type Cue = { at: number; sfx: Sfx; volume: number };
 
 /** Scene start frames, in the order of SCENES in Root.tsx. */

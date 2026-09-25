@@ -28,5 +28,10 @@
   "frames": 27,
   "durationMs": 2600,
   "loop": false
+ },
+ "bite": {
+  "frames": 28,
+  "durationMs": 1500,
+  "loop": false
  }
 }

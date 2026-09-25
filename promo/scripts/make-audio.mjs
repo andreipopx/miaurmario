@@ -241,4 +241,22 @@ sfx('send', 0.3, (b) =>
   add(b, 0, 0.3, (t) => Math.sin(TAU * (600 * t + 1800 * t * t)) * Math.min(1, t / 0.004) * Math.exp(-t / 0.06))
 );
 
+// Purr: low noise, amplitude-modulated at ~26 Hz, in two slow "breaths" (matches the 2.6 s clip).
+sfx('purr', 2.6, (b) => {
+  const lp = lowpass(260);
+  add(b, 0, 2.6, (t) => {
+    const breath = Math.sin(Math.PI * ((t % 1.3) / 1.3)) ** 1.5;
+    const am = 0.5 + 0.5 * Math.sin(TAU * 26 * t);
+    return lp(rand()) * 3 * am * breath * Math.min(1, (2.6 - t) / 0.2);
+  });
+});
+// Chomp: a crunchy click over a soft thump.
+sfx('chomp', 0.2, (b) => {
+  const lp = lowpass(1800);
+  add(b, 0, 0.2, (t) => {
+    const n = rand();
+    return (lp(n) * 1.4 * Math.exp(-t / 0.025) + 0.6 * Math.sin(TAU * (160 - 300 * t) * t) * Math.exp(-t / 0.05));
+  });
+});
+
 console.log('audio →', path.relative(process.cwd(), out));

@@ -1,9 +1,13 @@
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { Stinky } from '../components/Stinky';
+import { StinkyBiteFx, StinkyPurrFx } from '../components/StinkyFx';
 import { FadeUp, usePop } from '../components/anim';
 import { C, sans, wordmark } from '../theme';
 import { URL } from './ui';
+
+export const PURR_AT = 14;
+export const BITE_AT = 92;
 
 export const OutroWeb: React.FC = () => {
   const frame = useCurrentFrame();
@@ -20,7 +24,11 @@ export const OutroWeb: React.FC = () => {
       </FadeUp>
       <div style={{ position: 'absolute', top: 440, width: 560, height: 560, borderRadius: '50%', background: 'rgba(255,255,255,0.35)', transform: `scale(${cat * (1 + Math.sin(frame / 14) * 0.02)})` }} />
       <div style={{ position: 'absolute', top: 450, transform: `scale(${cat})` }}>
-        <Stinky state="happy" size={540} />
+        <div style={{ position: 'relative' }}>
+          <Stinky state={frame < PURR_AT ? 'happy' : frame < BITE_AT ? 'purr' : 'bite'} size={540} from={frame < PURR_AT ? 0 : frame < BITE_AT ? PURR_AT : BITE_AT} />
+          <StinkyPurrFx size={540} from={PURR_AT} ink="#fff" outline={C.ink} />
+          <StinkyBiteFx size={540} from={BITE_AT} ink="#fff" outline={C.ink} />
+        </div>
       </div>
       <div style={{ position: 'absolute', top: 1050, fontFamily: wordmark, fontSize: 170, lineHeight: 1, transform: `scale(${0.4 + 0.6 * word}) rotate(-2deg)`, opacity: Math.min(1, word * 2) }}>
         miaurmario

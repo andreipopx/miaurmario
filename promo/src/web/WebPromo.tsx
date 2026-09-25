@@ -11,7 +11,7 @@ import { ADD_TAP, ICON_IN, Install, OPEN_TAP, SHARE_TAP } from './Install';
 import { Everywhere } from './Everywhere';
 import { CONNECT_TAP, Connect } from './Connect';
 import { LOOK_AT, MOOD_AT, SongLook, TIP_AT } from './SongLook';
-import { OutroWeb } from './OutroWeb';
+import { BITE_AT, OutroWeb, PURR_AT } from './OutroWeb';
 import { INTRO, SONGS } from './songs';
 
 export type WebPromoProps = {
@@ -43,10 +43,18 @@ const START = SCENES.map((_, i) => SCENES.slice(0, i).reduce((s, x) => s + x.d, 
 const [hook, browser, install, everywhere, connect] = START;
 const outro = START[START.length - 1];
 
+/** "¡ñam!" pop and two chomps, on the bite clip's own beats (120 / 470 / 800 ms). */
+const bite = (at: number): [number, Sfx, number][] => [
+  [at + 4, 'pop-high', 0.5],
+  [at + 14, 'chomp', 0.9],
+  [at + 24, 'chomp', 0.8],
+];
+
 const CUES: [number, Sfx, number][] = [
   ...START.slice(1).map((s): [number, Sfx, number] => [s - 2, 'whoosh', 0.35]),
   [hook + 12, 'pop', 0.6],
-  [hook + ANSWER, 'boing', 0.7],
+  [hook + ANSWER, 'boing', 0.5],
+  ...bite(hook + ANSWER),
   ...Array.from({ length: 10 }, (_, i): [number, Sfx, number] => [browser + TYPE_FROM + Math.round((i * (TYPE_TO - TYPE_FROM)) / 10), 'key', 0.3]),
   [browser + GO, 'send', 0.6],
   [install + SHARE_TAP, 'pop', 0.5],
@@ -64,6 +72,8 @@ const CUES: [number, Sfx, number][] = [
     [START[FIRST_SONG + i] + LOOK_AT, 'pop', 0.5],
   ]),
   [outro + 12, 'pop-high', 0.5],
+  [outro + PURR_AT, 'purr', 0.9],
+  ...bite(outro + BITE_AT),
 ];
 
 /** A song clip that fades in/out over `fade` frames. */

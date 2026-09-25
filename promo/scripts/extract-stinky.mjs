@@ -7,7 +7,7 @@ import sharp from 'sharp';
 const root = path.resolve(import.meta.dirname, '..');
 const head = path.join(root, '../frontend/public/brand/stinky/head');
 const clips = JSON.parse(fs.readFileSync(path.join(head, 'stinky.animations.json'), 'utf8')).groups.states.clips;
-const STATES = ['idle', 'happy', 'wave', 'thinking', 'sleepy', 'purr'];
+const STATES = ['idle', 'happy', 'wave', 'thinking', 'sleepy', 'purr', 'bite'];
 
 const meta = {};
 for (const state of STATES) {

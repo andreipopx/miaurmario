@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
 import { Stinky } from '../components/Stinky';
+import { StinkyBiteFx } from '../components/StinkyFx';
 import { FadeUp, usePop } from '../components/anim';
 import { C, sans } from '../theme';
 
@@ -50,7 +51,10 @@ export const HookWeb: React.FC = () => {
           top: interpolate(cat, [0, 1], [1920, 1180]) + Math.sin(frame / 10) * 6,
         }}
       >
-        <Stinky state={frame < ANSWER ? 'thinking' : 'happy'} size={640} from={frame < ANSWER ? 0 : ANSWER} />
+        <div style={{ position: 'relative' }}>
+          <Stinky state={frame < ANSWER ? 'thinking' : 'bite'} size={640} from={frame < ANSWER ? 0 : ANSWER} />
+          <StinkyBiteFx size={640} from={ANSWER} ink="#fff" outline={C.ink} />
+        </div>
       </div>
     </AbsoluteFill>
   );

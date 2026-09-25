@@ -166,3 +166,62 @@ class TestClothingTags:
         assert tags.primary_color == "navy"
         assert len(tags.colors) == 2
         assert tags.confidence == 0.92
+
+
+class TestTagShapes:
+    """A tag list is read as a list whatever shape the model answered with.
+
+    The prompt asks for ``"style": ["casual"]``. Models answer ``"style": "casual"``
+    often enough that it has to be a shape we read rather than a bug we log: the
+    garment is right and only the JSON is wrong. A bare string used to be iterated
+    as a string, so "casual" became ``["c", "a", "s", …]`` and every one of those
+    was thrown away as an unknown style — the tag was silently lost, and the same
+    bare string reaching the item page as ``tags.style`` took the whole dashboard
+    to its error page on ``.map``.
+    """
+
+    def test_bare_string_becomes_a_one_element_list(self):
+        service = AIService()
+        tags = service._parse_tags_from_response(
+            '{"type": "shoes", "style": "elegant", "season": "summer", "colors": "black"}'
+        )
+        assert tags.style == ["elegant"]
+        assert tags.season == ["summer"]
+        assert tags.colors == ["black"]
+
+    def test_a_bare_string_that_is_not_in_the_vocabulary_is_still_dropped(self):
+        service = AIService()
+        tags = service._parse_tags_from_response('{"type": "shoes", "style": "pumps"}')
+        # Normalising the shape is not the same as widening the vocabulary.
+        assert tags.style == []
+
+    def test_a_scalar_wrapped_in_a_list_is_unwrapped(self):
+        service = AIService()
+        tags = service._parse_tags_from_response(
+            '{"type": ["shirt"], "primary_color": ["blue"], "formality": ["casual"],'
+            ' "material": ["cotton"], "subtype": ["polo"]}'
+        )
+        assert tags.type == "shirt"
+        assert tags.primary_color == "blue"
+        assert tags.formality == "casual"
+        assert tags.material == "cotton"
+        assert tags.subtype == "polo"
+
+    def test_junk_shapes_lose_the_tag_and_keep_the_garment(self):
+        service = AIService()
+        tags = service._parse_tags_from_response(
+            '{"type": "shirt", "style": {"a": 1}, "season": 3, "colors": [null, 7, "blue"],'
+            ' "formality": 12, "primary_color": []}'
+        )
+        assert tags.type == "shirt"
+        assert tags.style == []
+        assert tags.season == []
+        assert tags.colors == ["blue"]
+        assert tags.formality is None
+        assert tags.primary_color is None
+
+    def test_an_empty_string_is_not_a_tag(self):
+        service = AIService()
+        tags = service._parse_tags_from_response('{"type": "shirt", "style": "   ", "subtype": ""}')
+        assert tags.style == []
+        assert tags.subtype is None

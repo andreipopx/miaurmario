@@ -8,7 +8,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from dataclasses import field as dc_field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import httpx
 from PIL import Image, ImageOps
@@ -486,10 +486,39 @@ class AIService:
             "charcoal": "gray",
         }
 
-        def validate_value(value: str | None, valid_set: set) -> str | None:
-            if value is None:
+        def as_list(value: Any) -> list:
+            """A list, whatever shape the model answered with.
+
+            The prompt asks for ``"style": ["casual"]``, and a model that answers
+            ``"style": "casual"`` is not wrong about the garment — only about the
+            JSON. Read as a one-element list the tag survives; iterated as a string
+            it becomes its own characters and every one of them is thrown away.
+            """
+            if isinstance(value, list):
+                return value
+            if isinstance(value, str):
+                return [value] if value.strip() else []
+            return []
+
+        def as_scalar(value: Any) -> str | None:
+            """The single value a field wants, out of whatever arrived.
+
+            The mirror image of ``as_list``: a model that wraps a scalar in a list
+            (``"formality": ["casual"]``) meant the value inside it.
+            """
+            if isinstance(value, str):
+                return value
+            if isinstance(value, list):
+                for entry in value:
+                    if isinstance(entry, str):
+                        return entry
+            return None
+
+        def validate_value(value: Any, valid_set: set) -> str | None:
+            text = as_scalar(value)
+            if text is None:
                 return None
-            value_lower = value.lower().strip()
+            value_lower = text.lower().strip()
             if value_lower in valid_set:
                 return value_lower
             alias = COLOR_ALIASES.get(value_lower)
@@ -497,10 +526,12 @@ class AIService:
                 return alias
             return None
 
-        def validate_list(values: list, valid_set: set) -> list:
-            if not values:
-                return []
-            return [v.lower().strip() for v in values if v and v.lower().strip() in valid_set]
+        def validate_list(values: Any, valid_set: set) -> list:
+            return [
+                v.lower().strip()
+                for v in as_list(values)
+                if isinstance(v, str) and v.lower().strip() in valid_set
+            ]
 
         data = extract_json(response_text)
         if not data:
@@ -519,7 +550,7 @@ class AIService:
         else:
             tags.type = "unknown"
 
-        tags.subtype = data.get("subtype") if data.get("subtype") else None
+        tags.subtype = as_scalar(data.get("subtype")) or None
         tags.primary_color = validate_value(data.get("primary_color"), VALID_COLORS)
         tags.colors = validate_list(data.get("colors", []), VALID_COLORS)
         tags.pattern = validate_value(data.get("pattern"), VALID_PATTERNS)

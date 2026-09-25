@@ -317,11 +317,22 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   // garment does not change its colour.
   const detailTint = garmentTileTint(item.primary_color, swatch);
 
-  // AI-generated tags
+  // AI-generated tags.
+  //
+  // `tags` is a free-form JSON column. The tagger is asked for `"style": ["…"]`,
+  // but a model that answers with a bare string — `{"style": "pumps"}` — and rows
+  // written before the vocabulary settled both land here, and `.map` on a string
+  // is not a function: one odd garment used to take the whole dashboard to its
+  // error page. Every list is read through `asTagList`, so it stays one garment.
   const tags = item.tags || {};
-  const hasAiTags = !!(tags.colors?.length || tags.pattern || tags.material ||
-                   tags.style?.length || tags.season?.length || tags.formality || tags.fit ||
-                   tags.occasion?.length || tags.condition || tags.features?.length);
+  const tagColors = asTagList(tags.colors);
+  const tagStyles = asTagList(tags.style);
+  const tagSeasons = asTagList(tags.season);
+  const tagOccasions = asTagList(tags.occasion);
+  const tagFeatures = asTagList(tags.features);
+  const hasAiTags = !!(tagColors.length || tags.pattern || tags.material ||
+                   tagStyles.length || tagSeasons.length || tags.formality || tags.fit ||
+                   tagOccasions.length || tags.condition || tagFeatures.length);
 
   return (
     <>
@@ -1074,7 +1085,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         </p>
                       )}
                       {hasAiTags && <div className="flex flex-wrap gap-1.5">
-                        {tags.colors?.map((color) => (
+                        {tagColors.map((color) => (
                           <Badge key={color} variant="outline" className="border-0 bg-background text-xs font-semibold">
                             {tagLabel('colors', color)}
                           </Badge>
@@ -1089,12 +1100,12 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                             {tagLabel('materials', tags.material)}
                           </Badge>
                         )}
-                        {tags.style?.map((s) => (
+                        {tagStyles.map((s) => (
                           <Badge key={s} variant="outline" className="border-0 bg-background text-xs font-semibold">
                             {tagLabel('styles', s)}
                           </Badge>
                         ))}
-                        {tags.season?.map((s) => (
+                        {tagSeasons.map((s) => (
                           <Badge key={s} variant="outline" className="border-0 bg-background text-xs font-semibold">
                             {tagLabel('seasons', s)}
                           </Badge>
@@ -1109,7 +1120,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                             {t('ai.fitLabel', { fit: tagLabel('fit', tags.fit) })}
                           </Badge>
                         )}
-                        {tags.occasion?.map((o: string) => (
+                        {tagOccasions.map((o) => (
                           <Badge key={o} variant="outline" className="border-0 bg-background text-xs font-semibold">
                             {tagLabel('occasions', o)}
                           </Badge>
@@ -1119,7 +1130,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                             {tags.condition}
                           </Badge>
                         )}
-                        {tags.features?.map((f: string) => (
+                        {tagFeatures.map((f) => (
                           <Badge key={f} variant="outline" className="border-0 bg-background text-xs font-semibold">
                             {f}
                           </Badge>

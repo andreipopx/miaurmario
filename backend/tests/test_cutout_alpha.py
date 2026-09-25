@@ -77,9 +77,7 @@ class TestRemoveBackground:
     async def test_stores_webp_with_an_alpha_channel(self, service, tmp_path) -> None:
         paths = await service.process_and_store(uuid.uuid4(), _photo(), "jumper.jpg")
 
-        with patch(
-            "app.services.background_removal.get_provider", return_value=_FakeProvider()
-        ):
+        with patch("app.services.background_removal.get_provider", return_value=_FakeProvider()):
             result = service.remove_background(paths["image_path"])
 
         for key in ("image_path", "medium_path", "thumbnail_path"):
@@ -96,9 +94,7 @@ class TestRemoveBackground:
         paths = await service.process_and_store(uuid.uuid4(), _photo(), "jumper.jpg")
         before = (tmp_path / paths["image_path"]).read_bytes()
 
-        with patch(
-            "app.services.background_removal.get_provider", return_value=_FakeProvider()
-        ):
+        with patch("app.services.background_removal.get_provider", return_value=_FakeProvider()):
             result = service.remove_background(paths["image_path"])
 
         backup = tmp_path / result["original_backup_path"]
@@ -112,9 +108,7 @@ class TestRemoveBackground:
         paths = await service.process_and_store(uuid.uuid4(), _photo(), "jumper.jpg")
         original = (tmp_path / paths["image_path"]).read_bytes()
 
-        with patch(
-            "app.services.background_removal.get_provider", return_value=_FakeProvider()
-        ):
+        with patch("app.services.background_removal.get_provider", return_value=_FakeProvider()):
             first = service.remove_background(paths["image_path"])
             second = service.remove_background(first["image_path"])
 
@@ -125,9 +119,7 @@ class TestRemoveBackground:
     async def test_a_caller_that_wants_a_flat_image_still_gets_one(self, service, tmp_path) -> None:
         paths = await service.process_and_store(uuid.uuid4(), _photo(), "jumper.jpg")
 
-        with patch(
-            "app.services.background_removal.get_provider", return_value=_FakeProvider()
-        ):
+        with patch("app.services.background_removal.get_provider", return_value=_FakeProvider()):
             result = service.remove_background(paths["image_path"], bg_color=(255, 255, 255))
 
         flat = Image.open(tmp_path / result["image_path"])
@@ -140,9 +132,7 @@ class TestRotateAndRestore:
     @pytest.mark.asyncio
     async def test_rotating_a_cutout_keeps_it_a_cutout(self, service, tmp_path) -> None:
         paths = await service.process_and_store(uuid.uuid4(), _photo((200, 300)), "j.jpg")
-        with patch(
-            "app.services.background_removal.get_provider", return_value=_FakeProvider()
-        ):
+        with patch("app.services.background_removal.get_provider", return_value=_FakeProvider()):
             cut = service.remove_background(paths["image_path"])
 
         before = Image.open(tmp_path / cut["image_path"])
@@ -156,9 +146,7 @@ class TestRotateAndRestore:
     @pytest.mark.asyncio
     async def test_restore_puts_the_jpeg_back_under_its_old_name(self, service, tmp_path) -> None:
         paths = await service.process_and_store(uuid.uuid4(), _photo(), "jumper.jpg")
-        with patch(
-            "app.services.background_removal.get_provider", return_value=_FakeProvider()
-        ):
+        with patch("app.services.background_removal.get_provider", return_value=_FakeProvider()):
             cut = service.remove_background(paths["image_path"])
 
         restored = service.restore_original(cut["image_path"], cut["original_backup_path"])
@@ -169,11 +157,11 @@ class TestRotateAndRestore:
         assert not (tmp_path / cut["original_backup_path"]).exists()
 
     @pytest.mark.asyncio
-    async def test_delete_replaced_only_bins_what_is_no_longer_used(self, service, tmp_path) -> None:
+    async def test_delete_replaced_only_bins_what_is_no_longer_used(
+        self, service, tmp_path
+    ) -> None:
         paths = await service.process_and_store(uuid.uuid4(), _photo(), "jumper.jpg")
-        with patch(
-            "app.services.background_removal.get_provider", return_value=_FakeProvider()
-        ):
+        with patch("app.services.background_removal.get_provider", return_value=_FakeProvider()):
             cut = service.remove_background(paths["image_path"])
 
         service.delete_replaced(
@@ -196,9 +184,7 @@ class TestServingACutout:
     ) -> None:
         service = ImageService()
         paths = await service.process_and_store(test_user.id, _photo(), "jumper.jpg")
-        with patch(
-            "app.services.background_removal.get_provider", return_value=_FakeProvider()
-        ):
+        with patch("app.services.background_removal.get_provider", return_value=_FakeProvider()):
             cut = service.remove_background(paths["image_path"])
 
         response = await client.get(f"/api/v1/images/{cut['image_path']}", headers=auth_headers)

@@ -1461,7 +1461,9 @@ async def remove_item_background(
                 "updated_at",
             ],
         )
-        image_service.delete_replaced(previous, [item.image_path, item.medium_path, item.thumbnail_path])
+        image_service.delete_replaced(
+            previous, [item.image_path, item.medium_path, item.thumbnail_path]
+        )
         return ItemResponse.model_validate(item)
     except ImportError:
         raise HTTPException(

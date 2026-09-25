@@ -466,9 +466,7 @@ class ImageService:
         if not backup_full.exists():
             if is_cutout_path(image_path):
                 # Nothing to back up losslessly: flatten the cut-out we have.
-                backup_full.write_bytes(
-                    self._encode_jpeg(Image.open(original_full), 95)
-                )
+                backup_full.write_bytes(self._encode_jpeg(Image.open(original_full), 95))
             else:
                 shutil.copy2(original_full, backup_full)
 

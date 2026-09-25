@@ -19,6 +19,12 @@ interface TimezoneComboboxProps {
   cityTimezone?: string | null;
   /** Short city name for the suggestion ("Madrid"). */
   cityName?: string;
+  /**
+   * True while the saved zone is the detected one. Says so under the field, so
+   * nobody has to wonder where it came from — and changing it here is still one
+   * tap away, after which detection leaves it alone.
+   */
+  autoDetected?: boolean;
 }
 
 /**
@@ -32,6 +38,7 @@ export function TimezoneCombobox({
   onChange,
   cityTimezone,
   cityName,
+  autoDetected = false,
 }: TimezoneComboboxProps) {
   const t = useTranslations('settings.location');
   const locale = useLocale();
@@ -88,7 +95,9 @@ export function TimezoneCombobox({
           {suggestion.text}
         </button>
       ) : (
-        <p className="px-1 text-[13px] text-muted-foreground">{t('timezoneHint')}</p>
+        <p className="px-1 text-[13px] text-muted-foreground" data-testid="timezone-hint">
+          {autoDetected ? t('timezoneAutoDetected') : t('timezoneHint')}
+        </p>
       )}
     </div>
   );

@@ -102,10 +102,11 @@ describe('LocationPicker', () => {
     expect(getMock).toHaveBeenCalledWith('/geo/search', { params: { q: 'Madr', lang: 'es' } })
 
     fireEvent.mouseDown(option)
+    // City precision (~1 km), the only granularity we ever keep.
     expect(onChange).toHaveBeenCalledWith({
       name: 'Madrid, Comunidad de Madrid, España',
-      lat: 40.4165,
-      lon: -3.70256,
+      lat: 40.42,
+      lon: -3.7,
       timezone: 'Europe/Madrid',
     })
   })
@@ -128,33 +129,6 @@ describe('LocationPicker', () => {
     expect(screen.getByRole('combobox', { name: 'Ciudad' })).toBeInTheDocument()
   })
 
-  it('"Usar mi ubicación" reverse-geocodes the device position', async () => {
-    getMock.mockResolvedValue(MADRID)
-    const getCurrentPosition = vi.fn((ok: PositionCallback) =>
-      ok({ coords: { latitude: 40.41678, longitude: -3.70379 } } as GeolocationPosition)
-    )
-    Object.defineProperty(navigator, 'geolocation', {
-      configurable: true,
-      value: { getCurrentPosition },
-    })
-    const onChange = vi.fn()
-    render(<LocationPicker value={{ name: '', lat: null, lon: null }} onChange={onChange} />, {
-      wrapper: Providers,
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Usar mi ubicación' }))
-
-    await waitFor(() => expect(onChange).toHaveBeenCalled())
-    expect(getMock).toHaveBeenCalledWith('/geo/reverse', {
-      params: { lat: '40.41678', lon: '-3.70379', lang: 'es' },
-    })
-    expect(onChange).toHaveBeenCalledWith({
-      name: 'Madrid, Comunidad de Madrid, España',
-      lat: 40.41678,
-      lon: -3.70379,
-      timezone: 'Europe/Madrid',
-    })
-  })
 })
 
 describe('TimezoneCombobox', () => {

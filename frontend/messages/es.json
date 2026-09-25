@@ -1008,7 +1008,7 @@
       "resultVibrate": "¿Lo has notado? Eso era el ronroneo de Stinky.",
       "resultSwitch": "Enviado. En iPhone puede que no se note: depende de tu versión de iOS.",
       "resultNone": "Este navegador no puede hacer vibrar el móvil.",
-      "resultReducedMotion": "Tienes activado \u201cReducir movimiento\u201d, así que la vibración está apagada."
+      "resultReducedMotion": "Tienes activado “Reducir movimiento”, así que la vibración está apagada."
     },
     "family": {
       "title": "Familia",
@@ -1103,8 +1103,6 @@
       "useBrowserTimezone": "Usar la de este dispositivo: {zone}",
       "useMyLocation": "Usar mi ubicación",
       "locating": "Buscándote…",
-      "myLocation": "Mi ubicación ({lat}, {lon})",
-      "reverseError": "Tenemos tus coordenadas, pero no el nombre de la ciudad. Puedes buscarla arriba.",
       "permissionDenied": "No nos has dado permiso para ver tu ubicación. Búscala a mano.",
       "positionUnavailable": "No pudimos saber dónde estás. Búscala a mano.",
       "positionTimeout": "Tardó demasiado en localizarte. Inténtalo otra vez o búscala a mano.",
@@ -1113,15 +1111,29 @@
       "saveLocation": "Guardar ubicación",
       "required": "Elige tu ciudad para recibir looks según el tiempo.",
       "detectedToast": "Te encontramos en {city}. Revisa y guarda.",
-      "approxFilled": "Ubicación aproximada rellenada. Revísala y guarda.",
-      "approxFilledWithReason": "{reason} Ubicación aproximada rellenada. Revísala y guarda.",
       "savedToast": "Ubicación y zona horaria guardadas",
       "saveError": "No se pudo guardar la ubicación",
       "invalidLatLon": "Introduce valores válidos de latitud y longitud",
       "latRange": "La latitud debe estar entre -90 y 90",
       "lonRange": "La longitud debe estar entre -180 y 180",
       "notSupported": "Tu navegador no soporta geolocalización.",
-      "unableToDetect": "No se pudo detectar tu ubicación."
+      "unableToDetect": "No se pudo detectar tu ubicación.",
+      "privacyNote": "Tu navegador te pedirá permiso. Guardamos solo la ciudad (redondeada a ~1 km), nunca tu posición exacta.",
+      "privacySummary": "Guardamos tu ciudad y tu zona horaria, y las usamos solo para el tiempo y para la hora de los avisos. Nada más.",
+      "deleteLocation": "Borrar mi ubicación",
+      "deleteConfirm": "¿Borrar tu ciudad? Los looks dejarán de tener en cuenta el tiempo. Tu zona horaria se queda.",
+      "deletedToast": "Ubicación borrada",
+      "deleteError": "No se pudo borrar la ubicación",
+      "timezoneAutoDetected": "Detectada automáticamente. Cámbiala si no es la tuya.",
+      "travel": {
+        "question": "¿Estás en {city}?",
+        "hint": "¿Visto para allí? No cambiamos nada hasta que nos lo digas.",
+        "confirm": "Sí, actualízalo",
+        "keep": "No, sigue con {city}",
+        "keepGeneric": "No, déjalo como está",
+        "updatedToast": "Listo, ahora te vestimos para {city}",
+        "updateError": "No se pudo actualizar la ciudad"
+      }
     },
     "measurements": {
       "title": "Medidas corporales",

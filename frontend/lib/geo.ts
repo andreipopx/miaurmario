@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import { roundCityCoord } from '@/lib/location-detect';
 
 /** A place from the backend geocoding proxy (/geo/search, /geo/reverse). */
 export interface Place {
@@ -40,17 +41,17 @@ export async function searchPlaces(query: string, locale: string): Promise<Place
   return data.results;
 }
 
-export async function reverseGeocode(lat: number, lon: number, locale: string): Promise<Place> {
-  return api.get<Place>('/geo/reverse', {
-    params: { lat: lat.toFixed(5), lon: lon.toFixed(5), lang: geoLang(locale) },
-  });
-}
+// A device reading is turned into a city by POST /users/me/location/device
+// (lib/hooks/use-location.ts), which rounds, reverse-geocodes and decides
+// whether to save or to ask about a trip. The plain GET /geo/reverse endpoint
+// still exists on the backend; nothing in the app calls it directly.
 
 export function placeToLocation(place: Place): SavedLocation {
   return {
     name: place.label.slice(0, LOCATION_NAME_MAX),
-    lat: Number(place.latitude.toFixed(6)),
-    lon: Number(place.longitude.toFixed(6)),
+    // City centre, at the same ~1 km granularity we store everywhere else.
+    lat: roundCityCoord(place.latitude),
+    lon: roundCityCoord(place.longitude),
     timezone: place.timezone ?? null,
   };
 }

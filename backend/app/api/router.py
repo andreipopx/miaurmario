@@ -19,6 +19,7 @@ from app.api.integrations.pinterest import router as pinterest_router
 from app.api.integrations.spotify import router as spotify_router
 from app.api.items import router as items_router
 from app.api.learning import router as learning_router
+from app.api.location import router as location_router
 from app.api.music import router as music_router
 from app.api.notifications import router as notifications_router
 from app.api.outfits import router as outfits_router
@@ -38,6 +39,7 @@ api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
+api_router.include_router(location_router)
 api_router.include_router(ai_settings_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_panel_router)

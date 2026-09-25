@@ -1006,9 +1006,9 @@
       "test": "Test vibration",
       "note": "On iPhone it only half works: it needs iOS 17.4 or newer, and even then your iPhone may do nothing.",
       "resultVibrate": "Feel that? That was Stinky purring.",
-      "resultSwitch": "Sent. On iPhone you may feel nothing \u2014 it depends on your iOS version.",
+      "resultSwitch": "Sent. On iPhone you may feel nothing — it depends on your iOS version.",
       "resultNone": "This browser cannot vibrate your phone.",
-      "resultReducedMotion": "\u201cReduce Motion\u201d is on, so vibration is switched off."
+      "resultReducedMotion": "“Reduce Motion” is on, so vibration is switched off."
     },
     "family": {
       "title": "Family",
@@ -1103,8 +1103,6 @@
       "useBrowserTimezone": "Use this device's: {zone}",
       "useMyLocation": "Use my location",
       "locating": "Finding you…",
-      "myLocation": "My location ({lat}, {lon})",
-      "reverseError": "We have your coordinates but not the city name. You can search for it above.",
       "permissionDenied": "Location permission was denied. Search for your city instead.",
       "positionUnavailable": "We couldn't tell where you are. Search for your city instead.",
       "positionTimeout": "Finding you took too long. Try again or search for your city.",
@@ -1113,15 +1111,29 @@
       "saveLocation": "Save location",
       "required": "Pick your city to get weather-aware looks.",
       "detectedToast": "Found you in {city}. Review and save.",
-      "approxFilled": "Approximate location filled in. Review and save.",
-      "approxFilledWithReason": "{reason} Approximate location filled in. Review and save.",
       "savedToast": "Location and time zone saved",
       "saveError": "Couldn't save the location",
       "invalidLatLon": "Enter valid latitude and longitude values",
       "latRange": "Latitude must be between -90 and 90",
       "lonRange": "Longitude must be between -180 and 180",
       "notSupported": "Your browser doesn't support geolocation.",
-      "unableToDetect": "Couldn't detect your location."
+      "unableToDetect": "Couldn't detect your location.",
+      "privacyNote": "Your browser will ask for permission. We keep only the city (rounded to ~1 km), never your exact position.",
+      "privacySummary": "We keep your city and your time zone, and use them only for the weather and for the hour your notifications arrive. Nothing else.",
+      "deleteLocation": "Delete my location",
+      "deleteConfirm": "Delete your city? Looks will stop taking the weather into account. Your time zone stays.",
+      "deletedToast": "Location deleted",
+      "deleteError": "Couldn't delete the location",
+      "timezoneAutoDetected": "Detected automatically. Change it if it isn't yours.",
+      "travel": {
+        "question": "Are you in {city}?",
+        "hint": "Should we dress you for there? Nothing changes until you say so.",
+        "confirm": "Yes, update it",
+        "keep": "No, stay with {city}",
+        "keepGeneric": "No, leave it as it is",
+        "updatedToast": "Done — we'll dress you for {city} now",
+        "updateError": "Couldn't update the city"
+      }
     },
     "measurements": {
       "title": "Body Measurements",

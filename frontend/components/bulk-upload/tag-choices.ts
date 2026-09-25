@@ -39,6 +39,46 @@ export const QUICK_COLORS = [
   'olive',
 ] as const;
 
+/**
+ * Style and formality, the two tags that turn "a shirt" into "a shirt for the
+ * office". Both vocabularies are the tagger's (backend prompts/clothing_analysis)
+ * so a hand-tagged garment scores exactly like an AI-tagged one.
+ */
+export const QUICK_STYLES = [
+  'casual',
+  'classic',
+  'sporty',
+  'minimalist',
+  'elegant',
+  'streetwear',
+  'vintage',
+  'preppy',
+  'bohemian',
+  'athletic',
+  'modern',
+  'rugged',
+] as const;
+
+export const FORMALITY_LEVELS = [
+  'very-casual',
+  'casual',
+  'smart-casual',
+  'business-casual',
+  'formal',
+] as const;
+
+export const SEASONS = ['spring', 'summer', 'fall', 'winter', 'all-season'] as const;
+
+/** The tagger picks one or two styles; so does the user. */
+export const MAX_STYLES = 2;
+
+/** Add or remove a style, keeping at most MAX_STYLES and dropping the oldest. */
+export function toggleStyle(current: readonly string[] | null | undefined, style: string): string[] {
+  const styles = current ?? [];
+  if (styles.includes(style)) return styles.filter((s) => s !== style);
+  return [...styles, style].slice(-MAX_STYLES);
+}
+
 /** Every type, with the shortlist first, for the "more types" select. */
 export const OTHER_TYPES = CLOTHING_TYPES.map((type) => type.value).filter(
   (value) => !(QUICK_TYPES as readonly string[]).includes(value)

@@ -87,6 +87,9 @@ export interface BatchTagEntry {
   item_id: string;
   type?: string | null;
   primary_color?: string | null;
+  style?: string[] | null;
+  formality?: string | null;
+  season?: string[] | null;
 }
 
 export interface BatchTagResponse {
@@ -95,7 +98,7 @@ export interface BatchTagResponse {
   errors: string[];
 }
 
-/** The quick review pass: type and colour for a handful of garments in one call. */
+/** The quick review pass: type, colour, style and formality for a handful of garments in one call. */
 export function useBatchTagItems() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();

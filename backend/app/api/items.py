@@ -65,7 +65,16 @@ settings = get_settings()
 
 router = APIRouter(prefix="/items", tags=["Items"])
 
-TAG_WRITEBACK_FIELDS = {"type", "subtype", "colors", "primary_color", "tags"}
+TAG_WRITEBACK_FIELDS = {
+    "type",
+    "subtype",
+    "colors",
+    "primary_color",
+    # Sampling the shade off the photo is the user naming the colour, so it counts
+    # as a manual tag on its own even when the family does not change.
+    "primary_color_hex",
+    "tags",
+}
 _EMPTY_TAG_VALUES = (None, "", [], {})
 
 # Filling an empty wardrobe means many photos in a short burst, so the budgets are
@@ -320,6 +329,9 @@ async def create_item(
     notes: str | None = Form(None),
     colors: str | None = Form(None),
     primary_color: str | None = Form(None),
+    primary_color_hex: str | None = Form(
+        None, description="The shade sampled off the photo, as #rrggbb. Display only."
+    ),
     favorite: bool = Form(False),
     skip_ai: bool = Form(False),
     source_url: str | None = Form(None),
@@ -378,6 +390,7 @@ async def create_item(
         notes=notes,
         colors=color_list,
         primary_color=primary_color,
+        primary_color_hex=primary_color_hex,
         favorite=favorite,
         source_url=_clean_source_url(source_url),
         care=_parse_care_form(care),
@@ -485,6 +498,14 @@ async def bulk_tag_items(
             item.primary_color = entry.primary_color
             if not item.colors:
                 item.colors = [entry.primary_color]
+            # A row that names a family sets the shade to whatever came with it,
+            # including nothing: picking "marrón" off the swatches means the shade
+            # the tagger sampled no longer describes the garment.
+            item.primary_color_hex = entry.primary_color_hex
+        elif entry.primary_color_hex:
+            # Eyedropper on a garment whose family is already right: keep the family,
+            # take the shade.
+            item.primary_color_hex = entry.primary_color_hex
 
         item.tagging_status = TaggingStatus.tagged
         item.tagged_by = TaggedBy.manual

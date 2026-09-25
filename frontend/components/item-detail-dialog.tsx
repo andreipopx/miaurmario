@@ -63,8 +63,9 @@ import { Stinky } from '@/components/stinky/stinky';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { useUpdateItem, useDeleteItem, useReanalyzeItem, useRotateImage, useRemoveBackground, useRestoreOriginal, useReplaceItemImage, useLogWash, useWashHistory, useItemWearStats, useItemWearHistory, useAddItemImage, useDeleteItemImage, useSetPrimaryImage } from '@/lib/hooks/use-items';
-import { Item, CLOTHING_TYPES, CLOTHING_COLORS } from '@/lib/types';
-import { ColorEyedropper } from '@/components/color-eyedropper';
+import { Item, CLOTHING_TYPES } from '@/lib/types';
+import { swatchHex } from '@/lib/colors';
+import { ColorCaptureField } from '@/components/color-capture-field';
 import { GeneratePairingsDialog } from '@/components/generate-pairings-dialog';
 import { useFeatures } from '@/lib/hooks/use-features';
 import { useTagLabel } from '@/lib/tag-labels';
@@ -104,6 +105,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
     subtype: '',
     brand: '',
     primary_color: '',
+    primary_color_hex: null as string | null,
     notes: '',
     favorite: false,
     wash_interval: undefined as number | undefined,
@@ -141,6 +143,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
         subtype: item.subtype || '',
         brand: item.brand || '',
         primary_color: item.primary_color || '',
+        primary_color_hex: item.primary_color_hex ?? null,
         notes: item.notes || '',
         favorite: item.favorite,
         wash_interval: item.wash_interval ?? undefined,
@@ -164,6 +167,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
           subtype: editForm.subtype || undefined,
           brand: editForm.brand || undefined,
           primary_color: editForm.primary_color || undefined,
+          // Sent even when null, so "I picked the colour off the list" really does
+          // drop a shade that no longer matches.
+          primary_color_hex: editForm.primary_color ? editForm.primary_color_hex : null,
           notes: editForm.notes || undefined,
           favorite: editForm.favorite,
           wash_interval: editForm.wash_interval,
@@ -274,7 +280,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
 
   // Use signed URL from backend for better quality in detail view
   const imageUrl = item.image_url || item.image_path;
-  const colorInfo = CLOTHING_COLORS.find((c) => c.value === item.primary_color);
+  // The shade sampled off this garment when there is one, the palette's version of
+  // the family otherwise. The name beside it is always the family.
+  const swatch = swatchHex(item.primary_color, item.primary_color_hex);
 
   // AI-generated tags
   const tags = item.tags || {};
@@ -648,34 +656,23 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-bold">{t('form.primaryColor')}</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={editForm.primary_color}
-                        onValueChange={(v) => setEditForm({ ...editForm, primary_color: v })}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder={t('form.selectColor')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CLOTHING_COLORS.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="h-3.5 w-3.5 rounded-full ring-1 ring-inset ring-black/10"
-                                  style={{ backgroundColor: c.hex }}
-                                />
-                                {tagLabel('colors', c.value)}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <ColorEyedropper
-                        imageUrl={imageUrl}
-                        onColorSelect={(color) => setEditForm({ ...editForm, primary_color: color })}
-                      />
-                    </div>
+                    <Label htmlFor="edit-color" className="font-bold">{t('form.primaryColor')}</Label>
+                    <ColorCaptureField
+                      id="edit-color"
+                      value={editForm.primary_color}
+                      hex={editForm.primary_color_hex}
+                      imageUrl={imageUrl}
+                      onPick={({ color, hex }) =>
+                        setEditForm({
+                          ...editForm,
+                          primary_color: color,
+                          // A family off the list says nothing about the shade, so
+                          // the old sample is cleared rather than left to contradict
+                          // the new name.
+                          primary_color_hex: hex ?? null,
+                        })
+                      }
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="font-bold">{t('form.notes')}</Label>
@@ -748,14 +745,14 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         <span>{item.brand}</span>
                       </div>
                     )}
-                    {colorInfo && (
+                    {swatch && item.primary_color && (
                       <div className="flex items-center gap-2 text-sm">
                         <Palette className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                         <div
                           className="h-4 w-4 rounded-full ring-1 ring-inset ring-black/10"
-                          style={{ backgroundColor: colorInfo.hex }}
+                          style={{ backgroundColor: swatch }}
                         />
-                        <span>{tagLabel('colors', colorInfo.value)}</span>
+                        <span>{tagLabel('colors', item.primary_color)}</span>
                       </div>
                     )}
                     {item.wear_count > 0 && (

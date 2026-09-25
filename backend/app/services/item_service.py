@@ -217,6 +217,7 @@ class ItemService:
             tags=tags,
             colors=item_data.colors or [],
             primary_color=item_data.primary_color,
+            primary_color_hex=item_data.primary_color_hex,
             status=ItemStatus.processing,  # AI analysis will update to ready
             name=item_data.name,
             brand=item_data.brand,

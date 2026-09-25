@@ -27,7 +27,8 @@ import { EmptyState } from '@/components/empty-state';
 import { Chip, popColorAt } from '@/components/chip';
 import { useItems, useItem, useItemTypes, useReanalyzeItem, useCancelAnalysis, useBulkDeleteItems, useBulkReanalyzeItems, BulkOperationParams } from '@/lib/hooks/use-items';
 import { useUserProfile } from '@/lib/hooks/use-user';
-import { CLOTHING_COLORS, Item } from '@/lib/types';
+import { Item } from '@/lib/types';
+import { swatchHex } from '@/lib/colors';
 import { toast } from 'sonner';
 import { cn, getDaysSinceDateInTimezone } from '@/lib/utils';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
@@ -71,7 +72,9 @@ const ItemCard = memo(function ItemCard({
   const tCommon = useTranslations('common');
   const typeLabel = useClothingTypeLabel();
   const colorLabel = useColorLabel();
-  const colorInfo = CLOTHING_COLORS.find((c) => c.value === item.primary_color);
+  // The garment's own shade when we sampled one, the palette's otherwise: the
+  // label underneath is still the family, so both browns read "marrón".
+  const swatch = swatchHex(item.primary_color, item.primary_color_hex);
   const isProcessing = item.status === 'processing';
   const isError = item.status === 'error';
   const name = item.name || typeLabel(item.type);
@@ -187,11 +190,11 @@ const ItemCard = memo(function ItemCard({
       <div className="cursor-pointer px-1 pt-1.5" onClick={onClick} aria-hidden>
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-[14.5px] font-semibold leading-tight">{name}</p>
-          {colorInfo && (
+          {swatch && item.primary_color && (
             <span
               className="h-3 w-3 shrink-0 rounded-full ring-1 ring-border"
-              style={{ backgroundColor: colorInfo.hex }}
-              title={colorLabel(colorInfo.value)}
+              style={{ backgroundColor: swatch }}
+              title={colorLabel(item.primary_color)}
             />
           )}
         </div>

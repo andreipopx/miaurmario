@@ -664,8 +664,9 @@ def _build_ai_prompt(rows: Sequence[ListeningMood], tracks: dict[date, list[str]
         "música entre 0 y 1, y escribe un one_liner corto (máx. 120 caracteres, en español, "
         "tono de gato con criterio) sobre cómo suena la música y qué ropa pide, p. ej. "
         "«Tu música de hoy suena melancólica: capas suaves y un jersey que abrace» o "
-        "«Esto suena a siesta larga: punto gordo y tonos de manta». Puede "
-        "mencionar a un artista. Habla solo de la música y la ropa, nunca de la persona.\n"
+        "«Esto suena a siesta larga: punto gordo y tonos de manta». Dile el por qué en la "
+        "misma frase (qué del sonido pide esa textura o ese color), no solo la etiqueta. "
+        "Puede mencionar a un artista. Habla solo de la música y la ropa, nunca de la persona.\n"
         'Formato: {"days": [{"date": "YYYY-MM-DD", "moods": ["..."], "energy": 0.5, '
         '"valence": 0.5, "one_liner": "..."}]}\n\n'
         f"Días:\n{json.dumps(days, ensure_ascii=False)}"

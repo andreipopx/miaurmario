@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Check, Loader2, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 
 import { Input } from '@/components/ui/input';
 import { useItems } from '@/lib/hooks/use-items';
@@ -30,6 +31,7 @@ export function ItemPicker({
   heightClass = 'h-[360px]',
 }: ItemPickerProps) {
   const t = useTranslations('itemPicker');
+  const typeLabel = useClothingTypeLabel();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -136,7 +138,7 @@ export function ItemPicker({
                   {item.thumbnail_url || item.image_url ? (
                     <Image
                       src={(item.thumbnail_url || item.image_url)!}
-                      alt={item.name || item.type}
+                      alt={item.name || typeLabel(item.type)}
                       fill
                       className="object-contain p-2"
                       sizes="(max-width: 640px) 33vw, 20vw"
@@ -145,7 +147,7 @@ export function ItemPicker({
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <span className="text-xs text-muted-foreground">
-                        {item.type}
+                        {typeLabel(item.type)}
                       </span>
                     </div>
                   )}
@@ -156,7 +158,7 @@ export function ItemPicker({
                   )}
                 </div>
                 <span className="mt-1 block truncate px-0.5 text-xs font-semibold">
-                  {item.name ?? item.type}
+                  {item.name ?? typeLabel(item.type)}
                 </span>
               </button>
             );

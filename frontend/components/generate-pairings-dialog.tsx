@@ -110,7 +110,7 @@ export function GeneratePairingsDialog({
               <div className="relative h-16 w-16 overflow-hidden rounded-[14px] bg-background">
                 <Image
                   src={imageUrl}
-                  alt={item.name || item.type}
+                  alt={item.name || tagLabel('types', item.type)}
                   fill
                   className="object-contain p-1.5"
                   sizes="64px"
@@ -185,7 +185,7 @@ export function GeneratePairingsDialog({
                       {pairingItem.thumbnail_url ? (
                         <Image
                           src={pairingItem.thumbnail_url}
-                          alt={pairingItem.type}
+                          alt={tagLabel('types', pairingItem.type)}
                           fill
                           className="object-contain p-0.5"
                           sizes="36px"

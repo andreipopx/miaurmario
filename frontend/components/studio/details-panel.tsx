@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AlertTriangle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useRouter } from 'next/navigation';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -81,6 +82,7 @@ export function DetailsPanel({
 }: DetailsPanelProps) {
   const t = useTranslations('detailsPanel');
   const tAi = useTranslations('aiAccess.notice');
+  const typeLabel = useClothingTypeLabel();
   const router = useRouter();
   const [aiLoading, setAiLoading] = useState(false);
   const warnings = computeWarnings(items);
@@ -104,7 +106,7 @@ export function DetailsPanel({
 
       if (skipped.length > 0) {
         for (const { item, reason } of skipped) {
-          toast.info(t('aiSkipped', { label: item.name || item.type, reason }));
+          toast.info(t('aiSkipped', { label: item.name || typeLabel(item.type), reason }));
         }
       } else if (merged.length > items.length) {
         toast.success(t('aiAdded', { count: merged.length - items.length }));

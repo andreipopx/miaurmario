@@ -2623,6 +2623,12 @@
     "bag": "Bolso",
     "accessories": "Accesorios"
   },
+  "flatLay": {
+    "label": "El look completo",
+    "empty": "Un look sin prendas todavía",
+    "more": "+{count} más",
+    "open": "Ver {name}"
+  },
   "outfitCard": {
     "badgeReplacement": "Sustitución",
     "badgeWorn": "Usado",

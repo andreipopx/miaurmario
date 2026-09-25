@@ -103,7 +103,7 @@ export function useBatchTagItems() {
 
   return useMutation({
     mutationFn: (items: BatchTagEntry[]) =>
-      api.post<BatchTagResponse>('/items/batch/tag', { items }),
+      api.post<BatchTagResponse>('/items/bulk/tag', { items }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: WARDROBE_STATS_KEY });

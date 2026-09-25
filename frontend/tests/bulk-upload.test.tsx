@@ -289,3 +289,14 @@ describe('bulk upload copy', () => {
     expect(MAX_BATCH_PHOTOS).toBe(30)
   })
 })
+
+describe('quick review endpoint', () => {
+  it('posts to the route the backend actually serves', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const { join } = await import('node:path');
+    const source = await readFile(join(process.cwd(), 'lib/hooks/use-wardrobe-stats.ts'), 'utf8');
+    // The backend serves /items/bulk/tag; a mismatch here failed every review pass with a 404.
+    expect(source).toContain("'/items/bulk/tag'");
+    expect(source).not.toContain("'/items/batch/tag'");
+  });
+});

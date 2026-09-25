@@ -334,14 +334,19 @@ See the [k8s/](k8s/) directory for Kubernetes manifests including:
 | `BG_REMOVAL_MODEL` | rembg model name (default: `u2net`) | No |
 | `BG_REMOVAL_URL` | URL for HTTP bg removal provider | If http |
 | `BG_REMOVAL_API_KEY` | API key for HTTP bg removal provider | No |
-| `NEXT_PUBLIC_ENABLE_IP_LOCATION_FALLBACK` | Enable IP-based approximate location when browser geolocation is denied/unavailable. Off by default (sends the user's IP to a third party). Set to `true` to enable | No |
-| `NEXT_PUBLIC_NETWORK_LOCATION_URL` | Override the IP geolocation provider (default: `https://ipapi.co/json/`). Only used when the fallback above is enabled | No |
 
 See [.env.example](.env.example) for all options.
 
 ### Location Detection (Privacy Note)
 
-The Settings page can fill in your coordinates from the browser's Geolocation API. If that is denied or unavailable, an optional fallback can approximate your location from your IP address via a third-party service (`ipapi.co` by default). This fallback is **disabled by default** because it sends the user's IP to an external provider; enable it with `NEXT_PUBLIC_ENABLE_IP_LOCATION_FALLBACK=true` and optionally point `NEXT_PUBLIC_NETWORK_LOCATION_URL` at a provider you trust. These are build-time frontend variables, so set them before building the frontend image. Geocoding a location name you type yourself still uses OpenStreetMap Nominatim regardless of this setting.
+Two things are detected for you, and only these two are kept: **your city and your timezone**. They are used for the weather behind your outfit suggestions and for the hour your notifications arrive — nothing else.
+
+- **Timezone**: read from your browser on first load and saved silently. Pick one by hand in Ajustes and detection never touches it again.
+- **City**: only when you tap **"Usar mi ubicación"**, which makes *your browser* ask for permission. There is no silent way in, and typing your city works just as well.
+- **Exact coordinates are never stored or logged.** The reading is rounded to 2 decimals (~1 km, the city centre) in the browser *and* again on the server before anything is sent to the geocoder, written to the database or written to a log.
+- **Travelling never moves your city on its own.** More than 100 km from your saved city, the app asks ("¿Estás en Lisboa?") at most once a day, and waits for your answer.
+- **"Borrar mi ubicación"** in Ajustes removes it. Weather-dependent suggestions then degrade exactly as they do for someone who never set one.
+- No third-party trackers and no IP-geolocation lookups are involved. Reverse geocoding a rounded point goes to OpenStreetMap Nominatim, as does geocoding a city name you type yourself.
 
 ### Background Removal (Optional)
 

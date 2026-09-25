@@ -36,6 +36,7 @@ import { api, setAccessToken } from '@/lib/api';
 import { CLOTHING_TYPES, StyleProfile } from '@/lib/types';
 import type { SavedLocation } from '@/lib/geo';
 import { getBrowserTimezone } from '@/lib/timezones';
+import { useAutoTimezone } from '@/lib/hooks/use-location';
 import { LocationPicker } from '@/components/settings/location-picker';
 import { TimezoneCombobox } from '@/components/settings/timezone-combobox';
 import { ColorPreferences } from '@/components/settings/color-preferences';
@@ -321,7 +322,10 @@ function LocationStep({
   const [location, setLocation] = useState<SavedLocation>({ name: '', lat: null, lon: null });
   // New accounts start on the device's zone; picking a city switches to the city's.
   const [timezone, setTimezone] = useState(() => getBrowserTimezone() || 'UTC');
+  // Neither of those is a hand-picked zone: only a tap on the picker is.
+  const [timezoneTouched, setTimezoneTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const autoTimezone = useAutoTimezone();
 
   const handleLocationChange = (next: SavedLocation) => {
     setLocation(next);
@@ -342,8 +346,13 @@ function LocationStep({
         location_name: location.name,
         location_lat: location.lat,
         location_lon: location.lon,
-        timezone,
+        // Sending the zone marks it hand-picked; the detected one goes through
+        // the auto endpoint instead, so Ajustes can still say "detectada".
+        ...(timezoneTouched ? { timezone } : {}),
       });
+      if (!timezoneTouched && timezone) {
+        await autoTimezone.mutateAsync(timezone).catch(() => undefined);
+      }
       toast.success(t('savedToast'));
       onNext();
     } catch (error) {
@@ -368,7 +377,10 @@ function LocationStep({
           <TimezoneCombobox
             id="onboarding-timezone"
             value={timezone}
-            onChange={setTimezone}
+            onChange={(tz) => {
+              setTimezone(tz);
+              setTimezoneTouched(true);
+            }}
             cityTimezone={location.timezone}
             cityName={location.name.split(',')[0]}
           />

@@ -15,6 +15,11 @@ export interface UserProfile {
   /** True when avatar_url is a photo the user uploaded (can be removed). */
   has_avatar_photo?: boolean;
   timezone: string;
+  /**
+   * "auto" when we detected the zone, "manual" once the user picked one.
+   * Absent on old backends, which means "treat it as manual" (never clobber).
+   */
+  timezone_source?: 'auto' | 'manual' | string;
   location_lat?: number;
   location_lon?: number;
   location_name?: string;

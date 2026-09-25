@@ -3,27 +3,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronDown, Loader2, MapPin, Navigation } from 'lucide-react';
-import { toast } from 'sonner';
+import { ChevronDown, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { UseMyLocationButton } from '@/components/settings/use-my-location-button';
 import {
   MIN_PLACE_QUERY,
   type Place,
   type SavedLocation,
   placeSubtitle,
   placeToLocation,
-  reverseGeocode,
   searchPlaces,
 } from '@/lib/geo';
-import {
-  getNetworkLocationUrl,
-  isNetworkLocationFallbackEnabled,
-  resolveNetworkLocation,
-} from '@/lib/location';
-import { getBrowserTimezone } from '@/lib/timezones';
 import { cn } from '@/lib/utils';
 
 function useDebounced<T>(value: T, delay: number): T {
@@ -47,8 +40,11 @@ interface LocationPickerProps {
 /**
  * City picker: shows the chosen city ("Madrid, Comunidad de Madrid, España")
  * with a "Cambiar" action, a search-as-you-type combobox backed by
- * /geo/search, and "Usar mi ubicación" (browser geolocation -> /geo/reverse).
- * Raw coordinates live under an optional "Avanzado" disclosure.
+ * /geo/search, and "Usar mi ubicación" (see UseMyLocationButton).
+ * Coordinates live under an optional "Avanzado" disclosure.
+ *
+ * Typing the city is the default path and always works on its own: the button
+ * is a shortcut, and every way it can fail leaves this search untouched.
  */
 export function LocationPicker({
   id = 'location',
@@ -62,7 +58,6 @@ export function LocationPicker({
   const hasCity = !!value.name;
   const [editing, setEditing] = useState(!hasCity);
   const [query, setQuery] = useState('');
-  const [locating, setLocating] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const resultsRef = useRef<Place[]>([]);
 
@@ -104,73 +99,6 @@ export function LocationPicker({
     onChange(placeToLocation(place));
     setQuery('');
     setEditing(false);
-  };
-
-  const locateFromNetwork = async (reason?: string) => {
-    if (!isNetworkLocationFallbackEnabled()) {
-      toast.error(reason || t('unableToDetect'));
-      return;
-    }
-    try {
-      const response = await fetch(getNetworkLocationUrl(), {
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) throw new Error(t('unableToDetect'));
-      const resolved = resolveNetworkLocation(await response.json(), getBrowserTimezone());
-      onChange({
-        name: resolved.locationName || t('myLocation', { lat: resolved.lat, lon: resolved.lon }),
-        lat: Number(resolved.lat),
-        lon: Number(resolved.lon),
-        timezone: resolved.timezone ?? null,
-      });
-      setEditing(false);
-      toast.success(
-        reason ? t('approxFilledWithReason', { reason }) : t('approxFilled')
-      );
-    } catch {
-      toast.error(reason || t('unableToDetect'));
-    }
-  };
-
-  const handleUseMyLocation = () => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      void locateFromNetwork(t('notSupported'));
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const place = await reverseGeocode(latitude, longitude, locale);
-          // Keep the precise device coordinates, not the grid-rounded ones.
-          pick({ ...place, latitude, longitude });
-          toast.success(t('detectedToast', { city: place.name }));
-        } catch {
-          onChange({
-            name: t('myLocation', { lat: latitude.toFixed(2), lon: longitude.toFixed(2) }),
-            lat: Number(latitude.toFixed(6)),
-            lon: Number(longitude.toFixed(6)),
-            timezone: getBrowserTimezone() ?? null,
-          });
-          setEditing(false);
-          toast.message(t('reverseError'));
-        } finally {
-          setLocating(false);
-        }
-      },
-      (error) => {
-        setLocating(false);
-        const reason =
-          error.code === 1
-            ? t('permissionDenied')
-            : error.code === 3
-              ? t('positionTimeout')
-              : t('positionUnavailable');
-        void locateFromNetwork(reason);
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 10 * 60 * 1000 }
-    );
   };
 
   const setCoordinate = (key: 'lat' | 'lon', raw: string) => {
@@ -240,20 +168,13 @@ export function LocationPicker({
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleUseMyLocation}
-        disabled={locating}
-        className="w-full sm:w-auto"
-      >
-        {locating ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Navigation className="h-4 w-4" strokeWidth={1.75} />
-        )}
-        {locating ? t('locating') : t('useMyLocation')}
-      </Button>
+      <UseMyLocationButton
+        onDetected={(location) => {
+          onChange(location);
+          setQuery('');
+          setEditing(false);
+        }}
+      />
 
       {showAdvanced && (
         <div>

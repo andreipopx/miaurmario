@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
-import { Loader2, Save, RotateCcw, MapPin, Ruler, Sun, Moon, Monitor, Palette } from 'lucide-react';
+import { Loader2, Save, RotateCcw, MapPin, Ruler, Sun, Moon, Monitor, Palette, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import {
 import { usePreferences, useUpdatePreferences, useResetPreferences } from '@/lib/hooks/use-preferences';
 import { AISettingsCard } from '@/components/ai/ai-settings-card';
 import { useUserProfile, useUpdateUserProfile } from '@/lib/hooks/use-user';
+import { useAutoTimezone, useDeleteLocation } from '@/lib/hooks/use-location';
 import { OCCASIONS, Preferences, StyleProfile } from '@/lib/types';
 import type { SavedLocation } from '@/lib/geo';
 import { LocationPicker } from '@/components/settings/location-picker';
@@ -143,6 +144,8 @@ export default function SettingsPage() {
   const updatePreferences = useUpdatePreferences();
   const resetPreferences = useResetPreferences();
   const updateUserProfile = useUpdateUserProfile();
+  const deleteLocation = useDeleteLocation();
+  const autoTimezone = useAutoTimezone();
 
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
@@ -164,6 +167,9 @@ export default function SettingsPage() {
   // Location and timezone state
   const [location, setLocation] = useState<SavedLocation>({ name: '', lat: null, lon: null });
   const [timezone, setTimezone] = useState('UTC');
+  // Only a tap on the timezone picker counts as choosing one by hand. A zone that
+  // merely came along with a city stays "detected", so detection keeps working.
+  const [timezoneTouched, setTimezoneTouched] = useState(false);
 
   // Body measurements state
   type UnitSystem = 'metric' | 'imperial';
@@ -191,6 +197,7 @@ export default function SettingsPage() {
       // Not auto-switched to the device zone (that would mark the form dirty);
       // TimezoneCombobox offers it as a one-tap suggestion instead.
       setTimezone(userProfile.timezone || 'UTC');
+      setTimezoneTouched(false);
 
       if (userProfile.body_measurements) {
         const initial: Record<string, string> = {};
@@ -235,11 +242,28 @@ export default function SettingsPage() {
         location_lat: lat,
         location_lon: lon,
         location_name: location.name || undefined,
-        timezone,
+        // Sending the zone here marks it hand-picked, so only do it when it was.
+        ...(timezoneTouched ? { timezone } : {}),
       });
+      // A zone that came with the chosen city is still a detected one.
+      if (!timezoneTouched && timezone && timezone !== (userProfile?.timezone || 'UTC')) {
+        await autoTimezone.mutateAsync(timezone).catch(() => undefined);
+      }
+      setTimezoneTouched(false);
       toast.success(tLocation('savedToast'));
     } catch {
       toast.error(tLocation('saveError'));
+    }
+  };
+
+  const handleDeleteLocation = async () => {
+    if (!window.confirm(tLocation('deleteConfirm'))) return;
+    try {
+      await deleteLocation.mutateAsync();
+      setLocation({ name: '', lat: null, lon: null });
+      toast.success(tLocation('deletedToast'));
+    } catch {
+      toast.error(tLocation('deleteError'));
     }
   };
 
@@ -528,9 +552,13 @@ export default function SettingsPage() {
             <TimezoneCombobox
               id="settings-timezone"
               value={timezone}
-              onChange={setTimezone}
+              onChange={(tz) => {
+                setTimezone(tz);
+                setTimezoneTouched(true);
+              }}
               cityTimezone={location.timezone}
               cityName={location.name.split(',')[0]}
+              autoDetected={userProfile?.timezone_source === 'auto'}
             />
             <div className="flex flex-wrap items-center gap-3">
               <Button
@@ -546,6 +574,28 @@ export default function SettingsPage() {
               </Button>
               {(location.lat === null || location.lon === null) && (
                 <p className="text-sm font-medium text-warning">{tLocation('required')}</p>
+              )}
+            </div>
+            {/* What we keep, in one line, next to the button that removes it. */}
+            <div className="border-t border-border pt-4">
+              <p className="text-[13px] leading-snug text-muted-foreground">
+                {tLocation('privacySummary')}
+              </p>
+              {(userProfile?.location_name || userProfile?.location_lat != null) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDeleteLocation}
+                  disabled={deleteLocation.isPending}
+                  className="mt-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  {deleteLocation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Trash2 className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                  )}
+                  {tLocation('deleteLocation')}
+                </Button>
               )}
             </div>
           </CardContent>

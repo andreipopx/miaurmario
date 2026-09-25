@@ -33,6 +33,7 @@ import { cn, getDaysSinceDateInTimezone } from '@/lib/utils';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useTranslations } from 'next-intl';
 import { useColorLabel } from '@/lib/tag-labels';
+import { garmentTileTint } from '@/lib/garment-tint';
 import { readSharedIntake } from '@/lib/shared-intake';
 import type { AddItemInitial } from '@/components/add-item-dialog';
 
@@ -72,6 +73,10 @@ const ItemCard = memo(function ItemCard({
   const typeLabel = useClothingTypeLabel();
   const colorLabel = useColorLabel();
   const colorInfo = CLOTHING_COLORS.find((c) => c.value === item.primary_color);
+  // A whisper of the garment's own colour behind it, so the grid reads as a set of
+  // garments rather than as a sheet of white rectangles. Neutral panel when there
+  // is no colour yet, which is every garment before it is tagged.
+  const tint = garmentTileTint(item.primary_color, colorInfo?.hex);
   const isProcessing = item.status === 'processing';
   const isError = item.status === 'error';
   const name = item.name || typeLabel(item.type);
@@ -89,8 +94,10 @@ const ItemCard = memo(function ItemCard({
           type="button"
           onClick={onClick}
           aria-label={name}
+          style={tint.style}
           className={cn(
-            'no-callout pressable relative block aspect-square w-full overflow-hidden rounded-tile bg-panel transition-shadow',
+            'no-callout pressable relative block aspect-square w-full overflow-hidden rounded-tile transition-shadow',
+            tint.className,
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             selected && 'ring-[3px] ring-signature'
           )}
@@ -100,7 +107,14 @@ const ItemCard = memo(function ItemCard({
               src={item.thumbnail_url}
               alt=""
               fill
-              className="object-contain p-3 mix-blend-multiply transition-transform duration-300 group-hover:scale-[1.04] dark:mix-blend-normal"
+              className={cn(
+                'object-contain p-3 transition-transform duration-300 group-hover:scale-[1.04]',
+                // A real cut-out is transparent and simply sits on the tint. An
+                // older photo has white baked in, and multiplying lets the tint
+                // show through it — doing that to a cut-out would darken the
+                // garment itself, in either theme.
+                !item.has_cutout && 'mix-blend-multiply'
+              )}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : (

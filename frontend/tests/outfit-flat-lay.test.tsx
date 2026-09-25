@@ -452,4 +452,37 @@ describe('OutfitFlatLay', () => {
     const alts = screen.getAllByRole('img').map((el) => el.getAttribute('alt'))
     expect(alts).toEqual(['Camiseta', 'Americana', 'Zapatillas'])
   })
+
+  /**
+   * Background removal writes WebP with a real alpha channel, so a cut-out has no
+   * background of its own to hide. It must not be clipped to a tile: the clip would
+   * shave the corner off a wide jacket, and the shadow would be a card's rather
+   * than the garment's. A photo with white baked in — every garment stored before
+   * that change — still needs the clip, or it lies over the others as a white
+   * rectangle.
+   */
+  it('leaves a real cut-out unclipped and keeps the tile for a white-backed photo', () => {
+    const { container } = renderEs(
+      <OutfitFlatLay
+        items={[
+          item('a', 't-shirt', { has_cutout: true }),
+          item('b', 'jeans', { has_cutout: false }),
+        ]}
+      />
+    )
+    const plates = Array.from(container.querySelectorAll('span[class*="drop-shadow"]'))
+    const classes = plates.map((el) => el.getAttribute('class') ?? '')
+    expect(classes.some((c) => !c.includes('overflow-hidden'))).toBe(true)
+    expect(classes.some((c) => c.includes('overflow-hidden') && c.includes('rounded-tile'))).toBe(
+      true
+    )
+  })
+
+  it('treats a garment that does not say as white-backed', () => {
+    // Every outfit shape that predates the flag, and every garment uploaded before
+    // removal kept alpha: the safe reading is "there is a white background here".
+    const { container } = renderEs(<OutfitFlatLay items={[item('a', 't-shirt')]} />)
+    const plate = container.querySelector('span[class*="drop-shadow"]')
+    expect(plate?.getAttribute('class')).toContain('overflow-hidden')
+  })
 })

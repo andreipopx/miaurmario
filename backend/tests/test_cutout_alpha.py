@@ -206,3 +206,28 @@ class TestServingACutout:
         assert flat.has_cutout is False
         assert "has_cutout" in ItemResponse.model_json_schema(mode="serialization")["properties"]
 
+    def test_an_outfit_item_says_it_too(self) -> None:
+        """The flat lay is the screen that most needs to know.
+
+        It lays the garments on the look's own tint: a real cut-out floats there
+        with a shadow the shape of the garment, while a photo with white baked in
+        has to be clipped to a tile or it reads as a white rectangle over the
+        others. The outfit payload is a shape of its own, so the flag has to be on
+        it as well as on ``ItemResponse``.
+        """
+        from app.api.outfits import OutfitItemResponse
+
+        cut = OutfitItemResponse.model_construct(
+            image_path="u/a.webp", thumbnail_path="u/a_thumb.webp"
+        )
+        flat = OutfitItemResponse.model_construct(
+            image_path="u/a.jpg", thumbnail_path="u/a_thumb.jpg"
+        )
+        # A garment with no photo at all is not a cut-out either.
+        empty = OutfitItemResponse.model_construct(image_path=None, thumbnail_path=None)
+
+        assert cut.has_cutout is True
+        assert flat.has_cutout is False
+        assert empty.has_cutout is False
+        schema = OutfitItemResponse.model_json_schema(mode="serialization")
+        assert "has_cutout" in schema["properties"]

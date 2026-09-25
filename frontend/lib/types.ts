@@ -372,6 +372,8 @@ export interface OutfitItem {
   thumbnail_path?: string;
   image_url?: string;
   thumbnail_url?: string;
+  /** True when the stored photo keeps its alpha: a real cut-out, not white-backed. */
+  has_cutout?: boolean;
   layer_type?: string;
   position: number;
 }

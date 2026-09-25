@@ -52,6 +52,7 @@ from app.services.weather_service import (
 )
 from app.utils.auth import get_current_user
 from app.utils.error_codes import code_of, error_detail
+from app.utils.image_formats import is_cutout_path
 from app.utils.occasions import VALID_OCCASIONS  # re-exported: imported elsewhere
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.signed_urls import sign_image_url
@@ -156,6 +157,18 @@ class OutfitItemResponse(BaseModel):
         if self.thumbnail_path:
             return sign_image_url(self.thumbnail_path)
         return None
+
+    @computed_field
+    @property
+    def has_cutout(self) -> bool:
+        """True when the stored image keeps its transparency.
+
+        The flat lay is the screen that most needs to know: a real cut-out floats
+        on the look's tint with a shadow the shape of the garment, while a photo
+        with white baked in has to be clipped to a tile or it reads as a stray
+        white rectangle over the others.
+        """
+        return is_cutout_path(self.thumbnail_path or self.image_path)
 
 
 class WoreInsteadItem(BaseModel):

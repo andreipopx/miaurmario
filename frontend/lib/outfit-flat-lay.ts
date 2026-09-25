@@ -40,6 +40,12 @@ export interface FlatLayInput {
   primary_color?: string | null;
   thumbnail_url?: string | null;
   image_url?: string | null;
+  /**
+   * True when the stored photo keeps its alpha. Missing is read as `false`, which
+   * is the safe reading: every photo stored before background removal wrote WebP
+   * with alpha has a white background baked in.
+   */
+  has_cutout?: boolean;
 }
 
 export interface FlatLayPiece<T extends FlatLayInput = FlatLayInput> {

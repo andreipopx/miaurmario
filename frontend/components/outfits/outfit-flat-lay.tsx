@@ -43,7 +43,8 @@ export type FlatLayRatio = keyof typeof RATIOS;
  *
  * Garments whose photo was never cut out keep their own background; they are
  * clipped to a rounded tile so they read as a deliberate tile rather than a
- * stray white rectangle.
+ * stray white rectangle. A real cut-out (`has_cutout`) is left unclipped, so its
+ * silhouette is whole and the shadow follows the garment rather than a card.
  */
 
 interface OutfitFlatLayProps<T extends FlatLayInput> {
@@ -188,10 +189,17 @@ function FlatLayGarment<T extends FlatLayInput>({
     zIndex: piece.z,
   };
 
+  // A real cut-out is transparent, so the shadow is already the shape of the
+  // garment and there is nothing to clip: clipping it would shave the corner off a
+  // wide jacket for no gain. A photo with white baked in keeps the rounded clip, or
+  // it reads as a stray white rectangle lying over the others.
+  const cutout = piece.item.has_cutout === true;
+
   const body = (
     <span
       className={cn(
-        'relative block h-full w-full overflow-hidden rounded-tile',
+        'relative block h-full w-full',
+        !cutout && 'overflow-hidden rounded-tile',
         'drop-shadow-[0_5px_10px_rgba(0,0,0,0.16)] dark:drop-shadow-[0_7px_14px_rgba(0,0,0,0.5)]'
       )}
     >

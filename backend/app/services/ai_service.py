@@ -403,8 +403,15 @@ class AIService:
         Returns base64-encoded JPEG string.
         """
         with Image.open(image_path) as img:
-            # Convert to RGB if necessary
-            if img.mode != "RGB":
+            # A cut-out is RGBA and its transparent pixels are black underneath, so
+            # a plain convert("RGB") would hand the model a garment on a black
+            # background. Composite onto white — the model was prompted for photos.
+            if img.mode in ("RGBA", "LA", "P", "PA"):
+                rgba = img.convert("RGBA")
+                flat = Image.new("RGB", rgba.size, (255, 255, 255))
+                flat.paste(rgba, mask=rgba.getchannel("A"))
+                img = flat
+            elif img.mode != "RGB":
                 img = img.convert("RGB")
 
             # Auto-orient based on EXIF

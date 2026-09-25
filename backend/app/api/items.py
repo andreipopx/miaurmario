@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from pydantic import ValidationError
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.config import get_settings
 from app.database import get_db
@@ -52,7 +53,7 @@ from app.services import link_import
 from app.services.ai_access import ai_error_detail, get_ai_access, require_ai_client
 from app.services.ai_service import AIDisabledError
 from app.services.care_label import parse_care_label
-from app.services.image_service import ImageService
+from app.services.image_service import CropBox, ImageService
 from app.services.item_service import ItemService
 from app.services.recommendation_service import MIN_CANDIDATES_FOR_OUTFIT
 from app.utils.auth import get_current_user
@@ -65,7 +66,16 @@ settings = get_settings()
 
 router = APIRouter(prefix="/items", tags=["Items"])
 
-TAG_WRITEBACK_FIELDS = {"type", "subtype", "colors", "primary_color", "tags"}
+TAG_WRITEBACK_FIELDS = {
+    "type",
+    "subtype",
+    "colors",
+    "primary_color",
+    "style",
+    "formality",
+    "season",
+    "tags",
+}
 _EMPTY_TAG_VALUES = (None, "", [], {})
 
 # Filling an empty wardrobe means many photos in a short burst, so the budgets are
@@ -125,6 +135,50 @@ def _clean_source_url(raw: str | None) -> str | None:
             detail={"code": exc.reason, "message": exc.message},
         ) from None
     return normalized
+
+
+def _adopt_paths(item: ClothingItem, paths: dict[str, str]) -> list[str | None]:
+    """Point the item at re-rendered files; returns the paths it no longer uses.
+
+    Background removal now writes WebP (it has to, to keep the transparency), so a
+    re-render changes the filenames and not only their contents. The item has to
+    follow, and the files it left behind are deleted once the new paths are safely
+    committed.
+    """
+    previous: list[str | None] = [item.image_path, item.medium_path, item.thumbnail_path]
+    item.image_path = paths["image_path"]
+    item.medium_path = paths.get("medium_path")
+    item.thumbnail_path = paths.get("thumbnail_path")
+    return previous
+
+
+#: Columns the quick pass and the detail editor write, mirrored into ``tags`` so
+#: the two never disagree.
+_MIRRORED_TAG_COLUMNS = ("colors", "primary_color", "style", "season", "formality")
+
+
+def _mirror_tags(item: ClothingItem) -> None:
+    tags = dict(item.tags or {})
+    for column in _MIRRORED_TAG_COLUMNS:
+        tags[column] = getattr(item, column)
+    item.tags = tags
+    flag_modified(item, "tags")
+
+
+def _parse_crop(
+    x: int | None, y: int | None, width: int | None, height: int | None
+) -> CropBox | None:
+    """The crop the client reported, or None when it could not measure the photo.
+
+    The cropper needs the browser to decode the image to report a box at all, which
+    it cannot do for HEIC outside Safari. Rather than guess, it sends nothing and the
+    whole photo is kept — the same fallback the avatar cropper uses.
+    """
+    if x is None or y is None or width is None or height is None:
+        return None
+    if width <= 0 or height <= 0:
+        return None
+    return CropBox(x=max(0, x), y=max(0, y), width=width, height=height)
 
 
 def _parse_care_form(raw: str | None) -> CareInfo | None:
@@ -324,6 +378,11 @@ async def create_item(
     skip_ai: bool = Form(False),
     source_url: str | None = Form(None),
     care: str | None = Form(None, description="CareInfo as a JSON object"),
+    rotate: int = Form(0, description="Quarter turns clockwise the user applied in the preview"),
+    crop_x: int | None = Form(None, description="Crop, in pixels of the upright, rotated image"),
+    crop_y: int | None = Form(None),
+    crop_w: int | None = Form(None),
+    crop_h: int | None = Form(None),
 ) -> ItemResponse:
     # Validate and process image
     image_service = ImageService()
@@ -338,9 +397,16 @@ async def create_item(
             detail="Invalid image file. Supported formats: JPEG, PNG, WebP, HEIC",
         )
 
+    # How the user framed the photo in the preview: the same turns and crop are
+    # applied before hashing and before storing, so the duplicate check and the
+    # three stored sizes all see the garment the user actually saved.
+    crop = _parse_crop(crop_x, crop_y, crop_w, crop_h)
+
     # Compute hash and check for duplicates BEFORE storing
     try:
-        image_hash = image_service.compute_phash(content, image.filename or "upload.jpg")
+        image_hash = image_service.compute_phash(
+            content, image.filename or "upload.jpg", rotate=rotate, crop=crop
+        )
         existing = await item_service.find_duplicate_by_hash(current_user.id, image_hash)
         if existing:
             raise HTTPException(
@@ -359,6 +425,8 @@ async def create_item(
             user_id=current_user.id,
             image_data=content,
             original_filename=image.filename or "upload.jpg",
+            rotate=rotate,
+            crop=crop,
         )
     except ValueError as e:
         raise HTTPException(
@@ -485,6 +553,15 @@ async def bulk_tag_items(
             item.primary_color = entry.primary_color
             if not item.colors:
                 item.colors = [entry.primary_color]
+        if entry.style is not None:
+            item.style = entry.style
+        if entry.formality:
+            item.formality = entry.formality
+        if entry.season is not None:
+            item.season = entry.season
+        # The detail view reads `tags`, the scorer reads the columns: keep both in
+        # step or a garment the user just tagged reads as untagged on its own page.
+        _mirror_tags(item)
 
         item.tagging_status = TaggingStatus.tagged
         item.tagged_by = TaggedBy.manual
@@ -629,9 +706,22 @@ async def bulk_create_items(
                     removal = await asyncio.to_thread(
                         image_service.remove_background, image_paths["image_path"]
                     )
+                    stale = _adopt_paths(item, removal)
                     item.original_image_path = removal["original_backup_path"]
                     await db.commit()
-                    await db.refresh(item, attribute_names=["original_image_path", "updated_at"])
+                    await db.refresh(
+                        item,
+                        attribute_names=[
+                            "image_path",
+                            "medium_path",
+                            "thumbnail_path",
+                            "original_image_path",
+                            "updated_at",
+                        ],
+                    )
+                    image_service.delete_replaced(
+                        stale, [item.image_path, item.medium_path, item.thumbnail_path]
+                    )
                     background_removed = True
                 except Exception as e:
                     # No provider installed, or a photo rembg chokes on: the item
@@ -641,7 +731,9 @@ async def bulk_create_items(
 
             queued = False
             if do_auto_tag:
-                queued = await _queue_tagging(db, item, image_paths["image_path"])
+                # `item.image_path`, not the upload's: the cut-out was written under
+                # a new name and the file the tagger was told about is already gone.
+                queued = await _queue_tagging(db, item, item.image_path)
             if not queued:
                 # No AI, or the queue is down: the item is usable right away and
                 # waits for the manual "tipo + color" pass instead of sitting in
@@ -1350,15 +1442,26 @@ async def remove_item_background(
             detail="Item has no image",
         )
 
-    hex_color = request.bg_color.lstrip("#")
-    bg_color = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
-
     try:
         image_service = ImageService()
-        result = await asyncio.to_thread(image_service.remove_background, item.image_path, bg_color)
+        # No bg_color: the cut-out keeps its alpha channel. The request's colour is
+        # the flat-image fallback, and flattening now happens where a flat image is
+        # actually needed (sharing, export, the vision model).
+        result = await asyncio.to_thread(image_service.remove_background, item.image_path)
+        previous = _adopt_paths(item, result)
         item.original_image_path = result["original_backup_path"]
         await db.commit()
-        await db.refresh(item, attribute_names=["original_image_path", "updated_at"])
+        await db.refresh(
+            item,
+            attribute_names=[
+                "image_path",
+                "medium_path",
+                "thumbnail_path",
+                "original_image_path",
+                "updated_at",
+            ],
+        )
+        image_service.delete_replaced(previous, [item.image_path, item.medium_path, item.thumbnail_path])
         return ItemResponse.model_validate(item)
     except ImportError:
         raise HTTPException(
@@ -1403,9 +1506,10 @@ async def restore_item_original(
 
     try:
         image_service = ImageService()
-        await asyncio.to_thread(
+        restored = await asyncio.to_thread(
             image_service.restore_original, item.image_path, item.original_image_path
         )
+        previous = _adopt_paths(item, restored)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1420,7 +1524,19 @@ async def restore_item_original(
 
     item.original_image_path = None
     await db.commit()
-    await db.refresh(item, attribute_names=["original_image_path", "updated_at"])
+    await db.refresh(
+        item,
+        attribute_names=[
+            "image_path",
+            "medium_path",
+            "thumbnail_path",
+            "original_image_path",
+            "updated_at",
+        ],
+    )
+    image_service.delete_replaced(
+        previous, [item.image_path, item.medium_path, item.thumbnail_path]
+    )
     return ItemResponse.model_validate(item)
 
 

@@ -1,16 +1,29 @@
 import shutil
 import uuid
+from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
 import imagehash
-from PIL import Image
+from PIL import Image, ImageOps
 
 from app.config import get_settings
 from app.services import background_removal
+from app.utils.image_formats import CUTOUT_SUFFIX, is_cutout_path
 
 settings = get_settings()
+
+__all__ = [
+    "CUTOUT_SUFFIX",
+    "CropBox",
+    "ImageService",
+    "is_cutout_path",
+    "strip_metadata",
+    "trim_transparent",
+    "upright",
+]
 
 # Image size configurations
 # Thumbnail: Used in cards/grids. 400px supports ~200px display on retina
@@ -30,6 +43,108 @@ ALLOWED_MIME_TYPES = {
     "image/heic",
     "image/heif",
 }
+
+
+@dataclass(frozen=True)
+class CropBox:
+    """What to keep, in pixels of the upright (and already rotated) image."""
+
+    x: int
+    y: int
+    width: int
+    height: int
+
+
+#: A crop smaller than this is a mis-click or a rounding artefact, not an intent.
+MIN_CROP_PX = 8
+
+
+def _encode(image: Image.Image, quality: int) -> bytes:
+    output = BytesIO()
+    image.save(output, format="JPEG", quality=quality, optimize=True)
+    return output.getvalue()
+
+
+def _encode_alpha(image: Image.Image, quality: int) -> bytes:
+    output = BytesIO()
+    image.save(output, format="WEBP", quality=quality, method=6)
+    return output.getvalue()
+
+
+def trim_transparent(image: Image.Image, padding: float = 0.02) -> Image.Image:
+    """Crop away a fully transparent border, leaving a small breathing margin.
+
+    A cut-out inherits the framing of the photo it came from, which usually means
+    a garment adrift in a sea of nothing. Trimming lets the tile show the garment
+    rather than the space around it. Guarded: a bounding box that swallows most of
+    the picture is a bad mask, not a tight crop, so the image is left alone.
+    """
+    if image.mode != "RGBA":
+        return image
+    box = image.getchannel("A").getbbox()
+    if box is None:
+        return image
+    left, top, right, bottom = box
+    width = right - left
+    height = bottom - top
+    if width * height < 0.05 * image.width * image.height:
+        return image
+    pad = int(round(max(width, height) * padding))
+    return image.crop(
+        (
+            max(0, left - pad),
+            max(0, top - pad),
+            min(image.width, right + pad),
+            min(image.height, bottom + pad),
+        )
+    )
+
+
+def strip_metadata(image: Image.Image) -> Image.Image:
+    """A fresh image built from raw pixels, so nothing in ``info`` survives.
+
+    Re-encoding alone is not enough: Pillow carries ``exif``, ``xmp`` and the ICC
+    profile along in ``Image.info`` and hands them to the encoder, which is how a
+    photo's GPS coordinates end up in a wardrobe thumbnail. Copying the pixels into
+    a new image leaves every one of those behind. The avatar service does the same
+    thing for profile photos.
+    """
+    if image.mode in ("P", "PA"):
+        image = image.convert("RGBA")
+    clean = Image.frombytes(image.mode, image.size, image.tobytes())
+    return clean
+
+
+def upright(image: Image.Image) -> Image.Image:
+    """Turn a photo the way the camera was held, then forget it ever knew.
+
+    Phones almost never rotate the pixels: they leave the sensor's orientation in
+    an EXIF tag and expect whoever reads the file to honour it. Nothing downstream
+    here does — thumbnails, the perceptual hash and the background cut-out all work
+    on raw pixels — so a photo of jeans taken in portrait was stored on its side.
+    """
+    turned = ImageOps.exif_transpose(image)
+    return strip_metadata(turned if turned is not None else image)
+
+
+def rotate_quarters(image: Image.Image, quarters: int) -> Image.Image:
+    """Turn the image by ``quarters`` * 90 degrees clockwise (negative: anticlockwise)."""
+    turns = quarters % 4
+    if turns == 0:
+        return image
+    # PIL rotates anticlockwise, and the user's "right" is clockwise.
+    return image.rotate(-90 * turns, expand=True)
+
+
+def apply_crop(image: Image.Image, crop: CropBox | None) -> Image.Image:
+    """Keep ``crop``, clamped to the image; a degenerate box keeps everything."""
+    if crop is None or crop.width < MIN_CROP_PX or crop.height < MIN_CROP_PX:
+        return image
+    width = min(crop.width, image.width)
+    height = min(crop.height, image.height)
+    left = min(max(crop.x, 0), image.width - width)
+    top = min(max(crop.y, 0), image.height - height)
+    return image.crop((left, top, left + width, top + height))
 
 
 class ImageService:
@@ -59,6 +174,61 @@ class ImageService:
 
         return Image.open(BytesIO(image_data))
 
+    def load_upload(
+        self,
+        image_data: bytes,
+        original_filename: str,
+        *,
+        rotate: int = 0,
+        crop: CropBox | None = None,
+    ) -> Image.Image:
+        """Decode an upload into the pixels we are going to keep.
+
+        Every ingest path goes through here, in this order: honour the camera's EXIF
+        orientation (and drop the metadata), then the quarter turns the user asked
+        for in the preview, then their crop. The hash and all three stored sizes are
+        computed from the result, so a photo is never stored sideways and the
+        duplicate check compares what the user actually saved.
+        """
+        ext = Path(original_filename).suffix.lower()
+        if ext in (".heic", ".heif"):
+            image = self._convert_heic(image_data)
+        else:
+            image = Image.open(BytesIO(image_data))
+        return apply_crop(rotate_quarters(upright(image), rotate), crop)
+
+    def _flatten_rgb(self, image: Image.Image) -> Image.Image:
+        """Garments are stored as JPEG, so transparency is composited onto white."""
+        if image.mode in ("RGBA", "P", "PA", "LA"):
+            rgba = image.convert("RGBA")
+            background = Image.new("RGB", rgba.size, (255, 255, 255))
+            background.paste(rgba, mask=rgba.getchannel("A"))
+            return background
+        if image.mode != "RGB":
+            return image.convert("RGB")
+        return image
+
+    def _encode_jpeg(self, image: Image.Image, quality: int) -> bytes:
+        """Flatten, strip every scrap of metadata, encode."""
+        return _encode(strip_metadata(self._flatten_rgb(image)), quality)
+
+    def _encode_cutout(self, image: Image.Image, quality: int) -> bytes:
+        """WebP with the alpha channel intact, and no metadata."""
+        return _encode_alpha(strip_metadata(image.convert("RGBA")), quality)
+
+    def composite_on(
+        self, image: Image.Image, bg_color: tuple[int, int, int] = (255, 255, 255)
+    ) -> Image.Image:
+        """A cut-out on a solid colour, for the places that need a flat picture.
+
+        Sharing, export and the vision model all want an ordinary opaque image.
+        What is *stored* keeps its alpha; flattening happens at the point of use.
+        """
+        rgba = image.convert("RGBA")
+        background = Image.new("RGBA", rgba.size, (*bg_color, 255))
+        background.paste(rgba, mask=rgba.getchannel("A"))
+        return background.convert("RGB")
+
     def _resize_image(
         self,
         image: Image.Image,
@@ -66,29 +236,21 @@ class ImageService:
         quality: int = 92,
     ) -> bytes:
         """Resize image maintaining aspect ratio."""
-        # Convert to RGB if necessary (handles RGBA, P mode, etc.)
-        if image.mode in ("RGBA", "P", "LA"):
-            background = Image.new("RGB", image.size, (255, 255, 255))
-            if image.mode == "P":
-                image = image.convert("RGBA")
-            background.paste(image, mask=image.split()[-1] if image.mode == "RGBA" else None)
-            image = background
-        elif image.mode != "RGB":
-            image = image.convert("RGB")
+        image = self._flatten_rgb(image)
 
         # Resize maintaining aspect ratio
         image.thumbnail(max_size, Image.Resampling.LANCZOS)
 
-        # Save to bytes
-        output = BytesIO()
-        image.save(output, format="JPEG", quality=quality, optimize=True)
-        return output.getvalue()
+        return self._encode_jpeg(image, quality)
 
     async def process_and_store(
         self,
         user_id: uuid.UUID,
         image_data: bytes,
         original_filename: str,
+        *,
+        rotate: int = 0,
+        crop: CropBox | None = None,
     ) -> dict[str, str]:
         """
         Process an uploaded image and store all sizes.
@@ -105,11 +267,8 @@ class ImageService:
         if ext not in ALLOWED_EXTENSIONS:
             raise ValueError(f"Unsupported file type: {ext}")
 
-        # Load image
-        if ext in (".heic", ".heif"):
-            image = self._convert_heic(image_data)
-        else:
-            image = Image.open(BytesIO(image_data))
+        # Upright, turned and cropped as the user framed it
+        image = self.load_upload(image_data, original_filename, rotate=rotate, crop=crop)
 
         # Generate base filename
         base_filename = self._generate_filename(".jpg")
@@ -141,8 +300,8 @@ class ImageService:
             # Store relative path
             paths[size_name] = f"{user_id}/{filename}"
 
-        # Compute perceptual hash for duplicate detection
-        image_hash = self.compute_phash(image_data, original_filename)
+        # Compute perceptual hash for duplicate detection, on the same pixels
+        image_hash = self.phash_of(image)
 
         return {
             "image_path": paths["original"],
@@ -183,26 +342,32 @@ class ImageService:
         except Exception:
             return False
 
-    def compute_phash(self, image_data: bytes, original_filename: str) -> str:
+    def phash_of(self, image: Image.Image) -> str:
+        """pHash of an already-decoded image."""
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+        return str(imagehash.phash(image))
+
+    def compute_phash(
+        self,
+        image_data: bytes,
+        original_filename: str,
+        *,
+        rotate: int = 0,
+        crop: CropBox | None = None,
+    ) -> str:
         """
         Compute perceptual hash (pHash) for an image.
 
+        Hashed after the orientation, rotation and crop are applied, so the same
+        photo hashes the same whether the phone tagged it portrait or landscape —
+        and so the duplicate check compares the garment the user is saving.
+
         Returns a 16-character hex string representing the 64-bit hash.
         """
-        ext = Path(original_filename).suffix.lower()
-
-        if ext in (".heic", ".heif"):
-            image = self._convert_heic(image_data)
-        else:
-            image = Image.open(BytesIO(image_data))
-
-        # Convert to RGB if needed for consistent hashing
-        if image.mode != "RGB":
-            image = image.convert("RGB")
-
-        # Compute perceptual hash
-        phash = imagehash.phash(image)
-        return str(phash)
+        return self.phash_of(
+            self.load_upload(image_data, original_filename, rotate=rotate, crop=crop)
+        )
 
     def compute_phash_from_path(self, image_path: Path) -> str:
         """Compute pHash from a file path."""
@@ -236,9 +401,17 @@ class ImageService:
         return ImageService.hash_distance(hash1, hash2) <= threshold
 
     def _save_all_sizes(self, image: Image.Image, image_path: str) -> dict[str, str]:
-        base_path = image_path.rsplit(".", 1)[0]
-        medium_path = f"{base_path}_medium.jpg"
-        thumb_path = f"{base_path}_thumb.jpg"
+        """Write all three sizes of ``image``, in the format ``image_path`` names.
+
+        A ``.webp`` target keeps its alpha channel; anything else is flattened to
+        JPEG. Deriving the format from the path rather than from a flag means the
+        bytes on disk always match the extension the browser is served.
+        """
+        suffix = Path(image_path).suffix or ".jpg"
+        cutout = suffix.lower() == CUTOUT_SUFFIX
+        base_path = image_path[: -len(suffix)]
+        medium_path = f"{base_path}_medium{suffix}"
+        thumb_path = f"{base_path}_thumb{suffix}"
 
         for size_name, max_size in SIZES.items():
             if size_name == "original":
@@ -253,10 +426,11 @@ class ImageService:
 
             img_copy = image.copy()
             img_copy.thumbnail(max_size, Image.Resampling.LANCZOS)
-
-            output = BytesIO()
-            img_copy.save(output, format="JPEG", quality=quality, optimize=True)
-            file_path.write_bytes(output.getvalue())
+            file_path.write_bytes(
+                self._encode_cutout(img_copy, quality)
+                if cutout
+                else self._encode_jpeg(img_copy, quality)
+            )
 
         return {
             "image_path": image_path,
@@ -267,8 +441,18 @@ class ImageService:
     def remove_background(
         self,
         image_path: str,
-        bg_color: tuple[int, int, int] = (255, 255, 255),
+        bg_color: tuple[int, int, int] | None = None,
     ) -> dict[str, str]:
+        """Cut the garment out and store it with its transparency intact.
+
+        The result is written as WebP under the same stem, so the returned paths
+        differ from the ones passed in and the caller must save them on the item.
+        ``bg_color`` composites onto a solid colour instead and keeps the JPEG
+        paths — only for a caller that genuinely wants a flat picture.
+        """
+        # Deliberately the stem without the extension: the same garment can be a
+        # .jpg photo now and a .webp cut-out after this call, and the backup has to
+        # keep the same name either way or a second removal would overwrite it.
         base_path = image_path.rsplit(".", 1)[0]
         original_full = self.storage_path / image_path
 
@@ -280,30 +464,61 @@ class ImageService:
         # First removal wins: a second removal must not overwrite the true
         # original with an already-processed image
         if not backup_full.exists():
-            shutil.copy2(original_full, backup_full)
+            if is_cutout_path(image_path):
+                # Nothing to back up losslessly: flatten the cut-out we have.
+                backup_full.write_bytes(
+                    self._encode_jpeg(Image.open(original_full), 95)
+                )
+            else:
+                shutil.copy2(original_full, backup_full)
 
-        image = Image.open(original_full).convert("RGB")
+        image = self._flatten_rgb(Image.open(original_full))
         provider = background_removal.get_provider()
         result = provider.remove(image)
 
-        # Composite onto solid color background
-        background = Image.new("RGBA", result.size, (*bg_color, 255))
-        background.paste(result, mask=result.split()[3])
-        final = background.convert("RGB")
-
-        paths = self._save_all_sizes(final, image_path)
+        if bg_color is not None:
+            paths = self._save_all_sizes(self.composite_on(result, bg_color), f"{base_path}.jpg")
+        else:
+            paths = self._save_all_sizes(
+                trim_transparent(result.convert("RGBA")), f"{base_path}{CUTOUT_SUFFIX}"
+            )
         paths["original_backup_path"] = backup_path
         return paths
 
     def restore_original(self, image_path: str, backup_path: str) -> dict[str, str]:
+        """Put the untouched photo back, under the .jpg names it originally had."""
         backup_full = self.storage_path / backup_path
         if not backup_full.exists():
             raise ValueError(f"Backup not found: {backup_path}")
 
         image = Image.open(backup_full).convert("RGB")
-        paths = self._save_all_sizes(image, image_path)
+        # The backup is named after the original, so it says where to restore to —
+        # `image_path` may by now be the .webp cut-out we are throwing away.
+        if backup_path.endswith("_orig.jpg"):
+            target = f"{backup_path[: -len('_orig.jpg')]}.jpg"
+        else:
+            target = f"{image_path.rsplit('.', 1)[0]}.jpg"
+        paths = self._save_all_sizes(image, target)
         backup_full.unlink()
         return paths
+
+    def delete_replaced(
+        self, previous: Iterable[str | None], keeping: Iterable[str | None]
+    ) -> None:
+        """Bin the files a re-render left behind, once the new paths are committed.
+
+        Called after the commit on purpose: a crash between writing the files and
+        saving the paths must leave the item pointing at something that exists.
+        """
+        keep = {path for path in keeping if path}
+        for path in previous:
+            if not path or path in keep:
+                continue
+            full = self.storage_path / path
+            try:
+                full.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     def rotate_image(self, image_path: str, direction: str = "cw") -> dict[str, str]:
         """
@@ -324,16 +539,12 @@ class ImageService:
         angle = -90 if direction == "cw" else 90  # PIL rotates counter-clockwise by default
 
         image = Image.open(original_full)
-
-        if image.mode in ("RGBA", "P", "LA"):
-            background = Image.new("RGB", image.size, (255, 255, 255))
-            if image.mode == "P":
-                image = image.convert("RGBA")
-            background.paste(image, mask=image.split()[-1] if image.mode == "RGBA" else None)
-            image = background
-        elif image.mode != "RGB":
-            image = image.convert("RGB")
-
+        # A cut-out must stay a cut-out: flattening here would put the white box
+        # back that the background removal just took away.
+        if is_cutout_path(image_path):
+            image = image.convert("RGBA")
+        else:
+            image = self._flatten_rgb(image)
         rotated = image.rotate(angle, expand=True)
 
         return self._save_all_sizes(rotated, image_path)

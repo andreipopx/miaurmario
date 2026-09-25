@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Loader2, ImagePlus, Link2 } from 'lucide-react';
+import { Upload, X, Loader2, ImagePlus, Link2, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import {
@@ -37,15 +37,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCreateItem } from '@/lib/hooks/use-items';
-import { CLOTHING_TYPES, CLOTHING_COLORS } from '@/lib/types';
+import { CLOTHING_TYPES } from '@/lib/types';
 import { Stinky } from '@/components/stinky/stinky';
 import { cn } from '@/lib/utils';
 import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
-import { useColorLabel } from '@/lib/tag-labels';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { CareLabelField } from '@/components/add-item/care-label-field';
 import { LinkImportTab } from '@/components/add-item/link-import-tab';
+import { ColorCaptureField } from '@/components/color-capture-field';
 import { BulkUploadPanel } from '@/components/bulk-upload/bulk-upload-panel';
 import { CareDraft } from '@/lib/hooks/use-intake';
 import { supportsShareTarget } from '@/lib/pwa/platform';
@@ -82,7 +82,6 @@ export function AddItemDialog({
 }: AddItemDialogProps) {
   const t = useTranslations('wardrobe.add');
   const tShare = useTranslations('wardrobe.share');
-  const colorLabel = useColorLabel();
   const typeLabel = useClothingTypeLabel();
   // Single upload state
   const [file, setFile] = useState<File | null>(null);
@@ -91,6 +90,9 @@ export function AddItemDialog({
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [primaryColor, setPrimaryColor] = useState('');
+  // The shade the user sampled off their own photo, kept beside the family name so
+  // the card can show their brown. Undefined whenever the family came off the list.
+  const [primaryColorHex, setPrimaryColorHex] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [care, setCare] = useState<CareDraft | null>(null);
@@ -149,6 +151,8 @@ export function AddItemDialog({
     const file = acceptedFiles[0];
     if (file) {
       setFile(file);
+      // A new photo means the old sample describes a different garment.
+      setPrimaryColorHex(undefined);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
@@ -157,13 +161,22 @@ export function AddItemDialog({
     }
   }, []);
 
-  const { getRootProps: getSingleRootProps, getInputProps: getSingleInputProps, isDragActive: isSingleDragActive } = useDropzone({
+  const {
+    getRootProps: getSingleRootProps,
+    getInputProps: getSingleInputProps,
+    isDragActive: isSingleDragActive,
+    open: openSinglePicker,
+  } = useDropzone({
     onDrop: onDropSingle,
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.webp', '.heic', '.heif'],
     },
     maxFiles: 1,
     multiple: false,
+    // The zone has its own buttons, so a stray tap on the copy must not open a
+    // picker the user did not ask for.
+    noClick: true,
+    noKeyboard: true,
   });
 
   const handleSingleSubmit = async (e: React.FormEvent) => {
@@ -178,6 +191,7 @@ export function AddItemDialog({
     if (name) formData.append('name', name);
     if (brand) formData.append('brand', brand);
     if (primaryColor) formData.append('primary_color', primaryColor);
+    if (primaryColor && primaryColorHex) formData.append('primary_color_hex', primaryColorHex);
     if (notes) formData.append('notes', notes);
     if (sourceUrl) formData.append('source_url', sourceUrl);
     if (care) formData.append('care', JSON.stringify(care));
@@ -210,6 +224,7 @@ export function AddItemDialog({
     setName('');
     setBrand('');
     setPrimaryColor('');
+    setPrimaryColorHex(undefined);
     setNotes('');
     setSourceUrl('');
     setCare(null);
@@ -270,7 +285,11 @@ export function AddItemDialog({
                 }
                 if (prefill.name) setName(prefill.name.slice(0, 100));
                 if (prefill.brand) setBrand(prefill.brand.slice(0, 100));
-                if (prefill.primaryColor) setPrimaryColor(prefill.primaryColor);
+                if (prefill.primaryColor) {
+                  setPrimaryColor(prefill.primaryColor);
+                  // The shop only gave us a name, so there is no shade to show.
+                  setPrimaryColorHex(undefined);
+                }
                 setSourceUrl(prefill.sourceUrl);
                 setActiveTab(initialTab);
               }}
@@ -283,14 +302,15 @@ export function AddItemDialog({
               {!preview ? (
                 <div
                   {...getSingleRootProps()}
+                  data-testid="single-dropzone"
                   className={cn(
-                    'cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                    'rounded-lg border-2 border-dashed p-5 text-center transition-colors duration-150 sm:p-7',
                     isSingleDragActive
                       ? 'border-signature bg-signature-soft'
-                      : 'border-border bg-panel hover:bg-accent'
+                      : 'border-border bg-panel'
                   )}
                 >
-                  <input {...getSingleInputProps()} />
+                  <input {...getSingleInputProps()} data-testid="single-file-input" />
                   <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-signature text-signature-foreground">
                     <Upload className="h-6 w-6" strokeWidth={1.75} />
                   </span>
@@ -300,8 +320,40 @@ export function AddItemDialog({
                   <p className="mt-1 text-xs text-muted-foreground">
                     {t('acceptedFormats')}
                   </p>
+
+                  {/* Taking the photo is the common case on a phone, so it is a
+                      button of its own rather than something hidden behind the
+                      gallery picker. Stacked and full width at 320 px so both stay
+                      thumb-reachable; side by side once there is room. */}
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                    <Button type="button" onClick={openSinglePicker} className="w-full sm:w-auto">
+                      <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+                      {t('choosePhoto')}
+                    </Button>
+                    {/* Its own input, because `capture` is what makes a phone open
+                        the camera instead of the library — and a laptop with no
+                        camera just falls back to the same file picker. */}
+                    <Button asChild variant="secondary" className="w-full sm:w-auto">
+                      <label className="cursor-pointer">
+                        <Camera className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+                        {t('takePhoto')}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="sr-only"
+                          data-testid="single-camera-input"
+                          onChange={(event) => {
+                            onDropSingle(Array.from(event.target.files ?? []));
+                            event.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </Button>
+                  </div>
+
                   {noShareTarget && (
-                    <p className="mt-2 text-xs text-muted-foreground">{tShare('iosHint')}</p>
+                    <p className="mt-3 text-xs text-muted-foreground">{tShare('iosHint')}</p>
                   )}
                 </div>
               ) : (
@@ -351,38 +403,30 @@ export function AddItemDialog({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="brand" className="font-bold">{t('brandLabel')}</Label>
-                    <Input
-                      id="brand"
-                      value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
-                      placeholder={t('brandPlaceholder')}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="brand" className="font-bold">{t('brandLabel')}</Label>
+                  <Input
+                    id="brand"
+                    value={brand}
+                    onChange={(e) => setBrand(e.target.value)}
+                    placeholder={t('brandPlaceholder')}
+                  />
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="color" className="font-bold">{t('colorLabel')}</Label>
-                    <Select value={primaryColor} onValueChange={setPrimaryColor}>
-                      <SelectTrigger id="color">
-                        <SelectValue placeholder={t('colorPlaceholder')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CLOTHING_COLORS.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="h-3.5 w-3.5 rounded-full ring-1 ring-inset ring-black/10"
-                                style={{ backgroundColor: c.hex }}
-                              />
-                              {colorLabel(c.value)}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Not a bare select any more: the colour is the one tag people get
+                    wrong from a list and right by pointing at the garment. */}
+                <div className="space-y-2">
+                  <Label htmlFor="color" className="font-bold">{t('colorLabel')}</Label>
+                  <ColorCaptureField
+                    id="color"
+                    value={primaryColor}
+                    hex={primaryColorHex}
+                    imageUrl={preview}
+                    onPick={({ color, hex }) => {
+                      setPrimaryColor(color);
+                      setPrimaryColorHex(hex);
+                    }}
+                  />
                 </div>
 
                 <div className="space-y-2">

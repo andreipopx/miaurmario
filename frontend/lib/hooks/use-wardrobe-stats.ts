@@ -87,6 +87,12 @@ export interface BatchTagEntry {
   item_id: string;
   type?: string | null;
   primary_color?: string | null;
+  /**
+   * The shade sampled off the garment, `#rrggbb`. Explicit `null` clears it — the
+   * user picked a family off the swatches, so the old shade no longer describes
+   * the garment. Omitted leaves whatever is stored alone.
+   */
+  primary_color_hex?: string | null;
 }
 
 export interface BatchTagResponse {

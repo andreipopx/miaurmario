@@ -17,8 +17,27 @@ import { useColorLabel } from '@/lib/tag-labels';
 
 interface ColorEyedropperProps {
   imageUrl: string;
-  onColorSelect: (color: string) => void;
+  /**
+   * The named colour the pick snapped to, plus the exact shade that was sampled.
+   * Callers store the name (that is what the stylist reasons on) and may keep the
+   * hex so the swatch shows the user's real brown rather than the palette's.
+   */
+  onColorSelect: (color: string, hex: string) => void;
   trigger?: React.ReactNode;
+  /** Class for the wrapper around a custom `trigger`, which is a real button. */
+  triggerClassName?: string;
+  /** Accessible name for a custom `trigger`, which is usually just an image. */
+  triggerLabel?: string;
+  disabled?: boolean;
+}
+
+/**
+ * A preview the browser already holds (a `data:`/`blob:` URL from the file the
+ * user just picked) must not go through a credentialed fetch: Safari rejects
+ * `credentials: 'include'` on those schemes outright. Load them straight.
+ */
+function isLocalSource(url: string): boolean {
+  return url.startsWith('data:') || url.startsWith('blob:');
 }
 
 function rgbToHex(r: number, g: number, b: number): string {
@@ -34,7 +53,14 @@ function findClosestColor(hex: string): ClothingColor {
   return CLOTHING_COLORS.find((c) => c.value === value) ?? CLOTHING_COLORS[0];
 }
 
-export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedropperProps) {
+export function ColorEyedropper({
+  imageUrl,
+  onColorSelect,
+  trigger,
+  triggerClassName,
+  triggerLabel,
+  disabled,
+}: ColorEyedropperProps) {
   const t = useTranslations('color.eyedropper');
   const colorLabel = useColorLabel();
   const [open, setOpen] = useState(false);
@@ -89,20 +115,7 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
         return;
       }
 
-      // Fetch image as blob to avoid CORS issues with canvas
-      fetch(imageUrl, { credentials: 'include' })
-        .then(response => {
-          if (!response.ok) throw new Error(t('loadFailedStatus', { status: response.status }));
-          return response.blob();
-        })
-        .then(blob => {
-          // Cleanup previous blob URL
-          if (blobUrlRef.current) {
-            URL.revokeObjectURL(blobUrlRef.current);
-          }
-          const blobUrl = URL.createObjectURL(blob);
-          blobUrlRef.current = blobUrl;
-
+      const draw = (source: string) => {
           const img = new Image();
           img.onload = () => {
             imageRef.current = img;
@@ -132,7 +145,30 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
             setError(t('loadFailedBlob'));
             setIsLoading(false);
           };
-          img.src = blobUrl;
+          img.src = source;
+      };
+
+      // A photo the user just picked is already in this page, so draw it
+      // directly. Anything on the server has to come through a credentialed
+      // fetch and a blob URL, or the canvas ends up tainted and unreadable.
+      if (isLocalSource(imageUrl)) {
+        draw(imageUrl);
+        return;
+      }
+
+      fetch(imageUrl, { credentials: 'include' })
+        .then(response => {
+          if (!response.ok) throw new Error(t('loadFailedStatus', { status: response.status }));
+          return response.blob();
+        })
+        .then(blob => {
+          // Cleanup previous blob URL
+          if (blobUrlRef.current) {
+            URL.revokeObjectURL(blobUrlRef.current);
+          }
+          const blobUrl = URL.createObjectURL(blob);
+          blobUrlRef.current = blobUrl;
+          draw(blobUrl);
         })
         .catch(err => {
           setError(getErrorMessage(err, t('loadFailedGeneric')));
@@ -187,8 +223,10 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
   }, [getColorAtPosition]);
 
   const handleConfirm = () => {
-    if (matchedColor) {
-      onColorSelect(matchedColor.value);
+    if (matchedColor && pickedColor) {
+      // The name is the family everything downstream works on; the hex is the
+      // shade the user actually pointed at, so the swatch can show it.
+      onColorSelect(matchedColor.value, pickedColor);
       setOpen(false);
       setPickedColor(null);
       setMatchedColor(null);
@@ -203,13 +241,25 @@ export function ColorEyedropper({ imageUrl, onColorSelect, trigger }: ColorEyedr
   return (
     <>
       {trigger ? (
-        <div onClick={() => setOpen(true)}>{trigger}</div>
+        // A real button, not a div with onClick: on the review grid the trigger
+        // *is* the garment photo, and tapping a photo has to work from the
+        // keyboard too.
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={triggerClassName}
+          aria-label={triggerLabel ?? t('buttonTitle')}
+          disabled={disabled}
+        >
+          {trigger}
+        </button>
       ) : (
         <Button
           type="button"
           variant="secondary"
           size="icon"
           onClick={() => setOpen(true)}
+          disabled={disabled}
           title={t('buttonTitle')}
           aria-label={t('buttonTitle')}
         >

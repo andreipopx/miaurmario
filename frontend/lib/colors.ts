@@ -178,6 +178,32 @@ export function clothingColorHex(value: string): string | undefined {
   return CLOTHING_COLORS.find((c) => c.value === value)?.hex;
 }
 
+/** `"#ABC"` / `"abccde"` -> `"#abccde"`; anything that is not a colour -> `undefined`. */
+export function normalizeHex(value: string | null | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const h = value.trim().replace(/^#/, '');
+  if (/^[0-9a-f]{3}$/i.test(h)) {
+    return '#' + h.split('').map((c) => (c + c).toLowerCase()).join('');
+  }
+  return /^[0-9a-f]{6}$/i.test(h) ? '#' + h.toLowerCase() : undefined;
+}
+
+/**
+ * What to paint a swatch with: the shade sampled off the garment when we have
+ * one, otherwise the palette's canonical version of the named colour.
+ *
+ * The name is what everything else reasons on — filters, the scorer, the
+ * stylist — so this is only ever about what the eye sees. An item with no
+ * sampled shade, which is every item uploaded before the column existed, looks
+ * exactly as it did before.
+ */
+export function swatchHex(
+  named: string | null | undefined,
+  hex?: string | null
+): string | undefined {
+  return normalizeHex(hex) ?? (named ? clothingColorHex(named) : undefined);
+}
+
 /** Ink or white glyph on top of a swatch, by relative luminance. */
 export function isLightColor(hex: string): boolean {
   try {

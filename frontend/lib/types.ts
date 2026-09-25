@@ -76,6 +76,13 @@ export interface Item {
   tags: ItemTags;
   colors: string[];
   primary_color?: string;
+  /**
+   * The shade actually sampled off the garment, as `#rrggbb`. Display only:
+   * `primary_color` stays the family that matching, filters and the stylist all
+   * reason on, so two different browns are both "marrón". Null on every item
+   * uploaded before this existed — use `swatchHex` rather than reading it raw.
+   */
+  primary_color_hex?: string | null;
   status: 'processing' | 'ready' | 'error' | 'archived';
   ai_processed: boolean;
   ai_confidence?: number;

@@ -769,7 +769,9 @@
           "fetch_failed": "No hemos podido leer esa página. Inténtalo otra vez o añade la prenda a mano.",
           "link_import_disabled": "Ahora mismo no se pueden importar enlaces."
         }
-      }
+      },
+      "choosePhoto": "Elegir foto",
+      "takePhoto": "Hacer foto"
     },
     "searchCountPlaceholder": "Busca en tus {count, plural, one {# prenda} other {# prendas}}",
     "moreFilters": "Más filtros",
@@ -1820,6 +1822,17 @@
       "clear": "Quitar",
       "useName": "Usar {name}",
       "noneSelected": "Aún no has elegido color"
+    },
+    "capture": {
+      "placeholder": "Elige un color",
+      "fromPhoto": "Sacar de la foto",
+      "fromWheel": "Rueda de colores",
+      "needsPhoto": "Añade la foto y podrás sacar el color tocándola.",
+      "wheelTitle": "Elige el tono",
+      "wheelHint": "Gira la rueda hasta dar con el tono de la prenda.",
+      "wheelLabel": "Rueda de colores",
+      "lightness": "Claridad",
+      "useShade": "Usar este tono"
     }
   },
   "bulk": {
@@ -4004,7 +4017,8 @@
       "noColour": "Sin color",
       "save": "Guardar {count, plural, one {# cambio} other {# cambios}}",
       "saved": "Guardado. {count, plural, one {# prenda lista} other {# prendas listas}}.",
-      "done": "Listo"
+      "done": "Listo",
+      "pickColour": "Sacar el color de la foto"
     },
     "stepper": {
       "position": "Prenda {current} de {total}",
@@ -4018,7 +4032,8 @@
       "back": "Anterior",
       "next": "Siguiente",
       "finish": "Terminar",
-      "backToGrid": "Volver a la cuadrícula"
+      "backToGrid": "Volver a la cuadrícula",
+      "pickColour": "Sacar el color de la foto"
     },
     "statusBar": {
       "open": "Abrir la subida de prendas",

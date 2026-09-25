@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Palette } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { clothingColorHex, isLightColor } from '@/lib/colors';
+import { ColorEyedropper } from '@/components/color-eyedropper';
+import { clothingColorHex, isLightColor, swatchHex } from '@/lib/colors';
 import { useTagLabel } from '@/lib/tag-labels';
 import {
   OTHER_COLORS,
@@ -19,14 +20,20 @@ import {
 export interface StepperDraft {
   itemId: string;
   imageUrl?: string;
+  /** The largest image we are served, for sampling; the grid shows a thumbnail. */
+  fullImageUrl?: string;
   type?: string | null;
   primaryColor?: string | null;
+  primaryColorHex?: string | null;
 }
 
 interface TagStepperProps {
   drafts: readonly StepperDraft[];
   startAt?: number;
-  onChange: (itemId: string, changes: { type?: string; primaryColor?: string }) => void;
+  onChange: (
+    itemId: string,
+    changes: { type?: string; primaryColor?: string; primaryColorHex?: string | null }
+  ) => void;
   onDone: () => void;
 }
 
@@ -77,10 +84,19 @@ export function TagStepper({ drafts, startAt = 0, onChange, onDone }: TagStepper
 
   if (!current) return null;
 
+  // The user's own shade when they sampled one, otherwise the palette's.
+  const currentHex = swatchHex(current.primaryColor, current.primaryColorHex);
+
   const pickType = (type: string) => onChange(current.itemId, { type });
   const pickColor = (primaryColor: string) => {
-    onChange(current.itemId, { primaryColor });
+    // Off the swatches: the user named a family and nothing more, so any shade
+    // stored against the old family is dropped rather than left to contradict it.
+    onChange(current.itemId, { primaryColor, primaryColorHex: null });
     // The colour is the last thing asked, so choosing it means "done with this one".
+    goNext();
+  };
+  const sampleColor = (primaryColor: string, hex: string) => {
+    onChange(current.itemId, { primaryColor, primaryColorHex: hex });
     goNext();
   };
 
@@ -96,17 +112,43 @@ export function TagStepper({ drafts, startAt = 0, onChange, onDone }: TagStepper
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-tile bg-panel">
-          {current.imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={current.imageUrl} alt="" className="h-full w-full object-cover" aria-hidden />
-          )}
-        </div>
+        {/* Tapping the garment is the fastest way to get the colour right, so the
+            photo itself is the eyedropper. */}
+        <ColorEyedropper
+          imageUrl={current.fullImageUrl ?? current.imageUrl ?? ''}
+          disabled={!current.imageUrl}
+          onColorSelect={sampleColor}
+          triggerLabel={t('pickColour')}
+          triggerClassName="h-24 w-24 shrink-0 overflow-hidden rounded-tile bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          trigger={
+            <span className="relative block h-full w-full">
+              {current.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={current.imageUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  aria-hidden
+                />
+              )}
+              <span className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-foreground">
+                <Palette className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              </span>
+            </span>
+          }
+        />
         <div className="min-w-0">
           <p className="text-[15px] font-bold leading-tight">
             {needsType(current.type) ? t('whatIsIt') : tagLabel('types', current.type)}
           </p>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            {currentHex ? (
+              <span
+                aria-hidden
+                className="h-3 w-3 shrink-0 rounded-full border border-border"
+                style={{ backgroundColor: currentHex }}
+              />
+            ) : null}
             {current.primaryColor ? tagLabel('colors', current.primaryColor) : t('noColorYet')}
           </p>
         </div>

@@ -769,7 +769,9 @@
           "fetch_failed": "We could not read that page. Try again or add the garment by hand.",
           "link_import_disabled": "Link import is off right now."
         }
-      }
+      },
+      "choosePhoto": "Choose a photo",
+      "takePhoto": "Take a photo"
     },
     "searchCountPlaceholder": "Search your {count, plural, one {# item} other {# items}}",
     "moreFilters": "More filters",
@@ -1820,6 +1822,17 @@
       "clear": "Clear",
       "useName": "Use {name}",
       "noneSelected": "No color selected yet"
+    },
+    "capture": {
+      "placeholder": "Pick a colour",
+      "fromPhoto": "Take it off the photo",
+      "fromWheel": "Colour wheel",
+      "needsPhoto": "Add the photo and you can take the colour by tapping it.",
+      "wheelTitle": "Pick the shade",
+      "wheelHint": "Turn the wheel until you land on the garment’s shade.",
+      "wheelLabel": "Colour wheel",
+      "lightness": "Lightness",
+      "useShade": "Use this shade"
     }
   },
   "bulk": {
@@ -4004,7 +4017,8 @@
       "noColour": "No colour",
       "save": "Save {count, plural, one {# change} other {# changes}}",
       "saved": "Saved. {count, plural, one {# item ready} other {# items ready}}.",
-      "done": "Done"
+      "done": "Done",
+      "pickColour": "Take the colour off the photo"
     },
     "stepper": {
       "position": "Item {current} of {total}",
@@ -4018,7 +4032,8 @@
       "back": "Previous",
       "next": "Next",
       "finish": "Finish",
-      "backToGrid": "Back to the grid"
+      "backToGrid": "Back to the grid",
+      "pickColour": "Take the colour off the photo"
     },
     "statusBar": {
       "open": "Open the item upload",

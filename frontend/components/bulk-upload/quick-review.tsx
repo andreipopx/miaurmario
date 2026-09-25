@@ -1,10 +1,11 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Check, ListChecks, Pencil } from 'lucide-react';
+import { Check, ListChecks, Palette, Pencil } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { clothingColorHex } from '@/lib/colors';
+import { ColorEyedropper } from '@/components/color-eyedropper';
+import { swatchHex } from '@/lib/colors';
 import { useTagLabel } from '@/lib/tag-labels';
 import type { Item } from '@/lib/types';
 import { needsType } from '@/components/bulk-upload/tag-choices';
@@ -13,6 +14,12 @@ import type { StepperDraft } from '@/components/bulk-upload/tag-stepper';
 export interface ReviewEdit {
   type?: string;
   primaryColor?: string;
+  /**
+   * The shade sampled off this garment's photo. `undefined` means "unchanged";
+   * `null` means the user picked a family off the swatches, so whatever shade was
+   * stored no longer describes it.
+   */
+  primaryColorHex?: string | null;
 }
 
 /** Item plus whatever the user has changed but not saved yet. */
@@ -20,8 +27,13 @@ export function draftOf(item: Item, edit: ReviewEdit | undefined): StepperDraft 
   return {
     itemId: item.id,
     imageUrl: item.thumbnail_url ?? item.medium_url ?? item.image_url,
+    // The eyedropper needs every pixel it can get, so it samples the biggest
+    // image we are served rather than the grid thumbnail.
+    fullImageUrl: item.image_url ?? item.medium_url ?? item.thumbnail_url,
     type: edit?.type ?? item.type,
     primaryColor: edit?.primaryColor ?? item.primary_color,
+    primaryColorHex:
+      edit?.primaryColorHex !== undefined ? edit.primaryColorHex : item.primary_color_hex,
   };
 }
 
@@ -32,16 +44,22 @@ export function draftOf(item: Item, edit: ReviewEdit | undefined): StepperDraft 
  * Garments the stylist cannot use yet — no type — come first and are marked, so
  * the pass is a short list of real work rather than a wall of thumbnails. Nothing
  * here is required: closing the sheet leaves the garments in the wardrobe.
+ *
+ * Tapping the photo samples its colour; the row underneath opens the one-by-one
+ * editor. Two targets, because "this is the wrong colour" is the fix people make
+ * most and pointing at the garment is the way to make it.
  */
 export function QuickReview({
   items,
   edits,
   onEditOne,
+  onPickColor,
   onStartStepper,
 }: {
   items: readonly Item[];
   edits: Readonly<Record<string, ReviewEdit>>;
   onEditOne: (index: number) => void;
+  onPickColor: (itemId: string, color: string, hex: string) => void;
   onStartStepper: () => void;
 }) {
   const t = useTranslations('bulkUpload.review');
@@ -65,31 +83,48 @@ export function QuickReview({
         {items.map((item, index) => {
           const draft = draftOf(item, edits[item.id]);
           const missing = needsType(draft.type);
-          const hex = draft.primaryColor ? clothingColorHex(draft.primaryColor) : undefined;
+          const hex = swatchHex(draft.primaryColor, draft.primaryColorHex);
           return (
             <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => onEditOne(index)}
+              <div
                 data-testid="bulk-review-tile"
                 data-missing={missing ? 'true' : 'false'}
-                className={`w-full overflow-hidden rounded-tile bg-panel text-left transition-transform active:scale-[0.98] ${
+                className={`overflow-hidden rounded-tile bg-panel ${
                   missing ? 'ring-2 ring-signature' : ''
                 }`}
               >
-                <div className="aspect-square w-full bg-background">
-                  {draft.imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={draft.imageUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      aria-hidden
-                      loading="lazy"
-                    />
-                  )}
-                </div>
-                <div className="flex items-start gap-1.5 p-2">
+                <ColorEyedropper
+                  imageUrl={draft.fullImageUrl ?? draft.imageUrl ?? ''}
+                  disabled={!draft.imageUrl}
+                  onColorSelect={(color, picked) => onPickColor(item.id, color, picked)}
+                  triggerLabel={t('pickColour')}
+                  triggerClassName="relative block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                  trigger={
+                    <span className="relative block aspect-square w-full bg-background">
+                      {draft.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={draft.imageUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          aria-hidden
+                          loading="lazy"
+                        />
+                      )}
+                      {/* Says out loud that the photo is tappable — a bare
+                          thumbnail looks like decoration. */}
+                      <span className="absolute bottom-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-foreground">
+                        <Palette className="h-4 w-4" strokeWidth={2} aria-hidden />
+                      </span>
+                    </span>
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => onEditOne(index)}
+                  data-testid="bulk-review-edit"
+                  className="flex w-full items-start gap-1.5 p-2 text-left transition-transform active:scale-[0.98]"
+                >
                   {hex ? (
                     <span
                       className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full border border-border"
@@ -110,8 +145,8 @@ export function QuickReview({
                   ) : (
                     <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" strokeWidth={2} aria-hidden />
                   )}
-                </div>
-              </button>
+                </button>
+              </div>
             </li>
           );
         })}

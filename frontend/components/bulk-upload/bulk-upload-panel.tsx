@@ -20,6 +20,14 @@ import { MAX_BATCH_PHOTOS } from '@/lib/bulk-upload/queue';
 type Phase = 'pick' | 'queue' | 'review' | 'stepper';
 
 /**
+ * Whether a row is worth sending. A shade on its own counts: tapping the photo to
+ * get the real brown is a change even when the family stays "marrón".
+ */
+function hasEdit(edit: ReviewEdit): boolean {
+  return Boolean(edit.type || edit.primaryColor || edit.primaryColorHex);
+}
+
+/**
  * The "muchas prendas" tab of the add dialog: pick many photos, watch the queue,
  * then run the quick pass over what landed.
  *
@@ -117,11 +125,14 @@ export function BulkUploadPanel({
 
   const save = useCallback(async () => {
     const entries = Object.entries(edits)
-      .filter(([, edit]) => edit.type || edit.primaryColor)
+      .filter(([, edit]) => hasEdit(edit))
       .map(([itemId, edit]) => ({
         item_id: itemId,
         type: edit.type,
         primary_color: edit.primaryColor,
+        // `null` is meaningful here — "drop the shade the tagger sampled" — so it
+        // goes over the wire, while `undefined` means the user never touched it.
+        primary_color_hex: edit.primaryColorHex ?? null,
       }));
     if (entries.length === 0) {
       if (!reviewingBacklog) reset();
@@ -148,7 +159,7 @@ export function BulkUploadPanel({
   }, [reset]);
 
   const busy = counts.busy > 0;
-  const editCount = Object.values(edits).filter((edit) => edit.type || edit.primaryColor).length;
+  const editCount = Object.values(edits).filter(hasEdit).length;
   const hasEdits = editCount > 0;
 
   return (
@@ -225,6 +236,9 @@ export function BulkUploadPanel({
                 <QuickReview
                   items={items}
                   edits={edits}
+                  onPickColor={(itemId, color, hex) =>
+                    editOne(itemId, { primaryColor: color, primaryColorHex: hex })
+                  }
                   onEditOne={(index) => {
                     setStepperStart(index);
                     setPhase('stepper');

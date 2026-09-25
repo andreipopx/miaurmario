@@ -72,6 +72,7 @@ import {
   FORMALITY_LEVELS,
   QUICK_STYLES,
   SEASONS,
+  asTagList,
   toggleStyle,
 } from '@/components/bulk-upload/tag-choices';
 import { CarePanel } from '@/components/care-panel';
@@ -166,9 +167,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
         // The tagger writes these into `tags`; the API mirrors them onto columns.
         // Read whichever is filled in, so a hand-tagged garment edits as cleanly
         // as an AI-tagged one, and both are empty when there is no AI at all.
-        style: item.tags?.style ?? item.style ?? [],
+        style: asTagList(item.tags?.style ?? item.style),
         formality: item.tags?.formality ?? item.formality ?? '',
-        season: item.tags?.season ?? item.season ?? [],
+        season: asTagList(item.tags?.season ?? item.season),
       });
       setIsEditing(false);
       setActiveImageIndex(0);

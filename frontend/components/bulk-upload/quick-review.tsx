@@ -8,7 +8,7 @@ import { clothingColorHex } from '@/lib/colors';
 import { useTagLabel } from '@/lib/tag-labels';
 import { cn } from '@/lib/utils';
 import type { Item } from '@/lib/types';
-import { needsType } from '@/components/bulk-upload/tag-choices';
+import { asTagList, needsType } from '@/components/bulk-upload/tag-choices';
 import { GarmentThumb } from '@/components/bulk-upload/garment-thumb';
 import { RotateButtons } from '@/components/bulk-upload/rotate-buttons';
 import { TagFields, type TagChanges } from '@/components/bulk-upload/tag-fields';
@@ -29,7 +29,7 @@ export function draftOf(item: Item, edit: ReviewEdit | undefined): StepperDraft 
     hasCutout: item.has_cutout,
     type: edit?.type ?? item.type,
     primaryColor: edit?.primaryColor ?? item.primary_color,
-    style: edit?.style ?? item.tags?.style ?? item.style,
+    style: edit?.style ?? asTagList(item.tags?.style ?? item.style),
     formality: edit?.formality ?? item.tags?.formality ?? item.formality,
   };
 }

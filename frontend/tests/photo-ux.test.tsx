@@ -24,6 +24,7 @@ import {
   MAX_STYLES,
   QUICK_STYLES,
   SEASONS,
+  asTagList,
   toggleStyle,
 } from '@/components/bulk-upload/tag-choices'
 import es from '@/messages/es.json'
@@ -263,6 +264,18 @@ describe('style and formality choices', () => {
     expect(toggleStyle(['casual', 'sporty'], 'elegant')).toEqual(['sporty', 'elegant'])
     expect(toggleStyle(['casual', 'sporty'], 'casual')).toEqual(['sporty'])
     expect(MAX_STYLES).toBe(2)
+  })
+
+  it('reads a tag list whatever shape it arrived in', () => {
+    // `tags` is free-form JSON: the tagger is asked for a list, but a model that
+    // answers with a bare string lands here too, and one odd garment must not
+    // take a screen down with it.
+    expect(asTagList(['casual', 'sporty'])).toEqual(['casual', 'sporty'])
+    expect(asTagList('pumps')).toEqual(['pumps'])
+    expect(asTagList(undefined)).toEqual([])
+    expect(asTagList(null)).toEqual([])
+    expect(asTagList(42)).toEqual([])
+    expect(asTagList(['casual', 7, null])).toEqual(['casual'])
   })
 
   it('treats a missing list as empty, which is the no-AI case', () => {

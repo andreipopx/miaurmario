@@ -72,6 +72,20 @@ export const SEASONS = ['spring', 'summer', 'fall', 'winter', 'all-season'] as c
 /** The tagger picks one or two styles; so does the user. */
 export const MAX_STYLES = 2;
 
+/**
+ * A tag list, whatever shape it arrived in.
+ *
+ * `tags` is a free-form JSON column: the tagger is asked for `"style": ["…"]`
+ * but a model that answers with a bare string, or an older row written before
+ * the vocabulary settled, both turn up here. Reading them as a list rather than
+ * trusting the type keeps one odd garment from taking a screen down with it.
+ */
+export function asTagList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === 'string');
+  if (typeof value === 'string' && value) return [value];
+  return [];
+}
+
 /** Add or remove a style, keeping at most MAX_STYLES and dropping the oldest. */
 export function toggleStyle(current: readonly string[] | null | undefined, style: string): string[] {
   const styles = current ?? [];

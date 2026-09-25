@@ -8,7 +8,13 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Stinky } from '@/components/stinky/stinky';
 
-type Scope = 'friend_request' | 'friend_accepted' | 'daily_outfit' | 'all';
+type Scope =
+  | 'morning_look'
+  | 'friend_activity'
+  | 'friend_request'
+  | 'friend_accepted'
+  | 'daily_outfit'
+  | 'all';
 type State =
   | { kind: 'working' }
   | { kind: 'done'; scope: Scope; subscribed: boolean }

@@ -222,12 +222,26 @@ export function useNotificationHistory(limit = 20) {
 
 // ---- Default channels: account email + Web Push ------------------------------
 
-export type NotificationEvent = 'friend_request' | 'friend_accepted' | 'daily_outfit';
+export type NotificationEvent =
+  | 'morning_look'
+  | 'friend_activity'
+  | 'friend_request'
+  | 'friend_accepted'
+  | 'daily_outfit';
 export const NOTIFICATION_EVENTS: NotificationEvent[] = [
+  'morning_look',
+  'friend_activity',
   'friend_request',
   'friend_accepted',
   'daily_outfit',
 ];
+/** The events that go out once a day, at a local time the user picks. */
+export type TimedEvent = 'morning_look' | 'friend_activity';
+export const TIMED_EVENTS: TimedEvent[] = ['morning_look', 'friend_activity'];
+export const TIMED_EVENT_TIME_KEY = {
+  morning_look: 'morning_look_time',
+  friend_activity: 'friend_activity_time',
+} as const satisfies Record<TimedEvent, keyof NotificationPreferences>;
 export type DefaultChannel = 'email' | 'push';
 
 export type EventToggles = Record<NotificationEvent, boolean>;
@@ -240,7 +254,17 @@ export interface NotificationPreferences {
   push_available: boolean;
   vapid_public_key: string | null;
   push_devices: number;
+  /** HH:MM in the user's own timezone. */
+  morning_look_time: string;
+  friend_activity_time: string;
 }
+
+export type NotificationPreferencesPatch = Partial<
+  Record<DefaultChannel, Partial<EventToggles>>
+> & {
+  morning_look_time?: string;
+  friend_activity_time?: string;
+};
 
 const PREFS_KEY = ['notification-preferences'];
 
@@ -260,13 +284,13 @@ export function useUpdateNotificationPreferences() {
   const { data: session } = useSession();
 
   return useMutation({
-    mutationFn: async (patch: Partial<Record<DefaultChannel, Partial<EventToggles>>>) => {
+    mutationFn: async (patch: NotificationPreferencesPatch) => {
       if (session?.accessToken) {
         setAccessToken(session.accessToken as string);
       }
       return api.patch<NotificationPreferences>('/notifications/preferences', patch);
     },
-    // Optimistic: the switch flips immediately, rolls back on error.
+    // Optimistic: the switch (or the time) changes immediately, rolls back on error.
     onMutate: async (patch) => {
       await queryClient.cancelQueries({ queryKey: PREFS_KEY });
       const previous = queryClient.getQueryData<NotificationPreferences>(PREFS_KEY);
@@ -275,6 +299,10 @@ export function useUpdateNotificationPreferences() {
           ...previous,
           email: { ...previous.email, ...patch.email },
           push: { ...previous.push, ...patch.push },
+          ...(patch.morning_look_time ? { morning_look_time: patch.morning_look_time } : {}),
+          ...(patch.friend_activity_time
+            ? { friend_activity_time: patch.friend_activity_time }
+            : {}),
         });
       }
       return { previous };

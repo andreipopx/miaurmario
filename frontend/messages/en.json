@@ -1441,6 +1441,18 @@
         "push": "This device"
       },
       "events": {
+        "morning_look": {
+          "title": "Your morning look",
+          "description": "Today's look, at the time you pick",
+          "timeHint": "It arrives at this time, in your own timezone. If you already accepted a look for today, we leave you alone.",
+          "offHint": "Off. Turn it on and we'll send it at 7:30."
+        },
+        "friend_activity": {
+          "title": "Friend activity",
+          "description": "Reactions and new looks, in one message",
+          "timeHint": "One message a day at this time, in your own timezone. Nothing new, nothing sent.",
+          "offHint": "Off on both channels."
+        },
         "friend_request": {
           "title": "Friend requests",
           "description": "Someone wants to be your friend"
@@ -1458,6 +1470,8 @@
       "emailUnavailable": "Email isn't configured on this server yet.",
       "pushNeedsDevice": "Enable this device to choose what reaches your phone.",
       "lowNoise": "No spam: we never notify you about every reaction.",
+      "timeLabel": "Time",
+      "dailyDefaults": "By default: the morning look is off (it needs a time) and friend activity only reaches this device, never your inbox.",
       "saveError": "Couldn't save. Please try again.",
       "device": {
         "title": "This device",
@@ -3459,6 +3473,8 @@
     "manage": "Manage notifications",
     "pushNote": "This only affects email: notifications on your devices stay as they are.",
     "scopes": {
+      "morning_look": "your morning look",
+      "friend_activity": "friend activity",
       "friend_request": "friend requests",
       "friend_accepted": "accepted friend requests",
       "daily_outfit": "your outfit of the day",

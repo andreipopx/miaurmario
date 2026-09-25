@@ -1441,6 +1441,18 @@
         "push": "Este dispositivo"
       },
       "events": {
+        "morning_look": {
+          "title": "Tu look de la mañana",
+          "description": "El look de hoy, a la hora que elijas",
+          "timeHint": "Te llega a esta hora, en tu franja horaria. Si ya has aceptado un look para hoy, no te molestamos.",
+          "offHint": "Desactivado. Actívalo y te lo mandamos a las 7:30."
+        },
+        "friend_activity": {
+          "title": "Movimiento de amigos",
+          "description": "Reacciones y looks nuevos, en un solo aviso",
+          "timeHint": "Un único aviso al día a esta hora, en tu franja horaria. Si no hay novedades, no te escribimos.",
+          "offHint": "Desactivado en los dos canales."
+        },
         "friend_request": {
           "title": "Solicitudes de amistad",
           "description": "Alguien quiere ser tu amigo"
@@ -1458,6 +1470,8 @@
       "emailUnavailable": "El email no está configurado en este servidor todavía.",
       "pushNeedsDevice": "Activa este dispositivo para elegir qué te llega al móvil.",
       "lowNoise": "Sin spam: nunca te avisamos de cada reacción.",
+      "timeLabel": "Hora",
+      "dailyDefaults": "Por defecto: el look de la mañana viene desactivado (necesita una hora) y el movimiento de amigos solo te llega a este dispositivo, nunca por email.",
       "saveError": "No se pudo guardar. Inténtalo de nuevo.",
       "device": {
         "title": "Este dispositivo",
@@ -3459,6 +3473,8 @@
     "manage": "Gestionar notificaciones",
     "pushNote": "Esto solo afecta al email: los avisos en tus dispositivos siguen igual.",
     "scopes": {
+      "morning_look": "tu look de la mañana",
+      "friend_activity": "movimiento de amigos",
       "friend_request": "solicitudes de amistad",
       "friend_accepted": "amistades aceptadas",
       "daily_outfit": "look del día",

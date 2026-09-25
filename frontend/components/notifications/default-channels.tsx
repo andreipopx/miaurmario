@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -13,19 +13,26 @@ import {
   Mail,
   Send,
   Smartphone,
+  Sunrise,
   UserCheck,
   UserPlus,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { InstallGuideDialog } from '@/components/install/install-guide';
 import {
   NOTIFICATION_EVENTS,
+  TIMED_EVENTS,
+  TIMED_EVENT_TIME_KEY,
   type DefaultChannel,
   type NotificationEvent,
   type NotificationPreferences,
+  type TimedEvent,
   useNotificationPreferences,
   useTestPush,
   useUpdateNotificationPreferences,
@@ -34,16 +41,73 @@ import { usePushDevice } from '@/lib/pwa/use-push-device';
 import { cn } from '@/lib/utils';
 
 const EVENT_ICON: Record<NotificationEvent, React.ReactNode> = {
+  morning_look: <Sunrise className="h-5 w-5" strokeWidth={1.75} />,
+  friend_activity: <Users className="h-5 w-5" strokeWidth={1.75} />,
   friend_request: <UserPlus className="h-5 w-5" strokeWidth={1.75} />,
   friend_accepted: <UserCheck className="h-5 w-5" strokeWidth={1.75} />,
   daily_outfit: <CalendarHeart className="h-5 w-5" strokeWidth={1.75} />,
 };
 
 const EVENT_BG: Record<NotificationEvent, string> = {
+  morning_look: 'bg-pop-amber',
+  friend_activity: 'bg-pop-pink',
   friend_request: 'bg-pop-sky',
   friend_accepted: 'bg-pop-mint',
   daily_outfit: 'bg-pop-amber',
 };
+
+const HHMM = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+
+function isTimed(event: NotificationEvent): event is TimedEvent {
+  return (TIMED_EVENTS as NotificationEvent[]).includes(event);
+}
+
+/**
+ * The local time a daily alert goes out. Saved as soon as it is a whole HH:MM,
+ * so turning the morning look on and moving it to 07:00 is two taps.
+ */
+function AlertTime({ event, prefs }: { event: TimedEvent; prefs: NotificationPreferences }) {
+  const t = useTranslations('notifications.defaults');
+  const update = useUpdateNotificationPreferences();
+  const saved = prefs[TIMED_EVENT_TIME_KEY[event]];
+  const [value, setValue] = useState(saved);
+  const id = `alert-time-${event}`;
+
+  useEffect(() => {
+    setValue(saved);
+  }, [saved]);
+
+  const commit = (next: string) => {
+    setValue(next);
+    if (!HHMM.test(next) || next === saved) return;
+    update.mutate(
+      { [TIMED_EVENT_TIME_KEY[event]]: next },
+      {
+        onError: () => {
+          setValue(saved);
+          toast.error(t('saveError'));
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border pt-3">
+      <Label htmlFor={id} className="text-xs font-semibold text-muted-foreground">
+        {t('timeLabel')}
+      </Label>
+      <Input
+        id={id}
+        type="time"
+        value={value}
+        step={300}
+        onChange={(e) => commit(e.target.value)}
+        className="h-10 w-[6.5rem] shrink-0"
+      />
+      <p className="basis-full text-xs text-muted-foreground">{t(`events.${event}.timeHint`)}</p>
+    </div>
+  );
+}
 
 /** Event x channel switches: Email and "Este dispositivo" (Web Push). */
 function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
@@ -75,7 +139,9 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-[1fr_4.5rem_4.5rem] items-end gap-2 px-1 sm:grid-cols-[1fr_6.5rem_6.5rem]">
+      {/* Column headers only once there is room for columns; below that every
+          row carries its own channel labels. */}
+      <div className="hidden items-end gap-2 px-1 min-[380px]:grid min-[380px]:grid-cols-[minmax(0,1fr)_56px_56px] sm:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem]">
         <span />
         {columns.map((c) => (
           <span
@@ -88,38 +154,61 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
         ))}
       </div>
       <ul className="space-y-2">
-        {NOTIFICATION_EVENTS.map((event) => (
-          <li
-            key={event}
-            className="grid grid-cols-[1fr_4.5rem_4.5rem] items-center gap-2 rounded-lg bg-panel p-3 sm:grid-cols-[1fr_6.5rem_6.5rem] sm:p-4"
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              <span
-                aria-hidden
-                className={cn(
-                  'hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-pop-foreground min-[400px]:flex',
-                  EVENT_BG[event]
-                )}
-              >
-                {EVENT_ICON[event]}
-              </span>
-              <div className="min-w-0">
-                <p className="font-bold leading-tight">{t(`events.${event}.title`)}</p>
-                <p className="text-xs text-muted-foreground sm:text-sm">{t(`events.${event}.description`)}</p>
+        {NOTIFICATION_EVENTS.map((event) => {
+          const timed = isTimed(event);
+          // What the user asked for, whatever this device can do right now: a
+          // phone that hasn't been enabled yet shouldn't hide their own time.
+          const on = prefs.email[event] || prefs.push[event];
+          return (
+            <li key={event} className="rounded-lg bg-panel p-3 sm:p-4">
+              {/* A rem-sized column would eat the whole row at 320 px with a
+                  bigger system font, so the switches stack under the name
+                  there and the columns are fixed pixels above it. */}
+              <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-[minmax(0,1fr)_56px_56px] min-[380px]:items-center sm:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem]">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-pop-foreground min-[400px]:flex',
+                      EVENT_BG[event]
+                    )}
+                  >
+                    {EVENT_ICON[event]}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-bold leading-tight">{t(`events.${event}.title`)}</p>
+                    <p className="text-xs text-muted-foreground sm:text-sm">
+                      {t(`events.${event}.description`)}
+                    </p>
+                  </div>
+                </div>
+                {columns.map((c) => (
+                  <div
+                    key={c.key}
+                    className="flex items-center justify-between gap-3 min-[380px]:justify-center"
+                  >
+                    <span className="flex items-center gap-2 text-xs font-semibold text-muted-foreground min-[380px]:hidden">
+                      {c.icon}
+                      {c.label}
+                    </span>
+                    <Switch
+                      checked={c.enabled && prefs[c.key][event]}
+                      disabled={!c.enabled}
+                      onCheckedChange={(v) => toggle(c.key, event, v)}
+                      aria-label={`${t(`events.${event}.title`)} · ${c.label}`}
+                    />
+                  </div>
+                ))}
               </div>
-            </div>
-            {columns.map((c) => (
-              <div key={c.key} className="flex justify-center">
-                <Switch
-                  checked={c.enabled && prefs[c.key][event]}
-                  disabled={!c.enabled}
-                  onCheckedChange={(v) => toggle(c.key, event, v)}
-                  aria-label={`${t(`events.${event}.title`)} · ${c.label}`}
-                />
-              </div>
-            ))}
-          </li>
-        ))}
+              {timed && on && <AlertTime event={event} prefs={prefs} />}
+              {timed && !on && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t(`events.${event}.offHint`)}
+                </p>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <div className="space-y-1 px-1 pt-1 text-xs text-muted-foreground">
         {prefs.email_available ? (
@@ -128,6 +217,7 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
           <p>{t('emailUnavailable')}</p>
         )}
         {prefs.push_available && prefs.push_devices === 0 && <p>{t('pushNeedsDevice')}</p>}
+        <p>{t('dailyDefaults')}</p>
         <p>{t('lowNoise')}</p>
       </div>
     </div>

@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 from app.utils.care import MAX_FIBERS, care_hints, normalize_fiber, parse_composition
+from app.utils.colors import normalize_hex
 from app.utils.signed_urls import sign_image_url
 
 # Default wash intervals by clothing type (wears between washes)
@@ -139,6 +140,21 @@ class ItemCreate(ItemBase):
     tags: ItemTags | None = None
     colors: list[str] | None = None
     primary_color: str | None = None
+    # The sampled shade of the garment, "#rrggbb". Display only: `primary_color`
+    # stays the family everything else reasons on.
+    primary_color_hex: str | None = Field(None, max_length=7)
+
+    @field_validator("primary_color_hex", mode="before")
+    @classmethod
+    def _normalize_primary_color_hex(cls, value: Any) -> Any:
+        """Anything that is not a real hex becomes ``None`` rather than a 422.
+
+        The hex is a nicety on top of the named colour, so a client that sends
+        junk loses the shade and keeps the garment.
+        """
+        if value is None or value == "":
+            return None
+        return normalize_hex(value) if isinstance(value, str) else None
 
 
 class ItemUpdate(BaseModel):
@@ -156,6 +172,21 @@ class ItemUpdate(BaseModel):
     wash_interval: int | None = None
     source_url: str | None = Field(None, max_length=2048)
     care: CareInfo | None = None
+    # The sampled shade of the garment, "#rrggbb". Display only: `primary_color`
+    # stays the family everything else reasons on.
+    primary_color_hex: str | None = Field(None, max_length=7)
+
+    @field_validator("primary_color_hex", mode="before")
+    @classmethod
+    def _normalize_primary_color_hex(cls, value: Any) -> Any:
+        """Anything that is not a real hex becomes ``None`` rather than a 422.
+
+        The hex is a nicety on top of the named colour, so a client that sends
+        junk loses the shade and keeps the garment.
+        """
+        if value is None or value == "":
+            return None
+        return normalize_hex(value) if isinstance(value, str) else None
 
 
 class ItemResponse(ItemBase):
@@ -170,6 +201,7 @@ class ItemResponse(ItemBase):
     tags: dict = Field(default_factory=dict)
     colors: list[str] = Field(default_factory=list)
     primary_color: str | None = None
+    primary_color_hex: str | None = None
     pattern: str | None = None
     material: str | None = None
     style: list[str] = Field(default_factory=list)
@@ -323,6 +355,21 @@ class BulkTagEntry(BaseModel):
     item_id: UUID
     type: str | None = Field(None, max_length=50)
     primary_color: str | None = Field(None, max_length=50)
+    # The sampled shade of the garment, "#rrggbb". Display only: `primary_color`
+    # stays the family everything else reasons on.
+    primary_color_hex: str | None = Field(None, max_length=7)
+
+    @field_validator("primary_color_hex", mode="before")
+    @classmethod
+    def _normalize_primary_color_hex(cls, value: Any) -> Any:
+        """Anything that is not a real hex becomes ``None`` rather than a 422.
+
+        The hex is a nicety on top of the named colour, so a client that sends
+        junk loses the shade and keeps the garment.
+        """
+        if value is None or value == "":
+            return None
+        return normalize_hex(value) if isinstance(value, str) else None
 
 
 class BulkTagRequest(BaseModel):

@@ -66,6 +66,12 @@ class ClothingItem(Base):
     tags: Mapped[dict] = mapped_column(JSONB, default=dict)
     colors: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     primary_color: Mapped[str | None] = mapped_column(String(50))
+    # The shade actually on the garment, as "#rrggbb" — the user's own brown rather
+    # than the palette's. Purely for display: matching, filters and the stylist all
+    # keep reasoning on `primary_color`, so two different browns are both "marrón".
+    # Null for every item uploaded before this existed, and for anything we could
+    # not sample, in which case the UI falls back to the named colour's hex.
+    primary_color_hex: Mapped[str | None] = mapped_column(String(7))
     pattern: Mapped[str | None] = mapped_column(String(50))
     material: Mapped[str | None] = mapped_column(String(50))
     style: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)

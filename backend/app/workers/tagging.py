@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,12 +12,17 @@ from app.models.item import ClothingItem, ItemStatus, TaggedBy, TaggingStatus
 from app.models.user import User
 from app.services.ai_access import AINotEnabledError, get_ai_access, make_usage_sink
 from app.services.ai_service import AIService, ClothingTags
+from app.utils.colors import dominant_garment_hex
 from app.workers.db import get_db_session
 
 logger = logging.getLogger(__name__)
 
 
-def tags_to_item_fields(tags: ClothingTags, raw_response: str | None = None) -> dict[str, Any]:
+def tags_to_item_fields(
+    tags: ClothingTags,
+    raw_response: str | None = None,
+    primary_color_hex: str | None = None,
+) -> dict[str, Any]:
     """Convert ClothingTags to item database fields."""
     # Build the tags JSONB object for frontend display
     tags_jsonb = {
@@ -39,6 +45,10 @@ def tags_to_item_fields(tags: ClothingTags, raw_response: str | None = None) -> 
         "type": tags.type,
         "subtype": tags.subtype,
         "primary_color": tags.primary_color,
+        # Only ever alongside a family: a shade with no name is no use to the
+        # stylist and would show a swatch the filters disagree with. Null when we
+        # could not sample it, and the UI then falls back to the palette's hex.
+        "primary_color_hex": primary_color_hex if tags.primary_color else None,
         "colors": tags.colors,
         "pattern": tags.pattern,
         "material": tags.material,
@@ -156,6 +166,12 @@ async def tag_item_image(ctx: dict, item_id: str, image_path: str) -> dict[str, 
             f"AI analysis complete for item {item_id}: type={tags.type}, color={tags.primary_color}"
         )
 
+        # The model names the family; the photo gives us the actual shade. Sampling is
+        # a 64x64 pass over an image already on disk, so it is cheap, and it is
+        # allowed to fail: a null hex just means the card shows the palette's brown
+        # instead of this garment's brown.
+        sampled_hex = await asyncio.to_thread(dominant_garment_hex, str(path))
+
         # Update item in database
         db = get_db_session(ctx)
         try:
@@ -171,7 +187,7 @@ async def tag_item_image(ctx: dict, item_id: str, image_path: str) -> dict[str, 
             # Update item fields - only update if user hasn't already set a value
             # Always update: ai_processed, ai_confidence, status, ai_raw_response
             # Conditionally update: type, subtype, primary_color, colors, pattern, material, style, formality, season
-            ai_fields = tags_to_item_fields(tags, tags.raw_response)
+            ai_fields = tags_to_item_fields(tags, tags.raw_response, sampled_hex)
             # Snapshotted once: applying tagging_status before tagged_by/tagged_at in the
             # same loop would otherwise make the guard for the later two fields see the
             # already-updated status and skip them even outside of a race.
@@ -200,6 +216,17 @@ async def tag_item_image(ctx: dict, item_id: str, image_path: str) -> dict[str, 
                         setattr(item, field, value)
                 elif field == "primary_color":
                     if not item.primary_color or item.primary_color == "unknown":
+                        setattr(item, field, value)
+                elif field == "primary_color_hex":
+                    # Only the shade of the family we actually wrote. Painting the
+                    # sampled hex onto a family the user chose themselves would put a
+                    # swatch next to a name that disagrees with it, and a shade the
+                    # user sampled by hand always wins over one we guessed.
+                    if (
+                        value
+                        and not item.primary_color_hex
+                        and item.primary_color == ai_fields["primary_color"]
+                    ):
                         setattr(item, field, value)
                 else:
                     # For other fields (colors, pattern, material, style, etc.), only set if not already set

@@ -712,41 +712,25 @@
       "toast": {
         "singleSuccess": "Item added to your wardrobe",
         "singleFailed": "Could not add the item",
-        "bulkPartial": "{ok} uploaded, {failed} failed",
-        "bulkAllSuccess": "{count, plural, one {# item uploaded} other {# items uploaded}}",
-        "bulkAllFailed": "{count, plural, one {Could not upload # item} other {Could not upload the # items}}",
-        "processingBackground": "We're processing them in the background.",
-        "bulkError": "Could not upload the items. Please try again."
+        "processingBackground": "We're processing them in the background."
       },
       "description": "Upload photos of your clothing items",
       "dragDropSingle": "Drag & drop an image, or tap to select",
       "dragDropSingleActive": "Drop the image here...",
-      "dragDropBulk": "Drag & drop multiple images, or tap to select",
-      "dragDropBulkActive": "Drop the images here...",
       "acceptedFormats": "JPEG, PNG, WebP, or HEIC",
       "typeHint": "(AI will detect if empty)",
       "nameLabelOptional": "Name (optional)",
       "notesLabel": "Notes",
       "notesPlaceholder": "Any additional notes...",
       "addSingle": "Add item",
-      "imagesSelected": "{count, plural, one {# image selected} other {# images selected}}",
-      "clearAll": "Clear all",
-      "skipAiLabel": "Skip AI analysis (add with placeholder values, edit details later)",
-      "aiWillTag": "All items will be auto-tagged by AI. You can edit the details later.",
-      "uploadingCount": "Uploading {count} items...",
-      "uploadBulk": "{count, plural, one {Upload # item} other {Upload # items}}",
-      "resultHeadline": "{ok} of {total} uploaded successfully",
-      "resultFailedNote": "{count, plural, one {# item failed} other {# items failed}}",
       "uploadMore": "Upload more",
       "done": "Done",
       "closeConfirmTitle": "Discard the selected images?",
       "closeConfirmSingle": "You have 1 image selected that will be lost if you close.",
-      "closeConfirmMultiple": "You have {count, plural, one {# image} other {# images}} selected that will be lost if you close.",
       "keepEditing": "Keep editing",
       "discard": "Discard",
       "previewAlt": "Preview",
       "removePhoto": "Remove photo",
-      "removeFile": "Remove {name}",
       "tabLink": "Link",
       "removeLink": "Remove the link",
       "link": {
@@ -980,9 +964,9 @@
       "test": "Test vibration",
       "note": "On iPhone it only half works: it needs iOS 17.4 or newer, and even then your iPhone may do nothing.",
       "resultVibrate": "Feel that? That was Stinky purring.",
-      "resultSwitch": "Sent. On iPhone you may feel nothing \u2014 it depends on your iOS version.",
+      "resultSwitch": "Sent. On iPhone you may feel nothing — it depends on your iOS version.",
       "resultNone": "This browser cannot vibrate your phone.",
-      "resultReducedMotion": "\u201cReduce Motion\u201d is on, so vibration is switched off."
+      "resultReducedMotion": "“Reduce Motion” is on, so vibration is switched off."
     },
     "family": {
       "title": "Family",
@@ -3517,13 +3501,21 @@
       "dismiss": "Close tip"
     },
     "firstSteps": {
-      "emptyTitle": "Add your first item",
-      "emptyBody": "One photo is enough: I remove the background and tag it (or you do, if your plan has no AI). With {min} items I start suggesting looks.",
-      "emptyCta": "Add item",
+      "emptyTitle": "Upload a few items",
+      "emptyBody": "Pick several photos at once: I take the background off and tag them (or you do, in two taps, if your plan has no AI).",
+      "emptyCta": "Upload items",
       "progressTitle": "Good start!",
       "progress": "{count} of {min} items before Stinky starts suggesting looks",
       "progressHint": "Ideally a top and a bottom, or a dress and some shoes.",
-      "progressCta": "Add another item"
+      "progressCta": "Upload more items",
+      "untaggedTitle": "Tell me what they are",
+      "untagged": "You have {untyped, plural, one {# untagged photo} other {# untagged photos}}. Until I know what they are, the wardrobe still looks empty to me.",
+      "untaggedHint": "Type and colour, one tap each. With {min} tagged items I can already suggest something.",
+      "untaggedCta": "Tag them now",
+      "varietyTitle": "I can suggest something now",
+      "variety": "With {target} items I start suggesting real looks; you have {count}.",
+      "varietyHint": "I can manage with {min}, but I repeat myself a lot. The more there are, the less I do.",
+      "varietyCta": "Upload more items"
     },
     "styleQuiz": {
       "dialogLabel": "Your style with Stinky",
@@ -3835,5 +3827,89 @@
     "tooManySaves": "That was quick. Wait a moment and try again.",
     "needItems": "Pick at least one garment from your wardrobe.",
     "defaultLookName": "Look from {date}"
+  },
+  "bulkUpload": {
+    "cta": "Upload items",
+    "title": "Upload items",
+    "subtitle": "Several photos at once. You can close this: the upload carries on.",
+    "reviewSubtitle": "Confirm the type and the colour. Leave whatever is already right.",
+    "progress": "{done} of {total} done",
+    "finished": "{saved} of {total} in the wardrobe",
+    "loading": "Loading the items…",
+    "addMore": "Add more photos",
+    "seeQueue": "See the queue",
+    "close": "Close",
+    "keepInBackground": "Keep going in the background",
+    "reviewCta": "Review {count, plural, one {# item} other {# items}}",
+    "reviewSoFar": "Review the {count} already in",
+    "uploadMore": "Upload more",
+    "retryAll": "Retry {count, plural, one {# failure} other {# failures}}",
+    "resumed": "Picking {count, plural, one {# photo} other {# photos}} back up from last time",
+    "noAiNotice": "Your plan does not tag with AI, so the items land untagged. When this finishes I ask you for the type and the colour of each one: two taps.",
+    "handoff": {
+      "title": "Lots of items?",
+      "body": "There is a separate flow for uploading them all at once, with a queue, retries and a quick review at the end."
+    },
+    "picker": {
+      "headline": "Drop your photos here",
+      "dropNow": "Drop them!",
+      "hint": "Up to {max} photos per batch, {size} MB each.",
+      "choose": "Choose photos",
+      "camera": "Take a photo",
+      "room": "Room for {room} more in this batch",
+      "full": "Batch full ({max}). Upload these and we carry on.",
+      "skipAi": "Do not tag with AI",
+      "skipAiHint": "I just upload them and you tag them in the review.",
+      "noAiHint": "Your plan has no vision AI: items land untagged and you tag them at the end, type and colour, one tap each.",
+      "rejected": {
+        "tooMany": "Only {max} photos fit in a batch; I left the rest out.",
+        "tooBig": "Some photo is over {size} MB, so I left it out.",
+        "wrongType": "Some file was not an image, so I left it out."
+      }
+    },
+    "queue": {
+      "retry": "Retry",
+      "retryOne": "Retry {name}",
+      "removeOne": "Remove {name} from the queue",
+      "states": {
+        "pending": "Queued",
+        "uploading": "Uploading",
+        "removing-bg": "Removing background",
+        "tagging": "Tagging",
+        "done": "Done",
+        "duplicate": "Already in your wardrobe",
+        "error": "Could not upload"
+      }
+    },
+    "review": {
+      "needsWork": "{count, plural, one {# still needs a type} other {# still need a type}}",
+      "allGood": "All tagged. Have a look anyway.",
+      "hint": "Tap an item to change its type or colour.",
+      "oneByOne": "Review one by one",
+      "unknownType": "What is it?",
+      "noColour": "No colour",
+      "save": "Save {count, plural, one {# change} other {# changes}}",
+      "saved": "Saved. {count, plural, one {# item ready} other {# items ready}}.",
+      "done": "Done"
+    },
+    "stepper": {
+      "position": "Item {current} of {total}",
+      "skip": "Skip",
+      "whatIsIt": "What kind of item is it?",
+      "noColorYet": "No colour yet",
+      "typeLegend": "Type",
+      "colorLegend": "Main colour",
+      "moreTypes": "More types",
+      "moreColors": "More colours",
+      "back": "Previous",
+      "next": "Next",
+      "finish": "Finish",
+      "backToGrid": "Back to the grid"
+    },
+    "statusBar": {
+      "open": "Open the item upload",
+      "uploading": "Uploading items · {done} of {total}",
+      "failed": "{count, plural, one {# photo not uploaded} other {# photos not uploaded}}"
+    }
   }
 }

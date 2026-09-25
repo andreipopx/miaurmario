@@ -103,11 +103,40 @@ export function skipAllKeys(): string[] {
   return [TOUR_KEY, STYLE_QUIZ_KEY, ...ALL_TIP_KEYS];
 }
 
-export type FirstStepsStage = 'empty' | 'progress' | 'ready';
+/**
+ * What the Hoy card has to say, in order of how blocked the user is.
+ *
+ * - `empty`   nothing uploaded at all
+ * - `untagged` photos are there but none of them has a type, so the stylist sees
+ *   an empty wardrobe. Uploading more does not help; naming them does.
+ * - `progress` fewer usable garments than the engine's minimum
+ * - `variety` enough to propose something, not enough to stop repeating itself
+ * - `ready`   nothing to nag about
+ */
+export type WardrobeStage = 'empty' | 'untagged' | 'progress' | 'variety' | 'ready';
 
-/** Hoy: big "sube tu primera prenda" card, progress towards the minimum, or the normal look UI. */
-export function firstStepsStage(itemCount: number): FirstStepsStage {
-  if (itemCount <= 0) return 'empty';
-  if (itemCount < MIN_ITEMS_FOR_LOOKS) return 'progress';
-  return 'ready';
+export interface WardrobeCounts {
+  total: number;
+  /** Ready and typed: what the suggestion engine can actually build with. */
+  usable: number;
+  /** Uploaded but still "unknown". */
+  untyped: number;
+  /** The engine's hard floor, from GET /items/stats. */
+  minForLooks: number;
+  /** A comfortable wardrobe, from GET /items/stats. Never presented as required. */
+  varietyTarget: number;
+}
+
+export function wardrobeStage(counts: WardrobeCounts): WardrobeStage {
+  if (counts.total <= 0) return 'empty';
+  if (counts.usable >= counts.varietyTarget) return 'ready';
+  if (counts.usable >= counts.minForLooks) return 'variety';
+  // Below the minimum, the honest question is whether photos or types are missing.
+  if (counts.untyped > 0) return 'untagged';
+  return 'progress';
+}
+
+/** Whether the stylist can produce anything at all right now. */
+export function canSuggestLooks(counts: WardrobeCounts): boolean {
+  return counts.usable >= counts.minForLooks;
 }

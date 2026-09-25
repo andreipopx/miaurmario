@@ -19,6 +19,8 @@ import { SectionTabs } from '@/components/section-tabs';
 import { FeatureTour } from '@/components/onboarding/feature-tour';
 import { StyleQuizDialog } from '@/components/style-quiz/style-quiz-dialog';
 import { AreaTip } from '@/components/onboarding/area-tip';
+import { BulkUploadProvider } from '@/lib/bulk-upload/bulk-upload-context';
+import { UploadStatusBar } from '@/components/bulk-upload/upload-status-bar';
 
 /** Screens with pull-to-refresh (feeds and lists that change under you). */
 const PULL_TO_REFRESH = new Set(['/dashboard', '/dashboard/wardrobe', '/dashboard/friends', '/dashboard/music']);
@@ -67,6 +69,9 @@ export default function DashboardLayout({
 
   return (
     <LightboxProvider>
+      {/* Above the router on purpose: a batch of photos has to survive the user
+          wandering off to look at something else mid-upload. */}
+      <BulkUploadProvider>
       <div className="min-h-screen bg-background">
         <Sidebar />
         <MobileSidebar open={sidebarOpen} onClose={closeSidebar} />
@@ -82,6 +87,7 @@ export default function DashboardLayout({
         </div>
         <MobileNav />
         {pathname && PULL_TO_REFRESH.has(pathname) && <PullToRefresh key={pathname} />}
+        <UploadStatusBar />
         <OfflineIndicator />
         <PushSync />
         <ImageLightbox />
@@ -89,6 +95,7 @@ export default function DashboardLayout({
         {/* Offered once the tour is done, and re-run from Ajustes → Tu estilo. */}
         {user?.onboarding_completed && <StyleQuizDialog />}
       </div>
+      </BulkUploadProvider>
     </LightboxProvider>
   );
 }

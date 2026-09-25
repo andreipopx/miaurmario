@@ -9,13 +9,14 @@ import {
   MIN_ITEMS_FOR_LOOKS,
   STYLE_QUIZ_KEY,
   TOUR_KEY,
-  firstStepsStage,
+  canSuggestLooks,
   mergeSeen,
   shouldAutoOpenTour,
   shouldShowTip,
   skipAllKeys,
   tipKeyForPath,
   unsyncedKeys,
+  wardrobeStage,
 } from '@/lib/onboarding/first-run'
 import es from '@/messages/es.json'
 import en from '@/messages/en.json'
@@ -159,10 +160,34 @@ describe('first-run rules', () => {
 
   it('uses the suggestion engine minimum for the Hoy first steps', () => {
     expect(MIN_ITEMS_FOR_LOOKS).toBe(2)
-    expect(firstStepsStage(0)).toBe('empty')
-    expect(firstStepsStage(1)).toBe('progress')
-    expect(firstStepsStage(2)).toBe('ready')
-    expect(firstStepsStage(40)).toBe('ready')
+    const counts = (usable: number, untyped = 0, total = usable + untyped) => ({
+      total,
+      usable,
+      untyped,
+      minForLooks: 2,
+      varietyTarget: 12,
+    })
+
+    expect(wardrobeStage(counts(0, 0, 0))).toBe('empty')
+    expect(wardrobeStage(counts(1))).toBe('progress')
+    expect(wardrobeStage(counts(2))).toBe('variety')
+    expect(wardrobeStage(counts(11))).toBe('variety')
+    expect(wardrobeStage(counts(12))).toBe('ready')
+    expect(wardrobeStage(counts(40))).toBe('ready')
+
+    // Photos with no type are invisible to the stylist, so the card must ask for
+    // types rather than for more photos.
+    expect(wardrobeStage(counts(0, 9))).toBe('untagged')
+    expect(wardrobeStage(counts(1, 9))).toBe('untagged')
+    // Once past the minimum, untagged leftovers are no longer what is blocking.
+    expect(wardrobeStage(counts(2, 9))).toBe('variety')
+  })
+
+  it('only claims looks are possible at the real minimum', () => {
+    const base = { total: 9, untyped: 9, minForLooks: 2, varietyTarget: 12 }
+    expect(canSuggestLooks({ ...base, usable: 0 })).toBe(false)
+    expect(canSuggestLooks({ ...base, usable: 1 })).toBe(false)
+    expect(canSuggestLooks({ ...base, usable: 2 })).toBe(true)
   })
 
   it('has the same firstRun keys in both locales', () => {
@@ -276,15 +301,27 @@ describe('AreaTip', () => {
 // ---- Hoy first steps --------------------------------------------------------------------
 
 describe('FirstStepsCard', () => {
-  it('invites the first upload when empty', () => {
+  // The stats call falls back to the count prop in these tests (api.get is mocked
+  // to resolve undefined), which is the same path a slow network takes.
+  it('sends the first upload to the batch flow, not to the one-at-a-time form', () => {
     renderWithProviders(<FirstStepsCard count={0} />)
-    expect(screen.getByRole('heading', { name: 'Sube tu primera prenda' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Subir prenda/ })).toHaveAttribute('href', '/dashboard/wardrobe?add=1')
+    expect(screen.getByRole('heading', { name: 'Sube unas cuantas prendas' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Subir prendas/ })).toHaveAttribute(
+      'href',
+      '/dashboard/wardrobe?bulk=1'
+    )
   })
 
   it('shows progress towards the engine minimum', () => {
     renderWithProviders(<FirstStepsCard count={1} />)
-    expect(screen.getByText(`1 de ${MIN_ITEMS_FOR_LOOKS} prendas para que Stinky empiece a proponerte looks`)).toBeInTheDocument()
+    expect(
+      screen.getByText(`1 de ${MIN_ITEMS_FOR_LOOKS} prendas para que Stinky empiece a proponerte looks`)
+    ).toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1')
+  })
+
+  it('says nothing once the wardrobe is big enough', () => {
+    renderWithProviders(<FirstStepsCard count={40} />)
+    expect(screen.queryByTestId('first-steps')).not.toBeInTheDocument()
   })
 })

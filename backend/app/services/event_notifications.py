@@ -24,6 +24,9 @@ from sqlalchemy.orm import selectinload
 from app.config import get_settings
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.notification import (
+    EVENT_DEFAULTS,
+    TIMED_EVENT_DEFAULT_TIME,
+    TIMED_EVENTS,
     Notification,
     NotificationPreference,
     NotificationStatus,
@@ -74,15 +77,12 @@ async def get_preferences(db: AsyncSession, user_id: UUID) -> NotificationPrefer
 async def get_or_create_preferences(db: AsyncSession, user_id: UUID) -> NotificationPreference:
     pref = await db.get(NotificationPreference, user_id)
     if pref is None:
-        pref = NotificationPreference(
-            user_id=user_id,
-            email_friend_request=True,
-            email_friend_accepted=True,
-            email_daily_outfit=True,
-            push_friend_request=True,
-            push_friend_accepted=True,
-            push_daily_outfit=True,
-        )
+        pref = NotificationPreference(user_id=user_id)
+        for event, channels in EVENT_DEFAULTS.items():
+            for channel, value in channels.items():
+                pref.set(channel, event, value)
+        for event in TIMED_EVENTS:
+            pref.set_time(event, TIMED_EVENT_DEFAULT_TIME[event])
         db.add(pref)
         await db.flush()
     return pref

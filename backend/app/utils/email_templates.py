@@ -832,3 +832,129 @@ def render_waitlist_admin_email(
         f"Revisar solicitudes: {cta_url}",
     )
     return RenderedEmail(subject=subject, html=html, text=text)
+
+
+# --------------------------------------------------------------------------- #
+# Daily alerts: the look of the morning, and what friends did
+# --------------------------------------------------------------------------- #
+
+_MORNING_LOOK = {
+    "es": {
+        "subject": "Tu look de la mañana",
+        "preheader": "Lo que te he preparado para hoy.",
+        "heading": "Tu look de la mañana",
+        "intro": "Esto es lo que te he preparado para hoy:",
+        "cta": "Ver en Hoy",
+        "note": "Si hoy te apetece otra cosa, pide otra idea en Hoy: no me ofendo.",
+    },
+    "en": {
+        "subject": "Your morning look",
+        "preheader": "What I put together for you today.",
+        "heading": "Your morning look",
+        "intro": "Here's what I put together for you today:",
+        "cta": "Open Today",
+        "note": "Fancy something else today? Ask for another idea in Today: no offence taken.",
+    },
+}
+
+
+def render_morning_look_email(
+    *,
+    line: str,
+    items: list[str],
+    cta_url: str,
+    locale: str | None = None,
+    origin: str | None = None,
+    unsubscribe_url: str | None = None,
+) -> RenderedEmail:
+    """The one-line morning suggestion ("9 °C y lluvia: vaqueros, jersey y botas")."""
+    loc = normalize_locale(locale)
+    c = _MORNING_LOOK[loc]
+    body = _p(escape(c["intro"]), style=f"font-size:14px; color:{MUTED};") + _p(
+        f"<strong>{escape(line)}</strong>",
+        style=f"font-size:17px; background:{PINK_SOFT}; padding:12px 16px; border-radius:14px;",
+    )
+    if items:
+        rows = "".join(f'<li style="margin:0 0 6px 0;">{escape(i)}</li>' for i in items[:6])
+        body += f'<ul style="margin:0 0 14px 0; padding-left:20px;">{rows}</ul>'
+    html = _layout(
+        locale=loc,
+        title=c["subject"],
+        preheader=line[:120] or c["preheader"],
+        heading=c["heading"],
+        body_html=body,
+        cta_label=c["cta"],
+        cta_url=cta_url,
+        after_cta_html=_p(escape(c["note"]), style="margin:0;"),
+        footer_links_html=_manage_link(loc, origin, unsubscribe_url),
+        origin=origin,
+    )
+    text = _text(
+        c["heading"],
+        c["intro"],
+        line,
+        "\n".join(f"- {i}" for i in items[:6]),
+        f"{c['cta']}: {cta_url}",
+        c["note"],
+        _text_footer(loc, origin),
+        _text_unsubscribe(loc, unsubscribe_url),
+    )
+    return RenderedEmail(subject=c["subject"], html=html, text=text)
+
+
+_FRIEND_ACTIVITY = {
+    "es": {
+        "subject": "Movimiento de amigos",
+        "preheader": "Lo que ha pasado hoy entre tus amigos.",
+        "heading": "Movimiento de amigos",
+        "intro": "Resumen de hoy, todo junto para no darte la lata:",
+        "cta": "Ver en Amigos",
+        "note": "Un solo aviso al día como máximo, a la hora que tú elijas.",
+    },
+    "en": {
+        "subject": "Friend activity",
+        "preheader": "What your friends got up to today.",
+        "heading": "Friend activity",
+        "intro": "Today's round-up, all in one go so I don't pester you:",
+        "cta": "Open Friends",
+        "note": "One message a day at most, at the time you pick.",
+    },
+}
+
+
+def render_friend_activity_email(
+    *,
+    lines: list[str],
+    cta_url: str,
+    locale: str | None = None,
+    origin: str | None = None,
+    unsubscribe_url: str | None = None,
+) -> RenderedEmail:
+    """The batched daily digest of reactions to your looks and friends' new looks."""
+    loc = normalize_locale(locale)
+    c = _FRIEND_ACTIVITY[loc]
+    body = _p(escape(c["intro"]), style=f"font-size:14px; color:{MUTED};")
+    rows = "".join(f'<li style="margin:0 0 8px 0;">{escape(line)}</li>' for line in lines)
+    body += f'<ul style="margin:0 0 14px 0; padding-left:20px; font-size:16px;">{rows}</ul>'
+    html = _layout(
+        locale=loc,
+        title=c["subject"],
+        preheader=(" · ".join(lines))[:120] or c["preheader"],
+        heading=c["heading"],
+        body_html=body,
+        cta_label=c["cta"],
+        cta_url=cta_url,
+        after_cta_html=_p(escape(c["note"]), style="margin:0;"),
+        footer_links_html=_manage_link(loc, origin, unsubscribe_url),
+        origin=origin,
+    )
+    text = _text(
+        c["heading"],
+        c["intro"],
+        "\n".join(f"- {line}" for line in lines),
+        f"{c['cta']}: {cta_url}",
+        c["note"],
+        _text_footer(loc, origin),
+        _text_unsubscribe(loc, unsubscribe_url),
+    )
+    return RenderedEmail(subject=c["subject"], html=html, text=text)

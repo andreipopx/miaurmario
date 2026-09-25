@@ -167,13 +167,16 @@ class TestUnsubscribeEndpoint:
 
 
 class TestPreferencesApi:
-    async def test_defaults_all_on(self, client: AsyncClient, test_user, auth_headers):
+    async def test_defaults(self, client: AsyncClient, test_user, auth_headers):
         resp = await client.get(f"{API}/notifications/preferences", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
+        # Everything the app has always sent is on; the two daily alerts are the
+        # exception (see EVENT_DEFAULTS): the morning look waits to be asked for,
+        # and the friend digest only buzzes the phone.
         on = {"friend_request": True, "friend_accepted": True, "daily_outfit": True}
-        assert body["email"] == on
-        assert body["push"] == on
+        assert body["email"] == {**on, "morning_look": False, "friend_activity": False}
+        assert body["push"] == {**on, "morning_look": False, "friend_activity": True}
         assert body["email_address"] == test_user.email
         assert body["push_devices"] == 0
 

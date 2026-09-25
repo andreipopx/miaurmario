@@ -229,6 +229,9 @@ class EventToggles(BaseModel):
     friend_request: bool = True
     friend_accepted: bool = True
     daily_outfit: bool = True
+    # Off until the user picks it up in Ajustes → Notificaciones.
+    morning_look: bool = False
+    friend_activity: bool = False
 
 
 class EventTogglesPatch(BaseModel):
@@ -237,6 +240,8 @@ class EventTogglesPatch(BaseModel):
     friend_request: bool | None = None
     friend_accepted: bool | None = None
     daily_outfit: bool | None = None
+    morning_look: bool | None = None
+    friend_activity: bool | None = None
 
 
 class NotificationPreferencesResponse(BaseModel):
@@ -247,6 +252,22 @@ class NotificationPreferencesResponse(BaseModel):
     push_available: bool
     vapid_public_key: str | None = None
     push_devices: int = 0
+    # Local clock times (HH:MM) for the two once-a-day alerts.
+    morning_look_time: str
+    friend_activity_time: str
+
+    @field_validator("morning_look_time", "friend_activity_time", mode="before")
+    @classmethod
+    def convert_time(cls, v):
+        if hasattr(v, "strftime"):
+            return v.strftime("%H:%M")
+        return v
+
+
+def _validate_hhmm(v: str | None) -> str | None:
+    if v is not None and not re.match(r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", v):
+        raise ValueError("time must be in HH:MM format")
+    return v
 
 
 class NotificationPreferencesUpdate(BaseModel):
@@ -254,6 +275,13 @@ class NotificationPreferencesUpdate(BaseModel):
 
     email: EventTogglesPatch | None = None
     push: EventTogglesPatch | None = None
+    morning_look_time: str | None = None
+    friend_activity_time: str | None = None
+
+    @field_validator("morning_look_time", "friend_activity_time")
+    @classmethod
+    def validate_times(cls, v: str | None) -> str | None:
+        return _validate_hhmm(v)
 
 
 class PushKeys(BaseModel):

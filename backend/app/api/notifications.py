@@ -14,6 +14,7 @@ from app.database import get_db
 from app.models.notification import (
     DEFAULT_CHANNELS,
     NOTIFICATION_EVENTS,
+    TIMED_EVENTS,
     Notification,
     NotificationSettings,
     PushSubscription,
@@ -384,6 +385,8 @@ async def _preferences_response(db: AsyncSession, user: User) -> NotificationPre
         push_available=available,
         vapid_public_key=get_settings().vapid_public_key if available else None,
         push_devices=int(devices),
+        morning_look_time=pref.time_for("morning_look"),
+        friend_activity_time=pref.time_for("friend_activity"),
     )
 
 
@@ -408,6 +411,11 @@ async def update_notification_preferences(
             continue
         for event, value in patch.model_dump(exclude_none=True).items():
             pref.set(channel, event, value)
+    # The two daily alerts also carry the local time they go out at.
+    for event in TIMED_EVENTS:
+        raw = getattr(data, f"{event}_time", None)
+        if raw is not None:
+            pref.set_time(event, _parse_local_time(raw))
     await db.commit()
     return await _preferences_response(db, current_user)
 

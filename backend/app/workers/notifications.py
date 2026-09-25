@@ -1,19 +1,26 @@
 import logging
 import os
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.models.item import ClothingItem
 from app.models.learning import UserLearningProfile
-from app.models.notification import Notification, NotificationSettings, NotificationStatus
+from app.models.notification import (
+    TIMED_EVENTS,
+    Notification,
+    NotificationPreference,
+    NotificationSettings,
+    NotificationStatus,
+)
 from app.models.outfit import Outfit, OutfitSource, OutfitStatus
 from app.models.schedule import Schedule
 from app.models.user import User
 from app.schemas.notification import EmailConfig, ExpoPushConfig, NtfyConfig
+from app.services import daily_alerts
 from app.services.ai_access import AIAccessError
 from app.services.ai_service import AIDisabledError
 from app.services.event_notifications import (
@@ -316,6 +323,134 @@ async def process_scheduled_notification(ctx: dict, schedule_id: str):
         await db.close()
 
 
+def user_zone(timezone_name: str | None) -> ZoneInfo:
+    """The user's timezone, never blowing up on a stale or bogus name."""
+    try:
+        return ZoneInfo(timezone_name or "UTC")
+    except (KeyError, ValueError):
+        return ZoneInfo("UTC")
+
+
+# The cron runs every minute but a tick can land a little early or late, so a
+# stored local time matches for a couple of minutes. Whatever it enqueues is
+# deduplicated by job id and, durably, by the notification rows themselves.
+MATCH_TOLERANCE_MINUTES = 1
+
+
+def local_time_matches(target: time, now_local: datetime) -> bool:
+    target_minutes = target.hour * 60 + target.minute
+    local_minutes = now_local.hour * 60 + now_local.minute
+    return abs(target_minutes - local_minutes) <= MATCH_TOLERANCE_MINUTES
+
+
+DAILY_ALERT_JOBS = {
+    "morning_look": "send_morning_look",
+    "friend_activity": "send_friend_activity",
+}
+
+
+async def due_daily_alerts(db, now_utc: datetime) -> list[tuple[str, uuid.UUID, date]]:
+    """(event, user, local day) for every daily alert due right now.
+
+    Same idea as the schedules above: the time the user picked is a local clock
+    time, so we convert the current instant into their timezone (ZoneInfo, so
+    DST is today's real offset) and compare clock to clock. Users with no
+    preferences row are included — friend activity is on by default for push.
+    """
+    rows = (
+        await db.execute(
+            select(User.id, User.timezone, NotificationPreference)
+            .outerjoin(NotificationPreference, NotificationPreference.user_id == User.id)
+            .where(
+                User.is_active.is_(True),
+                or_(
+                    NotificationPreference.user_id.is_(None),
+                    NotificationPreference.email_morning_look.is_(True),
+                    NotificationPreference.push_morning_look.is_(True),
+                    NotificationPreference.email_friend_activity.is_(True),
+                    NotificationPreference.push_friend_activity.is_(True),
+                ),
+            )
+        )
+    ).all()
+
+    due: list[tuple[str, uuid.UUID, date]] = []
+    for user_id, timezone_name, stored in rows:
+        pref = stored if stored is not None else NotificationPreference(user_id=user_id)
+        now_local = now_utc.astimezone(user_zone(timezone_name))
+        for event in TIMED_EVENTS:
+            if not (pref.enabled("email", event) or pref.enabled("push", event)):
+                continue
+            if not local_time_matches(pref.time_for(event), now_local):
+                continue
+            due.append((event, user_id, now_local.date()))
+    return due
+
+
+async def _enqueue_daily_alerts(ctx: dict, db, now_utc: datetime) -> int:
+    """Enqueue the morning look / friend digest jobs whose local time just struck."""
+    try:
+        due = await due_daily_alerts(db, now_utc)
+    except Exception:
+        logger.exception("Error collecting due daily alerts")
+        return 0
+
+    enqueued = 0
+    for event, user_id, local_day in due:
+        # One job id per user per local day: a second cron tick inside the match
+        # window (and an arq retry) collapses onto the same job.
+        try:
+            await ctx["redis"].enqueue_job(
+                DAILY_ALERT_JOBS[event],
+                str(user_id),
+                local_day.isoformat(),
+                _queue_name="arq:tagging",
+                _job_id=f"{event}:{user_id}:{local_day.isoformat()}",
+            )
+            enqueued += 1
+        except Exception as e:
+            logger.error("Failed to enqueue %s for user %s: %s", event, user_id, e)
+    if enqueued:
+        logger.info("Enqueued %d daily alert job(s)", enqueued)
+    return enqueued
+
+
+async def send_morning_look(ctx: dict, user_id: str, day: str) -> dict:
+    """«Tu look de la mañana»: today's suggestion, once, at the user's hour."""
+    db = get_db_session(ctx)
+    try:
+        result = await daily_alerts.send_morning_look(
+            db, uuid.UUID(user_id), date.fromisoformat(day)
+        )
+        await db.commit()
+        logger.info("Morning look for user %s on %s: %s", user_id, day, result)
+        return result
+    except Exception:
+        logger.exception("Failed to send the morning look to user %s", user_id)
+        await db.rollback()
+        raise
+    finally:
+        await db.close()
+
+
+async def send_friend_activity(ctx: dict, user_id: str, day: str) -> dict:
+    """«Movimiento de amigos»: one batched digest per user per day."""
+    db = get_db_session(ctx)
+    try:
+        result = await daily_alerts.send_friend_activity(
+            db, uuid.UUID(user_id), date.fromisoformat(day)
+        )
+        await db.commit()
+        logger.info("Friend activity digest for user %s on %s: %s", user_id, day, result)
+        return result
+    except Exception:
+        logger.exception("Failed to send the friend activity digest to user %s", user_id)
+        await db.rollback()
+        raise
+    finally:
+        await db.close()
+
+
 async def check_scheduled_notifications(ctx: dict):
     logger.info("Checking scheduled notifications...")
 
@@ -335,14 +470,8 @@ async def check_scheduled_notifications(ctx: dict):
 
         to_enqueue: list[Schedule] = []
         for schedule in schedules:
-            try:
-                user_tz = ZoneInfo(schedule.user.timezone or "UTC")
-            except (KeyError, ValueError):
-                user_tz = ZoneInfo("UTC")
-
-            now_local = now_utc.astimezone(user_tz)
+            now_local = now_utc.astimezone(user_zone(schedule.user.timezone))
             local_day = now_local.weekday()
-            local_minutes = now_local.hour * 60 + now_local.minute
             tomorrow_local_day = (local_day + 1) % 7
 
             day_match = (not schedule.notify_day_before and schedule.day_of_week == local_day) or (
@@ -351,10 +480,7 @@ async def check_scheduled_notifications(ctx: dict):
             if not day_match:
                 continue
 
-            schedule_minutes = (
-                schedule.notification_time.hour * 60 + schedule.notification_time.minute
-            )
-            if abs(schedule_minutes - local_minutes) > 1:
+            if not local_time_matches(schedule.notification_time, now_local):
                 continue
 
             threshold = now_utc - timedelta(hours=1)
@@ -393,8 +519,13 @@ async def check_scheduled_notifications(ctx: dict):
         if enqueue_failures:
             logger.warning(f"{enqueue_failures}/{len(to_enqueue)} jobs failed to enqueue")
 
-        logger.info(f"Checked {len(schedules)} schedules, enqueued {len(to_enqueue)} jobs")
-        return {"checked": len(schedules), "enqueued": len(to_enqueue)}
+        alerts = await _enqueue_daily_alerts(ctx, db, now_utc)
+
+        logger.info(
+            f"Checked {len(schedules)} schedules, enqueued {len(to_enqueue)} jobs "
+            f"and {alerts} daily alert(s)"
+        )
+        return {"checked": len(schedules), "enqueued": len(to_enqueue), "alerts": alerts}
 
     except Exception as e:
         logger.exception("Error in check_scheduled_notifications")

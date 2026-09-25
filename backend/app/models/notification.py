@@ -1,9 +1,9 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import datetime, time
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, Time, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -90,14 +90,42 @@ class Notification(Base):
 # Events users can be notified about through the default channels (account
 # email + Web Push). Legacy channels (ntfy/Mattermost/SMTP/Expo) keep carrying
 # only the daily outfit and wash reminders.
-NOTIFICATION_EVENTS = ("friend_request", "friend_accepted", "daily_outfit")
+NOTIFICATION_EVENTS = (
+    "friend_request",
+    "friend_accepted",
+    "daily_outfit",
+    "morning_look",
+    "friend_activity",
+)
 DEFAULT_CHANNELS = ("email", "push")
+
+# The two events that go out once a day at a time the user picks, in their own
+# timezone. ``TIMED_EVENT_DEFAULT_TIME`` is the local clock time used until they
+# change it.
+TIMED_EVENTS = ("morning_look", "friend_activity")
+TIMED_EVENT_DEFAULT_TIME = {
+    # The look of the morning lands before you get dressed...
+    "morning_look": time(7, 30),
+    # ...and what your friends did lands once, in the evening.
+    "friend_activity": time(20, 0),
+}
+
+# What a user gets before touching anything. The morning look is off until they
+# turn it on (it needs a time); friend activity buzzes the phone but never mails.
+EVENT_DEFAULTS: dict[str, dict[str, bool]] = {
+    "friend_request": {"email": True, "push": True},
+    "friend_accepted": {"email": True, "push": True},
+    "daily_outfit": {"email": True, "push": True},
+    "morning_look": {"email": False, "push": False},
+    "friend_activity": {"email": False, "push": True},
+}
 
 
 class NotificationPreference(Base):
-    """Per-user event x channel switches. No row means defaults (everything on).
+    """Per-user event x channel switches, plus the local time the daily alerts go out.
 
-    Push switches only matter once the user subscribed at least one device.
+    No row means ``EVENT_DEFAULTS``. Push switches only matter once the user
+    subscribed at least one device.
     """
 
     __tablename__ = "notification_preferences"
@@ -111,19 +139,43 @@ class NotificationPreference(Base):
     push_friend_request: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     push_friend_accepted: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     push_daily_outfit: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    email_morning_look: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    push_morning_look: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    email_friend_activity: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    push_friend_activity: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Local clock times (the user's own timezone), never UTC.
+    morning_look_time: Mapped[time] = mapped_column(
+        Time, default=TIMED_EVENT_DEFAULT_TIME["morning_look"], nullable=False
+    )
+    friend_activity_time: Mapped[time] = mapped_column(
+        Time, default=TIMED_EVENT_DEFAULT_TIME["friend_activity"], nullable=False
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     def enabled(self, channel: str, event: str) -> bool:
         value = getattr(self, f"{channel}_{event}", None)
-        # An unsaved row has no column defaults applied yet: None reads as on.
-        return True if value is None else bool(value)
+        # An unsaved row has no column defaults applied yet: fall back to them.
+        if value is None:
+            return EVENT_DEFAULTS.get(event, {}).get(channel, True)
+        return bool(value)
 
     def set(self, channel: str, event: str, value: bool) -> None:
         if channel not in DEFAULT_CHANNELS or event not in NOTIFICATION_EVENTS:
             raise ValueError(f"Unknown preference {channel}/{event}")
         setattr(self, f"{channel}_{event}", value)
+
+    def time_for(self, event: str) -> time:
+        """The local time ``event`` goes out at (its default on an unsaved row)."""
+        if event not in TIMED_EVENTS:
+            raise ValueError(f"Event {event} has no time")
+        return getattr(self, f"{event}_time", None) or TIMED_EVENT_DEFAULT_TIME[event]
+
+    def set_time(self, event: str, value: time) -> None:
+        if event not in TIMED_EVENTS:
+            raise ValueError(f"Event {event} has no time")
+        setattr(self, f"{event}_time", value)
 
 
 class PushSubscription(Base):

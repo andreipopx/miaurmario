@@ -41,7 +41,12 @@ import { POP_BG, type PopColor } from '@/components/chip';
 import { DayMoments } from '@/components/today/day-moments';
 import { InstallHint } from '@/components/install/install-hint';
 import { FirstStepsCard } from '@/components/onboarding/first-steps-card';
-import { firstStepsStage } from '@/lib/onboarding/first-run';
+import {
+  MIN_ITEMS_FOR_LOOKS,
+  canSuggestLooks,
+  wardrobeStage,
+} from '@/lib/onboarding/first-run';
+import { useWardrobeStats } from '@/lib/hooks/use-wardrobe-stats';
 
 // -- Section header -------------------------------------------------------------
 
@@ -65,7 +70,9 @@ function SectionHeader({ title, href, cta }: { title: string; href?: string; cta
 // -- Quick actions ----------------------------------------------------------------
 
 const QUICK_ACTIONS: { key: string; href: string; icon: LucideIcon; color: PopColor }[] = [
-  { key: 'quickUpload', href: '/dashboard/wardrobe?add=1', icon: Camera, color: 'amber' },
+  // Straight to the batch uploader: one garment at a time is what left every
+  // wardrobe empty.
+  { key: 'quickUpload', href: '/dashboard/wardrobe?bulk=1', icon: Camera, color: 'amber' },
   { key: 'quickCreate', href: '/dashboard/outfits/new', icon: Shirt, color: 'pink' },
   { key: 'quickPlan', href: '/dashboard/history', icon: CalendarDays, color: 'sky' },
   { key: 'quickStats', href: '/dashboard/analytics', icon: BarChart3, color: 'mint' },
@@ -382,7 +389,19 @@ function FamilyAside() {
 export default function DashboardPage() {
   // Same query as WardrobeSection (shared cache): how far the wardrobe is from the engine's minimum.
   const { data: wardrobe, isSuccess } = useItems({}, 1, 8);
-  const stage = isSuccess ? firstStepsStage(wardrobe.total) : 'ready';
+  const { data: stats } = useWardrobeStats();
+  const total = wardrobe?.total ?? 0;
+  const counts = {
+    total: stats?.total ?? total,
+    usable: stats?.usable ?? total,
+    untyped: stats?.untyped ?? 0,
+    minForLooks: stats?.min_for_looks ?? MIN_ITEMS_FOR_LOOKS,
+    varietyTarget: stats?.variety_target ?? MIN_ITEMS_FOR_LOOKS,
+  };
+  const stage = isSuccess ? wardrobeStage(counts) : 'ready';
+  // Once the engine can build something, the day's plan and the nudge coexist:
+  // the card is progress, not a blocker.
+  const showMoments = stage === 'ready' || canSuggestLooks(counts);
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -391,7 +410,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
         <div className="space-y-5">
           <WeekStrip />
-          {stage === 'ready' ? <DayMoments /> : <FirstStepsCard count={wardrobe?.total ?? 0} />}
+          {showMoments && <DayMoments />}
+          {stage !== 'ready' && <FirstStepsCard count={total} />}
         </div>
         <div className="space-y-6 lg:space-y-8">
           {stage !== 'empty' && <WardrobeSection />}

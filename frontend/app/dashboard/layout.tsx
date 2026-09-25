@@ -20,6 +20,8 @@ import { FeatureTour } from '@/components/onboarding/feature-tour';
 import { StyleQuizDialog } from '@/components/style-quiz/style-quiz-dialog';
 import { AreaTip } from '@/components/onboarding/area-tip';
 import { LocationSync } from '@/components/settings/location-sync';
+import { BulkUploadProvider } from '@/lib/bulk-upload/bulk-upload-context';
+import { UploadStatusBar } from '@/components/bulk-upload/upload-status-bar';
 
 /** Screens with pull-to-refresh (feeds and lists that change under you). */
 const PULL_TO_REFRESH = new Set(['/dashboard', '/dashboard/wardrobe', '/dashboard/friends', '/dashboard/music']);
@@ -68,30 +70,35 @@ export default function DashboardLayout({
 
   return (
     <LightboxProvider>
-      <div className="min-h-screen bg-background">
-        <Sidebar />
-        <MobileSidebar open={sidebarOpen} onClose={closeSidebar} />
-        <div className="lg:pl-64">
-          <Header onMenuClick={() => setSidebarOpen(true)} />
-          {/* pb-dock reserves room for the floating mobile dock so it never covers content. */}
-          <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
-            <AnnouncementBanner />
-            {/* Silent timezone detection, plus "¿Estás en Lisboa?" when it applies. */}
-            <LocationSync />
-            <SectionTabs />
-            <AreaTip />
-            {children}
-          </main>
+      {/* Above the router on purpose: a batch of photos has to survive the user
+          wandering off to look at something else mid-upload. */}
+      <BulkUploadProvider>
+        <div className="min-h-screen bg-background">
+          <Sidebar />
+          <MobileSidebar open={sidebarOpen} onClose={closeSidebar} />
+          <div className="lg:pl-64">
+            <Header onMenuClick={() => setSidebarOpen(true)} />
+            {/* pb-dock reserves room for the floating mobile dock so it never covers content. */}
+            <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
+              <AnnouncementBanner />
+              {/* Silent timezone detection, plus "¿Estás en Lisboa?" when it applies. */}
+              <LocationSync />
+              <SectionTabs />
+              <AreaTip />
+              {children}
+            </main>
+          </div>
+          <MobileNav />
+          {pathname && PULL_TO_REFRESH.has(pathname) && <PullToRefresh key={pathname} />}
+          <UploadStatusBar />
+          <OfflineIndicator />
+          <PushSync />
+          <ImageLightbox />
+          {user?.onboarding_completed && <FeatureTour />}
+          {/* Offered once the tour is done, and re-run from Ajustes → Tu estilo. */}
+          {user?.onboarding_completed && <StyleQuizDialog />}
         </div>
-        <MobileNav />
-        {pathname && PULL_TO_REFRESH.has(pathname) && <PullToRefresh key={pathname} />}
-        <OfflineIndicator />
-        <PushSync />
-        <ImageLightbox />
-        {user?.onboarding_completed && <FeatureTour />}
-        {/* Offered once the tour is done, and re-run from Ajustes → Tu estilo. */}
-        {user?.onboarding_completed && <StyleQuizDialog />}
-      </div>
+      </BulkUploadProvider>
     </LightboxProvider>
   );
 }

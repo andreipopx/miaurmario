@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon, Link2 } from 'lucide-react';
+import { Upload, X, Loader2, ImagePlus, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import {
@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCreateItem, useBulkCreateItems, BulkUploadResponse } from '@/lib/hooks/use-items';
+import { useCreateItem } from '@/lib/hooks/use-items';
 import { CLOTHING_TYPES, CLOTHING_COLORS } from '@/lib/types';
 import { Stinky } from '@/components/stinky/stinky';
 import { cn } from '@/lib/utils';
@@ -46,6 +46,7 @@ import { useColorLabel } from '@/lib/tag-labels';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { CareLabelField } from '@/components/add-item/care-label-field';
 import { LinkImportTab } from '@/components/add-item/link-import-tab';
+import { BulkUploadPanel } from '@/components/bulk-upload/bulk-upload-panel';
 import { CareDraft } from '@/lib/hooks/use-intake';
 import { supportsShareTarget } from '@/lib/pwa/platform';
 
@@ -57,6 +58,13 @@ interface AddItemDialogProps {
    * It only fills the form in — the user still reviews and saves.
    */
   initial?: AddItemInitial | null;
+  /** Which tab to land on; "bulk" is what ?bulk=1 and every nudge link opens. */
+  initialTab?: 'single' | 'link' | 'bulk';
+  /**
+   * "untagged" opens the bulk tab straight into the quick pass over every garment
+   * the tagger never named, rather than into the picker.
+   */
+  bulkMode?: 'batch' | 'untagged';
 }
 
 export interface AddItemInitial {
@@ -65,13 +73,13 @@ export interface AddItemInitial {
   name?: string | null;
 }
 
-interface FileWithPreview {
-  file: File;
-  preview: string;
-  id: string;
-}
-
-export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProps) {
+export function AddItemDialog({
+  open,
+  onOpenChange,
+  initial,
+  initialTab = 'single',
+  bulkMode = 'batch',
+}: AddItemDialogProps) {
   const t = useTranslations('wardrobe.add');
   const tShare = useTranslations('wardrobe.share');
   const colorLabel = useColorLabel();
@@ -87,15 +95,17 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
   const [sourceUrl, setSourceUrl] = useState('');
   const [care, setCare] = useState<CareDraft | null>(null);
 
-  // Bulk upload state
-  const [bulkFiles, setBulkFiles] = useState<FileWithPreview[]>([]);
-  const [bulkResult, setBulkResult] = useState<BulkUploadResponse | null>(null);
-  const [skipAi, setSkipAi] = useState(false);
-  const [activeTab, setActiveTab] = useState('single');
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // Track blob URLs for cleanup on unmount
   const blobUrlsRef = useRef<Set<string>>(new Set());
+
+  // Each opening lands on the tab the caller asked for: the Hoy nudge, Stinky and
+  // the floating upload bar all open this dialog straight on "muchas prendas".
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
 
   // On iOS (and Firefox) nothing can be shared into the app, so say so here
   // instead of letting people hunt for a share option that does not exist.
@@ -110,7 +120,6 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
   const noVisionAi = Boolean(
     aiStatus && aiStatus.server_ai_enabled && !aiStatus.capabilities.vision
   );
-  const bulkCreateItems = useBulkCreateItems();
 
   // Cleanup blob URLs on unmount to prevent memory leaks
   useEffect(() => {
@@ -148,20 +157,6 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
     }
   }, []);
 
-  // Bulk file drop handler
-  const onDropBulk = useCallback((acceptedFiles: File[]) => {
-    const newFiles: FileWithPreview[] = acceptedFiles.map((file) => {
-      const preview = URL.createObjectURL(file);
-      blobUrlsRef.current.add(preview);
-      return {
-        file,
-        preview,
-        id: `${file.name}-${Date.now()}-${Math.random()}`,
-      };
-    });
-    setBulkFiles((prev) => [...prev, ...newFiles]);
-  }, []);
-
   const { getRootProps: getSingleRootProps, getInputProps: getSingleInputProps, isDragActive: isSingleDragActive } = useDropzone({
     onDrop: onDropSingle,
     accept: {
@@ -169,14 +164,6 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
     },
     maxFiles: 1,
     multiple: false,
-  });
-
-  const { getRootProps: getBulkRootProps, getInputProps: getBulkInputProps, isDragActive: isBulkDragActive } = useDropzone({
-    onDrop: onDropBulk,
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp', '.heic', '.heif'],
-    },
-    multiple: true,
   });
 
   const handleSingleSubmit = async (e: React.FormEvent) => {
@@ -203,36 +190,12 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
     }
   };
 
-  const handleBulkSubmit = async () => {
-    if (bulkFiles.length === 0) return;
-
-    try {
-      const result = await bulkCreateItems.mutateAsync({
-        files: bulkFiles.map((f) => f.file),
-        skipAi,
-      });
-      setBulkResult(result);
-
-      // Show toast based on results
-      if (result.failed === 0) {
-        toast.success(t('toast.bulkAllSuccess', { count: result.successful }));
-      } else if (result.successful === 0) {
-        toast.error(t('toast.bulkAllFailed', { count: result.failed }));
-      } else {
-        toast.warning(t('toast.bulkPartial', { ok: result.successful, failed: result.failed }));
-      }
-    } catch (error) {
-      console.error('Failed to bulk upload:', error);
-      toast.error(t('toast.bulkError'));
-    }
-  };
-
   // Check if there are unsaved files that would be lost on close
-  const hasUnsavedFiles = (file !== null) || (bulkFiles.length > 0 && !bulkResult);
+  const hasUnsavedFiles = file !== null;
 
   const handleCloseRequest = () => {
     // Show confirmation if there are unsaved files and not currently uploading
-    if (hasUnsavedFiles && !createItem.isPending && !bulkCreateItems.isPending) {
+    if (hasUnsavedFiles && !createItem.isPending) {
       setShowCloseConfirm(true);
     } else {
       handleClose();
@@ -251,15 +214,7 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
     setSourceUrl('');
     setCare(null);
 
-    // Bulk upload cleanup - also clean up from the ref
-    bulkFiles.forEach((f) => {
-      URL.revokeObjectURL(f.preview);
-      blobUrlsRef.current.delete(f.preview);
-    });
-    setBulkFiles([]);
-    setBulkResult(null);
-    setSkipAi(false);
-    setActiveTab('single');
+    setActiveTab(initialTab);
     setShowCloseConfirm(false);
 
     onOpenChange(false);
@@ -268,27 +223,6 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
   const clearSingleFile = () => {
     setFile(null);
     setPreview(null);
-  };
-
-  const removeBulkFile = (id: string) => {
-    setBulkFiles((prev) => {
-      const fileToRemove = prev.find((f) => f.id === id);
-      if (fileToRemove) {
-        URL.revokeObjectURL(fileToRemove.preview);
-        blobUrlsRef.current.delete(fileToRemove.preview);
-      }
-      return prev.filter((f) => f.id !== id);
-    });
-  };
-
-  const clearBulkFiles = () => {
-    bulkFiles.forEach((f) => {
-      URL.revokeObjectURL(f.preview);
-      blobUrlsRef.current.delete(f.preview);
-    });
-    setBulkFiles([]);
-    setBulkResult(null);
-    setSkipAi(false);
   };
 
   return (
@@ -310,15 +244,16 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
           {/* Three tabs have to fit a 320px phone at 125% font: let them
               shrink and ellipsize instead of pushing the dialog wider. */}
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="single" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
-              {t('tabSingle')}
-            </TabsTrigger>
-            <TabsTrigger value="link" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
-              {t('tabLink')}
-            </TabsTrigger>
-            <TabsTrigger value="bulk" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
-              {t('tabBulk')}
-            </TabsTrigger>
+            {/* The label needs its own block for `truncate` to ellipsise it: a bare
+                text node in a centred flex box just gets clipped at both ends,
+                which at 320 px and 125 % font turns "Varias" into "aria". */}
+            {(['single', 'link', 'bulk'] as const).map((tab) => (
+              <TabsTrigger key={tab} value={tab} className="min-w-0 px-2 text-xs sm:px-4 sm:text-sm">
+                <span className="min-w-0 truncate">
+                  {t(tab === 'single' ? 'tabSingle' : tab === 'link' ? 'tabLink' : 'tabBulk')}
+                </span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* Paste a shop link: read on the server, reviewed here */}
@@ -337,7 +272,7 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
                 if (prefill.brand) setBrand(prefill.brand.slice(0, 100));
                 if (prefill.primaryColor) setPrimaryColor(prefill.primaryColor);
                 setSourceUrl(prefill.sourceUrl);
-                setActiveTab('single');
+                setActiveTab(initialTab);
               }}
             />
           </TabsContent>
@@ -503,184 +438,15 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
             </form>
           </TabsContent>
 
-          {/* Bulk Upload */}
+          {/* Many photos at once: a queue with per-photo state and retry, and a
+              quick review pass at the end. The queue itself lives above the
+              router, so closing this dialog does not stop the upload. */}
           <TabsContent value="bulk" className="space-y-4">
-            {!bulkResult ? (
-              <>
-                <div
-                  {...getBulkRootProps()}
-                  className={cn(
-                    'cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                    isBulkDragActive
-                      ? 'border-signature bg-signature-soft'
-                      : 'border-border bg-panel hover:bg-accent'
-                  )}
-                >
-                  <input {...getBulkInputProps()} />
-                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-signature text-signature-foreground">
-                    <Upload className="h-5 w-5" strokeWidth={1.75} />
-                  </span>
-                  <p className="mt-3 text-sm font-bold text-foreground">
-                    {isBulkDragActive ? t('dragDropBulkActive') : t('dragDropBulk')}
-                  </p>
-                </div>
-
-                {bulkFiles.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold">
-                        {t('imagesSelected', { count: bulkFiles.length })}
-                      </p>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearBulkFiles}
-                      >
-                        {t('clearAll')}
-                      </Button>
-                    </div>
-
-                    <ScrollArea className="h-[200px] rounded-lg bg-panel p-2">
-                      <div className="grid grid-cols-4 gap-2">
-                        {bulkFiles.map((f) => (
-                          <div key={f.id} className="group relative">
-                            <img
-                              src={f.preview}
-                              alt={f.file.name}
-                              className="aspect-square w-full rounded-[14px] bg-background object-contain p-1"
-                            />
-                            <button
-                              type="button"
-                              className="absolute right-0.5 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-100 shadow-sm transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:opacity-0 sm:group-hover:opacity-100"
-                              onClick={() => removeBulkFile(f.id)}
-                              aria-label={t('removeFile', { name: f.file.name })}
-                            >
-                              <X className="h-3.5 w-3.5" strokeWidth={2} />
-                            </button>
-                            <p className="mt-1 truncate px-1 text-[11px] text-muted-foreground">
-                              {f.file.name}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-
-                    {!noVisionAi && (
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="skip-ai"
-                        checked={skipAi}
-                        onCheckedChange={(checked) => setSkipAi(checked === true)}
-                      />
-                      <Label htmlFor="skip-ai" className="text-xs font-normal text-muted-foreground">
-                        {t('skipAiLabel')}
-                      </Label>
-                    </div>
-                    )}
-                    {!skipAi && !noVisionAi && (
-                      <p className="text-xs text-muted-foreground">
-                        {t('aiWillTag')}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {bulkCreateItems.isPending && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Stinky state="thinking" size={28} label="" />
-                        <span className="text-sm font-semibold">{t('uploadingCount', { count: bulkFiles.length })}</span>
-                      </div>
-                      <span className="text-sm font-semibold tabular-nums text-muted-foreground">{bulkCreateItems.uploadProgress}%</span>
-                    </div>
-                    <Progress value={bulkCreateItems.uploadProgress} className="h-2" />
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="secondary" onClick={handleCloseRequest}>
-                    {t('cancel')}
-                  </Button>
-                  <Button
-                    onClick={handleBulkSubmit}
-                    disabled={bulkFiles.length === 0 || bulkCreateItems.isPending}
-                  >
-                    {bulkCreateItems.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {t('uploading')}
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4" strokeWidth={1.75} />
-                        {t('uploadBulk', { count: bulkFiles.length })}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              /* Bulk Upload Results */
-              <div className="space-y-4">
-                <div className="flex items-center justify-center py-2">
-                  <div className="flex h-28 w-28 items-center justify-center rounded-full bg-signature-soft">
-                    <Stinky
-                      state={bulkResult.failed === 0 ? 'happy' : bulkResult.successful === 0 ? 'sad' : 'idle'}
-                      size={96}
-                      label=""
-                    />
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <p className="text-lg font-extrabold">
-                    {t('resultHeadline', { ok: bulkResult.successful, total: bulkResult.total })}
-                  </p>
-                  {bulkResult.failed > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {t('resultFailedNote', { count: bulkResult.failed })}
-                    </p>
-                  )}
-                </div>
-
-                <ScrollArea className="h-[200px] rounded-lg bg-panel">
-                  <div className="space-y-2 p-2">
-                    {bulkResult.results.map((result, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 rounded-[14px] bg-background p-2.5"
-                      >
-                        {result.success ? (
-                          <CheckCircle2 className="h-4 w-4 shrink-0 text-success" strokeWidth={2} />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 shrink-0 text-destructive" strokeWidth={2} />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">{result.filename}</p>
-                          {result.error && (
-                            <p className="text-xs text-destructive">{result.error}</p>
-                          )}
-                        </div>
-                        {result.item && (
-                          <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="secondary" onClick={clearBulkFiles}>
-                    {t('uploadMore')}
-                  </Button>
-                  <Button onClick={handleClose}>
-                    {t('done')}
-                  </Button>
-                </div>
-              </div>
-            )}
+            <BulkUploadPanel
+              open={activeTab === 'bulk'}
+              mode={bulkMode}
+              onClose={handleClose}
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>
@@ -690,11 +456,7 @@ export function AddItemDialog({ open, onOpenChange, initial }: AddItemDialogProp
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t('closeConfirmTitle')}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {activeTab === 'single'
-              ? t('closeConfirmSingle')
-              : t('closeConfirmMultiple', { count: bulkFiles.length })}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{t('closeConfirmSingle')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t('keepEditing')}</AlertDialogCancel>

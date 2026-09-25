@@ -1,24 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import {
-  api,
-  getAccessToken,
-  setAccessToken,
-  getGenericErrorMessage,
-  resolveErrorMessage,
-  ApiError,
-  NetworkError,
-} from '@/lib/api';
+import { api, getAccessToken, setAccessToken, ApiError, NetworkError } from '@/lib/api';
 import { CareInfo, Item, ItemListResponse, ItemFilter, WashHistoryEntry, ItemImage } from '@/lib/types';
 import { CareDraft } from '@/lib/hooks/use-intake';
-import { chunkArray } from '@/lib/utils';
-
-// Must not exceed the backend's MAX_BULK_UPLOAD_COUNT setting, or every chunk
-// larger than the server's limit fails with a 400.
-const BULK_UPLOAD_CHUNK_SIZE = 20;
 
 /** PATCH body: an item's fields, with care accepted as a draft too. */
 export type ItemUpdatePayload = Partial<Omit<Item, 'care'>> & {
@@ -554,8 +540,15 @@ export function useCancelAnalysis() {
 export interface BulkUploadResult {
   filename: string;
   success: boolean;
+  /** What the queue row shows. A duplicate is not a failure the user caused. */
+  state: 'created' | 'duplicate' | 'error';
   item?: Item;
+  /** too_big | invalid_format | duplicate | failed — the UI turns this into a sentence. */
+  error_code?: string;
   error?: string;
+  /** Whether a worker is now tagging it, or it landed ready and untagged. */
+  tagging?: 'queued' | 'skipped';
+  background_removed?: boolean;
 }
 
 export interface BulkUploadResponse {
@@ -713,20 +706,29 @@ export function useBulkReanalyzeItems() {
   });
 }
 
-function uploadBulkItemsChunk(
-  files: File[],
-  skipAi: boolean,
+/**
+ * One photo, one request to POST /items/bulk.
+ *
+ * The endpoint still takes a list — that is how it was and how other callers use
+ * it — but the queue sends them one at a time, because that is the only way each
+ * row can carry its own upload progress, its own error and its own retry.
+ */
+export function uploadBulkPhoto(
+  blob: Blob,
+  name: string,
+  options: { skipAi?: boolean; removeBackground?: boolean },
   token: string | null | undefined,
-  onProgress: (percent: number) => void
-): Promise<BulkUploadResponse> {
+  onProgress: (percent: number) => void,
+  register?: (xhr: XMLHttpRequest) => void
+): Promise<BulkUploadResult> {
   const formData = new FormData();
-  files.forEach((file) => {
-    formData.append('images', file);
-  });
-  formData.append('skip_ai', String(skipAi));
+  formData.append('images', blob, name);
+  formData.append('skip_ai', String(options.skipAi ?? false));
+  formData.append('remove_background', String(options.removeBackground ?? true));
 
-  return new Promise<BulkUploadResponse>((resolve, reject) => {
+  return new Promise<BulkUploadResult>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    register?.(xhr);
 
     xhr.upload.addEventListener('progress', (event) => {
       if (event.lengthComputable) {
@@ -738,110 +740,39 @@ function uploadBulkItemsChunk(
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const response = JSON.parse(xhr.responseText) as BulkUploadResponse;
-          resolve(response);
+          const result = response.results?.[0];
+          if (!result) {
+            reject(new ApiError('invalid_response', xhr.status, {}));
+            return;
+          }
+          resolve(result);
         } catch {
-          reject(new ApiError('Invalid response from server', xhr.status, {}));
+          reject(new ApiError('invalid_response', xhr.status, {}));
         }
-      } else {
-        let errorMessage = 'Failed to upload items';
-        try {
-          const errorData = JSON.parse(xhr.responseText);
-          errorMessage = errorData.detail || errorMessage;
-          reject(new ApiError(errorMessage, xhr.status, errorData));
-        } catch {
-          reject(new ApiError(errorMessage, xhr.status, {}));
-        }
+        return;
       }
+      let data: unknown = {};
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        /* a proxy error page, not JSON */
+      }
+      reject(new ApiError('upload_failed', xhr.status, data as Record<string, unknown>));
     });
 
     xhr.addEventListener('error', () => {
-      if (!navigator.onLine) {
-        reject(new NetworkError('offline'));
-      } else {
-        reject(new NetworkError('unreachable'));
-      }
+      reject(
+        new NetworkError(
+          typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'unreachable'
+        )
+      );
     });
-
-    xhr.addEventListener('abort', () => {
-      reject(new NetworkError('cancelled'));
-    });
+    xhr.addEventListener('abort', () => reject(new NetworkError('cancelled')));
 
     xhr.open('POST', '/api/v1/items/bulk');
     xhr.withCredentials = true;
-    if (token) {
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    }
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.send(formData);
   });
 }
 
-export function mergeBulkUploadResponses(responses: BulkUploadResponse[]): BulkUploadResponse {
-  return responses.reduce<BulkUploadResponse>(
-    (acc, response) => ({
-      total: acc.total + response.total,
-      successful: acc.successful + response.successful,
-      failed: acc.failed + response.failed,
-      results: [...acc.results, ...response.results],
-    }),
-    { total: 0, successful: 0, failed: 0, results: [] }
-  );
-}
-
-function failedChunkResponse(files: File[], error: unknown): BulkUploadResponse {
-  // Shown per file in the upload summary, so it has to be translated copy.
-  const message = resolveErrorMessage(error) ?? getGenericErrorMessage();
-  return {
-    total: files.length,
-    successful: 0,
-    failed: files.length,
-    results: files.map((file) => ({
-      filename: file.name,
-      success: false,
-      error: message,
-    })),
-  };
-}
-
-export function useBulkCreateItems() {
-  const queryClient = useQueryClient();
-  const { data: session } = useSession();
-  const [uploadProgress, setUploadProgress] = useState(0);
-
-  const mutation = useMutation({
-    mutationFn: async ({ files, skipAi = false }: { files: File[]; skipAi?: boolean }) => {
-      const token = session?.accessToken || getAccessToken();
-      const chunks = chunkArray(files, BULK_UPLOAD_CHUNK_SIZE);
-      const responses: BulkUploadResponse[] = [];
-
-      for (let i = 0; i < chunks.length; i++) {
-        const chunkFiles = chunks[i];
-        try {
-          const response = await uploadBulkItemsChunk(chunkFiles, skipAi, token, (chunkPercent) => {
-            const overall = ((i + chunkPercent / 100) / chunks.length) * 100;
-            setUploadProgress(Math.round(overall));
-          });
-          responses.push(response);
-        } catch (error) {
-          responses.push(failedChunkResponse(chunkFiles, error));
-        }
-        setUploadProgress(Math.round(((i + 1) / chunks.length) * 100));
-      }
-
-      return mergeBulkUploadResponses(responses);
-    },
-    onMutate: () => {
-      setUploadProgress(0);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-    },
-    onSettled: () => {
-      setUploadProgress(0);
-    },
-  });
-
-  return {
-    ...mutation,
-    uploadProgress,
-  };
-}

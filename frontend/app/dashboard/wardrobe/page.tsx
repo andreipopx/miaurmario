@@ -4,7 +4,7 @@ import { memo, useCallback, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Plus, Search, Heart, Loader2, AlertCircle, RefreshCw, Droplets, ArrowUpDown, SlidersHorizontal, X, Shirt } from 'lucide-react';
+import { Plus, Search, Heart, Loader2, AlertCircle, RefreshCw, Droplets, ArrowUpDown, SlidersHorizontal, X, Shirt, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -213,8 +213,15 @@ function ItemCardSkeleton() {
   );
 }
 
-function EmptyWardrobe({ onAddClick }: { onAddClick: () => void }) {
+function EmptyWardrobe({
+  onAddClick,
+  onBulkClick,
+}: {
+  onAddClick: () => void;
+  onBulkClick: () => void;
+}) {
   const t = useTranslations('wardrobe');
+  const tBulk = useTranslations('bulkUpload');
   return (
     <EmptyState
       state="sleepy"
@@ -222,10 +229,18 @@ function EmptyWardrobe({ onAddClick }: { onAddClick: () => void }) {
       title={t('emptyTitle')}
       description={t('emptyBody')}
       action={
-        <Button variant="signature" size="lg" onClick={onAddClick}>
-          <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-          {t('addFirstItem')}
-        </Button>
+        // A wardrobe of one garment is still an empty wardrobe, so the loud button
+        // is the batch one and adding a single item is the quiet alternative.
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row">
+          <Button variant="signature" size="lg" onClick={onBulkClick}>
+            <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+            {tBulk('cta')}
+          </Button>
+          <Button variant="secondary" size="lg" onClick={onAddClick}>
+            <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+            {t('addFirstItem')}
+          </Button>
+        </div>
       }
     />
   );
@@ -235,12 +250,17 @@ export default function WardrobePage() {
   const t = useTranslations('wardrobe');
   const tCommon = useTranslations('common');
   const tShare = useTranslations('wardrobe.share');
+  const tBulk = useTranslations('bulkUpload');
   const typeLabel = useClothingTypeLabel();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: userProfile } = useUserProfile();
   const userTimezone = userProfile?.timezone || 'UTC';
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  // Which tab the add dialog opens on, and — for the bulk tab — whether it starts
+  // at the picker or straight in the quick pass over everything still untagged.
+  const [addTab, setAddTab] = useState<'single' | 'link' | 'bulk'>('single');
+  const [bulkMode, setBulkMode] = useState<'batch' | 'untagged'>('batch');
   const [sharedIntake, setSharedIntake] = useState<AddItemInitial | null>(null);
   const [selection, setSelection] = useState<BulkSelection>({
     mode: 'none',
@@ -256,6 +276,18 @@ export default function WardrobePage() {
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+
+  // ?bulk=1 opens the add dialog on its "muchas prendas" tab, and ?bulk=review
+  // opens that tab straight in the quick pass. The Hoy nudge, Stinky and the
+  // floating upload bar all link here rather than owning a dialog of their own;
+  // the param stays in the URL while the dialog is open so the bar stands down.
+  useEffect(() => {
+    const bulk = searchParams.get('bulk');
+    if (!bulk) return;
+    setBulkMode(bulk === 'review' ? 'untagged' : 'batch');
+    setAddTab('bulk');
+    setAddDialogOpen(true);
+  }, [searchParams]);
 
   // Open item detail dialog from URL param (e.g. ?item=uuid from outfit pages)
   useEffect(() => {
@@ -471,10 +503,29 @@ export default function WardrobePage() {
           </span>
         }
         action={
-          <Button variant="signature" onClick={() => setAddDialogOpen(true)}>
-            <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-            {tCommon('add')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setAddTab('single');
+                setAddDialogOpen(true);
+              }}
+            >
+              <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+              {tCommon('add')}
+            </Button>
+            <Button
+              variant="signature"
+              onClick={() => {
+                setBulkMode('batch');
+                setAddTab('bulk');
+                setAddDialogOpen(true);
+              }}
+            >
+              <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+              {tBulk('cta')}
+            </Button>
+          </div>
         }
       />
 
@@ -664,7 +715,17 @@ export default function WardrobePage() {
             }
           />
         ) : (
-          <EmptyWardrobe onAddClick={() => setAddDialogOpen(true)} />
+          <EmptyWardrobe
+            onAddClick={() => {
+              setAddTab('single');
+              setAddDialogOpen(true);
+            }}
+            onBulkClick={() => {
+              setBulkMode('batch');
+              setAddTab('bulk');
+              setAddDialogOpen(true);
+            }}
+          />
         )
       ) : (
         <div
@@ -714,9 +775,18 @@ export default function WardrobePage() {
         open={addDialogOpen}
         onOpenChange={(open) => {
           setAddDialogOpen(open);
-          if (!open) setSharedIntake(null);
+          if (!open) {
+            setSharedIntake(null);
+            setBulkMode('batch');
+            // Drop ?bulk so the floating upload bar can take over again.
+            if (searchParams.get('bulk')) {
+              router.replace('/dashboard/wardrobe', { scroll: false });
+            }
+          }
         }}
         initial={sharedIntake}
+        initialTab={addTab}
+        bulkMode={bulkMode}
       />
       <ItemDetailDialog
         item={detailItem}

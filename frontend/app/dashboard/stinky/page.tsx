@@ -12,6 +12,7 @@ import { Stinky } from '@/components/stinky/stinky';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
 import { AreaTip } from '@/components/onboarding/area-tip';
+import { EmptyWardrobeCta } from '@/components/stinky-chat/empty-wardrobe-cta';
 import { ChatOutfitCardView, cardKey } from '@/components/stinky-chat/chat-outfit-card';
 import { ConversationSheet } from '@/components/stinky-chat/conversation-sheet';
 import { POP_BG, popColorAt } from '@/components/chip';
@@ -524,6 +525,10 @@ function StinkyChat() {
             )}
           </div>
         )}
+
+        {/* Stinky is told to ask for photos when there is nothing to dress anyone
+            in; he cannot render a button, so this is the button. */}
+        {!aiUnavailable && <EmptyWardrobeCta />}
 
         {messages.map((m) => (
           <Bubble

@@ -42,6 +42,8 @@ from app.models.chat import (
 )
 from app.models.user import User
 from app.services.ai_service import AIService
+from app.services.item_service import ItemService
+from app.services.recommendation_service import MIN_CANDIDATES_FOR_OUTFIT
 from app.services.stinky_chat.provider import (
     CompletionResult,
     ProviderError,
@@ -72,18 +74,45 @@ def _event(name: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
     return {"event": name, "data": data or {}}
 
 
+def describe_wardrobe(counts: dict[str, int] | None) -> str:
+    """One line for CONTEXTO saying how much of a wardrobe there is to work with.
+
+    Stinky gets this without asking, because "the wardrobe is empty" is the one
+    fact he needs before he opens his mouth, and because the two ways of being
+    empty need different answers: no photos at all, or photos he cannot see
+    because nothing has a type yet.
+    """
+    if counts is None:
+        return "no lo he podido consultar; si hace falta, usa get_wardrobe."
+    usable = counts.get("usable", 0)
+    untyped = counts.get("untyped", 0)
+    total = counts.get("total", 0)
+    if total == 0:
+        return "VACÍO. No ha subido ninguna prenda todavía."
+    parts = [f"{usable} prenda(s) que puedes usar"]
+    if untyped:
+        parts.append(f"{untyped} foto(s) sin etiquetar, que para ti no existen (sin tipo)")
+    parts.append(f"{total} en total")
+    tail = "; ".join(parts)
+    if usable < MIN_CANDIDATES_FOR_OUTFIT:
+        return f"{tail}. CASI VACÍO: aún no puedes montar un look completo."
+    return f"{tail}."
+
+
 def build_system_prompt(
     user: User,
     locale: str,
     memory_digest: str = "",
     call_name: str | None = None,
+    wardrobe_counts: dict[str, int] | None = None,
 ) -> str:
     """The Stinky system prompt for this user, this locale and this notebook.
 
     ``memory_digest`` is the capped «Stinky recuerda» block (see
     ``app.services.stinky_memory``); it is empty until he has written something.
     ``call_name`` is the name the person asked to be called, which wins over the
-    account display name in greetings.
+    account display name in greetings. ``wardrobe_counts`` comes from
+    ``ItemService.get_wardrobe_counts``.
     """
     try:
         tz = ZoneInfo(user.timezone or "UTC")
@@ -106,6 +135,8 @@ def build_system_prompt(
         ),
         "{memory_digest}": memory_digest
         or "(Tu cuaderno está vacío: todavía no has anotado nada de esta persona.)",
+        "{wardrobe_state}": describe_wardrobe(wardrobe_counts),
+        "{max_batch}": str(get_settings().max_bulk_upload_count),
     }
     prompt = load_prompt("stinky_chat")
     for key, value in replacements.items():
@@ -266,8 +297,18 @@ async def run_turn(
         logger.warning("Could not load Stinky memory", exc_info=True)
         await db.rollback()
         digest, call_name = "", None
+    # Cheap (one aggregate) and worth it every turn: it is what stops him
+    # inventing a look out of an empty wardrobe.
+    try:
+        wardrobe_counts: dict[str, int] | None = await ItemService(db).get_wardrobe_counts(user.id)
+    except Exception:
+        logger.warning("Could not count the wardrobe for the Stinky prompt", exc_info=True)
+        wardrobe_counts = None
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": build_system_prompt(user, locale, digest, call_name)},
+        {
+            "role": "system",
+            "content": build_system_prompt(user, locale, digest, call_name, wardrobe_counts),
+        },
         *history_to_messages(rows, turn_start),
     ]
 

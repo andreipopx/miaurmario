@@ -242,6 +242,9 @@ class ItemListResponse(BaseModel):
 
 
 class ItemFilter(BaseModel):
+    # An explicit id list, so a client that knows exactly which items it wants
+    # (the batch it just uploaded) can poll only those.
+    ids: list[UUID] | None = None
     type: str | None = None
     subtype: str | None = None
     colors: list[str] | None = None
@@ -266,10 +269,26 @@ class ArchiveRequest(BaseModel):
 
 
 class BulkUploadResult(BaseModel):
+    """One photo of a bulk upload, and what became of it.
+
+    `success` is kept as it was for existing callers. `state` is what a queue row
+    shows, and it draws the distinction `success` cannot: a duplicate is not a
+    failure the user caused, it is a photo the wardrobe already has, and `item`
+    then points at the one that is already there.
+    """
+
     filename: str
     success: bool
+    state: Literal["created", "duplicate", "error"] = "created"
     item: ItemResponse | None = None
+    # A code the UI can turn into a specific sentence: too_big, invalid_format,
+    # duplicate, too_many_images, failed. `error` stays as the English fallback.
+    error_code: str | None = None
     error: str | None = None
+    # "queued" means a worker is tagging it; "skipped" means it is ready but
+    # untagged and wants the manual pass.
+    tagging: Literal["queued", "skipped"] | None = None
+    background_removed: bool = False
 
 
 class BulkUploadResponse(BaseModel):
@@ -277,6 +296,45 @@ class BulkUploadResponse(BaseModel):
     successful: int
     failed: int
     results: list[BulkUploadResult]
+
+
+class WardrobeStats(BaseModel):
+    """How full the wardrobe is, and what "full enough" means.
+
+    The thresholds travel with the counts so the UI never hardcodes a number the
+    stylist does not actually use.
+    """
+
+    total: int
+    # Ready and with a real type: what the suggestion engine can build an outfit from.
+    usable: int
+    # Still "unknown": uploaded but waiting for the AI or for the manual pass.
+    untyped: int
+    processing: int
+    # The suggestion engine's hard floor (RecommendationService).
+    min_for_looks: int
+    # Not a requirement — the size at which suggestions stop repeating themselves.
+    variety_target: int
+    # How many photos one batch of the bulk upload may carry.
+    max_batch: int
+
+
+class BulkTagEntry(BaseModel):
+    item_id: UUID
+    type: str | None = Field(None, max_length=50)
+    primary_color: str | None = Field(None, max_length=50)
+
+
+class BulkTagRequest(BaseModel):
+    """The quick review / manual tagging pass over a batch."""
+
+    items: list[BulkTagEntry] = Field(..., min_length=1, max_length=100)
+
+
+class BulkTagResponse(BaseModel):
+    updated: int
+    failed: int
+    errors: list[str] = Field(default_factory=list)
 
 
 class BulkFilters(BaseModel):

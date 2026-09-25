@@ -457,7 +457,8 @@
       "title": "Acciones rápidas",
       "subtitle": "Tareas comunes para empezar",
       "addItem": "Añadir prenda",
-      "getSuggestion": "Sugerir un conjunto"
+      "getSuggestion": "Sugerir un conjunto",
+      "quickUpload": "Subir prendas"
     },
     "days": {
       "sunday": "Domingo",
@@ -707,7 +708,7 @@
     "add": {
       "dialogTitle": "Añadir prendas",
       "tabSingle": "Una prenda",
-      "tabBulk": "Subida masiva",
+      "tabBulk": "Varias",
       "typeLabel": "Tipo",
       "typePlaceholder": "Que lo detecte la IA...",
       "colorLabel": "Color principal",
@@ -727,41 +728,25 @@
       "toast": {
         "singleSuccess": "Prenda añadida al armario",
         "singleFailed": "No se pudo añadir la prenda",
-        "bulkPartial": "{ok} subidas, {failed} fallidas",
-        "bulkAllSuccess": "{count, plural, one {# prenda subida} other {# prendas subidas}}",
-        "bulkAllFailed": "{count, plural, one {No se pudo subir # prenda} other {No se pudieron subir las # prendas}}",
-        "processingBackground": "Se están analizando en segundo plano.",
-        "bulkError": "No se pudieron subir las prendas. Inténtalo otra vez."
+        "processingBackground": "Se están analizando en segundo plano."
       },
       "description": "Sube fotos de tus prendas",
       "dragDropSingle": "Arrastra una imagen o toca para elegir",
       "dragDropSingleActive": "Suelta la imagen aquí...",
-      "dragDropBulk": "Arrastra varias imágenes o toca para elegir",
-      "dragDropBulkActive": "Suelta las imágenes aquí...",
       "acceptedFormats": "JPEG, PNG, WebP o HEIC",
       "typeHint": "(Stinky lo detecta si lo dejas vacío)",
       "nameLabelOptional": "Nombre (opcional)",
       "notesLabel": "Notas",
       "notesPlaceholder": "Cualquier detalle que quieras recordar...",
       "addSingle": "Añadir prenda",
-      "imagesSelected": "{count, plural, one {# imagen seleccionada} other {# imágenes seleccionadas}}",
-      "clearAll": "Quitar todo",
-      "skipAiLabel": "Saltar el análisis con IA (se añaden con valores por defecto, editas los detalles después)",
-      "aiWillTag": "Stinky las etiqueta automáticamente. Los detalles se pueden editar después.",
-      "uploadingCount": "Subiendo {count} prendas...",
-      "uploadBulk": "{count, plural, one {Subir # prenda} other {Subir # prendas}}",
-      "resultHeadline": "{ok} de {total} subidas correctamente",
-      "resultFailedNote": "{count, plural, one {# prenda falló} other {# prendas fallaron}}",
       "uploadMore": "Subir más",
       "done": "Listo",
       "closeConfirmTitle": "¿Descartar las imágenes seleccionadas?",
       "closeConfirmSingle": "Tienes 1 imagen seleccionada; se perderá si cierras.",
-      "closeConfirmMultiple": "Tienes {count, plural, one {# imagen} other {# imágenes}} seleccionadas; se perderán si cierras.",
       "keepEditing": "Seguir editando",
       "discard": "Descartar",
       "previewAlt": "Vista previa",
       "removePhoto": "Quitar foto",
-      "removeFile": "Quitar {name}",
       "tabLink": "Enlace",
       "removeLink": "Quitar el enlace",
       "link": {
@@ -3294,7 +3279,15 @@
     "disclaimer": "Stinky usa tu armario, el tiempo y tu música. Puede equivocarse.",
     "memoryNote": "Stinky ha tomado nota: {text}",
     "memoryForgot": "Stinky lo ha olvidado: {text}",
-    "memoryManage": "Ver lo que recuerda"
+    "memoryManage": "Ver lo que recuerda",
+    "emptyWardrobe": {
+      "title": "Mándame prendas, no fotos por aquí",
+      "body": "Con el armario vacío no puedo vestirte. Sube unas cuantas fotos de golpe y yo les quito el fondo y las etiqueto.",
+      "cta": "Subir prendas",
+      "tagTitle": "Dime qué son esas fotos",
+      "tagBody": "Tienes {count, plural, one {# foto sin etiquetar} other {# fotos sin etiquetar}}: sin saber qué son, no las veo. Tipo y color, un toque cada uno.",
+      "tagCta": "Etiquetar ahora"
+    }
   },
   "stinkyMemory": {
     "backToSettings": "← Ajustes",
@@ -3624,13 +3617,21 @@
       "dismiss": "Cerrar consejo"
     },
     "firstSteps": {
-      "emptyTitle": "Sube tu primera prenda",
-      "emptyBody": "Con una foto basta: quito el fondo y la etiqueto (o lo haces tú si tu plan no tiene IA). Con {min} prendas empiezo a proponerte looks.",
-      "emptyCta": "Subir prenda",
+      "emptyTitle": "Sube unas cuantas prendas",
+      "emptyBody": "Elige varias fotos de golpe: les quito el fondo y las etiqueto (o lo haces tú en dos toques si tu plan no tiene IA).",
+      "emptyCta": "Subir prendas",
       "progressTitle": "¡Vas bien!",
       "progress": "{count} de {min} prendas para que Stinky empiece a proponerte looks",
       "progressHint": "Mejor una parte de arriba y otra de abajo, o un vestido y unos zapatos.",
-      "progressCta": "Subir otra prenda"
+      "progressCta": "Subir más prendas",
+      "untaggedTitle": "Dime qué son",
+      "untagged": "Tienes {untyped, plural, one {# foto sin etiquetar} other {# fotos sin etiquetar}}. Hasta que sepa qué son, para mí el armario sigue vacío.",
+      "untaggedHint": "Tipo y color, un toque cada uno. Con {min} prendas etiquetadas ya puedo proponerte algo.",
+      "untaggedCta": "Etiquetar ahora",
+      "varietyTitle": "Ya puedo proponerte algo",
+      "variety": "Con {target} prendas empiezo a proponerte looks de verdad; llevas {count}.",
+      "varietyHint": "Con {min} me las apaño, pero repito mucho. Cuantas más haya, menos me repito.",
+      "varietyCta": "Subir más prendas"
     },
     "styleQuiz": {
       "dialogLabel": "Tu estilo con Stinky",
@@ -3942,5 +3943,94 @@
     "tooManySaves": "Vas muy rápido. Espera un momento y vuelve a intentarlo.",
     "needItems": "Elige al menos una prenda de tu armario.",
     "defaultLookName": "Look del {date}"
+  },
+  "bulkUpload": {
+    "cta": "Subir prendas",
+    "title": "Subir prendas",
+    "subtitle": "Varias fotos de golpe. Puedes cerrar esto: la subida sigue.",
+    "reviewSubtitle": "Confirma el tipo y el color. Lo que ya esté bien, déjalo.",
+    "progress": "{done} de {total} listas",
+    "finished": "{saved} de {total} en el armario",
+    "loading": "Cargando las prendas…",
+    "addMore": "Añadir más fotos",
+    "seeQueue": "Ver la cola",
+    "close": "Cerrar",
+    "keepInBackground": "Seguir en segundo plano",
+    "reviewCta": "Repasar {count, plural, one {# prenda} other {# prendas}}",
+    "reviewSoFar": "Repasar las {count} que ya están",
+    "uploadMore": "Subir más",
+    "retryAll": "Reintentar {count, plural, one {# fallo} other {# fallos}}",
+    "resumed": "Retomo {count, plural, one {# foto} other {# fotos}} de la última vez",
+    "noAiNotice": "Tu plan no etiqueta con IA, así que las prendas entran sin etiquetar. Al terminar te pregunto tipo y color de cada una: dos toques.",
+    "picker": {
+      "headline": "Suelta aquí tus fotos",
+      "dropNow": "¡Suelta ya!",
+      "hint": "Hasta {max} fotos por lote, {size} MB cada una.",
+      "choose": "Elegir fotos",
+      "camera": "Hacer foto",
+      "room": "Caben {room} más en este lote",
+      "full": "Lote completo ({max}). Sube estas y luego seguimos.",
+      "skipAi": "No etiquetar con IA",
+      "skipAiHint": "Las subo sin más y las etiquetas tú en el repaso.",
+      "noAiHint": "Tu plan no tiene IA de visión: las prendas entran sin etiquetar y las etiquetas tú al final, tipo y color, un toque cada uno.",
+      "rejected": {
+        "tooMany": "Solo caben {max} fotos por lote; el resto las he dejado fuera.",
+        "tooBig": "Alguna foto pasa de {size} MB y la he dejado fuera.",
+        "wrongType": "Algún archivo no era una imagen y lo he dejado fuera."
+      }
+    },
+    "queue": {
+      "retry": "Reintentar",
+      "retryOne": "Reintentar {name}",
+      "removeOne": "Quitar {name} de la cola",
+      "states": {
+        "pending": "En cola",
+        "uploading": "Subiendo",
+        "removing-bg": "Quitando fondo",
+        "tagging": "Etiquetando",
+        "done": "Lista",
+        "duplicate": "Ya estaba en tu armario",
+        "error": "No se pudo subir"
+      },
+      "errors": {
+        "too_big": "Pesa más de 10 MB",
+        "invalid_format": "Eso no es una foto que sepa leer",
+        "rate_limited": "Demasiadas fotos seguidas; espera un momento",
+        "offline": "Sin conexión",
+        "network": "No se pudo conectar",
+        "unauthorized": "Sesión caducada; vuelve a entrar",
+        "failed": "No se pudo subir"
+      }
+    },
+    "review": {
+      "needsWork": "{count, plural, one {Falta # por decirme qué es} other {Faltan # por decirme qué son}}",
+      "allGood": "Todo etiquetado. Échale un ojo por si acaso.",
+      "hint": "Toca una prenda para cambiarle el tipo o el color.",
+      "oneByOne": "Repasar una a una",
+      "unknownType": "¿Qué es?",
+      "noColour": "Sin color",
+      "save": "Guardar {count, plural, one {# cambio} other {# cambios}}",
+      "saved": "Guardado. {count, plural, one {# prenda lista} other {# prendas listas}}.",
+      "done": "Listo"
+    },
+    "stepper": {
+      "position": "Prenda {current} de {total}",
+      "skip": "Saltar",
+      "whatIsIt": "¿Qué prenda es?",
+      "noColorYet": "Aún sin color",
+      "typeLegend": "Tipo",
+      "colorLegend": "Color principal",
+      "moreTypes": "Más tipos",
+      "moreColors": "Más colores",
+      "back": "Anterior",
+      "next": "Siguiente",
+      "finish": "Terminar",
+      "backToGrid": "Volver a la cuadrícula"
+    },
+    "statusBar": {
+      "open": "Abrir la subida de prendas",
+      "uploading": "Subiendo prendas · {done} de {total}",
+      "failed": "{count, plural, one {# foto sin subir} other {# fotos sin subir}}"
+    }
   }
 }

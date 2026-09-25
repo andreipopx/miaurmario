@@ -53,7 +53,7 @@ vi.mock('@/lib/api', async (orig) => {
 })
 
 import { ItemUsagePanel } from '@/components/item-usage-panel'
-import { WardrobeNumbers } from '@/app/dashboard/analytics/page'
+import { WardrobeNumbers } from '@/components/analytics/wardrobe-numbers'
 
 // ---- helpers ---------------------------------------------------------------------
 

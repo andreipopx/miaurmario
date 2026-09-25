@@ -617,7 +617,8 @@
         "close": "Cerrar",
         "setAsPrimary": "Marcar como principal",
         "deleteImage": "Borrar imagen",
-        "label": "Acciones de la prenda"
+        "label": "Acciones de la prenda",
+        "editTags": "Editar prenda y etiquetas"
       },
       "analyzing": "Stinky la está olisqueando…",
       "form": {
@@ -634,7 +635,11 @@
         "washIntervalHelp": "Cuántas veces se puede llevar antes de lavarla. Déjalo vacío para usar el valor por defecto.",
         "washIntervalDefault": "Por defecto: {days}",
         "cancel": "Cancelar",
-        "save": "Guardar"
+        "save": "Guardar",
+        "style": "Estilo",
+        "styleHint": "(hasta dos)",
+        "formality": "Formalidad",
+        "season": "Temporada"
       },
       "info": {
         "wornTimesWithLast": "Usada {count, plural, one {# vez} other {# veces}}",
@@ -3998,13 +4003,19 @@
     "review": {
       "needsWork": "{count, plural, one {Falta # por decirme qué es} other {Faltan # por decirme qué son}}",
       "allGood": "Todo etiquetado. Échale un ojo por si acaso.",
-      "hint": "Toca una prenda para cambiarle el tipo o el color.",
+      "hint": "Toca una prenda para ponerle tipo, color, estilo y formalidad.",
       "oneByOne": "Repasar una a una",
       "unknownType": "¿Qué es?",
       "noColour": "Sin color",
       "save": "Guardar {count, plural, one {# cambio} other {# cambios}}",
       "saved": "Guardado. {count, plural, one {# prenda lista} other {# prendas listas}}.",
-      "done": "Listo"
+      "done": "Listo",
+      "noFormality": "Sin formalidad",
+      "closeTags": "Cerrar",
+      "nextGarment": "La siguiente",
+      "rotated": "Girada y guardada.",
+      "rotateHint": "¿Sale torcida? Gírala: se guarda al momento.",
+      "rotateFailed": "No pude girarla. Inténtalo otra vez."
     },
     "stepper": {
       "position": "Prenda {current} de {total}",
@@ -4018,12 +4029,43 @@
       "back": "Anterior",
       "next": "Siguiente",
       "finish": "Terminar",
-      "backToGrid": "Volver a la cuadrícula"
+      "backToGrid": "Volver a la cuadrícula",
+      "styleLegend": "Estilo",
+      "styleHint": "(hasta dos)",
+      "formalityLegend": "Formalidad"
     },
     "statusBar": {
       "open": "Abrir la subida de prendas",
       "uploading": "Subiendo prendas · {done} de {total}",
       "failed": "{count, plural, one {# foto sin subir} other {# fotos sin subir}}"
+    }
+  },
+  "imageCrop": {
+    "title": "Encuadra la prenda",
+    "area": "Recorte de la foto: arrastra o usa las flechas para moverla, + y - para el zoom",
+    "zoom": "Zoom",
+    "shape": "Forma del recorte",
+    "resize": "Cambiar el tamaño del recorte (o Alt y las flechas)",
+    "tools": "Girar y recortar",
+    "straighten": "Endereza la foto",
+    "noPreview": "No puedo mostrar esta foto aquí, pero se guarda igual",
+    "crop": "Recortar",
+    "recrop": "Cambiar el recorte",
+    "cropped": "Recortada",
+    "apply": "Usar este recorte",
+    "cancel": "Dejarlo como estaba",
+    "rotateLeft": "Girar a la izquierda",
+    "rotateRight": "Girar a la derecha",
+    "rotateLeftOne": "Girar {name} a la izquierda",
+    "rotateRightOne": "Girar {name} a la derecha",
+    "willSave": "Se guardará así.",
+    "asIs": "Si sale torcida o con mucho de más, gírala o recórtala.",
+    "keyboardHint": "Flechas para mover, + y - para el zoom, Alt y flechas para el tamaño.",
+    "presets": {
+      "free": "Libre",
+      "square": "Cuadrado",
+      "portrait": "Vertical",
+      "landscape": "Apaisado"
     }
   }
 }

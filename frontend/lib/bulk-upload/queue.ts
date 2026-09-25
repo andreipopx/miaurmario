@@ -4,7 +4,7 @@
  * rules can be tested without a DOM.
  */
 
-/** Backend: config.max_batch_upload_count. */
+/** Backend: config.max_bulk_upload_count. */
 export const MAX_BATCH_PHOTOS = 30;
 /** Backend: config.max_upload_size_mb. */
 export const MAX_PHOTO_MB = 10;
@@ -38,6 +38,13 @@ export interface QueuedPhoto {
   itemId?: string;
   /** Object URL of the local file, for the thumbnail before the server has one. */
   previewUrl?: string;
+  /**
+   * Why it failed, as a code the UI turns into a specific sentence: too_big,
+   * invalid_format, rate_limited, offline, network, unauthorized, failed. A row
+   * that only says "error" is a row the user cannot act on.
+   */
+  errorCode?: string;
+  /** The server's English message, shown only when there is no better wording. */
   error?: string;
   /** True for a row restored from IndexedDB after a reload. */
   resumed?: boolean;

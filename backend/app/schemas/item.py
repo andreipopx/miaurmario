@@ -269,10 +269,26 @@ class ArchiveRequest(BaseModel):
 
 
 class BulkUploadResult(BaseModel):
+    """One photo of a bulk upload, and what became of it.
+
+    `success` is kept as it was for existing callers. `state` is what a queue row
+    shows, and it draws the distinction `success` cannot: a duplicate is not a
+    failure the user caused, it is a photo the wardrobe already has, and `item`
+    then points at the one that is already there.
+    """
+
     filename: str
     success: bool
+    state: Literal["created", "duplicate", "error"] = "created"
     item: ItemResponse | None = None
+    # A code the UI can turn into a specific sentence: too_big, invalid_format,
+    # duplicate, too_many_images, failed. `error` stays as the English fallback.
+    error_code: str | None = None
     error: str | None = None
+    # "queued" means a worker is tagging it; "skipped" means it is ready but
+    # untagged and wants the manual pass.
+    tagging: Literal["queued", "skipped"] | None = None
+    background_removed: bool = False
 
 
 class BulkUploadResponse(BaseModel):
@@ -303,35 +319,19 @@ class WardrobeStats(BaseModel):
     max_batch: int
 
 
-class BatchItemResponse(BaseModel):
-    """One photo of a bulk-upload batch, uploaded on its own request.
-
-    `state` is what the queue row shows: a duplicate is not a failure, it is a
-    photo the wardrobe already has, and `item` then points at the existing one.
-    """
-
-    filename: str
-    state: Literal["created", "duplicate"]
-    item: ItemResponse
-    # "queued" means a worker is tagging it; "skipped" means the user has no AI
-    # vision, so the item is ready but untagged and wants the manual pass.
-    tagging: Literal["queued", "skipped"]
-    background_removed: bool = False
-
-
-class BatchTagEntry(BaseModel):
+class BulkTagEntry(BaseModel):
     item_id: UUID
     type: str | None = Field(None, max_length=50)
     primary_color: str | None = Field(None, max_length=50)
 
 
-class BatchTagRequest(BaseModel):
+class BulkTagRequest(BaseModel):
     """The quick review / manual tagging pass over a batch."""
 
-    items: list[BatchTagEntry] = Field(..., min_length=1, max_length=100)
+    items: list[BulkTagEntry] = Field(..., min_length=1, max_length=100)
 
 
-class BatchTagResponse(BaseModel):
+class BulkTagResponse(BaseModel):
     updated: int
     failed: int
     errors: list[str] = Field(default_factory=list)

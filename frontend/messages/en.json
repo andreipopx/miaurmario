@@ -442,7 +442,8 @@
       "title": "Quick Actions",
       "subtitle": "Common tasks to get you started",
       "addItem": "Add New Item",
-      "getSuggestion": "Get Outfit Suggestion"
+      "getSuggestion": "Get Outfit Suggestion",
+      "quickUpload": "Upload items"
     },
     "days": {
       "sunday": "Sunday",
@@ -692,7 +693,7 @@
     "add": {
       "dialogTitle": "Add items",
       "tabSingle": "Single item",
-      "tabBulk": "Bulk upload",
+      "tabBulk": "Several",
       "typeLabel": "Type",
       "typePlaceholder": "Let AI detect...",
       "colorLabel": "Primary color",
@@ -3854,10 +3855,6 @@
     "retryAll": "Retry {count, plural, one {# failure} other {# failures}}",
     "resumed": "Picking {count, plural, one {# photo} other {# photos}} back up from last time",
     "noAiNotice": "Your plan does not tag with AI, so the items land untagged. When this finishes I ask you for the type and the colour of each one: two taps.",
-    "handoff": {
-      "title": "Lots of items?",
-      "body": "There is a separate flow for uploading them all at once, with a queue, retries and a quick review at the end."
-    },
     "picker": {
       "headline": "Drop your photos here",
       "dropNow": "Drop them!",
@@ -3887,6 +3884,15 @@
         "done": "Done",
         "duplicate": "Already in your wardrobe",
         "error": "Could not upload"
+      },
+      "errors": {
+        "too_big": "Larger than 10 MB",
+        "invalid_format": "That is not a photo I can read",
+        "rate_limited": "Too many photos at once; wait a moment",
+        "offline": "No connection",
+        "network": "Could not connect",
+        "unauthorized": "Session expired; sign in again",
+        "failed": "Could not upload"
       }
     },
     "review": {

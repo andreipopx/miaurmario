@@ -76,15 +76,23 @@ class TestEmailHtmlEscaping:
 
 class TestBulkUploadLimit:
     @pytest.mark.asyncio
-    async def test_rejects_over_20_images(self, client, auth_headers):
-        files = [("images", (f"img{i}.jpg", b"\xff\xd8\xff\xe0", "image/jpeg")) for i in range(21)]
+    async def test_rejects_more_photos_than_the_ceiling(self, client, auth_headers):
+        from app.config import get_settings
+
+        ceiling = get_settings().max_bulk_upload_count
+        files = [
+            ("images", (f"img{i}.jpg", b"\xff\xd8\xff\xe0", "image/jpeg"))
+            for i in range(ceiling + 1)
+        ]
         response = await client.post(
             "/api/v1/items/bulk",
             files=files,
             headers=auth_headers,
         )
         assert response.status_code == 400
-        assert "Maximum 20" in response.json()["detail"]
+        detail = response.json()["detail"]
+        assert detail["code"] == "too_many_images"
+        assert f"Maximum {ceiling}" in detail["message"]
 
     @pytest.mark.asyncio
     async def test_limit_is_configurable(self, client, auth_headers):
@@ -102,7 +110,7 @@ class TestBulkUploadLimit:
                 headers=auth_headers,
             )
             assert response.status_code == 400
-            assert "Maximum 5" in response.json()["detail"]
+            assert "Maximum 5" in response.json()["detail"]["message"]
         finally:
             items_api.settings.max_bulk_upload_count = original
 

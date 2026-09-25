@@ -24,7 +24,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 
 import { ApiError, NetworkError, api, getAccessToken } from '@/lib/api';
-import type { Item, ItemListResponse } from '@/lib/types';
+import { type BulkUploadResult, uploadBulkPhoto } from '@/lib/hooks/use-items';
+import type { ItemListResponse } from '@/lib/types';
 import {
   MAX_BATCH_PHOTOS,
   type QueueCounts,
@@ -42,7 +43,10 @@ import {
   type StoredPhoto,
   clearPhotos,
   deletePhoto,
+  forgetBatchItems,
+  loadBatchItems,
   loadPendingPhotos,
+  rememberBatchItem,
   savePhoto,
 } from '@/lib/bulk-upload/storage';
 
@@ -51,20 +55,12 @@ const TAGGING_POLL_MS = 3000;
 /** A tagging job that never reports back stops being interesting after this. */
 const TAGGING_GIVE_UP_MS = 3 * 60 * 1000;
 
-export interface BatchUploadResult {
-  filename: string;
-  state: 'created' | 'duplicate';
-  item: Item;
-  tagging: 'queued' | 'skipped';
-  background_removed: boolean;
-}
-
 interface BulkUploadContextValue {
   photos: QueuedPhoto[];
   counts: QueueCounts;
   /** Garments this batch put in the wardrobe, in upload order. */
   itemIds: string[];
-  /** False once the user has no AI, so the UI can offer the manual pass instead. */
+  /** Opt out of AI tagging for this batch (hidden when the user has no vision AI). */
   skipAi: boolean;
   setSkipAi: (skip: boolean) => void;
   /** What the picker refused, so the sheet can say so once. */
@@ -90,75 +86,31 @@ export function useBulkUpload(): BulkUploadContextValue {
   return context;
 }
 
-function errorMessageOf(error: unknown): string {
+/** Turn a dead request into a row the user can read and act on. */
+function failureOf(error: unknown): { state: 'error'; errorCode: string; error?: string } {
   if (error instanceof ApiError) {
     const detail = (error.data as { detail?: unknown } | undefined)?.detail;
-    if (typeof detail === 'string') return detail;
-    if (detail && typeof detail === 'object' && 'message' in detail) {
-      return String((detail as { message: unknown }).message);
+    const code =
+      detail && typeof detail === 'object' && 'code' in detail
+        ? String((detail as { code: unknown }).code)
+        : undefined;
+    const message =
+      typeof detail === 'string'
+        ? detail
+        : detail && typeof detail === 'object' && 'message' in detail
+          ? String((detail as { message: unknown }).message)
+          : undefined;
+    // 429 is the one the user can fix by simply waiting, so it gets its own word.
+    if (error.status === 429) return { state: 'error', errorCode: 'rate_limited', error: message };
+    if (error.status === 401 || error.status === 403) {
+      return { state: 'error', errorCode: 'unauthorized', error: message };
     }
-    return error.message;
+    return { state: 'error', errorCode: code ?? 'failed', error: message };
   }
-  if (error instanceof NetworkError) return error.message;
-  return error instanceof Error ? error.message : 'upload_failed';
-}
-
-/** One photo, one request, so every row has its own progress and its own failure. */
-function uploadOne(
-  blob: Blob,
-  name: string,
-  skipAi: boolean,
-  token: string | null | undefined,
-  onProgress: (percent: number) => void,
-  register: (xhr: XMLHttpRequest) => void
-): Promise<BatchUploadResult> {
-  const form = new FormData();
-  form.append('image', blob, name);
-  form.append('skip_ai', String(skipAi));
-  form.append('remove_background', 'true');
-
-  return new Promise<BatchUploadResult>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    register(xhr);
-
-    xhr.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable) {
-        onProgress(Math.round((event.loaded / event.total) * 100));
-      }
-    });
-
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          resolve(JSON.parse(xhr.responseText) as BatchUploadResult);
-        } catch {
-          reject(new ApiError('invalid_response', xhr.status, {}));
-        }
-        return;
-      }
-      let data: unknown = {};
-      try {
-        data = JSON.parse(xhr.responseText);
-      } catch {
-        /* a proxy error page, not JSON */
-      }
-      reject(new ApiError('upload_failed', xhr.status, data as Record<string, unknown>));
-    });
-
-    xhr.addEventListener('error', () => {
-      reject(
-        new NetworkError(
-          typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'unreachable'
-        )
-      );
-    });
-    xhr.addEventListener('abort', () => reject(new NetworkError('aborted')));
-
-    xhr.open('POST', '/api/v1/items/batch');
-    xhr.withCredentials = true;
-    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.send(form);
-  });
+  if (error instanceof NetworkError) {
+    return { state: 'error', errorCode: error.message === 'offline' ? 'offline' : 'network' };
+  }
+  return { state: 'error', errorCode: 'failed' };
 }
 
 export function BulkUploadProvider({ children }: { children: React.ReactNode }) {
@@ -168,6 +120,8 @@ export function BulkUploadProvider({ children }: { children: React.ReactNode }) 
   const [skipAi, setSkipAi] = useState(false);
   const [lastRejected, setLastRejected] = useState<RejectReason[]>([]);
   const [resumedBatch, setResumedBatch] = useState(false);
+  /** Garments this batch created before a reload; their photos are long gone. */
+  const [restoredItemIds, setRestoredItemIds] = useState<string[]>([]);
 
   const batchIdRef = useRef<string>(nextBatchId());
   /** The bytes of every row still in play, so a retry does not need the picker again. */
@@ -231,10 +185,10 @@ export function BulkUploadProvider({ children }: { children: React.ReactNode }) 
         startedRef.current.delete(photo.id);
         continue;
       }
-      void uploadOne(
+      void uploadBulkPhoto(
         blob,
         photo.name,
-        skipAiRef.current,
+        { skipAi: skipAiRef.current, removeBackground: true },
         tokenRef.current,
         (percent) => {
           // The bytes are gone; what happens next is the server cutting the
@@ -246,9 +200,23 @@ export function BulkUploadProvider({ children }: { children: React.ReactNode }) 
         },
         (xhr) => xhrsRef.current.set(photo.id, xhr)
       )
-        .then((result) => {
+        .then((result: BulkUploadResult) => {
           blobsRef.current.delete(photo.id);
           void deletePhoto(photo.id);
+
+          if (result.state === 'error' || !result.item) {
+            // A refusal the server can name: too big, wrong format. The bytes stay
+            // in storage anyway, because a retry after rotating or shrinking the
+            // photo is the user's business, not ours to foreclose.
+            patch(photo.id, {
+              state: 'error',
+              errorCode: result.error_code ?? 'failed',
+              error: result.error ?? undefined,
+            });
+            return;
+          }
+
+          rememberBatchItem(batchIdRef.current, result.item.id);
           if (result.state === 'duplicate') {
             patch(photo.id, { state: 'duplicate', progress: 100, itemId: result.item.id });
             return;
@@ -265,7 +233,7 @@ export function BulkUploadProvider({ children }: { children: React.ReactNode }) 
         .catch((error: unknown) => {
           // The bytes stay in storage: this row is retryable, and a reload can
           // pick it up even if the user closes the app in frustration.
-          patch(photo.id, { state: 'error', error: errorMessageOf(error) });
+          patch(photo.id, { ...failureOf(error) });
         })
         .finally(() => {
           startedRef.current.delete(photo.id);
@@ -346,6 +314,8 @@ export function BulkUploadProvider({ children }: { children: React.ReactNode }) 
     xhrsRef.current.forEach((xhr) => xhr.abort());
     xhrsRef.current.clear();
     void clearPhotos(photosRef.current.map((photo) => photo.id));
+    forgetBatchItems();
+    setRestoredItemIds([]);
     previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
     previewsRef.current.clear();
     blobsRef.current.clear();
@@ -380,6 +350,9 @@ export function BulkUploadProvider({ children }: { children: React.ReactNode }) 
       });
       batchIdRef.current = stored[stored.length - 1].batchId;
       setSkipAi(stored[stored.length - 1].skipAi);
+      // Everything this batch already saved, so the review covers the whole batch
+      // and not only the half that was still queued.
+      setRestoredItemIds(loadBatchItems(batchIdRef.current));
       setPhotos(rows);
       setResumedBatch(true);
       setTimeout(pump, 0);
@@ -451,10 +424,10 @@ export function BulkUploadProvider({ children }: { children: React.ReactNode }) 
   );
 
   const counts = useMemo(() => countQueue(photos), [photos]);
-  const itemIds = useMemo(
-    () => photos.filter(hasItem).map((photo) => photo.itemId as string),
-    [photos]
-  );
+  const itemIds = useMemo(() => {
+    const fromQueue = photos.filter(hasItem).map((photo) => photo.itemId as string);
+    return [...restoredItemIds.filter((id) => !fromQueue.includes(id)), ...fromQueue];
+  }, [photos, restoredItemIds]);
 
   const value = useMemo<BulkUploadContextValue>(
     () => ({

@@ -105,3 +105,57 @@ export async function loadPendingPhotos(now = Date.now()): Promise<StoredPhoto[]
 export async function clearPhotos(ids: readonly string[]): Promise<void> {
   await Promise.all(ids.map((id) => deletePhoto(id)));
 }
+
+/**
+ * The garments a batch has already created, so a reload does not lose them.
+ *
+ * The photo itself is deleted the moment its garment exists, which would leave a
+ * resumed batch reviewing only the half that had not uploaded yet. The ids are
+ * small and short-lived, so localStorage is the right size of tool; losing them
+ * costs the review grid, never a garment.
+ */
+const ITEMS_KEY = 'miaurmario_batch_items_v1';
+
+interface BatchItems {
+  batchId: string;
+  ids: string[];
+  at: number;
+}
+
+function readBatchItems(): BatchItems | null {
+  try {
+    const raw = localStorage.getItem(ITEMS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as BatchItems;
+    if (!parsed?.batchId || !Array.isArray(parsed.ids)) return null;
+    if (Date.now() - parsed.at > BATCH_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberBatchItem(batchId: string, itemId: string): void {
+  try {
+    const current = readBatchItems();
+    const ids = current?.batchId === batchId ? current.ids : [];
+    if (ids.includes(itemId)) return;
+    const next: BatchItems = { batchId, ids: [...ids, itemId], at: Date.now() };
+    localStorage.setItem(ITEMS_KEY, JSON.stringify(next));
+  } catch {
+    /* private window, or storage full: the review just covers less */
+  }
+}
+
+export function loadBatchItems(batchId: string): string[] {
+  const current = readBatchItems();
+  return current?.batchId === batchId ? current.ids : [];
+}
+
+export function forgetBatchItems(): void {
+  try {
+    localStorage.removeItem(ITEMS_KEY);
+  } catch {
+    /* nothing to do */
+  }
+}

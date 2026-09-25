@@ -442,7 +442,8 @@
       "title": "Acciones rápidas",
       "subtitle": "Tareas comunes para empezar",
       "addItem": "Añadir prenda",
-      "getSuggestion": "Sugerir un conjunto"
+      "getSuggestion": "Sugerir un conjunto",
+      "quickUpload": "Subir prendas"
     },
     "days": {
       "sunday": "Domingo",
@@ -692,7 +693,7 @@
     "add": {
       "dialogTitle": "Añadir prendas",
       "tabSingle": "Una prenda",
-      "tabBulk": "Subida masiva",
+      "tabBulk": "Varias",
       "typeLabel": "Tipo",
       "typePlaceholder": "Que lo detecte la IA...",
       "colorLabel": "Color principal",
@@ -3854,10 +3855,6 @@
     "retryAll": "Reintentar {count, plural, one {# fallo} other {# fallos}}",
     "resumed": "Retomo {count, plural, one {# foto} other {# fotos}} de la última vez",
     "noAiNotice": "Tu plan no etiqueta con IA, así que las prendas entran sin etiquetar. Al terminar te pregunto tipo y color de cada una: dos toques.",
-    "handoff": {
-      "title": "¿Muchas prendas?",
-      "body": "Hay un flujo aparte para subirlas de golpe, con cola, reintentos y un repaso rápido al final."
-    },
     "picker": {
       "headline": "Suelta aquí tus fotos",
       "dropNow": "¡Suelta ya!",
@@ -3887,6 +3884,15 @@
         "done": "Lista",
         "duplicate": "Ya estaba en tu armario",
         "error": "No se pudo subir"
+      },
+      "errors": {
+        "too_big": "Pesa más de 10 MB",
+        "invalid_format": "Eso no es una foto que sepa leer",
+        "rate_limited": "Demasiadas fotos seguidas; espera un momento",
+        "offline": "Sin conexión",
+        "network": "No se pudo conectar",
+        "unauthorized": "Sesión caducada; vuelve a entrar",
+        "failed": "No se pudo subir"
       }
     },
     "review": {

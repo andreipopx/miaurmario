@@ -46,6 +46,7 @@ import { useColorLabel } from '@/lib/tag-labels';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { CareLabelField } from '@/components/add-item/care-label-field';
 import { LinkImportTab } from '@/components/add-item/link-import-tab';
+import { BulkUploadPanel } from '@/components/bulk-upload/bulk-upload-panel';
 import { CareDraft } from '@/lib/hooks/use-intake';
 import { supportsShareTarget } from '@/lib/pwa/platform';
 
@@ -57,8 +58,13 @@ interface AddItemDialogProps {
    * It only fills the form in — the user still reviews and saves.
    */
   initial?: AddItemInitial | null;
-  /** Hand over to the batch uploader; the "muchas" tab is only a signpost to it. */
-  onBulk?: () => void;
+  /** Which tab to land on; "bulk" is what ?bulk=1 and every nudge link opens. */
+  initialTab?: 'single' | 'link' | 'bulk';
+  /**
+   * "untagged" opens the bulk tab straight into the quick pass over every garment
+   * the tagger never named, rather than into the picker.
+   */
+  bulkMode?: 'batch' | 'untagged';
 }
 
 export interface AddItemInitial {
@@ -67,9 +73,14 @@ export interface AddItemInitial {
   name?: string | null;
 }
 
-export function AddItemDialog({ open, onOpenChange, initial, onBulk }: AddItemDialogProps) {
+export function AddItemDialog({
+  open,
+  onOpenChange,
+  initial,
+  initialTab = 'single',
+  bulkMode = 'batch',
+}: AddItemDialogProps) {
   const t = useTranslations('wardrobe.add');
-  const tBulk = useTranslations('bulkUpload');
   const tShare = useTranslations('wardrobe.share');
   const colorLabel = useColorLabel();
   const typeLabel = useClothingTypeLabel();
@@ -84,11 +95,17 @@ export function AddItemDialog({ open, onOpenChange, initial, onBulk }: AddItemDi
   const [sourceUrl, setSourceUrl] = useState('');
   const [care, setCare] = useState<CareDraft | null>(null);
 
-  const [activeTab, setActiveTab] = useState('single');
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // Track blob URLs for cleanup on unmount
   const blobUrlsRef = useRef<Set<string>>(new Set());
+
+  // Each opening lands on the tab the caller asked for: the Hoy nudge, Stinky and
+  // the floating upload bar all open this dialog straight on "muchas prendas".
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
 
   // On iOS (and Firefox) nothing can be shared into the app, so say so here
   // instead of letting people hunt for a share option that does not exist.
@@ -197,7 +214,7 @@ export function AddItemDialog({ open, onOpenChange, initial, onBulk }: AddItemDi
     setSourceUrl('');
     setCare(null);
 
-    setActiveTab('single');
+    setActiveTab(initialTab);
     setShowCloseConfirm(false);
 
     onOpenChange(false);
@@ -227,15 +244,16 @@ export function AddItemDialog({ open, onOpenChange, initial, onBulk }: AddItemDi
           {/* Three tabs have to fit a 320px phone at 125% font: let them
               shrink and ellipsize instead of pushing the dialog wider. */}
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="single" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
-              {t('tabSingle')}
-            </TabsTrigger>
-            <TabsTrigger value="link" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
-              {t('tabLink')}
-            </TabsTrigger>
-            <TabsTrigger value="bulk" className="min-w-0 truncate px-2 text-xs sm:px-4 sm:text-sm">
-              {t('tabBulk')}
-            </TabsTrigger>
+            {/* The label needs its own block for `truncate` to ellipsise it: a bare
+                text node in a centred flex box just gets clipped at both ends,
+                which at 320 px and 125 % font turns "Varias" into "aria". */}
+            {(['single', 'link', 'bulk'] as const).map((tab) => (
+              <TabsTrigger key={tab} value={tab} className="min-w-0 px-2 text-xs sm:px-4 sm:text-sm">
+                <span className="min-w-0 truncate">
+                  {t(tab === 'single' ? 'tabSingle' : tab === 'link' ? 'tabLink' : 'tabBulk')}
+                </span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* Paste a shop link: read on the server, reviewed here */}
@@ -254,7 +272,7 @@ export function AddItemDialog({ open, onOpenChange, initial, onBulk }: AddItemDi
                 if (prefill.brand) setBrand(prefill.brand.slice(0, 100));
                 if (prefill.primaryColor) setPrimaryColor(prefill.primaryColor);
                 setSourceUrl(prefill.sourceUrl);
-                setActiveTab('single');
+                setActiveTab(initialTab);
               }}
             />
           </TabsContent>
@@ -420,30 +438,15 @@ export function AddItemDialog({ open, onOpenChange, initial, onBulk }: AddItemDi
             </form>
           </TabsContent>
 
-          {/* Many photos at once is its own flow, with a resumable queue and a
-              review pass; this tab only hands over to it so there is one bulk
-              uploader in the app rather than two. */}
+          {/* Many photos at once: a queue with per-photo state and retry, and a
+              quick review pass at the end. The queue itself lives above the
+              router, so closing this dialog does not stop the upload. */}
           <TabsContent value="bulk" className="space-y-4">
-            <div className="rounded-lg bg-panel p-5 text-center">
-              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-signature text-signature-foreground">
-                <ImagePlus className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-              </span>
-              <p className="mt-3 text-[15px] font-bold">{tBulk('handoff.title')}</p>
-              <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
-                {tBulk('handoff.body')}
-              </p>
-              <Button
-                type="button"
-                className="mt-4 w-full"
-                onClick={() => {
-                  handleClose();
-                  onBulk?.();
-                }}
-              >
-                <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-                {tBulk('cta')}
-              </Button>
-            </div>
+            <BulkUploadPanel
+              open={activeTab === 'bulk'}
+              mode={bulkMode}
+              onClose={handleClose}
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>

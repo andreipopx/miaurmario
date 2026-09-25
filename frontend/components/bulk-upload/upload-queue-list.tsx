@@ -41,6 +41,16 @@ export function UploadQueueList({
 }) {
   const t = useTranslations('bulkUpload.queue');
 
+  /**
+   * Say what actually went wrong. "No se pudo subir" tells the user nothing they
+   * can act on; "esa foto pasa de 10 MB" tells them to pick another one.
+   */
+  const errorLabel = (photo: QueuedPhoto): string => {
+    const key = `errors.${photo.errorCode ?? 'failed'}`;
+    if (t.has(key as never)) return t(key as never);
+    return photo.error || t('errors.failed');
+  };
+
   return (
     <ul className="space-y-2" data-testid="bulk-queue">
       {photos.map((photo) => {
@@ -77,7 +87,7 @@ export function UploadQueueList({
                   aria-hidden
                 />
                 <span className="truncate">
-                  {photo.state === 'error' ? t('states.error') : t(`states.${photo.state}`)}
+                  {photo.state === 'error' ? errorLabel(photo) : t(`states.${photo.state}`)}
                 </span>
               </p>
               {photo.state === 'uploading' && (

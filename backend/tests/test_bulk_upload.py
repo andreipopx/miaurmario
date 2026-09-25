@@ -1,9 +1,13 @@
-"""Bulk intake: one photo per request, plus the manual "tipo + color" pass.
+"""Bulk intake: POST /items/bulk, plus the manual "tipo + color" pass.
 
 The point of these is the batch's failure modes, because an empty wardrobe is
 filled in one sitting or not at all: a photo without AI must still land, a dead
 background remover must not cost the garment, a duplicate must not read as an
 error, and the per-photo limits must let a whole 30-photo batch through.
+
+The UI sends one photo per request so every queue row has its own state, so most
+of these post a single image; the endpoint still takes a list and the last tests
+cover that.
 """
 
 import random
@@ -17,7 +21,7 @@ from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.items import BATCH_UPLOAD_BURST
+from app.api.items import BULK_UPLOAD_BURST
 from app.config import get_settings
 from app.models.item import ClothingItem, ItemStatus, TaggedBy, TaggingStatus
 from app.services.recommendation_service import MIN_CANDIDATES_FOR_OUTFIT
@@ -40,8 +44,16 @@ def _image_bytes(seed: int = 0, size=(64, 64)) -> bytes:
     return buf.getvalue()
 
 
-def _photo(name: str = "shirt.jpg", seed: int = 0) -> dict:
-    return {"image": (name, _image_bytes(seed), "image/jpeg")}
+def _photo(name: str = "shirt.jpg", seed: int = 0) -> list[tuple[str, tuple]]:
+    """One photo, shaped the way the bulk UI sends it: a list of one."""
+    return [("images", (name, _image_bytes(seed), "image/jpeg"))]
+
+
+def _only(response) -> dict:
+    """The single result of a one-photo bulk call."""
+    body = response.json()
+    assert len(body["results"]) == 1, body
+    return body["results"][0]
 
 
 def _redis_patch(job_id: str = "fake-job-id"):
@@ -61,7 +73,7 @@ def _no_background_removal():
         yield remove_bg
 
 
-class TestBatchUpload:
+class TestBulkUpload:
     @pytest.mark.asyncio
     async def test_photo_without_ai_lands_ready_and_untagged(
         self, client: AsyncClient, auth_headers, db_session: AsyncSession
@@ -69,13 +81,12 @@ class TestBatchUpload:
         """A user with no AI is the default: the item must still be usable."""
         pool_patch, mock_redis = _redis_patch()
         with pool_patch:
-            response = await client.post(
-                "/api/v1/items/batch", files=_photo(), headers=auth_headers
-            )
+            response = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
 
         assert response.status_code == 201, response.text
-        body = response.json()
+        body = _only(response)
         assert body["state"] == "created"
+        assert body["success"] is True
         assert body["tagging"] == "skipped"
         assert body["item"]["status"] == "ready"
         assert body["item"]["tagging_status"] == "pending"
@@ -87,12 +98,10 @@ class TestBatchUpload:
     ):
         pool_patch, mock_redis = _redis_patch()
         with pool_patch:
-            response = await client.post(
-                "/api/v1/items/batch", files=_photo(), headers=auth_headers
-            )
+            response = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
 
         assert response.status_code == 201, response.text
-        body = response.json()
+        body = _only(response)
         assert body["tagging"] == "queued"
         assert body["item"]["status"] == "processing"
         mock_redis.enqueue_job.assert_called_once()
@@ -109,14 +118,14 @@ class TestBatchUpload:
         pool_patch, mock_redis = _redis_patch()
         with pool_patch:
             response = await client.post(
-                "/api/v1/items/batch",
+                "/api/v1/items/bulk",
                 files=_photo(),
                 data={"skip_ai": "true"},
                 headers=auth_headers,
             )
 
         assert response.status_code == 201
-        assert response.json()["tagging"] == "skipped"
+        assert _only(response)["tagging"] == "skipped"
         mock_redis.enqueue_job.assert_not_called()
 
     @pytest.mark.asyncio
@@ -126,12 +135,10 @@ class TestBatchUpload:
         """The worker must see the cut-out, not the bedroom floor behind it."""
         pool_patch, mock_redis = _redis_patch()
         with pool_patch:
-            response = await client.post(
-                "/api/v1/items/batch", files=_photo(), headers=auth_headers
-            )
+            response = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
 
         assert response.status_code == 201
-        assert response.json()["background_removed"] is True
+        assert _only(response)["background_removed"] is True
         _no_background_removal.assert_called_once()
         assert mock_redis.enqueue_job.called
 
@@ -142,14 +149,14 @@ class TestBatchUpload:
         pool_patch, _ = _redis_patch()
         with pool_patch:
             response = await client.post(
-                "/api/v1/items/batch",
+                "/api/v1/items/bulk",
                 files=_photo(),
                 data={"remove_background": "false"},
                 headers=auth_headers,
             )
 
         assert response.status_code == 201
-        assert response.json()["background_removed"] is False
+        assert _only(response)["background_removed"] is False
         _no_background_removal.assert_not_called()
 
     @pytest.mark.asyncio
@@ -160,12 +167,10 @@ class TestBatchUpload:
         _no_background_removal.side_effect = ImportError("no rembg")
         pool_patch, _ = _redis_patch()
         with pool_patch:
-            response = await client.post(
-                "/api/v1/items/batch", files=_photo(), headers=auth_headers
-            )
+            response = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
 
         assert response.status_code == 201, response.text
-        body = response.json()
+        body = _only(response)
         assert body["state"] == "created"
         assert body["background_removed"] is False
         assert body["item"]["status"] == "ready"
@@ -178,12 +183,10 @@ class TestBatchUpload:
         with patch(
             "app.api.items.create_pool", new_callable=AsyncMock, side_effect=OSError("no redis")
         ):
-            response = await client.post(
-                "/api/v1/items/batch", files=_photo(), headers=auth_headers
-            )
+            response = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
 
         assert response.status_code == 201, response.text
-        body = response.json()
+        body = _only(response)
         assert body["tagging"] == "skipped"
         assert body["item"]["status"] == "ready"
         assert body["item"]["tagging_status"] == "pending"
@@ -194,52 +197,76 @@ class TestBatchUpload:
     ):
         pool_patch, _ = _redis_patch()
         with pool_patch:
-            first = await client.post("/api/v1/items/batch", files=_photo(), headers=auth_headers)
-            second = await client.post("/api/v1/items/batch", files=_photo(), headers=auth_headers)
+            first = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
+            second = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
 
         assert first.status_code == 201
         assert second.status_code == 201, second.text
-        body = second.json()
+        body = _only(second)
         assert body["state"] == "duplicate"
+        assert body["error_code"] == "duplicate"
         # It points at the garment already in the wardrobe, so the UI can show it.
-        assert body["item"]["id"] == first.json()["item"]["id"]
+        assert body["item"]["id"] == _only(first)["item"]["id"]
 
     @pytest.mark.asyncio
-    async def test_a_file_that_is_not_an_image_is_a_400_with_a_code(
+    async def test_a_file_that_is_not_an_image_fails_only_that_photo(
         self, client: AsyncClient, auth_headers
     ):
-        response = await client.post(
-            "/api/v1/items/batch",
-            files={"image": ("notes.txt", b"not an image at all", "text/plain")},
-            headers=auth_headers,
-        )
-        assert response.status_code == 400
-        assert response.json()["detail"]["code"] == "invalid_image"
+        """One bad file in a camera-roll selection must not cost the batch."""
+        pool_patch, _ = _redis_patch()
+        with pool_patch:
+            response = await client.post(
+                "/api/v1/items/bulk",
+                files=[
+                    ("images", ("notes.txt", b"not an image at all", "text/plain")),
+                    ("images", ("shirt.jpg", _image_bytes(3), "image/jpeg")),
+                ],
+                headers=auth_headers,
+            )
+
+        assert response.status_code == 201, response.text
+        body = response.json()
+        assert (body["successful"], body["failed"]) == (1, 1)
+        assert body["results"][0]["error_code"] == "invalid_format"
+        assert body["results"][1]["state"] == "created"
 
     @pytest.mark.asyncio
-    async def test_batch_upload_requires_auth(self, client: AsyncClient):
-        response = await client.post("/api/v1/items/batch", files=_photo())
+    async def test_an_oversized_photo_says_so_instead_of_blaming_the_format(
+        self, client: AsyncClient, auth_headers, monkeypatch
+    ):
+        """ "Too big" and "not a photo" are different problems with different fixes."""
+        monkeypatch.setattr(get_settings(), "max_upload_size_mb", 0)
+        response = await client.post("/api/v1/items/bulk", files=_photo(), headers=auth_headers)
+
+        assert response.status_code == 201, response.text
+        body = _only(response)
+        assert body["state"] == "error"
+        assert body["error_code"] == "too_big"
+
+    @pytest.mark.asyncio
+    async def test_bulk_upload_requires_auth(self, client: AsyncClient):
+        response = await client.post("/api/v1/items/bulk", files=_photo())
         assert response.status_code in (401, 403)
 
 
-class TestBatchUploadLimits:
+class TestBulkUploadLimits:
     @pytest.mark.asyncio
     async def test_a_full_batch_fits_inside_the_burst_budget(self):
         """A 30-photo batch plus a retry pass must never trip the per-minute limit."""
         settings = get_settings()
-        assert settings.max_batch_upload_count <= BATCH_UPLOAD_BURST[0]
+        assert settings.max_bulk_upload_count <= BULK_UPLOAD_BURST[0]
 
     @pytest.mark.asyncio
     async def test_the_burst_budget_is_enforced_per_photo(
         self, client: AsyncClient, auth_headers, monkeypatch
     ):
-        monkeypatch.setattr("app.api.items.BATCH_UPLOAD_BURST", (2, 60))
+        monkeypatch.setattr("app.api.items.BULK_UPLOAD_BURST", (2, 60))
         pool_patch, _ = _redis_patch()
         with pool_patch:
             codes = [
                 (
                     await client.post(
-                        "/api/v1/items/batch",
+                        "/api/v1/items/bulk",
                         files=_photo(f"p{i}.jpg", seed=i),
                         headers=auth_headers,
                     )
@@ -254,8 +281,8 @@ class TestBatchUploadLimits:
     async def test_a_multi_photo_bulk_call_is_charged_per_photo(
         self, client: AsyncClient, auth_headers, monkeypatch
     ):
-        """/items/bulk and /items/batch share one budget, so neither can dodge it."""
-        monkeypatch.setattr("app.api.items.BATCH_UPLOAD_BURST", (2, 60))
+        """One photo per request must not be a way around the per-photo budget."""
+        monkeypatch.setattr("app.api.items.BULK_UPLOAD_BURST", (2, 60))
         pool_patch, _ = _redis_patch()
         with pool_patch:
             bulk = await client.post(
@@ -267,7 +294,7 @@ class TestBatchUploadLimits:
                 headers=auth_headers,
             )
             after = await client.post(
-                "/api/v1/items/batch",
+                "/api/v1/items/bulk",
                 files=_photo("c.jpg", seed=7),
                 headers=auth_headers,
             )
@@ -286,17 +313,18 @@ class TestBatchUploadLimits:
         ]
         response = await client.post("/api/v1/items/bulk", files=files, headers=auth_headers)
         assert response.status_code == 400
+        assert response.json()["detail"]["code"] == "too_many_images"
 
 
-class TestBatchTagging:
+class TestBulkTagging:
     async def _upload(self, client: AsyncClient, auth_headers, seed: int = 0) -> str:
         pool_patch, _ = _redis_patch()
         with pool_patch:
             response = await client.post(
-                "/api/v1/items/batch", files=_photo("x.jpg", seed), headers=auth_headers
+                "/api/v1/items/bulk", files=_photo("x.jpg", seed), headers=auth_headers
             )
         assert response.status_code == 201, response.text
-        return response.json()["item"]["id"]
+        return _only(response)["item"]["id"]
 
     @pytest.mark.asyncio
     async def test_manual_pass_tags_several_items_at_once(
@@ -306,7 +334,7 @@ class TestBatchTagging:
         second = await self._upload(client, auth_headers, seed=22)
 
         response = await client.post(
-            "/api/v1/items/batch/tag",
+            "/api/v1/items/bulk/tag",
             json={
                 "items": [
                     {"item_id": first, "type": "t-shirt", "primary_color": "black"},
@@ -337,7 +365,7 @@ class TestBatchTagging:
         item_id = await self._upload(client, auth_headers)
 
         response = await client.post(
-            "/api/v1/items/batch/tag",
+            "/api/v1/items/bulk/tag",
             json={"items": [{"item_id": item_id}]},
             headers=auth_headers,
         )
@@ -359,7 +387,7 @@ class TestBatchTagging:
         await db_session.commit()
 
         response = await client.post(
-            "/api/v1/items/batch/tag",
+            "/api/v1/items/bulk/tag",
             json={"items": [{"item_id": item_id, "type": "coat", "primary_color": "grey"}]},
             headers=auth_headers,
         )
@@ -374,7 +402,7 @@ class TestBatchTagging:
         self, client: AsyncClient, auth_headers
     ):
         response = await client.post(
-            "/api/v1/items/batch/tag",
+            "/api/v1/items/bulk/tag",
             json={"items": [{"item_id": str(uuid4()), "type": "t-shirt"}]},
             headers=auth_headers,
         )
@@ -386,14 +414,14 @@ class TestBatchTagging:
     @pytest.mark.asyncio
     async def test_an_empty_pass_is_rejected(self, client: AsyncClient, auth_headers):
         response = await client.post(
-            "/api/v1/items/batch/tag", json={"items": []}, headers=auth_headers
+            "/api/v1/items/bulk/tag", json={"items": []}, headers=auth_headers
         )
         assert response.status_code == 422
 
     @pytest.mark.asyncio
     async def test_tagging_requires_auth(self, client: AsyncClient):
         response = await client.post(
-            "/api/v1/items/batch/tag", json={"items": [{"item_id": str(uuid4())}]}
+            "/api/v1/items/bulk/tag", json={"items": [{"item_id": str(uuid4())}]}
         )
         assert response.status_code in (401, 403)
 
@@ -447,7 +475,7 @@ class TestWardrobeStats:
         assert response.status_code == 200
         body = response.json()
         assert body["min_for_looks"] == MIN_CANDIDATES_FOR_OUTFIT
-        assert body["max_batch"] == get_settings().max_batch_upload_count
+        assert body["max_batch"] == get_settings().max_bulk_upload_count
         # The goal is a goal, not a second gate.
         assert body["variety_target"] > body["min_for_looks"]
 
@@ -464,7 +492,7 @@ class TestWardrobeStats:
         assert response.status_code in (401, 403)
 
 
-class TestBatchReviewListing:
+class TestBulkReviewListing:
     """The review grid reloads its batch by id, so ?ids= has to actually filter."""
 
     @pytest.mark.asyncio

@@ -70,7 +70,9 @@ function SectionHeader({ title, href, cta }: { title: string; href?: string; cta
 // -- Quick actions ----------------------------------------------------------------
 
 const QUICK_ACTIONS: { key: string; href: string; icon: LucideIcon; color: PopColor }[] = [
-  { key: 'quickUpload', href: '/dashboard/wardrobe?add=1', icon: Camera, color: 'amber' },
+  // Straight to the batch uploader: one garment at a time is what left every
+  // wardrobe empty.
+  { key: 'quickUpload', href: '/dashboard/wardrobe?bulk=1', icon: Camera, color: 'amber' },
   { key: 'quickCreate', href: '/dashboard/outfits/new', icon: Shirt, color: 'pink' },
   { key: 'quickPlan', href: '/dashboard/history', icon: CalendarDays, color: 'sky' },
   { key: 'quickStats', href: '/dashboard/analytics', icon: BarChart3, color: 'mint' },

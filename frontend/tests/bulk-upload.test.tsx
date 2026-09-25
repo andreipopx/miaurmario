@@ -146,6 +146,27 @@ describe('quick tag shortlists', () => {
 })
 
 describe('UploadQueueList', () => {
+  it('says what actually went wrong, not just that something did', () => {
+    // A row that only says "no se pudo subir" is a row the user cannot act on.
+    renderWithIntl(
+      <UploadQueueList
+        photos={[
+          row({ id: 'a', name: 'grande.jpg', state: 'error', errorCode: 'too_big' }),
+          row({ id: 'b', name: 'video.mov', state: 'error', errorCode: 'invalid_format' }),
+          row({ id: 'c', name: 'lenta.jpg', state: 'error', errorCode: 'rate_limited' }),
+          row({ id: 'd', name: 'rara.jpg', state: 'error', errorCode: 'something_new' }),
+        ]}
+        onRetry={vi.fn()}
+        onRemove={vi.fn()}
+      />
+    )
+    expect(screen.getByText('Pesa más de 10 MB')).toBeInTheDocument()
+    expect(screen.getByText('Eso no es una foto que sepa leer')).toBeInTheDocument()
+    expect(screen.getByText('Demasiadas fotos seguidas; espera un momento')).toBeInTheDocument()
+    // A code the frontend has never heard of still reads as a failure.
+    expect(screen.getByText('No se pudo subir')).toBeInTheDocument()
+  })
+
   it('names every state a photo can be in, and only offers retry on failure', () => {
     renderWithIntl(
       <UploadQueueList
@@ -230,6 +251,23 @@ describe('bulk upload copy', () => {
     for (const state of states) {
       expect(es.bulkUpload.queue.states).toHaveProperty(state)
       expect(en.bulkUpload.queue.states).toHaveProperty(state)
+    }
+  })
+
+  it('has wording for every refusal the server or the network can produce', () => {
+    // The server codes come from backend/app/api/items.py::bulk_create_items;
+    // the rest are what the client itself can tell apart.
+    for (const code of [
+      'too_big',
+      'invalid_format',
+      'rate_limited',
+      'offline',
+      'network',
+      'unauthorized',
+      'failed',
+    ]) {
+      expect(es.bulkUpload.queue.errors).toHaveProperty(code)
+      expect(en.bulkUpload.queue.errors).toHaveProperty(code)
     }
   })
 

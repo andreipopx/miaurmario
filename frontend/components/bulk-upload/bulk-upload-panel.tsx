@@ -5,16 +5,8 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { ImagePlus, Loader2, RotateCcw } from 'lucide-react';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useBatchItems, useBatchTagItems, useUntaggedItems } from '@/lib/hooks/use-wardrobe-stats';
 import { useBulkUpload } from '@/lib/bulk-upload/bulk-upload-context';
@@ -28,20 +20,21 @@ import { MAX_BATCH_PHOTOS } from '@/lib/bulk-upload/queue';
 type Phase = 'pick' | 'queue' | 'review' | 'stepper';
 
 /**
- * The whole bulk flow in one sheet: pick many photos, watch the queue, then run
- * the quick pass over what landed.
+ * The "muchas prendas" tab of the add dialog: pick many photos, watch the queue,
+ * then run the quick pass over what landed.
  *
- * The queue itself lives in BulkUploadProvider, above the router, so closing this
- * sheet does not stop the upload — it keeps going behind the floating status bar
- * and the sheet reopens onto the same batch.
+ * The queue itself lives in BulkUploadProvider, above the router, so closing the
+ * dialog does not stop the upload — it keeps going behind the floating status bar
+ * and the tab reopens onto the same batch.
  */
-export function BulkUploadDialog({
+export function BulkUploadPanel({
   open,
-  onOpenChange,
+  onClose,
   mode = 'batch',
 }: {
+  /** Whether this tab is the visible one, so the phase only resets on the way in. */
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   /**
    * `batch` is the upload flow. `untagged` opens straight into the quick pass over
    * every garment the tagger never named — the same screen, pointed at the backlog
@@ -132,7 +125,7 @@ export function BulkUploadDialog({
       }));
     if (entries.length === 0) {
       if (!reviewingBacklog) reset();
-      onOpenChange(false);
+      onClose();
       return;
     }
     try {
@@ -141,12 +134,12 @@ export function BulkUploadDialog({
       setEdits({});
       // The backlog pass owns no photos, so there is no queue to clear.
       if (!reviewingBacklog) reset();
-      onOpenChange(false);
+      onClose();
     } catch {
       // The provider's mutation surfaces its own toast; the sheet stays open so
       // nothing the user typed is thrown away.
     }
-  }, [batchTag, edits, onOpenChange, reset, reviewingBacklog, t]);
+  }, [batchTag, edits, onClose, reset, reviewingBacklog, t]);
 
   const startOver = useCallback(() => {
     reset();
@@ -159,17 +152,15 @@ export function BulkUploadDialog({
   const hasEdits = editCount > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92vh] w-[calc(100vw-2rem)] max-w-lg flex-col gap-0 p-0">
-        <DialogHeader className="px-4 pb-2 pt-5 text-left sm:px-6">
-          <DialogTitle>{t('title')}</DialogTitle>
-          <DialogDescription>
-            {phase === 'review' || phase === 'stepper' ? t('reviewSubtitle') : t('subtitle')}
-          </DialogDescription>
-        </DialogHeader>
+    <div className="flex min-w-0 flex-col" data-testid="bulk-panel">
+      <p className="pb-3 text-[13px] leading-snug text-muted-foreground">
+        {phase === 'review' || phase === 'stepper' ? t('reviewSubtitle') : t('subtitle')}
+      </p>
 
-        <ScrollArea className="flex-1 px-4 sm:px-6">
-          <div className="pb-4">
+      {/* A plain scroller rather than ScrollArea: Radix lays its viewport out as
+          a table, which lets wide rows push past the dialog at 320 px. */}
+      <div className="-mx-1 min-w-0 max-h-[55vh] overflow-y-auto overflow-x-hidden px-1">
+        <div className="min-w-0 pb-4">
             {phase === 'pick' && (
               <PhotoPicker
                 onPick={addFiles}
@@ -253,23 +244,27 @@ export function BulkUploadDialog({
                 onDone={() => setPhase('review')}
               />
             )}
-          </div>
-        </ScrollArea>
+        </div>
+      </div>
 
-        <div className="flex flex-col gap-2 border-t border-border px-4 py-3 sm:flex-row sm:justify-end sm:px-6">
+      {/* The picker with an empty queue has nothing to put here. */}
+      {!(phase === 'pick' && photos.length === 0) && (
+        <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:justify-end">
           {phase === 'queue' && (
             <>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="ghost" onClick={onClose}>
                 {busy ? t('keepInBackground') : t('close')}
               </Button>
+              {/* Counted from the garments, not from the queue rows: a resumed
+                  batch has items whose photo rows are already gone. */}
               <Button
                 type="button"
                 onClick={() => setPhase('review')}
-                disabled={counts.saved === 0}
+                disabled={itemIds.length === 0}
               >
                 {busy
-                  ? t('reviewSoFar', { count: counts.saved })
-                  : t('reviewCta', { count: counts.saved })}
+                  ? t('reviewSoFar', { count: itemIds.length })
+                  : t('reviewCta', { count: itemIds.length })}
               </Button>
             </>
           )}
@@ -300,7 +295,7 @@ export function BulkUploadDialog({
             </Button>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
   );
 }

@@ -87,10 +87,10 @@ export function TagStepper({ drafts, startAt = 0, onChange, onDone }: TagStepper
   return (
     <div className="space-y-4" data-testid="bulk-stepper">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px] font-semibold text-muted-foreground">
+        <p className="min-w-0 truncate text-[13px] font-semibold text-muted-foreground">
           {t('position', { current: index + 1, total })}
         </p>
-        <Button type="button" variant="ghost" size="sm" onClick={goNext}>
+        <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={goNext}>
           {t('skip')}
         </Button>
       </div>

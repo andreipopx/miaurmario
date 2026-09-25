@@ -21,10 +21,6 @@ const AddItemDialog = dynamic(() => import('@/components/add-item-dialog').then(
 const ItemDetailDialog = dynamic(() => import('@/components/item-detail-dialog').then((m) => m.ItemDetailDialog), {
   ssr: false,
 });
-const BulkUploadDialog = dynamic(
-  () => import('@/components/bulk-upload/bulk-upload-dialog').then((m) => m.BulkUploadDialog),
-  { ssr: false }
-);
 import { BulkActionToolbar, BulkSelection } from '@/components/bulk-action-toolbar';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
@@ -261,10 +257,9 @@ export default function WardrobePage() {
   const { data: userProfile } = useUserProfile();
   const userTimezone = userProfile?.timezone || 'UTC';
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
-  // "review" opens the same sheet straight into the quick pass over every garment
-  // the tagger never named, which is where the Hoy nudge sends a user whose photos
-  // are all still "unknown".
+  // Which tab the add dialog opens on, and — for the bulk tab — whether it starts
+  // at the picker or straight in the quick pass over everything still untagged.
+  const [addTab, setAddTab] = useState<'single' | 'link' | 'bulk'>('single');
   const [bulkMode, setBulkMode] = useState<'batch' | 'untagged'>('batch');
   const [sharedIntake, setSharedIntake] = useState<AddItemInitial | null>(null);
   const [selection, setSelection] = useState<BulkSelection>({
@@ -282,14 +277,16 @@ export default function WardrobePage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  // ?bulk=1 opens the batch uploader: the Hoy nudge, Stinky and the floating
-  // upload bar all link here rather than owning a dialog of their own. The param
-  // stays in the URL while the sheet is open so the bar knows to stand down.
+  // ?bulk=1 opens the add dialog on its "muchas prendas" tab, and ?bulk=review
+  // opens that tab straight in the quick pass. The Hoy nudge, Stinky and the
+  // floating upload bar all link here rather than owning a dialog of their own;
+  // the param stays in the URL while the dialog is open so the bar stands down.
   useEffect(() => {
     const bulk = searchParams.get('bulk');
     if (!bulk) return;
     setBulkMode(bulk === 'review' ? 'untagged' : 'batch');
-    setBulkDialogOpen(true);
+    setAddTab('bulk');
+    setAddDialogOpen(true);
   }, [searchParams]);
 
   // Open item detail dialog from URL param (e.g. ?item=uuid from outfit pages)
@@ -507,7 +504,13 @@ export default function WardrobePage() {
         }
         action={
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => setAddDialogOpen(true)}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setAddTab('single');
+                setAddDialogOpen(true);
+              }}
+            >
               <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
               {tCommon('add')}
             </Button>
@@ -515,7 +518,8 @@ export default function WardrobePage() {
               variant="signature"
               onClick={() => {
                 setBulkMode('batch');
-                setBulkDialogOpen(true);
+                setAddTab('bulk');
+                setAddDialogOpen(true);
               }}
             >
               <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
@@ -711,10 +715,17 @@ export default function WardrobePage() {
             }
           />
         ) : (
-          <EmptyWardrobe onAddClick={() => setAddDialogOpen(true)} onBulkClick={() => {
-            setBulkMode('batch');
-            setBulkDialogOpen(true);
-          }} />
+          <EmptyWardrobe
+            onAddClick={() => {
+              setAddTab('single');
+              setAddDialogOpen(true);
+            }}
+            onBulkClick={() => {
+              setBulkMode('batch');
+              setAddTab('bulk');
+              setAddDialogOpen(true);
+            }}
+          />
         )
       ) : (
         <div
@@ -760,30 +771,22 @@ export default function WardrobePage() {
         onPageChange={handlePageChange}
       />
 
-      <BulkUploadDialog
-        open={bulkDialogOpen}
-        mode={bulkMode}
-        onOpenChange={(open) => {
-          setBulkDialogOpen(open);
-          if (!open) setBulkMode('batch');
-          // Drop ?bulk=1 on close so the floating bar can take over again.
-          if (!open && searchParams.get('bulk')) {
-            router.replace('/dashboard/wardrobe', { scroll: false });
-          }
-        }}
-      />
-
       <AddItemDialog
         open={addDialogOpen}
         onOpenChange={(open) => {
           setAddDialogOpen(open);
-          if (!open) setSharedIntake(null);
+          if (!open) {
+            setSharedIntake(null);
+            setBulkMode('batch');
+            // Drop ?bulk so the floating upload bar can take over again.
+            if (searchParams.get('bulk')) {
+              router.replace('/dashboard/wardrobe', { scroll: false });
+            }
+          }
         }}
         initial={sharedIntake}
-        onBulk={() => {
-          setBulkMode('batch');
-          setBulkDialogOpen(true);
-        }}
+        initialTab={addTab}
+        bulkMode={bulkMode}
       />
       <ItemDetailDialog
         item={detailItem}

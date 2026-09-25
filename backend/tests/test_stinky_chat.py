@@ -451,7 +451,7 @@ async def test_an_empty_wardrobe_is_in_the_prompt_before_he_opens_his_mouth(
     # And the instruction that tells him what to do about it, with the real cap.
     assert "ARMARIO CASI VACÍO" in system
     assert "Subir prendas" in system
-    assert str(get_settings().max_batch_upload_count) in system
+    assert str(get_settings().max_bulk_upload_count) in system
     # No placeholder ever reaches the model.
     assert "{wardrobe_state}" not in system
     assert "{max_batch}" not in system

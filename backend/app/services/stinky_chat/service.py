@@ -136,7 +136,7 @@ def build_system_prompt(
         "{memory_digest}": memory_digest
         or "(Tu cuaderno está vacío: todavía no has anotado nada de esta persona.)",
         "{wardrobe_state}": describe_wardrobe(wardrobe_counts),
-        "{max_batch}": str(get_settings().max_batch_upload_count),
+        "{max_batch}": str(get_settings().max_bulk_upload_count),
     }
     prompt = load_prompt("stinky_chat")
     for key, value in replacements.items():

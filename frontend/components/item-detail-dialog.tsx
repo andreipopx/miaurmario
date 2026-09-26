@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import {
+  Check,
   Heart,
   Pencil,
   Trash2,
@@ -18,6 +19,7 @@ import {
   RotateCcw,
   RotateCw,
   Eraser,
+  Scissors,
   Undo2,
   ImagePlus,
   Layers,
@@ -62,7 +64,12 @@ import { Progress } from '@/components/ui/progress';
 import { Stinky } from '@/components/stinky/stinky';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { useUpdateItem, useDeleteItem, useReanalyzeItem, useRotateImage, useRemoveBackground, useRestoreOriginal, useReplaceItemImage, useLogWash, useWashHistory, useItemWearStats, useItemWearHistory, useAddItemImage, useDeleteItemImage, useSetPrimaryImage } from '@/lib/hooks/use-items';
+import { useUpdateItem, useDeleteItem, useReanalyzeItem, useBrushCutout, useResetCutout, useRemoveBackground, useRestoreOriginal, useReplaceItemImage, useLogWash, useWashHistory, useItemWearStats, useItemWearHistory, useAddItemImage, useDeleteItemImage, useSetPrimaryImage } from '@/lib/hooks/use-items';
+import { useRotationQueue } from '@/lib/hooks/use-rotation-queue';
+import { AlphaBrush } from '@/components/shared/alpha-brush';
+import { SubtypeField } from '@/components/bulk-upload/subtype-field';
+import { subtypeAfterTypeChange } from '@/lib/subtypes';
+import { garmentFrameStyle } from '@/lib/garment-framing';
 import { Item, CLOTHING_TYPES } from '@/lib/types';
 import { swatchHex } from '@/lib/colors';
 import { ColorCaptureField } from '@/components/color-capture-field';
@@ -111,6 +118,8 @@ function tagChipClass(active: boolean): string {
 export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogProps) {
   const t = useTranslations('wardrobe.item');
   const tc = useTranslations('common');
+  const tBrush = useTranslations('imageBrush');
+  const tCrop = useTranslations('imageCrop');
   const tagLabel = useTagLabel();
   const locale = useLocale();
   const [isEditing, setIsEditing] = useState(false);
@@ -138,11 +147,22 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   const [showWashHistory, setShowWashHistory] = useState(false);
   const [showWearHistory, setShowWearHistory] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  /** The eraser panel, in place of the photo. */
+  const [brushing, setBrushing] = useState(false);
+  /** Asked before throwing away edits the user has not saved. */
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  /** Briefly true after a successful save, so the button can say so. */
+  const [saved, setSaved] = useState(false);
+  /** Whether the discard prompt was raised by closing the dialog or by cancelling. */
+  const closeAfterDiscard = useRef(false);
+  /** Turns the photo is drawn at while the server catches up. */
+  const rotation = useRotationQueue({ onSaved: () => setImageKey((k) => k + 1) });
 
   const updateItem = useUpdateItem();
   const deleteItem = useDeleteItem();
   const reanalyzeItem = useReanalyzeItem();
-  const rotateImage = useRotateImage();
+  const brushCutout = useBrushCutout();
+  const resetCutout = useResetCutout();
   const removeBackground = useRemoveBackground();
   const restoreOriginal = useRestoreOriginal();
   const replaceImage = useReplaceItemImage();
@@ -179,10 +199,71 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
       setActiveImageIndex(0);
       setCareDraft(null);
       setCareTouched(false);
+      setBrushing(false);
+      setSaved(false);
     }
   }, [item?.id]);
 
   if (!item) return null;
+
+  /**
+   * What the form would send, so "has anything changed" is one comparison rather
+   * than a flag every field has to remember to set.
+   */
+  const storedForm = {
+    name: item.name || '',
+    type: item.type,
+    subtype: item.subtype || '',
+    brand: item.brand || '',
+    primary_color: item.primary_color || '',
+    primary_color_hex: item.primary_color_hex ?? null,
+    notes: item.notes || '',
+    favorite: item.favorite,
+    wash_interval: item.wash_interval ?? undefined,
+    style: asTagList(item.tags?.style ?? item.style),
+    formality: item.tags?.formality ?? item.formality ?? '',
+    season: asTagList(item.tags?.season ?? item.season),
+  };
+  const dirty =
+    careTouched || JSON.stringify({ ...storedForm }) !== JSON.stringify({ ...editForm });
+
+  /** Leave edit mode, asking first if there is anything to lose. */
+  const stopEditing = () => {
+    if (dirty) {
+      setConfirmDiscard(true);
+      return;
+    }
+    setIsEditing(false);
+  };
+
+  /**
+   * What "discard" does, and where it lands.
+   *
+   * Cancelling edit mode drops the draft and stays on the garment; closing the whole
+   * dialog drops the draft and leaves. The confirmation is the same either way, so it
+   * remembers which one asked.
+   */
+  const discardEdits = () => {
+    setEditForm(storedForm);
+    setCareDraft(null);
+    setCareTouched(false);
+    setConfirmDiscard(false);
+    setIsEditing(false);
+    if (closeAfterDiscard.current) {
+      closeAfterDiscard.current = false;
+      onOpenChange(false);
+    }
+  };
+
+  /** Closing with unsaved edits asks rather than quietly throwing them away. */
+  const requestClose = () => {
+    if (isEditing && dirty) {
+      closeAfterDiscard.current = true;
+      setConfirmDiscard(true);
+      return;
+    }
+    onOpenChange(false);
+  };
 
   const handleSave = async () => {
     try {
@@ -208,8 +289,13 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
       });
       setIsEditing(false);
       setCareTouched(false);
+      // "Guardado" for a moment, then gone: a state that never clears stops being
+      // information.
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2500);
     } catch (error) {
       console.error('Failed to update item:', error);
+      toast.error(t('toast.saveFailed'));
     }
   };
 
@@ -261,14 +347,41 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
     }
   };
 
-  const handleRotate = async (direction: 'cw' | 'ccw') => {
+  /**
+   * Straightening, without the wait.
+   *
+   * The photo turns on screen at once and the save queues behind it, so the buttons
+   * never lock up — which is what made straightening several garments in a row
+   * tedious. `onSaved` bumps `imageKey` so the freshly written file is re-fetched
+   * under a new signed URL and the CSS turn can be dropped.
+   */
+  const handleRotate = (direction: 'cw' | 'ccw') => rotation.rotate(item.id, direction);
+
+  const openEraser = () => {
+    setBrushing(true);
+  };
+
+  const handleBrush = async (mask: Blob) => {
     try {
-      await rotateImage.mutateAsync({ id: item.id, direction });
+      await brushCutout.mutateAsync({ id: item.id, mask });
       setImageKey((k) => k + 1);
-      toast.success(t('toast.imageRotated'));
+      setBrushing(false);
+      toast.success(tBrush('saved'));
     } catch (error) {
-      console.error('Failed to rotate image:', error);
-      toast.error(t('toast.imageRotateFailed'));
+      console.error('Failed to save the cut-out edit:', error);
+      toast.error(tBrush('saveFailed'));
+    }
+  };
+
+  const handleResetCutout = async () => {
+    try {
+      await resetCutout.mutateAsync(item.id);
+      setImageKey((k) => k + 1);
+      setBrushing(false);
+      toast.success(tBrush('wasReset'));
+    } catch (error) {
+      console.error('Failed to reset the cut-out:', error);
+      toast.error(tBrush('resetFailed'));
     }
   };
 
@@ -336,7 +449,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* Escape and the backdrop go through the same guard as the close button, so
+          there is no way out of the dialog that silently loses an edit. */}
+      <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}>
         <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 overflow-hidden [&>button]:hidden">
           {/* Header - sticky */}
           <DialogHeader className="flex-shrink-0 space-y-3 px-5 pb-3 pt-4 text-left sm:text-left">
@@ -347,7 +462,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
               <Button
                 variant="secondary"
                 size="icon"
-                onClick={() => onOpenChange(false)}
+                onClick={requestClose}
                 className="shrink-0"
                 title={t('toolbar.close')}
                 aria-label={t('toolbar.close')}
@@ -358,20 +473,64 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
             {/* Editing used to be an unlabelled pencil at the far end of a strip
                 that scrolls off screen on a phone, which is the same as not being
                 there. It is now a named button that never scrolls away, and the
-                rest of the photo tools keep the strip to themselves. */}
-            <Button
-              variant={isEditing ? 'secondary' : 'default'}
-              className="w-full justify-center"
-              onClick={() => setIsEditing(!isEditing)}
-              aria-pressed={isEditing}
-            >
-              {isEditing ? (
-                <X className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-              ) : (
+                rest of the photo tools keep the strip to themselves.
+
+                While editing, this row becomes the save bar. It lives in the header
+                rather than at the foot of the form because the form is long: the
+                bottom button is still there for a mouse, but nobody should have to
+                scroll a phone to save. It says which of the three things is true —
+                guardar / guardando / guardado — and it is the only control here that
+                changes shape, so the layout never jumps. */}
+            {isEditing ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  className="min-w-0 flex-1"
+                  onClick={stopEditing}
+                  disabled={updateItem.isPending}
+                >
+                  <X className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
+                  <span className="min-w-0 truncate">{t('toolbar.cancelEditing')}</span>
+                </Button>
+                <Button
+                  className="min-w-0 flex-1"
+                  onClick={handleSave}
+                  disabled={updateItem.isPending || !dirty}
+                  aria-live="polite"
+                >
+                  {updateItem.isPending ? (
+                    <Loader2
+                      className="h-[18px] w-[18px] shrink-0 animate-spin motion-reduce:animate-none"
+                      aria-hidden
+                    />
+                  ) : saved ? (
+                    <Check className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
+                  ) : null}
+                  <span className="min-w-0 truncate">
+                    {updateItem.isPending
+                      ? t('form.saving')
+                      : saved && !dirty
+                        ? t('form.saved')
+                        : t('form.save')}
+                  </span>
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="default"
+                className="w-full justify-center"
+                onClick={() => setIsEditing(true)}
+                aria-pressed={false}
+              >
                 <Pencil className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-              )}
-              {isEditing ? t('toolbar.cancelEditing') : t('toolbar.editTags')}
-            </Button>
+                {t('toolbar.editTags')}
+              </Button>
+            )}
+            {isEditing && dirty && (
+              <p className="text-[12px] leading-snug text-warning" role="status">
+                {t('form.unsaved')}
+              </p>
+            )}
             <div
               role="toolbar"
               aria-label={t('toolbar.label')}
@@ -418,36 +577,35 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   className={`h-5 w-5 ${isAnalyzing ? 'animate-spin' : ''}`}
                 />
               </Button>
+              {/* Never disabled mid-save: the photo turns straight away and the
+                  saves queue up behind it, so several turns in a row cost no waiting.
+                  A small spinner after the pair says one is still being written. */}
               <Button
                 variant="secondary"
                 size="icon"
                 className="shrink-0"
                 onClick={() => handleRotate('ccw')}
-                disabled={rotateImage.isPending}
                 title={t('toolbar.rotateLeft')}
                 aria-label={t('toolbar.rotateLeft')}
               >
-                {rotateImage.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <RotateCcw className="h-5 w-5" strokeWidth={1.75} />
-                )}
+                <RotateCcw className="h-5 w-5" strokeWidth={1.75} />
               </Button>
               <Button
                 variant="secondary"
                 size="icon"
                 className="shrink-0"
                 onClick={() => handleRotate('cw')}
-                disabled={rotateImage.isPending}
                 title={t('toolbar.rotateRight')}
                 aria-label={t('toolbar.rotateRight')}
               >
-                {rotateImage.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <RotateCw className="h-5 w-5" strokeWidth={1.75} />
-                )}
+                <RotateCw className="h-5 w-5" strokeWidth={1.75} />
               </Button>
+              {rotation.isBusy(item.id) && (
+                <Loader2
+                  className="h-4 w-4 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none"
+                  aria-label={tCrop('saving')}
+                />
+              )}
               {features?.background_removal && (
                 <Button
                   variant="secondary"
@@ -461,10 +619,25 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   {removeBackground.isPending ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <Eraser className="h-5 w-5" strokeWidth={1.75} />
+                    <Scissors className="h-5 w-5" strokeWidth={1.75} />
                   )}
                 </Button>
               )}
+              {/* Whatever the automatic cut-out got wrong, by hand. The same control
+                  as in the add form, and it edits the stored alpha, so the fix shows
+                  on every screen and not only on this one. */}
+              <Button
+                variant={brushing ? 'default' : 'secondary'}
+                size="icon"
+                className="shrink-0"
+                onClick={openEraser}
+                disabled={!item.image_url}
+                aria-pressed={brushing}
+                title={tBrush('open')}
+                aria-label={tBrush('open')}
+              >
+                <Eraser className="h-5 w-5" strokeWidth={1.75} />
+              </Button>
               {item.original_image_path && (
                 <Button
                   variant="secondary"
@@ -518,6 +691,23 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
             <div className="grid gap-6 sm:grid-cols-2 [&>*]:min-w-0">
             {/* Image Gallery */}
             <div className="space-y-2">
+              {/* The eraser takes the photo's place rather than opening a screen of
+                  its own: it *is* the photo, being edited, and the cropper in the add
+                  form works the same way. */}
+              {brushing ? (
+                <div className="rounded-tile bg-panel p-3">
+                  <AlphaBrush
+                    src={imageUrl}
+                    restoreSrc={item.original_image_url}
+                    busy={brushCutout.isPending}
+                    resetting={resetCutout.isPending}
+                    canReset={Boolean(item.has_cutout)}
+                    onApply={({ mask }) => void handleBrush(mask)}
+                    onCancel={() => setBrushing(false)}
+                    onReset={() => void handleResetCutout()}
+                  />
+                </div>
+              ) : (
               <div
                 className={cn(
                   'relative aspect-square overflow-hidden rounded-tile',
@@ -539,10 +729,20 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         alt={item.name || tagLabel('types', item.type)}
                         fill
                         className={cn(
-                          'object-contain p-4',
+                          'object-contain p-4 transition-transform duration-200 motion-reduce:transition-none',
                           // Only a white-backed photo needs multiplying for the
                           // tint to show; a real cut-out is already transparent.
                           !item.has_cutout && 'mix-blend-multiply'
+                        )}
+                        // Two transforms on one element: the turns the user has asked
+                        // for that the stored file may not show yet, and the scale
+                        // that keeps a hat from filling the frame like a coat. Only
+                        // the garment's own photo turns — an extra photo was never
+                        // the one being straightened.
+                        style={garmentFrameStyle(
+                          item.type,
+                          item.has_cutout,
+                          currentImage.id === 'primary' ? rotation.turnsFor(item.id) : 0
                         )}
                         sizes="(max-width: 640px) 100vw, 50vw"
                       />
@@ -592,6 +792,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   </div>
                 )}
               </div>
+              )}
               {/* Thumbnail strip */}
               {(item.additional_images?.length > 0 || isEditing) && (
                 <div className="flex gap-2 overflow-x-auto p-1">
@@ -676,23 +877,26 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
             {/* Details */}
             <div className="space-y-4">
               {isEditing ? (
-                // Edit form
+                // Edit form. Ordered by what people actually change: tipo, subtipo,
+                // color and estilo first, then the rest. Nombre and marca used to be
+                // at the top and are the two fields hardly anyone touches.
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label className="font-bold">{t('form.name')}</Label>
-                    <Input
-                      value={editForm.name}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                      placeholder={t('form.namePlaceholder')}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-bold">{t('form.type')}</Label>
+                    <Label htmlFor="edit-type" className="font-bold">{t('form.type')}</Label>
                     <Select
                       value={editForm.type}
-                      onValueChange={(v) => setEditForm({ ...editForm, type: v })}
+                      onValueChange={(v) =>
+                        setEditForm({
+                          ...editForm,
+                          type: v,
+                          // A subtype belongs to a type: "halter" means nothing on a
+                          // pair of boots, so it is dropped unless the new type also
+                          // has it.
+                          subtype: subtypeAfterTypeChange(v, editForm.subtype) ?? '',
+                        })
+                      }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="edit-type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -704,14 +908,17 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="font-bold">{t('form.brand')}</Label>
-                    <Input
-                      value={editForm.brand}
-                      onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
-                      placeholder={t('form.brandPlaceholder')}
-                    />
-                  </div>
+                  {/* Buttons rather than the free-text box this used to be: the
+                      tagger guesses subtype wrong often enough (a halter top comes
+                      back as "wrap") that fixing it has to be one tap, and a typed
+                      subtype is invisible to everything that reasons about the
+                      vocabulary. "Otro" keeps the escape hatch. */}
+                  <SubtypeField
+                    type={editForm.type}
+                    value={editForm.subtype}
+                    onChange={(subtype) => setEditForm({ ...editForm, subtype: subtype ?? '' })}
+                    idPrefix="edit-subtype"
+                  />
                   <div className="space-y-2">
                     <Label htmlFor="edit-color" className="font-bold">{t('form.primaryColor')}</Label>
                     <ColorCaptureField
@@ -808,6 +1015,27 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                     </div>
                   </fieldset>
 
+                  {/* Below the tags: the fields hardly anyone opens a garment to
+                      change. */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name" className="font-bold">{t('form.name')}</Label>
+                    <Input
+                      id="edit-name"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      placeholder={t('form.namePlaceholder')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-brand" className="font-bold">{t('form.brand')}</Label>
+                    <Input
+                      id="edit-brand"
+                      value={editForm.brand}
+                      onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
+                      placeholder={t('form.brandPlaceholder')}
+                    />
+                  </div>
+
                   <div className="space-y-2">
                     <Label className="font-bold">{t('form.notes')}</Label>
                     <Textarea
@@ -841,23 +1069,30 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                     }}
                     idPrefix="edit-care"
                   />
+                  {/* Kept for a mouse and for anyone who has scrolled here anyway.
+                      The header carries the same thing, so nobody on a phone has to
+                      reach this far. */}
                   <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="secondary"
-                      className="flex-1"
-                      onClick={() => setIsEditing(false)}
-                    >
-                      {t('form.cancel')}
+                    <Button variant="secondary" className="min-w-0 flex-1" onClick={stopEditing}>
+                      <span className="min-w-0 truncate">{t('form.cancel')}</span>
                     </Button>
                     <Button
-                      className="flex-1"
+                      className="min-w-0 flex-1"
                       onClick={handleSave}
-                      disabled={updateItem.isPending}
+                      disabled={updateItem.isPending || !dirty}
                     >
                       {updateItem.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />
+                      ) : saved ? (
+                        <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                       ) : null}
-                      {t('form.save')}
+                      <span className="min-w-0 truncate">
+                        {updateItem.isPending
+                          ? t('form.saving')
+                          : saved && !dirty
+                            ? t('form.saved')
+                            : t('form.save')}
+                      </span>
                     </Button>
                   </div>
                 </div>
@@ -870,7 +1105,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       <Shirt className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                       <span className="font-bold">{tagLabel('types', item.type)}</span>
                       {item.subtype && (
-                        <span className="text-muted-foreground">• {item.subtype}</span>
+                        <span className="text-muted-foreground">
+                          • {tagLabel('subtypes', item.subtype)}
+                        </span>
                       )}
                     </div>
                     {item.brand && (
@@ -1209,6 +1446,32 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : null}
               {tc('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={confirmDiscard}
+        onOpenChange={(next) => {
+          if (!next) {
+            setConfirmDiscard(false);
+            closeAfterDiscard.current = false;
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('discardConfirm.title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('discardConfirm.description')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('discardConfirm.keepEditing')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={discardEdits}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('discardConfirm.discard')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

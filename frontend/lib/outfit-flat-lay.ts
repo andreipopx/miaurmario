@@ -87,6 +87,12 @@ export function flatLayRole(type: string | null | undefined): FlatLayRole {
  * open on the left, the top on it and to the right, the bottom centred below,
  * shoes to one side at the foot. `x` and `width` are fractions of the frame's
  * width; the vertical position is packed, not fixed (see `BAND`).
+ *
+ * This is the flat lay's own answer to "how big is a garment", and it is the same
+ * idea as `ROLE_FRAME_SHARE` in lib/garment-framing.ts, which does it for a single
+ * tile: a hat must not be drawn the size of a coat. Two tables rather than one
+ * because a flat lay also has to decide *where* across the frame each role goes, and
+ * collapsing them would make one of the two lie. If you retune one, look at the other.
  */
 const BASE_SLOTS: Record<FlatLayRole, { x: number; width: number }> = {
   outer_layer: { x: 0.31, width: 0.56 },

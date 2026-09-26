@@ -4,6 +4,7 @@
 
 import { Shirt } from 'lucide-react';
 
+import { garmentFrameStyle } from '@/lib/garment-framing';
 import { garmentTileTint } from '@/lib/garment-tint';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ import { cn } from '@/lib/utils';
  */
 export function GarmentThumb({
   src,
+  type,
   color,
   colorHex,
   hasCutout = false,
@@ -32,6 +34,12 @@ export function GarmentThumb({
   loading,
 }: {
   src?: string | null;
+  /**
+   * What the garment is, so a hat is not drawn the size of a coat. Only used when
+   * `hasCutout`: without transparency we cannot tell where in the photo the garment
+   * is, so scaling it down would just shrink a white rectangle.
+   */
+  type?: string | null;
   color?: string | null;
   /** A measured hex, when we have one; otherwise the named colour's swatch is used. */
   colorHex?: string | null;
@@ -56,7 +64,7 @@ export function GarmentThumb({
             'h-full w-full object-contain p-2 transition-transform duration-200 motion-reduce:transition-none',
             !hasCutout && 'mix-blend-multiply'
           )}
-          style={quarterTurns ? { transform: `rotate(${quarterTurns * 90}deg)` } : undefined}
+          style={garmentFrameStyle(type, hasCutout, quarterTurns)}
         />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-muted-foreground">

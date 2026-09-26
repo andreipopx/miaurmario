@@ -138,6 +138,7 @@ export function QuickReview({
                     >
                       <GarmentThumb
                         src={draft.imageUrl}
+                        type={draft.type}
                         color={draft.primaryColor}
                         colorHex={hex}
                         hasCutout={draft.hasCutout}

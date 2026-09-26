@@ -117,6 +117,7 @@ export function TagStepper({
       <div className="flex items-center gap-3">
         <GarmentThumb
           src={current.imageUrl}
+          type={current.type}
           color={current.primaryColor}
           colorHex={currentHex}
           hasCutout={current.hasCutout}

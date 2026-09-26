@@ -640,7 +640,10 @@
         "style": "Style",
         "styleHint": "(up to two)",
         "formality": "Formality",
-        "season": "Season"
+        "season": "Season",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "unsaved": "You have unsaved changes."
       },
       "info": {
         "wornTimesWithLast": "Worn {count, plural, one {# time} other {# times}}",
@@ -747,11 +750,18 @@
         "originalRestored": "Original image restored",
         "originalRestoreFailed": "Could not restore the original",
         "imageReplaced": "Image replaced",
-        "imageReplaceFailed": "Could not replace the image"
+        "imageReplaceFailed": "Could not replace the image",
+        "saveFailed": "I couldn't save your changes. Try again."
       },
       "wornAgo": "{days, plural, =0 {Worn today} =1 {Worn yesterday} other {Worn # days ago}}",
       "imageN": "Image {n}",
-      "addImage": "Add image"
+      "addImage": "Add image",
+      "discardConfirm": {
+        "title": "Discard your changes?",
+        "description": "You've changed things about this garment and I haven't saved them yet. Carrying on loses them.",
+        "keepEditing": "Keep editing",
+        "discard": "Discard"
+      }
     },
     "bulk": {
       "deleted": "{count, plural, one {Deleted # item} other {Deleted # items}}",

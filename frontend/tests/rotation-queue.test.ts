@@ -19,6 +19,7 @@ import {
   rollBack,
   settle,
   turnsShown,
+  turnsPending,
   type RotationState,
 } from '@/lib/rotation-queue';
 
@@ -165,5 +166,31 @@ describe('settling', () => {
     let state: RotationState = applyTurn(clearTurns(), A, 'cw');
     state = applyTurn(state, A, 'ccw');
     expect(isSettling(state)).toBe(false);
+  });
+});
+
+describe('what the preview adds on top of the stored file', () => {
+  it('drops back to zero once the turn is saved, so nothing is shown turned twice', () => {
+    let state = applyTurn(clearTurns(), A, 'cw');
+    expect(turnsPending(state, A)).toBe(1);
+
+    state = markBusy(state, A, true);
+    state = settle(state, A, 1); // the server now stores the rotated file
+    expect(turnsPending(state, A)).toBe(0);
+    expect(turnsShown(state, A)).toBe(1);
+  });
+
+  it('keeps showing only the turns still in flight when the user taps again', () => {
+    let state = applyTurn(clearTurns(), A, 'cw');
+    state = markBusy(state, A, true);
+    state = applyTurn(state, A, 'cw'); // tapped again while saving
+    state = settle(state, A, 1);
+    expect(turnsPending(state, A)).toBe(1);
+  });
+
+  it('shows nothing extra after a failed save rolls the preview back', () => {
+    let state = applyTurn(clearTurns(), A, 'cw');
+    state = rollBack(state, A);
+    expect(turnsPending(state, A)).toBe(0);
   });
 });

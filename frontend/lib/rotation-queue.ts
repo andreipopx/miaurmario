@@ -40,9 +40,21 @@ export function entryOf(state: RotationState, id: string): RotationEntry {
   return state[id] ?? EMPTY_ENTRY;
 }
 
-/** What the preview should be drawn at. */
+/** Total turns the user has asked for, counted from the photo as it was first drawn. */
 export function turnsShown(state: RotationState, id: string): number {
   return entryOf(state, id).shown;
+}
+
+/**
+ * What the preview must add on top of the stored file.
+ *
+ * Only the turns the server has NOT written yet: once a turn is saved the file
+ * itself comes back rotated, and leaving the transform on would show it turned
+ * twice. That is exactly the bug this replaced.
+ */
+export function turnsPending(state: RotationState, id: string): number {
+  const entry = entryOf(state, id);
+  return normalise(entry.shown - entry.saved);
 }
 
 /** Record a tap: the preview moves now, the server catches up later. */

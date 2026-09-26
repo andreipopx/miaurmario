@@ -14,7 +14,7 @@ import {
   pendingRequest,
   rollBack,
   settle,
-  turnsShown,
+  turnsPending,
   type RotationState,
   type TurnDirection,
 } from '@/lib/rotation-queue';
@@ -148,6 +148,6 @@ export function useRotationQueue({
     settling: isSettling(state),
     /** Whether this one photo has a request in the air. */
     isBusy: (itemId: string) => entryOf(state, itemId).busy,
-    turnsFor: (itemId: string) => turnsShown(state, itemId),
+    turnsFor: (itemId: string) => turnsPending(state, itemId),
   };
 }

@@ -44,6 +44,8 @@ const OFFERED: readonly ImageView[] = ['back', 'detail'] as const;
  * One confirmation, no undo, and it says so. (The post-batch pass is the one place
  * this is reversible, because there it is still a draft until the pass is saved.)
  */
+const PAGE_SIZE = 30;
+
 export function MergeBackDialog({
   source,
   open,
@@ -64,22 +66,27 @@ export function MergeBackDialog({
   const merge = useMergeItemInto();
 
   // Most recent first: the other half of a pair was almost certainly photographed
-  // in the same sitting.
+  // in the same sitting. One page used to be the whole list, which quietly hid
+  // every garment past the first thirty — so the list grows on demand instead.
+  const [pages, setPages] = useState(1);
   const { data, isLoading } = useItems(
     { search: query.trim() || undefined, sort_by: 'created_at', sort_order: 'desc' },
     1,
-    30
+    PAGE_SIZE * pages
   );
 
   const candidates = useMemo(
     () => (data?.items ?? []).filter((item) => item.id !== source?.id),
     [data, source?.id]
   );
+  const total = Math.max(0, (data?.total ?? candidates.length) - (source ? 1 : 0));
+  const hasMore = candidates.length < total;
   const target = candidates.find((item) => item.id === targetId) ?? null;
 
   const close = () => {
     onOpenChange(false);
     setQuery('');
+    setPages(1);
     setTargetId(null);
     setView('back');
   };
@@ -161,7 +168,10 @@ export function MergeBackDialog({
             />
             <Input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPages(1);
+              }}
               placeholder={t('searchPlaceholder')}
               className="pl-9"
               autoComplete="off"
@@ -223,6 +233,16 @@ export function MergeBackDialog({
                 );
               })}
             </ul>
+          )}
+          {hasMore && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-3 w-full"
+              onClick={() => setPages((p) => p + 1)}
+            >
+              {t('loadMore', { count: total - candidates.length })}
+            </Button>
           )}
         </div>
 

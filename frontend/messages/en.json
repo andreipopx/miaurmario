@@ -4335,6 +4335,7 @@
       "pairings": "a pairing built from it"
     },
     "openFromItem": "It's the back of another garment…",
-    "openFromSelection": "It's the back of another garment"
+    "openFromSelection": "It's the back of another garment",
+    "loadMore": "Show {count, plural, one {the other garment} other {the other # garments}}"
   }
 }

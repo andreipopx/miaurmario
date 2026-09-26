@@ -4335,6 +4335,7 @@
       "pairings": "alguna combinación hecha a partir de ella"
     },
     "openFromItem": "Es la espalda de otra prenda…",
-    "openFromSelection": "Es la espalda de otra prenda"
+    "openFromSelection": "Es la espalda de otra prenda",
+    "loadMore": "Ver {count, plural, one {la otra prenda} other {las otras # prendas}}"
   }
 }

@@ -86,6 +86,12 @@ export function useUntaggedItems(enabled: boolean) {
 export interface BatchTagEntry {
   item_id: string;
   type?: string | null;
+  /**
+   * The detail inside the type. An empty string clears it — the tagger's subtype
+   * guess is what the quick pass is most often there to remove. Omitted leaves
+   * whatever is stored alone.
+   */
+  subtype?: string | null;
   primary_color?: string | null;
   /**
    * The shade sampled off the garment, `#rrggbb`. Explicit `null` clears it — the

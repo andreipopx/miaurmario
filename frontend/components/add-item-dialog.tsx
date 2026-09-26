@@ -13,12 +13,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +35,6 @@ import {
 } from '@/components/ui/select';
 import { useCreateItem } from '@/lib/hooks/use-items';
 import { CLOTHING_TYPES } from '@/lib/types';
-import { Stinky } from '@/components/stinky/stinky';
 import { cn } from '@/lib/utils';
 import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
@@ -104,9 +100,6 @@ export function AddItemDialog({
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
-  // Track blob URLs for cleanup on unmount
-  const blobUrlsRef = useRef<Set<string>>(new Set());
-
   // Each opening lands on the tab the caller asked for: the Hoy nudge, Stinky and
   // the floating upload bar all open this dialog straight on "muchas prendas".
   useEffect(() => {
@@ -129,14 +122,6 @@ export function AddItemDialog({
   const noVisionAi = Boolean(
     aiStatus && aiStatus.server_ai_enabled && !aiStatus.capabilities.vision
   );
-
-  // Cleanup blob URLs on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-      blobUrlsRef.current.clear();
-    };
-  }, []);
 
   // A shared photo or link (Web Share Target) lands in the right tab, filled in.
   useEffect(() => {
@@ -221,8 +206,17 @@ export function AddItemDialog({
     try {
       await createItem.mutateAsync(formData);
       handleClose();
+      // The dialog closing is not an answer: the garment lands at the top of the grid
+      // looking like every other one, still being analysed, so nothing on screen said
+      // "that worked". The copy for this had been sitting unused in the message files.
+      toast.success(t('toast.singleSuccess'), {
+        description: t('toast.processingBackground'),
+      });
     } catch (error) {
       console.error('Failed to create item:', error);
+      // Only ApiError and NetworkError get a toast from the provider's mutation
+      // cache; anything else used to stop the spinner and say nothing at all.
+      toast.error(t('toast.singleFailed'));
     }
   };
 

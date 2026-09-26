@@ -99,7 +99,10 @@ const ItemCard = memo(function ItemCard({
         <button
           type="button"
           onClick={onClick}
-          aria-label={name}
+          // The line under the tile — "hace 3 días", "nunca puesta" — is the reason
+          // half the grid gets read at all, and it used to be `aria-hidden` with no
+          // replacement, so a screen reader heard a wardrobe of bare names.
+          aria-label={`${name} — ${usage}`}
           style={tint.style}
           className={cn(
             'no-callout pressable relative block aspect-square w-full overflow-hidden rounded-tile transition-shadow',
@@ -365,11 +368,31 @@ export default function WardrobePage() {
     sort_order: sortOption.order,
   };
 
-  const activeFilterCount = [
+  /**
+   * Everything the user has changed *inside the panel*, which is what the badge on
+   * the panel's own button counts and what its "quitar" button clears.
+   *
+   * There used to be two of these and they disagreed: the badge counted the sort
+   * while the clear button counted the category, so a non-default sort put a "1" on
+   * a panel with no way to clear it, and the clear button — when it did appear —
+   * left the sort it had been counting exactly where it was. The category is not in
+   * here because the chips above say which one is on, out loud.
+   */
+  const panelChangeCount = [
     needsWash !== undefined,
     favoriteFilter !== undefined,
-    typeFilter !== 'all',
+    sortIndex !== 0,
   ].filter(Boolean).length;
+
+  /** Back to the wardrobe as it opens: no filters, newest first, first page. */
+  const clearEverything = () => {
+    setSearch('');
+    setTypeFilter('all');
+    setNeedsWash(undefined);
+    setFavoriteFilter(undefined);
+    setSortIndex(0);
+    setPage(1);
+  };
 
   // Fetch items with automatic polling (faster when items are processing)
   const { data, isLoading, error } = useItems(filters, page, pageSize);
@@ -506,7 +529,6 @@ export default function WardrobePage() {
 
   const typeChips = (itemTypes ?? []).slice().sort((a, b) => b.count - a.count);
   const hasFilters = search || typeFilter !== 'all' || needsWash !== undefined || favoriteFilter !== undefined;
-  const extraFilterCount = [needsWash !== undefined, favoriteFilter !== undefined, sortIndex !== 0].filter(Boolean).length;
 
   return (
     <div className="space-y-4">
@@ -575,7 +597,10 @@ export default function WardrobePage() {
           onClick={() => setShowFilters((v) => !v)}
           aria-expanded={showFilters}
           aria-controls="wardrobe-filters"
-          aria-label={t('moreFilters')}
+          // "Más filtros" was only half of it: the panel also holds the sort order
+          // and how many garments a page shows.
+          aria-label={t('filtersAndSort')}
+          title={t('filtersAndSort')}
           className={cn(
             'absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -583,9 +608,9 @@ export default function WardrobePage() {
           )}
         >
           <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
-          {extraFilterCount > 0 && (
+          {panelChangeCount > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-signature px-1 text-[10px] font-bold text-signature-foreground">
-              {extraFilterCount}
+              {panelChangeCount}
             </span>
           )}
         </button>
@@ -685,20 +710,22 @@ export default function WardrobePage() {
             {t('favoritesFilter')}
           </Chip>
 
-          {activeFilterCount > 0 && (
+          {/* Shown for exactly what the badge counted, and clears exactly that —
+              including the sort, which is why it no longer says only "filtros". */}
+          {panelChangeCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="ml-auto"
+              className="ml-auto min-w-0"
               onClick={() => {
-                setTypeFilter('all');
                 setNeedsWash(undefined);
                 setFavoriteFilter(undefined);
+                setSortIndex(0);
                 setPage(1);
               }}
             >
-              <X className="h-3.5 w-3.5" aria-hidden />
-              {t('clearFilters')}
+              <X className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="min-w-0 truncate">{t('clearFiltersAndSort')}</span>
             </Button>
           )}
         </div>
@@ -728,15 +755,11 @@ export default function WardrobePage() {
             size="sm"
             title={t('noResults')}
             action={
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setSearch('');
-                  setTypeFilter('all');
-                  setNeedsWash(undefined);
-                  setFavoriteFilter(undefined);
-                }}
-              >
+              // Also back to page one. Filtering down to nothing from page three used
+              // to clear the filters and leave you on page three of a list that now
+              // has one page — still empty, still "no hay resultados", and no clue
+              // that the button had worked.
+              <Button variant="secondary" onClick={clearEverything}>
                 {t('clearFiltersButton')}
               </Button>
             }

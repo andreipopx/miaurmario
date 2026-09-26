@@ -558,7 +558,6 @@
     "perPage": "{size} per page",
     "needsWashFilter": "Needs wash",
     "favoritesFilter": "Favorites",
-    "clearFilters": "Clear filters",
     "loadError": "Failed to load items. Please try again.",
     "noResults": "No items found matching your filters.",
     "clearFiltersButton": "Clear Filters",
@@ -624,7 +623,21 @@
         "setAsPrimary": "Set as primary",
         "deleteImage": "Delete image",
         "label": "Item actions",
-        "editTags": "Edit item and tags"
+        "editTags": "Edit item and tags",
+        "favoriteAdd": "Favourite",
+        "favoriteRemove": "Unfavourite",
+        "pairings": "Outfits",
+        "pairingsNotReady": "Wait for the analysis to finish",
+        "more": "More options",
+        "morePhoto": "More things to do with the photo",
+        "photoGroup": "The photo",
+        "photoLocked": "To rotate the photo, erase what doesn't belong or swap it, tap “Edit garment and tags”.",
+        "reanalyzeWhat": "The AI looks at the photo again and rewrites the type, the colour and the tags. Anything you typed by hand is lost.",
+        "mergeBackWhat": "Move this photo onto another garment — as its back or its detail — and delete this entry.",
+        "deleteWhat": "Gone for good, photos and all.",
+        "removeBackgroundWhat": "Cuts the garment out and leaves the photo's background transparent.",
+        "restoreOriginalWhat": "Undoes the cut-out and the touch-ups: back to the photo as you took it.",
+        "replaceImageWhat": "Swap this photo for another one. The current one is lost."
       },
       "analyzing": "Stinky is having a sniff…",
       "form": {
@@ -756,7 +769,9 @@
         "originalRestoreFailed": "Could not restore the original",
         "imageReplaced": "Image replaced",
         "imageReplaceFailed": "Could not replace the image",
-        "saveFailed": "I couldn't save your changes. Try again."
+        "saveFailed": "I couldn't save your changes. Try again.",
+        "reanalyzeQueued": "Queued — the AI will look at this garment again",
+        "reanalyzeFailed": "I couldn't re-analyse it"
       },
       "wornAgo": "{days, plural, =0 {Worn today} =1 {Worn yesterday} other {Worn # days ago}}",
       "imageN": "Image {n}",
@@ -766,6 +781,11 @@
         "description": "You've changed things about this garment and I haven't saved them yet. Carrying on loses them.",
         "keepEditing": "Keep editing",
         "discard": "Discard"
+      },
+      "reanalyzeConfirm": {
+        "title": "Re-analyse with AI?",
+        "description": "The AI will rewrite this garment's type, colour and tags from what it sees in the photo. Anything you corrected by hand will be lost.",
+        "confirm": "Re-analyse"
       }
     },
     "bulk": {
@@ -784,18 +804,11 @@
       "typeLabel": "Type",
       "typePlaceholder": "Let AI detect...",
       "colorLabel": "Primary color",
-      "colorPlaceholder": "Select...",
       "brandLabel": "Brand",
       "brandPlaceholder": "e.g. J.Crew",
       "nameLabel": "Name (optional)",
       "namePlaceholder": "e.g. Blue oxford shirt",
-      "chooseImage": "Choose an image",
-      "chooseImages": "Choose images",
-      "dropHere": "Drop images here",
-      "dragDropHint": "or drag and drop up to {max} images (max {size} MB each)",
       "uploading": "Uploading...",
-      "uploadCta": "Add to wardrobe",
-      "bulkHint": "Select up to {max} images at once. Each will be analyzed with AI in the background.",
       "cancel": "Cancel",
       "toast": {
         "singleSuccess": "Item added to your wardrobe",
@@ -803,7 +816,7 @@
         "processingBackground": "We're processing them in the background."
       },
       "description": "Upload photos of your clothing items",
-      "dragDropSingle": "Drag & drop an image, or tap to select",
+      "dragDropSingle": "Drag an image here",
       "dragDropSingleActive": "Drop the image here...",
       "acceptedFormats": "JPEG, PNG, WebP, or HEIC",
       "typeHint": "(AI will detect if empty)",
@@ -846,7 +859,6 @@
       "takePhoto": "Take a photo"
     },
     "searchCountPlaceholder": "Search your {count, plural, one {# item} other {# items}}",
-    "moreFilters": "More filters",
     "categories": "Categories",
     "washBadge": "Wash",
     "favorite": "Favorite",
@@ -915,7 +927,9 @@
     "share": {
       "failed": "What you shared did not reach us. Add the garment from here.",
       "iosHint": "iPhone and iPad cannot share into web apps: paste the link or pick the photo here instead."
-    }
+    },
+    "filtersAndSort": "Filters and sorting",
+    "clearFiltersAndSort": "Clear filters and sorting"
   },
   "suggest": {
     "title": "The Stylist",
@@ -1925,13 +1939,6 @@
     }
   },
   "bulk": {
-    "confirmDialog": {
-      "cancel": "Cancel",
-      "archive": "Archive",
-      "delete": "Delete",
-      "restore": "Restore",
-      "move": "Move"
-    },
     "all": "All",
     "selectAll": "Select all",
     "noneSelected": "None selected",
@@ -1950,7 +1957,13 @@
     "prevPage": "Previous page",
     "nextPage": "Next page",
     "lastPage": "Last page",
-    "pagination": "Pagination"
+    "pagination": "Pagination",
+    "toolbarLabel": "Selection and pages",
+    "selectPage": "Select this page",
+    "pageSelected": "Whole page",
+    "confirmReanalyzeAll": "Re-analyse all {total} garments?",
+    "confirmReanalyzeCount": "Re-analyse {count, plural, one {# garment} other {# garments}}?",
+    "confirmReanalyzeBody": "The AI will rewrite each garment's type, colour and tags from what it sees in its photo. Anything you corrected by hand is lost."
   },
   "outfitPreview": {
     "rotateLeft": "Rotate left",
@@ -4239,8 +4252,7 @@
       "subtypeHint": "(optional)",
       "subtypeOther": "Other",
       "subtypeOtherLabel": "Other detail",
-      "subtypeOtherPlaceholder": "Type it",
-      "subtypeClear": "No detail"
+      "subtypeOtherPlaceholder": "Type it"
     },
     "statusBar": {
       "open": "Open the item upload",
@@ -4280,9 +4292,24 @@
   },
   "imageBrush": {
     "title": "Erase what doesn't belong",
-    "hint": "Paint over anything that isn't the garment. If the automatic cut-out ate part of it, switch to “bring back” and paint it in again.",
-    "hintEraseOnly": "Paint over anything that isn't the garment.",
-    "tools": "Eraser",
+    "action": "What it does",
+    "tool": "How",
+    "toolBrush": "Brush",
+    "toolLasso": "Lasso",
+    "toolRect": "Box",
+    "toolPan": "Move",
+    "hintBrushErase": "Paint over anything that isn't the garment and it will go.",
+    "hintBrushRestore": "Paint over whatever the cut-out ate and it will come back.",
+    "hintLassoErase": "Draw around a hole — the one inside a halter neckline, say — and everything inside it goes when you let go.",
+    "hintLassoRestore": "Draw around an area and everything inside it comes back when you let go.",
+    "hintRectErase": "Drag a box and everything inside it goes when you let go.",
+    "hintRectRestore": "Drag a box and everything inside it comes back when you let go.",
+    "hintPan": "Drag to move the photo. Double-tap to zoom in or out.",
+    "zoomHint": "To get closer: pinch with two fingers, use the mouse wheel, or the + and − buttons. The brush keeps its size on the garment, not on the screen.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomFit": "See the whole photo",
+    "zoomLevel": "{percent}%",
     "erase": "Erase",
     "restore": "Bring back",
     "eraseArea": "Garment photo: paint to erase",
@@ -4295,7 +4322,7 @@
     "open": "Erase what doesn't belong",
     "edited": "Touched up by hand",
     "noPreview": "I can't show this photo here",
-    "keyboardHint": "With a keyboard: arrows move the brush, Enter paints.",
+    "keyboardHint": "With a keyboard: arrows move the brush, Enter paints, + and − zoom, 0 shows the whole photo.",
     "saved": "Done — the garment looks like this on every screen now",
     "saveFailed": "I couldn't save the touch-up. Try again.",
     "wasReset": "Back to the automatic cut-out",

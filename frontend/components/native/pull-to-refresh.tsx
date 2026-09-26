@@ -127,7 +127,7 @@ export function PullToRefresh({ onRefresh }: { onRefresh?: () => Promise<unknown
   return (
     <div
       aria-hidden={!visible}
-      className="pointer-events-none fixed inset-x-0 z-30 flex justify-center lg:left-64"
+      className="pointer-events-none fixed inset-x-0 z-page flex justify-center lg:left-64"
       style={{ top: 'calc(4rem + env(safe-area-inset-top))' }}
     >
       <div

@@ -27,7 +27,7 @@ export function OfflineIndicator() {
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 lg:bottom-6"
+      className="pointer-events-none fixed bottom-float-1 left-1/2 z-float -translate-x-1/2 lg:bottom-6"
     >
       <div className="flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-primary-foreground shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-pop-amber text-pop-foreground">

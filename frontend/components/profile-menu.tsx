@@ -195,7 +195,7 @@ export function ProfileDropdown() {
           <DropdownMenu.Content
             align="end"
             sideOffset={8}
-            className="z-[80] w-72 rounded-lg bg-popover p-2 text-popover-foreground shadow-[0_20px_60px_rgba(0,0,0,0.18)]"
+            className="z-popover w-72 rounded-lg bg-popover p-2 text-popover-foreground shadow-[0_20px_60px_rgba(0,0,0,0.18)]"
           >
             <DropdownMenu.Item asChild>
               <Link

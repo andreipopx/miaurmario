@@ -83,7 +83,7 @@ export function BulkActionToolbar({
     <div
       role="toolbar"
       aria-label={t('selectAll')}
-      className="glass-dock fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-1 rounded-full p-1.5 sm:gap-2 sm:px-2 lg:bottom-6"
+      className="glass-dock fixed bottom-float-1 left-1/2 z-float flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-1 rounded-full p-1.5 sm:gap-2 sm:px-2 lg:bottom-6"
     >
       {/* Select All Checkbox */}
       <button

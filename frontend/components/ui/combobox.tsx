@@ -153,7 +153,7 @@ export function Combobox({
         role="listbox"
         aria-label={ariaLabel}
         hidden={!showPopup}
-        className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-72 overflow-auto rounded-[20px] border border-border bg-card p-1.5 shadow-lg"
+        className="absolute left-0 right-0 top-[calc(100%+6px)] z-popover max-h-72 overflow-auto rounded-[20px] border border-border bg-card p-1.5 shadow-lg"
       >
         {options.map((option, index) => {
           const isActive = index === active;

@@ -455,7 +455,7 @@ function StinkyChat() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
       {/* Chat header: fixed under the app header (<main> clips overflow, so sticky can't work). */}
-      <div className="fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-30 bg-background/95 lg:left-64 lg:top-20">
+      <div className="fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-page bg-background/95 lg:left-64 lg:top-20">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-0">
           <div className="no-callout flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-signature-soft">
             <Stinky
@@ -554,7 +554,7 @@ function StinkyChat() {
       {!aiUnavailable && (
         <div
           className={cn(
-            'fixed inset-x-0 z-[45] px-4 lg:left-64',
+            'fixed inset-x-0 z-float px-4 lg:left-64',
             !keyboard.open && 'bottom-[calc(100px+env(safe-area-inset-bottom))] lg:bottom-6'
           )}
           style={keyboard.open ? { bottom: keyboard.inset + 8 } : undefined}

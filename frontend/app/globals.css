@@ -68,6 +68,62 @@
     --radius: 24px;            /* cards / panels */
     --radius-tile: 18px;       /* garment tiles */
     --radius-quick: 16px;      /* quick-action tiles */
+
+    /* ---------------------------------------------------------------------
+     * Layers (z-index). One scale for the whole app — see DESIGN-SYSTEM.md.
+     *
+     * Use these through Tailwind (`z-header`, `z-dock`, `z-status`, …); the
+     * classes are mapped in tailwind.config.js. Never invent a `z-[57]`.
+     *
+     *   30  page      fixed strips that must slide UNDER the header
+     *                 (pull-to-refresh spinner, a page's own filter bar)
+     *   40  header    app header, and the fade behind the dock
+     *   50  dock      mobile dock, desktop sidebar
+     *   60  float     pills floating over the dock's area: bulk-action
+     *                 toolbar + pagination, offline indicator, chat composer
+     *   70  status    background-upload status bar — the last thing on the
+     *                 page, so nothing on the page can hide it
+     *   80  drawer    mobile nav drawer and its scrim
+     *   90  modal     dialogs, sheets, tour, quiz (overlay + content)
+     *  100  popover   menus, selects, tooltips — may open inside a modal
+     *  110  lightbox  yet-another-react-lightbox
+     *  120  toast     sonner — always on top, it is how we say "done"
+     *
+     * A raw z-index is still fine for stacking inside one component's own box
+     * — a badge on a tile, a veil over a card, a dropdown under its input, the
+     * flat-lay stacking garments by data. Anything `fixed` or portalled, i.e.
+     * anything that can land on top of another part of the app, takes a name
+     * from the scale above.
+     * ------------------------------------------------------------------- */
+    --z-page: 30;
+    --z-header: 40;
+    --z-dock: 50;
+    --z-float: 60;
+    --z-status: 70;
+    --z-drawer: 80;
+    --z-modal: 90;
+    --z-popover: 100;
+    --z-lightbox: 110;
+    --z-toast: 120;
+
+    /* Lightbox reads its own var; keep it on our scale. */
+    --yarl__portal_zindex: var(--z-lightbox);
+
+    /* ---------------------------------------------------------------------
+     * Floating slots above the mobile dock. The dock is 64px tall with a
+     * 24px inset, so slot 1 clears it; each further slot clears the pill in
+     * the slot below (44px tap target + 12px padding + 8px gap), in rem so
+     * it still clears at 125% font size.
+     *
+     *   slot 1  page furniture: bulk-action toolbar + pagination, offline
+     *   slot 2  background-upload status bar (so it covers neither)
+     *
+     * Anything parked in slot 2 also sets --float-extra so .pb-dock reserves
+     * the room for it and no page ends up with a pill on its last row.
+     * ------------------------------------------------------------------- */
+    --float-slot-height: 4.25rem;
+    --float-slot-1: calc(6.25rem + env(safe-area-inset-bottom));
+    --float-slot-2: calc(var(--float-slot-1) + var(--float-slot-height));
   }
 
   .dark {
@@ -170,9 +226,11 @@
     backdrop-filter: blur(20px) saturate(180%);
   }
 
-  /* Bottom padding so fixed dock never covers content (dock 64 + inset 24 + breathing room). */
+  /* Bottom padding so fixed dock never covers content (dock 64 + inset 24 + breathing room).
+     --float-extra grows it by one slot while something floats in slot 2 (the
+     upload status bar), so that bar can't sit on the last row either. */
   .pb-dock {
-    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom) + var(--float-extra, 0px));
   }
 }
 
@@ -330,6 +388,8 @@ html[data-keyboard='open'] [data-dock] {
 
 /* Sonner toasts — Stinky pop */
 [data-sonner-toaster] {
+  /* Top of the layer scale: sonner's own default is 999999999. */
+  z-index: var(--z-toast);
   --normal-bg: var(--popover);
   --normal-border: var(--border);
   --normal-text: var(--foreground);

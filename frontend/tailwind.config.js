@@ -75,6 +75,27 @@ module.exports = {
         sans: ['var(--font-sans)', 'Figtree', 'system-ui', 'sans-serif'],
         wordmark: ['var(--font-wordmark)', 'Figtree', 'system-ui', 'sans-serif'],
       },
+      // One layer scale for the whole app. The order (and what belongs where)
+      // is documented next to the tokens in app/globals.css and in
+      // DESIGN-SYSTEM.md. Raw z-0..z-20 stay for local stacking inside a
+      // card; anything `fixed` uses a name from here.
+      zIndex: {
+        page: 'var(--z-page)',
+        header: 'var(--z-header)',
+        dock: 'var(--z-dock)',
+        float: 'var(--z-float)',
+        status: 'var(--z-status)',
+        drawer: 'var(--z-drawer)',
+        modal: 'var(--z-modal)',
+        popover: 'var(--z-popover)',
+        lightbox: 'var(--z-lightbox)',
+        toast: 'var(--z-toast)',
+      },
+      // Bottom of the screen: the slots that clear the floating dock.
+      inset: {
+        'float-1': 'var(--float-slot-1)',
+        'float-2': 'var(--float-slot-2)',
+      },
       borderRadius: {
         // Cards / panels 24px, garment tiles 18px, quick actions 16px.
         // Buttons, inputs and chips use rounded-full.

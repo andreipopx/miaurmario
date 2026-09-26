@@ -89,7 +89,7 @@ export function Sidebar() {
   const resolved = resolveNav(pathname);
 
   return (
-    <aside className="hidden border-r border-border bg-background lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
+    <aside className="hidden border-r border-border bg-background lg:fixed lg:inset-y-0 lg:z-dock lg:flex lg:w-64 lg:flex-col">
       <div className="flex grow flex-col gap-y-6 overflow-y-auto px-4 pb-6">
         <div className="flex h-20 shrink-0 items-center px-4">
           <Link href="/dashboard" className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

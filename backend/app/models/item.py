@@ -20,6 +20,19 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.utils.image_views import ImageView, normalize_image_view
+
+__all__ = [
+    "ClothingItem",
+    "ImageView",
+    "ItemHistory",
+    "ItemImage",
+    "ItemStatus",
+    "TaggedBy",
+    "TaggingStatus",
+    "WashHistory",
+    "normalize_image_view",
+]
 
 if TYPE_CHECKING:
     from app.models.outfit import Outfit
@@ -57,6 +70,11 @@ class ClothingItem(Base):
     medium_path: Mapped[str | None] = mapped_column(String(500))
     original_image_path: Mapped[str | None] = mapped_column(String(500))
     image_hash: Mapped[str | None] = mapped_column(String(16), index=True)  # pHash hex string
+    #: Which side of the garment the *primary* photo shows. New items start at
+    #: ``front``; null on everything uploaded before views existed, which reads as
+    #: ``front`` too. The owner can relabel it, and "ponerla de principal" swaps
+    #: this with the label of the photo being promoted.
+    image_view: Mapped[str | None] = mapped_column(String(10), default=ImageView.front.value)
 
     # Classification
     type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -207,7 +225,16 @@ class ItemImage(Base):
     image_path: Mapped[str] = mapped_column(String(500), nullable=False)
     thumbnail_path: Mapped[str | None] = mapped_column(String(500))
     medium_path: Mapped[str | None] = mapped_column(String(500))
+    #: The untouched photo kept aside when *this* photo's background was removed.
+    #: Per photo, like the cut-out itself: undoing the eraser on the back has no
+    #: business touching the garment's main photo.
+    original_image_path: Mapped[str | None] = mapped_column(String(500))
     position: Mapped[int] = mapped_column(Integer, default=0)
+    #: Which side of the garment this photo shows. The API labels the first extra
+    #: photo ``back`` — a second photo of a garment is nearly always its back — and
+    #: everything after it ``detail``; null on photos added before views existed,
+    #: which reads as ``front``.
+    image_view: Mapped[str | None] = mapped_column(String(10))
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

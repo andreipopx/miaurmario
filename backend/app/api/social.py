@@ -20,8 +20,10 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.friendship import Friendship, FriendshipStatus
+from app.models.item import ClothingItem
 from app.models.outfit import Outfit, OutfitItem, OutfitRating, OutfitVisibility, RatingScope
 from app.models.user import User
+from app.schemas.item import GarmentPhoto, ImageViewName
 from app.services import notification_queue
 from app.services.access_control import (
     accepted_friend_ids,
@@ -48,6 +50,7 @@ from app.services.social_service import (
     unseen_reaction_count,
 )
 from app.utils.auth import get_current_user
+from app.utils.image_views import back_photo_paths, normalize_image_view
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.signed_urls import sign_image_url
 
@@ -127,6 +130,10 @@ class SocialOutfitItem(BaseModel):
     primary_color: str | None = None
     image_path: str | None = Field(default=None, exclude=True)
     thumbnail_path: str | None = Field(default=None, exclude=True)
+    #: Which side of the garment the photo shows, and the garment's back photo when
+    #: it has one, so a friend's look can be seen from behind like your own.
+    image_view: ImageViewName = "front"
+    back_image: GarmentPhoto | None = None
     position: int
     pos_x: float | None = None
     pos_y: float | None = None
@@ -250,6 +257,14 @@ def _friendship_out(f: Friendship, me: User) -> FriendshipOut:
     )
 
 
+def _social_back_photo(item: ClothingItem) -> GarmentPhoto | None:
+    """The garment's back photo, or None. Signed like every other image here."""
+    paths = back_photo_paths(item)
+    if paths is None:
+        return None
+    return GarmentPhoto(image_path=paths[0], thumbnail_path=paths[1])
+
+
 def _to_social_outfit(
     outfit: Outfit,
     me: User,
@@ -265,6 +280,8 @@ def _to_social_outfit(
             primary_color=oi.item.primary_color,
             image_path=oi.item.image_path,
             thumbnail_path=oi.item.thumbnail_path,
+            image_view=normalize_image_view(oi.item.image_view),
+            back_image=_social_back_photo(oi.item),
             position=oi.position,
             pos_x=oi.pos_x,
             pos_y=oi.pos_y,
@@ -327,7 +344,9 @@ async def _load_visible_outfit(db: AsyncSession, me: User, outfit_id: UUID) -> O
             select(Outfit)
             .where(Outfit.id == outfit_id)
             .options(
-                selectinload(Outfit.items).selectinload(OutfitItem.item),
+                selectinload(Outfit.items)
+                .selectinload(OutfitItem.item)
+                .selectinload(ClothingItem.additional_images),
                 selectinload(Outfit.user),
             )
         )
@@ -663,7 +682,8 @@ async def recent_activity(
                     selectinload(OutfitRating.user),
                     selectinload(OutfitRating.outfit)
                     .selectinload(Outfit.items)
-                    .selectinload(OutfitItem.item),
+                    .selectinload(OutfitItem.item)
+                    .selectinload(ClothingItem.additional_images),
                 )
                 .order_by(OutfitRating.updated_at.desc())
                 .limit(limit)

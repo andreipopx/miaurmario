@@ -50,6 +50,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { PhotoViewPicker, useImageViewLabel } from '@/components/photo-view-picker';
+import { MergeBackDialog } from '@/components/merge-back-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -62,8 +64,8 @@ import { Progress } from '@/components/ui/progress';
 import { Stinky } from '@/components/stinky/stinky';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { useUpdateItem, useDeleteItem, useReanalyzeItem, useRotateImage, useRemoveBackground, useRestoreOriginal, useReplaceItemImage, useLogWash, useWashHistory, useItemWearStats, useItemWearHistory, useAddItemImage, useDeleteItemImage, useSetPrimaryImage } from '@/lib/hooks/use-items';
-import { Item, CLOTHING_TYPES } from '@/lib/types';
+import { useUpdateItem, useDeleteItem, useReanalyzeItem, useRotateImage, useRemoveBackground, useRestoreOriginal, useReplaceItemImage, useLogWash, useWashHistory, useItemWearStats, useItemWearHistory, useAddItemImage, useDeleteItemImage, useSetItemImageView, useSetPrimaryImage } from '@/lib/hooks/use-items';
+import { CLOTHING_TYPES, type ImageView, type Item } from '@/lib/types';
 import { swatchHex } from '@/lib/colors';
 import { ColorCaptureField } from '@/components/color-capture-field';
 import { GeneratePairingsDialog } from '@/components/generate-pairings-dialog';
@@ -115,6 +117,8 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   const locale = useLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  /** "Es la espalda de otra prenda…" — hand this garment's photo to another one. */
+  const [showMergeBack, setShowMergeBack] = useState(false);
   const [showPairingsDialog, setShowPairingsDialog] = useState(false);
   const [imageKey, setImageKey] = useState(0);
   const [editForm, setEditForm] = useState({
@@ -155,6 +159,12 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   const addImage = useAddItemImage();
   const deleteImage = useDeleteItemImage();
   const setPrimary = useSetPrimaryImage();
+  const setImageView = useSetItemImageView();
+  const viewLabel = useImageViewLabel();
+  const tViews = useTranslations('imageViews');
+  const tMerge = useTranslations('mergeBack');
+  /** Where a swipe across the photo began, so we can tell a swipe from a tap. */
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     if (item) {
@@ -316,6 +326,66 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   // The same plate the grid uses, off the same shade the swatch shows, so opening a
   // garment does not change its colour.
   const detailTint = garmentTileTint(item.primary_color, swatch);
+
+  /**
+   * This garment's photos, in one list: the primary one first, then the extras in
+   * their own order. Each carries its own alpha flag and its own side, because both
+   * are facts about the photo and not about the garment.
+   *
+   * A garment with a single photo is a one-entry list, which is why the arrows, the
+   * dots and the swipe all simply do not appear for it.
+   */
+  const photos: {
+    id: string;
+    url: string;
+    view: ImageView;
+    hasCutout: boolean;
+    imageId: string | null;
+  }[] = [
+    {
+      id: 'primary',
+      url: `${imageUrl}&v=${imageKey}`,
+      view: item.image_view ?? 'front',
+      hasCutout: item.has_cutout === true,
+      imageId: null,
+    },
+    ...(item.additional_images || []).map((img) => ({
+      id: img.id,
+      url: img.image_url,
+      view: img.image_view ?? ('front' as ImageView),
+      hasCutout: img.has_cutout === true,
+      imageId: img.id,
+    })),
+  ];
+  const activeImage = photos[activeImageIndex] ?? photos[0];
+  const savingView = setImageView.isPending || updateItem.isPending;
+
+  /** Walk the photos, wrapping, whether the step came from a key, an arrow or a swipe. */
+  const stepPhoto = (delta: number) =>
+    setActiveImageIndex((i) => (i + delta + photos.length) % photos.length);
+
+  /**
+   * Relabel whichever photo is on screen. The primary photo lives on the item and
+   * the rest in their own rows, so the two go to different endpoints — which is the
+   * only reason this function exists rather than one call.
+   */
+  const saveView = async (next: ImageView) => {
+    if (!activeImage || next === activeImage.view) return;
+    try {
+      if (activeImage.imageId === null) {
+        await updateItem.mutateAsync({ id: item.id, data: { image_view: next } });
+      } else {
+        await setImageView.mutateAsync({
+          itemId: item.id,
+          imageId: activeImage.imageId,
+          view: next,
+        });
+      }
+      toast.success(tViews('saved'));
+    } catch {
+      toast.error(tViews('saveFailed'));
+    }
+  };
 
   // AI-generated tags.
   //
@@ -518,41 +588,73 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
             <div className="grid gap-6 sm:grid-cols-2 [&>*]:min-w-0">
             {/* Image Gallery */}
             <div className="space-y-2">
+              {/* The gallery is a region of its own so the arrow keys can belong to
+                  it: left and right walk this garment's photos, and a swipe does
+                  the same thing on a phone. */}
               <div
+                role="group"
+                aria-label={tc('aria.imageGallery')}
+                tabIndex={photos.length > 1 ? 0 : -1}
+                onKeyDown={(e) => {
+                  if (photos.length < 2) return;
+                  if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    stepPhoto(-1);
+                  } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    stepPhoto(1);
+                  }
+                }}
+                onTouchStart={(e) => {
+                  touchStartX.current = e.touches[0]?.clientX ?? null;
+                }}
+                onTouchEnd={(e) => {
+                  const from = touchStartX.current;
+                  touchStartX.current = null;
+                  if (from === null || photos.length < 2) return;
+                  const dx = (e.changedTouches[0]?.clientX ?? from) - from;
+                  // Comfortably past a tap, comfortably short of a page scroll.
+                  if (Math.abs(dx) > 48) stepPhoto(dx < 0 ? 1 : -1);
+                }}
                 className={cn(
                   'relative aspect-square overflow-hidden rounded-tile',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                   detailTint.className
                 )}
                 style={detailTint.style}
               >
                 {(() => {
-                  const allImages = [
-                    { url: `${imageUrl}&v=${imageKey}`, id: 'primary' },
-                    ...(item.additional_images || []).map((img) => ({ url: img.image_url, id: img.id })),
-                  ];
-                  const currentImage = allImages[activeImageIndex] || allImages[0];
+                  const currentImage = photos[activeImageIndex] || photos[0];
                   return (
                     <>
                       <Image
                         key={`${currentImage.id}-${imageKey}`}
                         src={currentImage.url}
-                        alt={item.name || tagLabel('types', item.type)}
+                        alt={`${item.name || tagLabel('types', item.type)} — ${viewLabel(currentImage.view)}`}
                         fill
                         className={cn(
                           'object-contain p-4',
-                          // Only a white-backed photo needs multiplying for the
-                          // tint to show; a real cut-out is already transparent.
-                          !item.has_cutout && 'mix-blend-multiply'
+                          // Asked of this photo, not of the garment: each photo is
+                          // cut out on its own, so the back may keep its alpha while
+                          // the front still has white baked in. Only a white-backed
+                          // photo needs multiplying for the tint to show.
+                          !currentImage.hasCutout && 'mix-blend-multiply'
                         )}
                         sizes="(max-width: 640px) 100vw, 50vw"
                       />
-                      {allImages.length > 1 && (
+                      {/* Which side you are looking at, said on the photo. A garment
+                          with one photo says it too: that is how "esta prenda solo
+                          tiene el delante" reads without a sentence about it. */}
+                      <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2.5 py-1 text-[12px] font-bold">
+                        {viewLabel(currentImage.view)}
+                      </span>
+                      {photos.length > 1 && (
                         <>
                           <button
                             type="button"
                             aria-label={tc('aria.previousImage')}
                             className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            onClick={() => setActiveImageIndex((i) => (i - 1 + allImages.length) % allImages.length)}
+                            onClick={() => stepPhoto(-1)}
                           >
                             <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
                           </button>
@@ -560,16 +662,16 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                             type="button"
                             aria-label={tc('aria.nextImage')}
                             className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            onClick={() => setActiveImageIndex((i) => (i + 1) % allImages.length)}
+                            onClick={() => stepPhoto(1)}
                           >
                             <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
                           </button>
                           <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2">
-                            {allImages.map((_, idx) => (
+                            {photos.map((photo, idx) => (
                               <button
-                                key={idx}
+                                key={photo.id}
                                 type="button"
-                                aria-label={t('imageN', { n: idx + 1 })}
+                                aria-label={`${t('imageN', { n: idx + 1 })} — ${viewLabel(photo.view)}`}
                                 aria-current={idx === activeImageIndex ? 'true' : undefined}
                                 className="flex h-6 w-6 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 onClick={() => setActiveImageIndex(idx)}
@@ -599,10 +701,13 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                     type="button"
                     className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[14px] bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${activeImageIndex === 0 ? 'ring-[2.5px] ring-inset ring-signature' : ''}`}
                     onClick={() => setActiveImageIndex(0)}
-                    aria-label={tc('primary')}
+                    aria-label={`${tc('primary')} — ${viewLabel(item.image_view)}`}
                     aria-current={activeImageIndex === 0 ? 'true' : undefined}
                   >
                     <Image src={imageUrl} alt={tc('primary')} fill className="object-contain p-1" sizes="48px" />
+                    <span className="absolute inset-x-0 bottom-0 truncate bg-background/85 px-0.5 text-center text-[9px] font-bold leading-[1.3]">
+                      {viewLabel(item.image_view)}
+                    </span>
                   </button>
                   {(item.additional_images || []).map((img, idx) => (
                     <div key={img.id} className="relative flex-shrink-0">
@@ -614,6 +719,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         aria-current={activeImageIndex === idx + 1 ? 'true' : undefined}
                       >
                         <Image src={img.thumbnail_url || img.image_url} alt="" fill className="object-contain p-1" sizes="48px" />
+                        <span className="absolute inset-x-0 bottom-0 truncate bg-background/85 px-0.5 text-center text-[9px] font-bold leading-[1.3]">
+                          {viewLabel(img.image_view)}
+                        </span>
                       </button>
                       {isEditing && (
                         <div className="absolute -right-1.5 -top-1.5 flex gap-0.5">
@@ -671,6 +779,16 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   )}
                 </div>
               )}
+
+              {/* Always offered, not hidden behind "editar": the label is the answer
+                  to a question the photo itself raises, and a garment with one photo
+                  is exactly the one whose owner needs to say "esta es la espalda". */}
+              <PhotoViewPicker
+                idPrefix={`item-photo-${activeImage?.id ?? 'primary'}`}
+                value={activeImage?.view ?? 'front'}
+                disabled={savingView}
+                onChange={(next) => saveView(next)}
+              />
             </div>
 
             {/* Details */}
@@ -1174,7 +1292,18 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
 
             {/* Delete button - separated from other actions for safety */}
             {!isEditing && (
-              <div className="mt-6 border-t border-border pt-4">
+              <div className="mt-6 flex flex-col items-start gap-1 border-t border-border pt-4">
+                {/* Here rather than in the toolbar because this is the garment that
+                    turned out to *be* a photo: people uploaded fronts and backs
+                    separately for years, and this is where they find out. */}
+                <Button
+                  variant="ghost"
+                  className="-ml-2"
+                  onClick={() => setShowMergeBack(true)}
+                >
+                  <Layers className="h-4 w-4" strokeWidth={1.75} />
+                  {tMerge('openFromItem')}
+                </Button>
                 <Button
                   variant="ghost"
                   className="-ml-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -1188,6 +1317,15 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
           </div>
         </DialogContent>
       </Dialog>
+
+      <MergeBackDialog
+        source={item}
+        open={showMergeBack}
+        onOpenChange={setShowMergeBack}
+        // This garment no longer exists once its photo has moved, so the detail
+        // dialog it was opened from has to close with it.
+        onMerged={() => onOpenChange(false)}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

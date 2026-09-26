@@ -49,7 +49,8 @@
     "aria": {
       "closeDialog": "Close dialog",
       "previousImage": "Previous image",
-      "nextImage": "Next image"
+      "nextImage": "Next image",
+      "imageGallery": "Photos of this garment (use ← and →)"
     },
     "greeting": "Hi, {name}!",
     "greetingAnon": "Hi!",
@@ -87,7 +88,11 @@
       "item_not_found": "That garment is not in this wardrobe.",
       "ai_internal_disabled": "Stinky's built-in AI is off on this install. Suggestions are prepared by an external agent.",
       "ai_recommendation_failed": "Stinky couldn't put an outfit together this time. Please try again in a moment.",
-      "ai_pairing_failed": "Stinky couldn't put the pairings together this time. Please try again in a moment."
+      "ai_pairing_failed": "Stinky couldn't put the pairings together this time. Please try again in a moment.",
+      "same_item": "A garment cannot be a photo of itself.",
+      "source_in_use": "That garment has a history of its own (wears, washes or a look), so nothing was changed.",
+      "too_many_images": "That garment already holds as many photos as it can. Delete one and try again.",
+      "no_original": "No untouched original was kept for this photo."
     }
   },
   "login": {
@@ -2632,7 +2637,10 @@
     "label": "The whole look",
     "empty": "A look with no garments yet",
     "more": "+{count} more",
-    "open": "View {name}"
+    "open": "View {name}",
+    "labelBack": "The whole look, from behind",
+    "seeBack": "See the back",
+    "noBackFor": "{name} (no back photo)"
   },
   "outfitCard": {
     "badgeReplacement": "Replacement",
@@ -4104,7 +4112,20 @@
       "nextGarment": "Next one",
       "rotated": "Rotated and saved.",
       "rotateHint": "Sideways? Rotate it — it saves straight away.",
-      "rotateFailed": "Couldn't rotate it. Try again."
+      "rotateFailed": "Couldn't rotate it. Try again.",
+      "isBackOf": "It's the back of…",
+      "isBackOfTitle": "Which garment is this the back of?",
+      "isBackOfHint": "The photo moves onto that garment and this row disappears.",
+      "isBackOfNone": "No other garment in this batch yet.",
+      "backOfBadge": "Back of {name}",
+      "hasBack": "Has a back",
+      "undo": "Undo",
+      "cancel": "Cancel",
+      "suggestBack": "Is this the back of the previous one?",
+      "suggestYes": "Yes",
+      "suggestNo": "No",
+      "mergedCount": "{count, plural, one {# back joined} other {# backs joined}}",
+      "mergeFailed": "Could not join the photo to that garment"
     },
     "stepper": {
       "position": "Item {current} of {total}",
@@ -4158,5 +4179,39 @@
       "portrait": "Portrait",
       "landscape": "Landscape"
     }
+  },
+  "imageViews": {
+    "question": "What does this photo show?",
+    "front": "Front",
+    "back": "Back",
+    "detail": "Detail",
+    "saved": "Label saved",
+    "saveFailed": "Could not save the label"
+  },
+  "mergeBack": {
+    "title": "It's the back of another garment",
+    "subtitle": "Pick the garment this photo belongs to.",
+    "thisPhoto": "This photo ({name})",
+    "searchLabel": "Search for the garment it belongs to",
+    "searchPlaceholder": "Search your wardrobe…",
+    "loading": "Looking for garments…",
+    "noneFound": "No garment matches.",
+    "alreadyHasBack": "already has a back",
+    "explainGeneric": "The garment you pick keeps all of its own data (name, type, colour, history). Only the photo moves, and the empty garment is deleted. This cannot be undone.",
+    "explain": "“{keeper}” keeps all of its own data: name, type, colour and history are unchanged. Only the photo from “{gone}” moves, and “{gone}” is deleted. This cannot be undone.",
+    "confirm": "Move the photo and delete the garment",
+    "cancel": "Cancel",
+    "done": "Photo moved to “{name}”",
+    "nothingToDo": "That garment was already gone; there was nothing to move.",
+    "failed": "Could not move the photo",
+    "inUse": "That garment has {what}, so nothing was changed.",
+    "blocker": {
+      "wear_history": "recorded wears",
+      "wash_history": "recorded washes",
+      "outfits": "a look that uses it",
+      "pairings": "a pairing built from it"
+    },
+    "openFromItem": "It's the back of another garment…",
+    "openFromSelection": "It's the back of another garment"
   }
 }

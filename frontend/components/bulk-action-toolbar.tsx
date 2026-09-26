@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Trash2, RefreshCw, Loader2, CheckSquare, Square, MinusSquare, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { X, Trash2, RefreshCw, Loader2, CheckSquare, Square, MinusSquare, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Layers } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,12 @@ interface BulkActionToolbarProps {
   onClear: () => void;
   onDelete: () => void;
   onReanalyze: () => void;
+  /**
+   * "Es la espalda de otra prenda". Offered only with exactly one garment picked,
+   * because it is a statement about one photo and one other garment — there is no
+   * such thing as doing it to nine at once.
+   */
+  onMergeBack?: (itemId: string) => void;
   isDeleting?: boolean;
   isReanalyzing?: boolean;
   // Pagination props
@@ -48,6 +54,7 @@ export function BulkActionToolbar({
   onClear,
   onDelete,
   onReanalyze,
+  onMergeBack,
   isDeleting = false,
   isReanalyzing = false,
   page,
@@ -55,6 +62,7 @@ export function BulkActionToolbar({
   onPageChange,
 }: BulkActionToolbarProps) {
   const t = useTranslations('bulk');
+  const tMerge = useTranslations('mergeBack');
   // Calculate selected count
   const selectedCount = selection.mode === 'all'
     ? totalItems - selection.excludedIds.size
@@ -72,6 +80,13 @@ export function BulkActionToolbar({
     selection.mode === 'some' && selection.selectedIds.size === pageItems && pageItems > 0 && pageItems < totalItems;
 
   // Pagination
+  // Exactly one garment, picked by hand: "all except three" is not one garment even
+  // when the wardrobe happens to hold four.
+  const loneId =
+    selection.mode === 'some' && selection.selectedIds.size === 1
+      ? Array.from(selection.selectedIds)[0]
+      : null;
+
   const totalPages = Math.ceil(totalItems / pageSize);
   const showPagination = totalPages > 1;
 
@@ -154,6 +169,18 @@ export function BulkActionToolbar({
           >
             <X className="h-4 w-4" strokeWidth={1.75} />
           </Button>
+          {loneId && onMergeBack && (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="shrink-0"
+              onClick={() => onMergeBack(loneId)}
+              aria-label={tMerge('openFromSelection')}
+              title={tMerge('openFromSelection')}
+            >
+              <Layers className="h-4 w-4" strokeWidth={1.75} />
+            </Button>
+          )}
           <Button
             variant="secondary"
             size="icon"

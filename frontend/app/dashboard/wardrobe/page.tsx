@@ -22,6 +22,7 @@ const ItemDetailDialog = dynamic(() => import('@/components/item-detail-dialog')
   ssr: false,
 });
 import { BulkActionToolbar, BulkSelection } from '@/components/bulk-action-toolbar';
+import { MergeBackDialog } from '@/components/merge-back-dialog';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
 import { Chip, popColorAt } from '@/components/chip';
@@ -286,6 +287,8 @@ export default function WardrobePage() {
     excludedIds: new Set(),
   });
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
+  /** The one selected garment being handed to another as its back photo, if any. */
+  const [mergeBackId, setMergeBackId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sortIndex, setSortIndex] = useState(0);
@@ -378,6 +381,7 @@ export default function WardrobePage() {
   const listItem = detailItemId ? items.find((i) => i.id === detailItemId) || null : null;
   const { data: fetchedItem } = useItem(detailItemId && !listItem ? detailItemId : '');
   const detailItem = listItem || fetchedItem || null;
+  const mergeBackItem = mergeBackId ? items.find((i) => i.id === mergeBackId) || null : null;
 
   // Count items being processed or with errors
   const processingCount = items.filter((i) => i.status === 'processing').length;
@@ -782,11 +786,26 @@ export default function WardrobePage() {
         onClear={handleClearSelection}
         onDelete={handleBulkDelete}
         onReanalyze={handleBulkReanalyze}
+        onMergeBack={setMergeBackId}
         isDeleting={bulkDelete.isPending}
         isReanalyzing={bulkReanalyze.isPending}
         page={page}
         pageSize={pageSize}
         onPageChange={handlePageChange}
+      />
+
+      {/* From the grid's selection: pick one garment that turned out to be a photo
+          of another, and hand the photo over. */}
+      <MergeBackDialog
+        source={mergeBackItem}
+        open={mergeBackId !== null}
+        onOpenChange={(open) => {
+          if (!open) setMergeBackId(null);
+        }}
+        onMerged={() => {
+          setMergeBackId(null);
+          setSelection({ mode: 'none', selectedIds: new Set(), excludedIds: new Set() });
+        }}
       />
 
       <AddItemDialog

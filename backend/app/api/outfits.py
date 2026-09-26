@@ -23,7 +23,7 @@ from app.models.outfit import (
     UserFeedback,
 )
 from app.models.user import User
-from app.schemas.item import DEFAULT_WASH_INTERVALS
+from app.schemas.item import DEFAULT_WASH_INTERVALS, GarmentPhoto, ImageViewName
 from app.services.ai_access import AIAccessError, ai_error_detail
 from app.services.ai_service import AIDisabledError
 from app.services.avatar_service import avatar_thumb_url
@@ -53,6 +53,7 @@ from app.services.weather_service import (
 from app.utils.auth import get_current_user
 from app.utils.error_codes import code_of, error_detail
 from app.utils.image_formats import is_cutout_path
+from app.utils.image_views import back_photo_paths, normalize_image_view
 from app.utils.occasions import VALID_OCCASIONS  # re-exported: imported elsewhere
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.signed_urls import sign_image_url
@@ -135,6 +136,13 @@ class OutfitItemResponse(BaseModel):
     colors: list[str] = []
     image_path: str | None = None
     thumbnail_path: str | None = None
+    #: Which side of the garment `image_path` shows. Almost always "front"; a
+    #: garment whose only photo is its back says so here.
+    image_view: ImageViewName = "front"
+    #: This garment seen from behind, or null when nobody photographed its back.
+    #: What "ver por detrás" swaps to, and what decides whether that toggle is
+    #: offered at all: a look where no garment has one never shows it.
+    back_image: GarmentPhoto | None = None
     layer_type: str | None = None
     position: int
     # Free-form canvas layout (null pos_x/pos_y means "no spatial layout, fall back to grid")
@@ -162,6 +170,9 @@ class OutfitItemResponse(BaseModel):
     @property
     def has_cutout(self) -> bool:
         """True when the stored image keeps its transparency.
+
+        Per photo, not per garment: `back_image` carries its own answer, because
+        each photo of a garment has its background removed on its own.
 
         The flat lay is the screen that most needs to know: a real cut-out floats
         on the look's tint with a shadow the shape of the garment, while a photo
@@ -346,6 +357,14 @@ def _rater_name(user: User | None) -> str:
     return user.display_name or user.username or "Unknown"
 
 
+def _back_photo(item: ClothingItem) -> GarmentPhoto | None:
+    """The garment's back photo, ready to render, or None if there is not one."""
+    paths = back_photo_paths(item)
+    if paths is None:
+        return None
+    return GarmentPhoto(image_path=paths[0], thumbnail_path=paths[1])
+
+
 def outfit_to_response(
     outfit: Outfit,
     wore_instead_items_map: dict[str, list[WoreInsteadItem]] | None = None,
@@ -364,6 +383,8 @@ def outfit_to_response(
                 colors=item.colors or [],
                 image_path=item.image_path,
                 thumbnail_path=item.thumbnail_path,
+                image_view=normalize_image_view(item.image_view),
+                back_image=_back_photo(item),
                 layer_type=outfit_item.layer_type,
                 position=outfit_item.position,
                 pos_x=outfit_item.pos_x,
@@ -697,7 +718,9 @@ async def get_outfit(
         select(Outfit)
         .where(and_(Outfit.id == outfit_id, Outfit.user_id == current_user.id))
         .options(
-            selectinload(Outfit.items).selectinload(OutfitItem.item),
+            selectinload(Outfit.items)
+            .selectinload(OutfitItem.item)
+            .selectinload(ClothingItem.additional_images),
             selectinload(Outfit.feedback),
             selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
         )
@@ -727,7 +750,9 @@ async def accept_outfit(
         select(Outfit)
         .where(and_(Outfit.id == outfit_id, Outfit.user_id == current_user.id))
         .options(
-            selectinload(Outfit.items).selectinload(OutfitItem.item),
+            selectinload(Outfit.items)
+            .selectinload(OutfitItem.item)
+            .selectinload(ClothingItem.additional_images),
             selectinload(Outfit.feedback),
             selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
         )
@@ -762,7 +787,9 @@ async def reject_outfit(
         select(Outfit)
         .where(and_(Outfit.id == outfit_id, Outfit.user_id == current_user.id))
         .options(
-            selectinload(Outfit.items).selectinload(OutfitItem.item),
+            selectinload(Outfit.items)
+            .selectinload(OutfitItem.item)
+            .selectinload(ClothingItem.additional_images),
             selectinload(Outfit.feedback),
             selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
         )
@@ -835,7 +862,10 @@ async def submit_feedback(
         select(Outfit)
         .where(and_(Outfit.id == outfit_id, Outfit.user_id == current_user.id))
         .options(
-            selectinload(Outfit.feedback), selectinload(Outfit.items).selectinload(OutfitItem.item)
+            selectinload(Outfit.feedback),
+            selectinload(Outfit.items)
+            .selectinload(OutfitItem.item)
+            .selectinload(ClothingItem.additional_images),
         )
     )
 

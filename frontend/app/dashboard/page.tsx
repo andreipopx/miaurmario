@@ -290,7 +290,9 @@ function OutfitsSection() {
               href={`/dashboard/outfits/${o.id}`}
               className="pressable group w-32 flex-shrink-0 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
             >
-              <OutfitFlatLay items={o.items} max={5} sizes="160px" />
+              {/* A 160 px tile inside a link: no room for a label, and a button
+                  inside an anchor is not valid HTML. The look's own page has it. */}
+              <OutfitFlatLay items={o.items} max={5} sizes="160px" backToggle={false} />
               <p className="mt-1.5 px-1 text-sm font-semibold first-letter:uppercase">
                 {occasionLabel(o.occasion)}
               </p>

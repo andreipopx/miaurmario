@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validat
 from app.utils.care import MAX_FIBERS, care_hints, normalize_fiber, parse_composition
 from app.utils.colors import normalize_hex
 from app.utils.image_formats import is_cutout_path
+from app.utils.image_views import normalize_image_view
 from app.utils.signed_urls import sign_image_url
 
 # Default wash intervals by clothing type (wears between washes)
@@ -35,6 +36,46 @@ DEFAULT_WASH_INTERVALS: dict[str, int] = {
 #: What the owner told us to do with one garment. "rest" («déjala tranquila»)
 #: only stops the nudging — archiving is what takes a garment out of play.
 UsagePreference = Literal["more", "normal", "rest"]
+
+#: Which side of the garment a photo shows. A photo with nothing recorded — every
+#: photo from before this existed — reads as ``front``, which is also what a
+#: garment with a single photo means.
+ImageViewName = Literal["front", "back", "detail"]
+
+
+class GarmentPhoto(BaseModel):
+    """One photo of a garment, as the renderers need it.
+
+    Used for a garment's back photo wherever the caller has no business with the
+    whole gallery: the flat lay only wants somewhere to point an ``<img>`` at.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    image_path: str = Field(exclude=True)
+    thumbnail_path: str | None = Field(default=None, exclude=True)
+
+    @computed_field
+    @property
+    def image_url(self) -> str:
+        return sign_image_url(self.image_path)
+
+    @computed_field
+    @property
+    def thumbnail_url(self) -> str | None:
+        if self.thumbnail_path:
+            return sign_image_url(self.thumbnail_path)
+        return None
+
+    @computed_field
+    @property
+    def has_cutout(self) -> bool:
+        """Per photo, never per garment: a back photo may be cut out and the front not.
+
+        Background removal runs on each photo on its own, so whether the alpha is
+        there is a fact about *this* file and nothing else.
+        """
+        return is_cutout_path(self.thumbnail_path or self.image_path)
 
 
 class ItemTags(BaseModel):
@@ -186,6 +227,8 @@ class ItemUpdate(BaseModel):
     # stays the family everything else reasons on.
     primary_color_hex: str | None = Field(None, max_length=7)
     usage_preference: UsagePreference | None = None
+    #: Relabel the primary photo — "esta es la espalda" from the item detail.
+    image_view: ImageViewName | None = None
 
     @field_validator("primary_color_hex", mode="before")
     @classmethod
@@ -209,6 +252,9 @@ class ItemResponse(ItemBase):
     thumbnail_path: str | None = None
     medium_path: str | None = None
     original_image_path: str | None = None
+    #: Which side the primary photo shows. Never null on the wire: a photo with
+    #: nothing recorded is a front photo as far as every screen is concerned.
+    image_view: ImageViewName = "front"
     tags: dict = Field(default_factory=dict)
     colors: list[str] = Field(default_factory=list)
     primary_color: str | None = None
@@ -242,6 +288,11 @@ class ItemResponse(ItemBase):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("image_view", mode="before")
+    @classmethod
+    def _read_image_view(cls, value: Any) -> Any:
+        return normalize_image_view(value)
+
     @computed_field
     @property
     def image_url(self) -> str:
@@ -259,6 +310,10 @@ class ItemResponse(ItemBase):
     def has_cutout(self) -> bool:
         """True when the stored image keeps its transparency.
 
+        Per photo, not per garment: the back photo of a garment has its own
+        background removed and its own answer here (see `ItemImageResponse` and
+        `back_image`).
+
         The grid draws a flat white-backed photo with `mix-blend-multiply` so the
         tile's tint shows through the white; a real cut-out needs no such trick and
         must not be multiplied, or its own colours would be darkened by the tint.
@@ -270,6 +325,25 @@ class ItemResponse(ItemBase):
     def medium_url(self) -> str | None:
         if self.medium_path:
             return sign_image_url(self.medium_path)
+        return None
+
+    @computed_field
+    @property
+    def back_image(self) -> GarmentPhoto | None:
+        """This garment seen from behind, or null when nobody photographed its back.
+
+        Derived rather than stored, and derived from the photos already in this
+        response, so it costs no query. The primary photo counts: a garment whose
+        one photo is labelled "espalda" *is* a back photo, which is why the label is
+        on the photo and not a separate column.
+        """
+        if self.image_view == "back":
+            return GarmentPhoto(image_path=self.image_path, thumbnail_path=self.thumbnail_path)
+        for image in self.additional_images:
+            if image.image_view == "back":
+                return GarmentPhoto(
+                    image_path=image.image_path, thumbnail_path=image.thumbnail_path
+                )
         return None
 
     @computed_field
@@ -477,7 +551,15 @@ class ItemImageResponse(BaseModel):
     thumbnail_path: str | None = None
     medium_path: str | None = None
     position: int
+    #: Which side of the garment this photo shows. Never null on the wire.
+    image_view: ImageViewName = "front"
+    original_image_path: str | None = Field(default=None, exclude=True)
     created_at: datetime
+
+    @field_validator("image_view", mode="before")
+    @classmethod
+    def _read_image_view(cls, value: Any) -> Any:
+        return normalize_image_view(value)
 
     @computed_field
     @property
@@ -494,7 +576,11 @@ class ItemImageResponse(BaseModel):
     @computed_field
     @property
     def has_cutout(self) -> bool:
-        """True when the stored image keeps its transparency.
+        """True when *this* photo keeps its transparency.
+
+        Per photo, never per garment: background removal runs on each photo on its
+        own, so a garment can have a cut-out back and a white-backed front, and the
+        renderer has to ask the photo it is about to draw.
 
         The grid draws a flat white-backed photo with `mix-blend-multiply` so the
         tile's tint shows through the white; a real cut-out needs no such trick and
@@ -509,9 +595,57 @@ class ItemImageResponse(BaseModel):
             return sign_image_url(self.medium_path)
         return None
 
+    @computed_field
+    @property
+    def can_restore_original(self) -> bool:
+        """Whether this photo's own background removal can still be undone.
+
+        Per photo: the eraser and its undo both act on the one photo the user is
+        looking at, never on the garment.
+        """
+        return bool(self.original_image_path)
+
 
 class ReorderImagesRequest(BaseModel):
     image_ids: list[UUID]
+
+
+class SetImageViewRequest(BaseModel):
+    """Relabel one extra photo: "esta es la espalda", "esto es un detalle"."""
+
+    image_view: ImageViewName
+
+
+class MergeItemRequest(BaseModel):
+    """Fold one garment into another: «esta es la espalda de aquella».
+
+    One photo per garment is how garments arrive, from the bulk pass and from a
+    wardrobe filled long before views existed, so a front and a back shot of the
+    same jumper are two garments. This is the user saying they are one.
+    """
+
+    item_id: UUID = Field(description="The garment that is folded in, and then deleted")
+    image_view: Literal["back", "detail"] = Field(
+        default="back",
+        description="What the folded-in garment's main photo shows. Its other photos keep their own labels.",
+    )
+
+
+class MergeItemResponse(BaseModel):
+    """What the merge did, so the UI can say it rather than guess.
+
+    ``merged`` is false when there was nothing left to fold in — the garment is
+    already gone, because this is a retry of a merge that worked. That is a success
+    and not a 404: a lost response must not turn into an error the user has to think
+    about.
+    """
+
+    item: "ItemResponse"
+    merged: bool
+    moved_images: int = 0
+    moved_wears: int = 0
+    moved_washes: int = 0
+    repointed_outfits: int = 0
 
 
 class RemoveBackgroundRequest(BaseModel):

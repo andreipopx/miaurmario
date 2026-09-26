@@ -346,7 +346,9 @@ class DayMomentService:
             select(Outfit)
             .where(and_(Outfit.user_id == user_id, Outfit.scheduled_for == day))
             .options(
-                selectinload(Outfit.items).selectinload(OutfitItem.item),
+                selectinload(Outfit.items)
+                .selectinload(OutfitItem.item)
+                .selectinload(ClothingItem.additional_images),
                 selectinload(Outfit.feedback),
                 selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
             )
@@ -499,7 +501,9 @@ class DayMomentService:
             select(Outfit)
             .where(Outfit.id == outfit.id)
             .options(
-                selectinload(Outfit.items).selectinload(OutfitItem.item),
+                selectinload(Outfit.items)
+                .selectinload(OutfitItem.item)
+                .selectinload(ClothingItem.additional_images),
                 selectinload(Outfit.feedback),
                 selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
             )

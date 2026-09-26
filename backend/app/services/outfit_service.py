@@ -61,7 +61,9 @@ class OutfitService:
             select(Outfit)
             .where(Outfit.id == outfit_id)
             .options(
-                selectinload(Outfit.items).selectinload(OutfitItem.item),
+                selectinload(Outfit.items)
+                .selectinload(OutfitItem.item)
+                .selectinload(ClothingItem.additional_images),
                 selectinload(Outfit.feedback),
                 selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
             )
@@ -151,7 +153,9 @@ class OutfitService:
             select(Outfit)
             .where(and_(*clauses))
             .options(
-                selectinload(Outfit.items).selectinload(OutfitItem.item),
+                selectinload(Outfit.items)
+                .selectinload(OutfitItem.item)
+                .selectinload(ClothingItem.additional_images),
                 selectinload(Outfit.feedback),
                 selectinload(Outfit.family_ratings).selectinload(FamilyOutfitRating.user),
             )

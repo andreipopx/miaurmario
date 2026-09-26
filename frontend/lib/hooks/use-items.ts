@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, getAccessToken, setAccessToken, ApiError, NetworkError } from '@/lib/api';
-import { CareInfo, Item, ItemListResponse, ItemFilter, ItemUsage, WashHistoryEntry, ItemImage } from '@/lib/types';
+import { CareInfo, ImageView, Item, ItemListResponse, ItemFilter, ItemUsage, WashHistoryEntry, ItemImage } from '@/lib/types';
 import { CareDraft } from '@/lib/hooks/use-intake';
 
 /** PATCH body: an item's fields, with care accepted as a draft too. */
@@ -455,6 +455,135 @@ export function useDeleteItemImage() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['item', variables.itemId] });
+    },
+  });
+}
+
+/**
+ * Relabel one extra photo — "esta es la espalda", "esto es un detalle".
+ *
+ * Saved on the spot rather than batched into an edit: a label is a fact about the
+ * photo, and the item detail offers it outside the edit mode for that reason.
+ */
+export function useSetItemImageView() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      imageId,
+      view,
+    }: {
+      itemId: string;
+      imageId: string;
+      view: ImageView;
+    }) => {
+      if (session?.accessToken) {
+        setAccessToken(session.accessToken as string);
+      }
+      return api.patch<ItemImage>(`/items/${itemId}/images/${imageId}/view`, {
+        image_view: view,
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item', variables.itemId] });
+      // A back photo changes what a look can show, so the looks have to hear it.
+      queryClient.invalidateQueries({ queryKey: ['outfits'] });
+    },
+  });
+}
+
+/** What the merge did, so the UI can say it rather than guess. */
+export interface MergeItemResult {
+  item: Item;
+  /** False when there was nothing left to fold in — a retry of a merge that worked. */
+  merged: boolean;
+  moved_images: number;
+}
+
+/**
+ * «Esta es la espalda de aquella»: move one garment's photos onto another, and let
+ * the now-empty garment go.
+ *
+ * Only the user ever asks for this — nothing guesses that two photos are one
+ * garment, because a front and a back shot of the same jumper look nothing alike.
+ *
+ * The garment kept keeps all of its own data; only the photos move. The API refuses
+ * outright when the garment being folded in has a history of its own, rather than
+ * writing it onto the keeper or throwing it away.
+ */
+export function useMergeItemInto() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      sourceItemId,
+      view = 'back',
+    }: {
+      /** The garment we keep, which the photos move onto. */
+      itemId: string;
+      /** The garment whose photos move, and which is then deleted. */
+      sourceItemId: string;
+      view?: 'back' | 'detail';
+    }) => {
+      if (session?.accessToken) {
+        setAccessToken(session.accessToken as string);
+      }
+      return api.post<MergeItemResult>(`/items/${itemId}/merge-from`, {
+        item_id: sourceItemId,
+        image_view: view,
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item', variables.itemId] });
+      queryClient.invalidateQueries({ queryKey: ['item', variables.sourceItemId] });
+      queryClient.invalidateQueries({ queryKey: ['wardrobe-stats'] });
+      // A garment gaining a back changes what a look can show.
+      queryClient.invalidateQueries({ queryKey: ['outfits'] });
+    },
+  });
+}
+
+/** Put one extra photo's untouched original back — only that photo's. */
+export function useRestoreItemImageOriginal() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({ itemId, imageId }: { itemId: string; imageId: string }) => {
+      if (session?.accessToken) {
+        setAccessToken(session.accessToken as string);
+      }
+      return api.post<ItemImage>(`/items/${itemId}/images/${imageId}/restore-original`);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item', variables.itemId] });
+    },
+  });
+}
+
+/** Cut the garment out of one extra photo — only that photo. */
+export function useRemoveItemImageBackground() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({ itemId, imageId }: { itemId: string; imageId: string }) => {
+      if (session?.accessToken) {
+        setAccessToken(session.accessToken as string);
+      }
+      return api.post<ItemImage>(`/items/${itemId}/images/${imageId}/remove-background`);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item', variables.itemId] });
+      queryClient.invalidateQueries({ queryKey: ['outfits'] });
     },
   });
 }

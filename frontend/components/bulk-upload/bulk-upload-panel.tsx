@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useBatchItems, useBatchTagItems, useUntaggedItems } from '@/lib/hooks/use-wardrobe-stats';
-import { useRotateImage } from '@/lib/hooks/use-items';
+import { useMergeItemInto, useRotateImage } from '@/lib/hooks/use-items';
 import { useBulkUpload } from '@/lib/bulk-upload/bulk-upload-context';
 import { PhotoPicker } from '@/components/bulk-upload/photo-picker';
 import { UploadQueueList } from '@/components/bulk-upload/upload-queue-list';
@@ -18,6 +18,7 @@ import { TagStepper } from '@/components/bulk-upload/tag-stepper';
 import { needsType } from '@/components/bulk-upload/tag-choices';
 import type { TagChanges } from '@/components/bulk-upload/tag-fields';
 import type { QueuedPhoto } from '@/lib/bulk-upload/queue';
+import type { BackPairings } from '@/lib/bulk-upload/back-pairing';
 import { MAX_BATCH_PHOTOS } from '@/lib/bulk-upload/queue';
 
 type Phase = 'pick' | 'queue' | 'review' | 'stepper';
@@ -90,7 +91,17 @@ export function BulkUploadPanel({
    */
   const [turns, setTurns] = useState<Record<string, number>>({});
   const [rotating, setRotating] = useState<string | null>(null);
+  /**
+   * "Esta es la espalda de aquella", as drafts.
+   *
+   * Held here rather than sent as the user taps, which is the whole reason "deshacer"
+   * costs nothing on this screen: the photo has not moved and the garment has not been
+   * deleted until the pass is saved. Everywhere else in the app the same operation is
+   * final, and says so.
+   */
+  const [backPairings, setBackPairings] = useState<BackPairings>({});
   const rotateImage = useRotateImage();
+  const mergeInto = useMergeItemInto();
 
   // Read back from the server, so the grid shows the tags the worker wrote rather
   // than whatever the client happened to see last.
@@ -141,6 +152,26 @@ export function BulkUploadPanel({
     setEdits((current) => ({ ...current, [itemId]: { ...current[itemId], ...changes } }));
   }, []);
 
+  const pairBack = useCallback((sourceId: string, targetId: string) => {
+    setBackPairings((current) => ({ ...current, [sourceId]: { targetId, view: 'back' } }));
+    // Its tags are about to stop existing along with it, so stop carrying them.
+    setEdits((current) => {
+      if (!(sourceId in current)) return current;
+      const next = { ...current };
+      delete next[sourceId];
+      return next;
+    });
+    setOpenTile((open) => (open === sourceId ? null : open));
+  }, []);
+
+  const unpairBack = useCallback((sourceId: string) => {
+    setBackPairings((current) => {
+      const next = { ...current };
+      delete next[sourceId];
+      return next;
+    });
+  }, []);
+
   /**
    * Straightening is the one change on this screen that is not a draft: it is a
    * file on disk, so it is saved on the spot and said so.
@@ -186,8 +217,28 @@ export function BulkUploadPanel({
   );
 
   const save = useCallback(async () => {
+    // The merges go first and one at a time: each one deletes a garment, and a tag
+    // edit for a garment that is about to stop existing has nothing to write to.
+    let merged = 0;
+    for (const [sourceId, pairing] of Object.entries(backPairings)) {
+      try {
+        await mergeInto.mutateAsync({
+          itemId: pairing.targetId,
+          sourceItemId: sourceId,
+          view: pairing.view,
+        });
+        merged += 1;
+      } catch {
+        toast.error(t('review.mergeFailed'));
+      }
+    }
+    if (merged > 0) {
+      toast.success(t('review.mergedCount', { count: merged }));
+      setBackPairings({});
+    }
+
     const entries = Object.entries(edits)
-      .filter(([, edit]) => hasContent(edit))
+      .filter(([itemId, edit]) => hasContent(edit) && !(itemId in backPairings))
       .map(([itemId, edit]) => ({
         item_id: itemId,
         type: edit.type,
@@ -214,18 +265,22 @@ export function BulkUploadPanel({
       // The provider's mutation surfaces its own toast; the sheet stays open so
       // nothing the user typed is thrown away.
     }
-  }, [batchTag, edits, onClose, reset, reviewingBacklog, t]);
+  }, [backPairings, batchTag, edits, mergeInto, onClose, reset, reviewingBacklog, t]);
 
   const startOver = useCallback(() => {
     reset();
     setEdits({});
+    setBackPairings({});
     setOpenTile(null);
     setTurns({});
     setPhase('pick');
   }, [reset]);
 
   const busy = counts.busy > 0;
-  const editCount = Object.values(edits).filter(hasContent).length;
+  const pairCount = Object.keys(backPairings).length;
+  const editCount =
+    Object.entries(edits).filter(([itemId, edit]) => hasContent(edit) && !(itemId in backPairings))
+      .length + pairCount;
   const hasEdits = editCount > 0;
 
   return (
@@ -320,12 +375,17 @@ export function BulkUploadPanel({
                   rotating={rotating}
                   turns={turns}
                   onStartStepper={() => setPhase('stepper')}
+                  backPairings={backPairings}
+                  onPairBack={pairBack}
+                  onUnpairBack={unpairBack}
                 />
               ))}
 
             {phase === 'stepper' && (
               <TagStepper
-                drafts={items.map((item) => draftOf(item, edits[item.id]))}
+                drafts={items
+                  .filter((item) => !(item.id in backPairings))
+                  .map((item) => draftOf(item, edits[item.id]))}
                 onChange={editOne}
                 onRotate={rotate}
                 rotating={rotating}
@@ -363,8 +423,12 @@ export function BulkUploadPanel({
               <Button type="button" variant="ghost" onClick={startOver}>
                 {reviewingBacklog ? t('cta') : t('uploadMore')}
               </Button>
-              <Button type="button" onClick={save} disabled={batchTag.isPending}>
-                {batchTag.isPending ? (
+              <Button
+                type="button"
+                onClick={save}
+                disabled={batchTag.isPending || mergeInto.isPending}
+              >
+                {batchTag.isPending || mergeInto.isPending ? (
                   <Loader2 className="h-[18px] w-[18px] animate-spin motion-reduce:animate-none" aria-hidden />
                 ) : null}
                 {hasEdits ? t('review.save', { count: editCount }) : t('review.done')}

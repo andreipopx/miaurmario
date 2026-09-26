@@ -17,6 +17,7 @@ from sqlalchemy import Date, and_, cast, func, or_, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.item import ClothingItem
 from app.models.outfit import Outfit, OutfitItem, OutfitRating, OutfitVisibility, RatingScope
 from app.models.user import User
 
@@ -89,7 +90,9 @@ def _base_filters(owner_ids: list[UUID], visibilities: tuple[OutfitVisibility, .
 
 def _load_options():
     return (
-        selectinload(Outfit.items).selectinload(OutfitItem.item),
+        selectinload(Outfit.items)
+        .selectinload(OutfitItem.item)
+        .selectinload(ClothingItem.additional_images),
         selectinload(Outfit.user),
     )
 

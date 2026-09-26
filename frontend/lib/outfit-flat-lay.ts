@@ -46,6 +46,19 @@ export interface FlatLayInput {
    * with alpha has a white background baked in.
    */
   has_cutout?: boolean;
+  /**
+   * This garment seen from behind, or null/absent when nobody photographed its
+   * back. What "ver por detrás" swaps to, and what decides whether that toggle is
+   * offered at all.
+   */
+  back_image?: FlatLayPhoto | null;
+}
+
+/** One photo of a garment, with its own alpha flag: cut-outs are per photo. */
+export interface FlatLayPhoto {
+  image_url?: string | null;
+  thumbnail_url?: string | null;
+  has_cutout?: boolean;
 }
 
 export interface FlatLayPiece<T extends FlatLayInput = FlatLayInput> {
@@ -406,4 +419,69 @@ export function flatLayTintFor<T extends FlatLayInput>(
   items: readonly T[] | null | undefined
 ): FlatLayTint | null {
   return flatLayTint(dominantGarmentColor(items));
+}
+
+// -- seeing the look from behind ---------------------------------------------
+
+/** A usable back photo, or null: a `back_image` with no URL in it is not one. */
+export function backPhotoOf(item: FlatLayInput | null | undefined): FlatLayPhoto | null {
+  const back = item?.back_image;
+  if (!back) return null;
+  return back.thumbnail_url || back.image_url ? back : null;
+}
+
+/**
+ * Whether "ver por detrás" is worth offering at all.
+ *
+ * One garment with a back photo is enough — the point of the toggle is to see the
+ * backs you *have*, and the ones you have not are what it fades. A look where
+ * nobody photographed a back never shows the control: an inert toggle is worse
+ * than no toggle, and this is also what keeps it off every look in a wardrobe
+ * that predates back photos.
+ */
+export function lookHasABack<T extends FlatLayInput>(
+  items: readonly T[] | null | undefined
+): boolean {
+  return (items ?? []).some((item) => backPhotoOf(item) !== null);
+}
+
+/** A garment as the flat lay should draw it, once the side is decided. */
+export interface FlatLayFace {
+  thumbnail_url?: string | null;
+  image_url?: string | null;
+  has_cutout?: boolean;
+  /**
+   * True when this garment is showing its front *because* it has no back photo,
+   * while the look is being shown from behind. The renderer fades it: "no tengo su
+   * espalda" is a fact about the wardrobe, and pretending otherwise would have the
+   * viewer reading a front photo as a back.
+   */
+  missingBack: boolean;
+}
+
+/**
+ * Which photo of a garment to draw, and whether to apologise for it.
+ *
+ * Front is the plain case and is left exactly as it was — the primary photo, its
+ * own cut-out flag — so nothing about a single-photo garment or an old item
+ * changes. Behind, a garment with a back photo swaps to it (including that
+ * photo's own alpha, which may differ from the front's), and one without stays on
+ * its front and is marked.
+ */
+export function flatLayFace(item: FlatLayInput, showBack: boolean): FlatLayFace {
+  const front: FlatLayFace = {
+    thumbnail_url: item.thumbnail_url,
+    image_url: item.image_url,
+    has_cutout: item.has_cutout,
+    missingBack: false,
+  };
+  if (!showBack) return front;
+  const back = backPhotoOf(item);
+  if (!back) return { ...front, missingBack: true };
+  return {
+    thumbnail_url: back.thumbnail_url,
+    image_url: back.image_url,
+    has_cutout: back.has_cutout,
+    missingBack: false,
+  };
 }

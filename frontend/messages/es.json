@@ -49,7 +49,8 @@
     "aria": {
       "closeDialog": "Cerrar el diálogo",
       "previousImage": "Imagen anterior",
-      "nextImage": "Imagen siguiente"
+      "nextImage": "Imagen siguiente",
+      "imageGallery": "Fotos de la prenda (usa ← y →)"
     },
     "greeting": "¡Hola, {name}!",
     "greetingAnon": "¡Hola!",
@@ -87,7 +88,11 @@
       "item_not_found": "No encontramos esa prenda en tu armario.",
       "ai_internal_disabled": "La IA de Stinky está apagada en esta instalación. Las sugerencias las prepara un agente externo.",
       "ai_recommendation_failed": "Stinky no ha conseguido montar el look esta vez. Prueba otra vez en un momento.",
-      "ai_pairing_failed": "Stinky no ha conseguido montar las combinaciones esta vez. Prueba otra vez en un momento."
+      "ai_pairing_failed": "Stinky no ha conseguido montar las combinaciones esta vez. Prueba otra vez en un momento.",
+      "same_item": "Una prenda no puede ser una foto de sí misma.",
+      "source_in_use": "Esa prenda tiene historia propia (usos, lavados o algún look), así que no se ha tocado nada.",
+      "too_many_images": "Esa prenda ya tiene todas las fotos que caben. Borra una y vuelve a intentarlo.",
+      "no_original": "De esta foto no guardamos el original sin tocar."
     }
   },
   "login": {
@@ -2632,7 +2637,10 @@
     "label": "El look completo",
     "empty": "Un look sin prendas todavía",
     "more": "+{count} más",
-    "open": "Ver {name}"
+    "open": "Ver {name}",
+    "labelBack": "El look completo, por detrás",
+    "seeBack": "Ver por detrás",
+    "noBackFor": "{name} (no tengo su espalda)"
   },
   "outfitCard": {
     "badgeReplacement": "Sustitución",
@@ -4104,7 +4112,20 @@
       "nextGarment": "La siguiente",
       "rotated": "Girada y guardada.",
       "rotateHint": "¿Sale torcida? Gírala: se guarda al momento.",
-      "rotateFailed": "No pude girarla. Inténtalo otra vez."
+      "rotateFailed": "No pude girarla. Inténtalo otra vez.",
+      "isBackOf": "Es la espalda de…",
+      "isBackOfTitle": "¿De qué prenda es la espalda?",
+      "isBackOfHint": "La foto pasa a esa prenda y esta fila desaparece.",
+      "isBackOfNone": "No hay otra prenda en esta tanda todavía.",
+      "backOfBadge": "Espalda de {name}",
+      "hasBack": "Con espalda",
+      "undo": "Deshacer",
+      "cancel": "Cancelar",
+      "suggestBack": "¿Es la espalda de la anterior?",
+      "suggestYes": "Sí",
+      "suggestNo": "No",
+      "mergedCount": "{count, plural, one {# espalda unida} other {# espaldas unidas}}",
+      "mergeFailed": "No se pudo unir la foto a esa prenda"
     },
     "stepper": {
       "position": "Prenda {current} de {total}",
@@ -4158,5 +4179,39 @@
       "portrait": "Vertical",
       "landscape": "Apaisado"
     }
+  },
+  "imageViews": {
+    "question": "¿Qué se ve en esta foto?",
+    "front": "Delante",
+    "back": "Detrás",
+    "detail": "Detalle",
+    "saved": "Etiqueta guardada",
+    "saveFailed": "No se pudo guardar la etiqueta"
+  },
+  "mergeBack": {
+    "title": "Es la espalda de otra prenda",
+    "subtitle": "Elige a qué prenda pertenece esta foto.",
+    "thisPhoto": "Esta foto ({name})",
+    "searchLabel": "Buscar la prenda a la que pertenece",
+    "searchPlaceholder": "Buscar en tu armario…",
+    "loading": "Buscando prendas…",
+    "noneFound": "Ninguna prenda coincide.",
+    "alreadyHasBack": "ya tiene espalda",
+    "explainGeneric": "La prenda que elijas se queda con todos sus datos (nombre, tipo, color, historial). Solo se mueve la foto, y la prenda vacía se borra. No se puede deshacer.",
+    "explain": "«{keeper}» se queda con todos sus datos: nombre, tipo, color e historial no cambian. Solo se mueve la foto de «{gone}», y «{gone}» se borra. No se puede deshacer.",
+    "confirm": "Mover la foto y borrar la prenda",
+    "cancel": "Cancelar",
+    "done": "Foto movida a «{name}»",
+    "nothingToDo": "Esa prenda ya no estaba; no había nada que mover.",
+    "failed": "No se pudo mover la foto",
+    "inUse": "Esa prenda tiene {what} y no se ha tocado nada.",
+    "blocker": {
+      "wear_history": "usos registrados",
+      "wash_history": "lavados registrados",
+      "outfits": "algún look que la usa",
+      "pairings": "alguna combinación hecha a partir de ella"
+    },
+    "openFromItem": "Es la espalda de otra prenda…",
+    "openFromSelection": "Es la espalda de otra prenda"
   }
 }

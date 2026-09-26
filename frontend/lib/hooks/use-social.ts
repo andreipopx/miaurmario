@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Outfit } from '@/lib/hooks/use-outfits';
+import type { GarmentPhoto, ImageView } from '@/lib/types';
 
 // -- Types (mirror backend/app/api/social.py) -----------------------------------
 
@@ -58,6 +59,9 @@ export interface SocialOutfitItem {
   z_index: number;
   image_url: string | null;
   thumbnail_url: string | null;
+  /** Which side of the garment the photo shows, and its back photo when it has one. */
+  image_view?: ImageView;
+  back_image?: GarmentPhoto | null;
 }
 
 export interface MyReaction {

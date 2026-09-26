@@ -17,7 +17,8 @@ import { StinkyTip } from '@/components/stinky-tip';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { LazyStinky } from '@/components/native/lazy-stinky';
 import { ShareLookPrompt } from '@/components/social/share-look-prompt';
-import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
+import { FlatLayBackToggle, OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
+import { lookHasABack } from '@/lib/outfit-flat-lay';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useDayPlan, useDeleteMoment, useSuggestMoment, useWearMomentLook } from '@/lib/hooks/use-day-moments';
 import {
@@ -58,6 +59,8 @@ function MomentCard({
   const wear = useWearMomentLook();
   const remove = useDeleteMoment();
   const titleId = useId();
+  /** "Ver por detrás" for this moment's look; see the switch below the header. */
+  const [showBack, setShowBack] = useState(false);
 
   const outfit = moment.outfit;
   const title = moment.label ?? (single ? tToday('lookTitle') : t('defaultLabel'));
@@ -149,6 +152,13 @@ function MomentCard({
 
       {outfit ? (
         <>
+          {/* The switch has to sit outside the link — a button inside an anchor is
+              not valid HTML — so this card owns the state and tells the frame. */}
+          {lookHasABack(items) && (
+            <div className="mt-2 flex justify-center">
+              <FlatLayBackToggle checked={showBack} onChange={setShowBack} />
+            </div>
+          )}
           <TransitionLink
             href={`/dashboard/outfits/${outfit.id}`}
             aria-label={t('viewLook', { name: title })}
@@ -157,6 +167,7 @@ function MomentCard({
             {/* The whole card is the link, so the pieces are not links here. */}
             <OutfitFlatLay
               items={items}
+              showBack={showBack}
               className={cn('mx-auto', single ? 'max-w-[280px] sm:max-w-[320px]' : 'max-w-[220px] sm:max-w-[260px]')}
               badgeForItem={(item) => (isTransition && !shared.has(item.id) ? t('newPiece') : null)}
             />

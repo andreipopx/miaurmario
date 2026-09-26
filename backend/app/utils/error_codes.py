@@ -23,6 +23,11 @@ USER_FACING_ERROR_CODES: dict[str, str] = {
     "weather_unavailable": "Weather data is unavailable right now.",
     # Items
     "item_not_found": "That garment is not in this wardrobe.",
+    # Folding one garment's photos into another ("esta es la espalda de aquella")
+    "same_item": "A garment cannot be a photo of itself.",
+    "source_in_use": "That garment has a history of its own, so it was left alone.",
+    "too_many_images": "That garment already has as many photos as it can hold.",
+    "no_original": "There is no untouched original kept for this photo.",
     # Pairings
     "insufficient_items_for_pairing": "Not enough items in the wardrobe to build pairings.",
     "pairing_source_not_found": "The item to pair is not available.",

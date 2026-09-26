@@ -19,7 +19,15 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.config import get_settings
 from app.database import get_db
-from app.models.item import ClothingItem, ItemStatus, TaggedBy, TaggingStatus
+from app.models.item import (
+    ClothingItem,
+    ImageView,
+    ItemImage,
+    ItemStatus,
+    TaggedBy,
+    TaggingStatus,
+    normalize_image_view,
+)
 from app.models.user import User
 from app.schemas.item import (
     ArchiveRequest,
@@ -45,8 +53,11 @@ from app.schemas.item import (
     LinkPreviewResponse,
     LogWashRequest,
     LogWearRequest,
+    MergeItemRequest,
+    MergeItemResponse,
     RemoveBackgroundRequest,
     ReorderImagesRequest,
+    SetImageViewRequest,
     WardrobeStats,
     WashHistoryResponse,
 )
@@ -60,6 +71,7 @@ from app.services.recommendation_service import MIN_CANDIDATES_FOR_OUTFIT
 from app.services.wardrobe_usage import item_usage
 from app.utils.auth import get_current_user
 from app.utils.care import care_hints, dominant_material
+from app.utils.error_codes import error_detail
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.timezone import get_user_today
 from app.workers.settings import get_redis_settings
@@ -156,6 +168,33 @@ def _adopt_paths(item: ClothingItem, paths: dict[str, str]) -> list[str | None]:
     item.medium_path = paths.get("medium_path")
     item.thumbnail_path = paths.get("thumbnail_path")
     return previous
+
+
+#: A garment's own photo plus this many more. Four is what the item detail's
+#: thumbnail strip can lay out at 320 px without scrolling into nothing.
+MAX_EXTRA_IMAGES = 4
+
+
+def _later(a, b):
+    """The later of two dates, either of which may be missing."""
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return max(a, b)
+
+
+def _default_extra_view(existing_extras: int, asked: str | None) -> str:
+    """Which side an extra photo shows, when the client did not say.
+
+    The second photo of a garment is its back — that is what people take a second
+    photo *for* — so the first extra photo is labelled ``back`` and everything
+    after it ``detail``. It is only a default: the item detail lets the owner
+    relabel any photo, and a client that knows better may say so outright.
+    """
+    if asked in {v.value for v in ImageView}:
+        return str(asked)
+    return ImageView.back.value if existing_extras == 0 else ImageView.detail.value
 
 
 #: Columns the quick pass and the detail editor write, mirrored into ``tags`` so
@@ -1664,9 +1703,26 @@ async def add_item_image(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
     image: UploadFile = File(...),
+    image_view: str | None = Form(
+        None,
+        description=(
+            "front | back | detail. Left out, the first extra photo becomes the "
+            "back and the rest details."
+        ),
+    ),
+    remove_background: bool = Form(
+        True,
+        description="Cut the garment out of this photo too, exactly as the first one.",
+    ),
 ) -> ItemImageResponse:
-    from app.models.item import ItemImage
+    """Add another photo of a garment, labelled with the side it shows.
 
+    Deliberately no AI: the vision model only ever sees a garment's primary photo,
+    so a back or a detail shot never costs a tagging call and never overwrites the
+    tags the front photo earned. Background removal is not AI in that sense — it is
+    a local matting pass — and it does run here, because a back photo that keeps its
+    white box would stand out against the cut-outs in a flat lay.
+    """
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
 
@@ -1681,10 +1737,10 @@ async def add_item_image(
 
     count_result = await db.execute(select(func.count()).where(ItemImage.item_id == item_id))
     current_count = count_result.scalar() or 0
-    if current_count >= 4:
+    if current_count >= MAX_EXTRA_IMAGES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Maximum of 4 additional images per item",
+            detail=f"Maximum of {MAX_EXTRA_IMAGES} additional images per item",
         )
 
     # Process image
@@ -1710,17 +1766,76 @@ async def add_item_image(
             detail=str(e),
         ) from None
 
+    # The cut-out is the same local matting pass the first photo goes through, and
+    # it is allowed to fail: a photo with its background still on is worth keeping.
+    if remove_background:
+        try:
+            cutout = await asyncio.to_thread(
+                image_service_inst.remove_background, image_paths["image_path"]
+            )
+            image_service_inst.delete_replaced(
+                [
+                    image_paths["image_path"],
+                    image_paths.get("medium_path"),
+                    image_paths.get("thumbnail_path"),
+                ],
+                [cutout["image_path"], cutout.get("medium_path"), cutout.get("thumbnail_path")],
+            )
+            image_paths = cutout
+        except Exception as exc:  # noqa: BLE001 — never lose the photo over this
+            logger.warning(f"Background removal failed for extra image of {item_id}: {exc}")
+
     item_image = ItemImage(
         item_id=item_id,
         image_path=image_paths["image_path"],
         thumbnail_path=image_paths.get("thumbnail_path"),
         medium_path=image_paths.get("medium_path"),
         position=current_count,
+        image_view=_default_extra_view(current_count, image_view),
+        # Per photo, so undoing the eraser here cannot reach the garment's main photo.
+        original_image_path=image_paths.get("original_backup_path"),
     )
     db.add(item_image)
     await db.flush()
     await db.refresh(item_image)
 
+    return ItemImageResponse.model_validate(item_image)
+
+
+@router.patch("/{item_id}/images/{image_id}/view", response_model=ItemImageResponse)
+async def set_item_image_view(
+    item_id: UUID,
+    image_id: UUID,
+    request: SetImageViewRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> ItemImageResponse:
+    """Relabel one extra photo — the user correcting our guess."""
+    from sqlalchemy import select
+
+    item_service = ItemService(db)
+    item = await item_service.get_by_id(item_id, current_user.id)
+
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item not found",
+        )
+
+    result = await db.execute(
+        select(ItemImage).where(ItemImage.id == image_id, ItemImage.item_id == item_id)
+    )
+    item_image = result.scalar_one_or_none()
+
+    if not item_image:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found",
+        )
+
+    item_image.image_view = request.image_view
+    await db.flush()
+    await db.refresh(item_image)
     return ItemImageResponse.model_validate(item_image)
 
 
@@ -1732,8 +1847,6 @@ async def delete_item_image(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
     from sqlalchemy import select
-
-    from app.models.item import ItemImage
 
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
@@ -1762,6 +1875,8 @@ async def delete_item_image(
             "image_path": item_image.image_path,
             "medium_path": item_image.medium_path,
             "thumbnail_path": item_image.thumbnail_path,
+            # Its own untouched original goes with it: nothing else points at it.
+            "original_backup_path": item_image.original_image_path,
         }
     )
 
@@ -1777,8 +1892,6 @@ async def reorder_item_images(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[ItemImageResponse]:
     from sqlalchemy import select
-
-    from app.models.item import ItemImage
 
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
@@ -1812,7 +1925,69 @@ async def set_primary_image(
 ) -> ItemResponse:
     from sqlalchemy import select
 
-    from app.models.item import ItemImage
+    item_service = ItemService(db)
+    item = await item_service.get_by_id(item_id, current_user.id)
+
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item not found",
+        )
+
+    result = await db.execute(
+        select(ItemImage).where(ItemImage.id == image_id, ItemImage.item_id == item_id)
+    )
+    item_image = result.scalar_one_or_none()
+
+    if not item_image:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found",
+        )
+
+    # Swap paths: current primary -> additional, additional -> primary. The views
+    # travel with the photos, not with the slots: promoting the back photo makes the
+    # garment's main photo a back photo, and the old front is still a front.
+    old_primary = {
+        "image_path": item.image_path,
+        "thumbnail_path": item.thumbnail_path,
+        "medium_path": item.medium_path,
+        "image_view": normalize_image_view(item.image_view),
+    }
+
+    item.image_path = item_image.image_path
+    item.thumbnail_path = item_image.thumbnail_path
+    item.medium_path = item_image.medium_path
+    item.image_view = normalize_image_view(item_image.image_view)
+
+    item_image.image_path = old_primary["image_path"]
+    item_image.thumbnail_path = old_primary["thumbnail_path"]
+    item_image.medium_path = old_primary["medium_path"]
+    item_image.image_view = old_primary["image_view"]
+
+    await db.flush()
+    # The gallery has to be reloaded by name, not left to `refresh()` to expire: the
+    # response serialises `additional_images`, and reading an expired relationship
+    # outside the greenlet is a MissingGreenlet dressed up as a 422.
+    await db.refresh(item, attribute_names=["additional_images", "updated_at"])
+    return ItemResponse.model_validate(item)
+
+
+@router.post("/{item_id}/images/{image_id}/remove-background", response_model=ItemImageResponse)
+async def remove_item_image_background(
+    item_id: UUID,
+    image_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> ItemImageResponse:
+    """Cut the garment out of one *extra* photo.
+
+    Background removal is per photo, not per garment: the back shot of a jumper
+    deserves the same treatment as its front, and until it gets it the flat lay has
+    to draw it as a white-backed tile among cut-outs. Uploading an extra photo
+    already does this; this endpoint is for the ones uploaded before it did.
+    """
+    from sqlalchemy import select
 
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
@@ -1834,21 +2009,239 @@ async def set_primary_image(
             detail="Image not found",
         )
 
-    # Swap paths: current primary -> additional, additional -> primary
-    old_primary = {
-        "image_path": item.image_path,
-        "thumbnail_path": item.thumbnail_path,
-        "medium_path": item.medium_path,
-    }
+    try:
+        image_service = ImageService()
+        paths = await asyncio.to_thread(image_service.remove_background, item_image.image_path)
+        previous = [item_image.image_path, item_image.medium_path, item_image.thumbnail_path]
+        item_image.image_path = paths["image_path"]
+        item_image.medium_path = paths.get("medium_path")
+        item_image.thumbnail_path = paths.get("thumbnail_path")
+        item_image.original_image_path = paths["original_backup_path"]
+        await db.commit()
+        await db.refresh(item_image)
+        image_service.delete_replaced(
+            previous, [item_image.image_path, item_image.medium_path, item_image.thumbnail_path]
+        )
+        return ItemImageResponse.model_validate(item_image)
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Background removal provider not available.",
+        ) from None
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+    except Exception as e:
+        logger.error(f"Failed to remove background from extra image: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove background",
+        ) from None
 
-    item.image_path = item_image.image_path
-    item.thumbnail_path = item_image.thumbnail_path
-    item.medium_path = item_image.medium_path
 
-    item_image.image_path = old_primary["image_path"]
-    item_image.thumbnail_path = old_primary["thumbnail_path"]
-    item_image.medium_path = old_primary["medium_path"]
+@router.post("/{item_id}/images/{image_id}/restore-original", response_model=ItemImageResponse)
+async def restore_item_image_original(
+    item_id: UUID,
+    image_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> ItemImageResponse:
+    """Put one extra photo's untouched original back.
 
+    The twin of the per-photo eraser, and the reason the original is stored per photo:
+    a back photo whose cut-out came out badly is a fact about that photo, and undoing
+    it must leave the garment's own photo — and the garment's data — exactly as they
+    were.
+    """
+    from sqlalchemy import select
+
+    item_service = ItemService(db)
+    item = await item_service.get_by_id(item_id, current_user.id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+
+    result = await db.execute(
+        select(ItemImage).where(ItemImage.id == image_id, ItemImage.item_id == item_id)
+    )
+    item_image = result.scalar_one_or_none()
+    if not item_image:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+
+    if not item_image.original_image_path:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_detail("no_original"),
+        )
+
+    try:
+        image_service = ImageService()
+        paths = await asyncio.to_thread(
+            image_service.restore_original,
+            item_image.image_path,
+            item_image.original_image_path,
+        )
+        previous = [item_image.image_path, item_image.medium_path, item_image.thumbnail_path]
+        item_image.image_path = paths["image_path"]
+        item_image.medium_path = paths.get("medium_path")
+        item_image.thumbnail_path = paths.get("thumbnail_path")
+        item_image.original_image_path = None
+        await db.commit()
+        await db.refresh(item_image)
+        image_service.delete_replaced(
+            previous, [item_image.image_path, item_image.medium_path, item_image.thumbnail_path]
+        )
+        return ItemImageResponse.model_validate(item_image)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+    except Exception as e:
+        logger.error(f"Failed to restore an extra image: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to restore the original photo",
+        ) from None
+
+
+@router.post("/{item_id}/merge-from", response_model=MergeItemResponse)
+async def merge_item_into(
+    item_id: UUID,
+    request: MergeItemRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> MergeItemResponse:
+    """«Esta es la espalda de aquella»: fold one garment's photos into another.
+
+    Nothing guesses at this. A front and a back shot of the same jumper look nothing
+    alike, the pHash duplicate check is not built for it, and no model is asked: the
+    user is the only one who knows, so the user says it. Two screens ask — the quick
+    pass after a batch, and any garment already sitting in the wardrobe, uploaded
+    long before views existed — and both land here.
+
+    **The garment we keep keeps everything.** Its name, type, colour (the family and
+    the shade sampled off it), brand, price, style, formality, season, usage
+    preference, wear and wash history, counters: none of it is touched, and nothing
+    from the folded-in garment overwrites any of it. This is not a two-way merge of
+    two records — it is one garment gaining a photo. The folded-in garment's own tags
+    are discarded, because they describe a photo the user has just told us is the
+    *back* of something already tagged.
+
+    **Only the photos move.** The folded-in garment's main photo becomes a photo of
+    the keeper labelled with ``image_view`` (``back`` unless the user says otherwise),
+    and its extra photos come along keeping the labels they already had. Each photo
+    keeps its own cut-out state and its own untouched original, so a bad cut-out on
+    the back is fixed on the back and cannot reach the keeper's own photo.
+
+    No AI is called. Not to decide the merge, and not to re-tag afterwards: the
+    vision model only ever sees a garment's primary photo, and the photo that just
+    arrived is not one.
+
+    **Nothing is lost instead of being merged.** A garment with a wear history, a
+    wash history, or a place in a look is not a stray photo, and folding it away would
+    either throw that away or write it onto the keeper — so it is refused, by name,
+    and the user is told what is in the way. The one place this is reversible is the
+    quick pass after a batch, where it is still a draft until the pass is saved;
+    anywhere else it is final, and the UI says so before asking.
+
+    A retry is a success, not a 404: if the garment being folded in is already gone,
+    the response says ``merged: false`` and hands back the keeper untouched.
+    """
+    from sqlalchemy import delete as sa_delete
+    from sqlalchemy import func, select
+
+    from app.models.item import ItemHistory, WashHistory
+    from app.models.outfit import Outfit, OutfitItem
+
+    item_service = ItemService(db)
+    target = await item_service.get_by_id(item_id, current_user.id)
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+
+    if request.item_id == item_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_detail("same_item"),
+        )
+
+    source = await item_service.get_by_id(request.item_id, current_user.id)
+    if source is None:
+        # Already folded in (a retry), or never the caller's to begin with. Either way
+        # the honest answer is "nothing to do", and it leaks nothing about whose it was.
+        return MergeItemResponse(item=ItemResponse.model_validate(target), merged=False)
+
+    # A garment with a past is not a stray photo. Refusing keeps both promises at
+    # once: nothing of the keeper's is overwritten, and nothing of the other one's is
+    # quietly binned.
+    async def count(model, column) -> int:
+        return (await db.execute(select(func.count()).where(column == source.id))).scalar() or 0
+
+    blockers: list[str] = []
+    if await count(ItemHistory, ItemHistory.item_id) or (source.wear_count or 0) > 0:
+        blockers.append("wear_history")
+    if await count(WashHistory, WashHistory.item_id):
+        blockers.append("wash_history")
+    if await count(OutfitItem, OutfitItem.item_id):
+        blockers.append("outfits")
+    if await count(Outfit, Outfit.source_item_id):
+        blockers.append("pairings")
+    if blockers:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={**error_detail("source_in_use"), "blockers": blockers},
+        )
+
+    # The keeper's own photo stays the keeper's; everything the other one had becomes
+    # an extra photo of the keeper, which is what the four-photo ceiling counts.
+    existing = (
+        await db.execute(select(func.count()).where(ItemImage.item_id == item_id))
+    ).scalar() or 0
+    incoming = 1 + len(source.additional_images)
+    if existing + incoming > MAX_EXTRA_IMAGES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_detail("too_many_images"),
+        )
+
+    position = existing
+    db.add(
+        ItemImage(
+            item_id=item_id,
+            image_path=source.image_path,
+            thumbnail_path=source.thumbnail_path,
+            medium_path=source.medium_path,
+            # The untouched photo from before this one's background was removed travels
+            # with it, so "deshacer quitar fondo" on the back undoes the back.
+            original_image_path=source.original_image_path,
+            position=position,
+            image_view=request.image_view,
+        )
+    )
+    position += 1
+    for extra in sorted(source.additional_images, key=lambda i: i.position):
+        db.add(
+            ItemImage(
+                item_id=item_id,
+                image_path=extra.image_path,
+                thumbnail_path=extra.thumbnail_path,
+                medium_path=extra.medium_path,
+                original_image_path=extra.original_image_path,
+                position=position,
+                # Kept, not re-guessed: the owner already labelled these.
+                image_view=normalize_image_view(extra.image_view),
+            )
+        )
+        position += 1
     await db.flush()
-    await db.refresh(item)
-    return ItemResponse.model_validate(item)
+    # The rows go before the garment does, so the cascade cannot take the files' new
+    # owner down with it.
+    await db.execute(sa_delete(ItemImage).where(ItemImage.item_id == source.id))
+
+    # Deliberately not `delete_item`: that bins the image files, and those files are
+    # the keeper's now. The originals travelled with the photos, so they stay too.
+    await item_service.delete(source)
+    await db.flush()
+    # By name, so the photos that just arrived are in the gallery we serialise: the
+    # keeper was loaded before they existed.
+    await db.refresh(target, attribute_names=["additional_images"])
+    return MergeItemResponse(
+        item=ItemResponse.model_validate(target),
+        merged=True,
+        moved_images=incoming,
+    )

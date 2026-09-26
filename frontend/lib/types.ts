@@ -62,6 +62,21 @@ export interface CareInfo {
  */
 export type UsagePreference = 'more' | 'normal' | 'rest';
 
+/**
+ * Which side of the garment a photo shows. A photo with nothing recorded — every
+ * photo taken before this existed — reads as `front`, which is also what a garment
+ * with a single photo means.
+ */
+export type ImageView = 'front' | 'back' | 'detail';
+
+/** One photo of a garment, as the renderers need it: a URL and its own alpha flag. */
+export interface GarmentPhoto {
+  image_url: string;
+  thumbnail_url?: string | null;
+  /** Per photo, never per garment: each photo is cut out on its own. */
+  has_cutout?: boolean;
+}
+
 export interface Item {
   id: string;
   user_id: string;
@@ -87,6 +102,14 @@ export interface Item {
    * which would darken a genuine cut-out instead.
    */
   has_cutout?: boolean;
+  /** Which side of the garment the primary photo shows. Never null from the API. */
+  image_view?: ImageView;
+  /**
+   * This garment seen from behind, or null when nobody photographed its back.
+   * Derived by the API from whichever of its photos is labelled `back` (the primary
+   * one counts), so a single-photo garment simply has none.
+   */
+  back_image?: GarmentPhoto | null;
   tags: ItemTags;
   colors: string[];
   primary_color?: string;
@@ -333,10 +356,20 @@ export interface ItemImage {
   thumbnail_path?: string;
   medium_path?: string;
   position: number;
+  /** Which side of the garment this photo shows. Never null from the API. */
+  image_view?: ImageView;
   created_at: string;
   image_url: string;
   thumbnail_url?: string;
   medium_url?: string;
+  /**
+   * True when *this* photo keeps its alpha. Per photo, never per garment:
+   * background removal runs on each photo on its own, so a garment can have a
+   * cut-out back and a white-backed front.
+   */
+  has_cutout?: boolean;
+  /** Whether this photo's own background removal can still be undone. */
+  can_restore_original?: boolean;
 }
 
 // Wash tracking types
@@ -374,6 +407,10 @@ export interface OutfitItem {
   thumbnail_url?: string;
   /** True when the stored photo keeps its alpha: a real cut-out, not white-backed. */
   has_cutout?: boolean;
+  /** Which side of the garment `image_url` shows. Almost always `front`. */
+  image_view?: ImageView;
+  /** This garment seen from behind, or null. What "ver por detrás" swaps to. */
+  back_image?: GarmentPhoto | null;
   layer_type?: string;
   position: number;
 }

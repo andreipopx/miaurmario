@@ -3,7 +3,9 @@ import base64
 import json
 import logging
 import tempfile
+from collections.abc import Callable
 from datetime import UTC, datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
@@ -12,6 +14,7 @@ from zoneinfo import ZoneInfo
 from arq import create_pool
 from arq.jobs import Job
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from PIL import Image
 from pydantic import ValidationError
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -392,6 +395,11 @@ async def create_item(
     crop_y: int | None = Form(None),
     crop_w: int | None = Form(None),
     crop_h: int | None = Form(None),
+    erase_mask: UploadFile | None = File(
+        None,
+        description="'Borra lo que sobra' from the add form: an RGBA PNG in the "
+        "coordinates of the upright, rotated photo. Red erases, green restores.",
+    ),
 ) -> ItemResponse:
     # Validate and process image
     image_service = ImageService()
@@ -428,6 +436,8 @@ async def create_item(
         logger.warning(f"Failed to compute image hash: {e}")
         # Continue without duplicate check if hash computation fails
 
+    brush = await _read_brush_mask(erase_mask) if erase_mask is not None else None
+
     # Process and store image
     try:
         image_paths = await image_service.process_and_store(
@@ -436,6 +446,7 @@ async def create_item(
             original_filename=image.filename or "upload.jpg",
             rotate=rotate,
             crop=crop,
+            erase_mask=brush,
         )
     except ValueError as e:
         raise HTTPException(
@@ -466,6 +477,32 @@ async def create_item(
         item_data=item_data,
         image_paths=image_paths,
     )
+
+    if brush:
+        # Nothing removes the background on this path, so the strokes are applied to
+        # the photo as it stands: the garment becomes a cut-out with exactly the bits
+        # the user wiped away missing. A failure here must not cost them the garment.
+        try:
+            brushed = await asyncio.to_thread(image_service.apply_pending_brush, item.image_path)
+            if brushed:
+                stale = _adopt_paths(item, brushed)
+                item.original_image_path = brushed["original_backup_path"]
+                await db.commit()
+                await db.refresh(
+                    item,
+                    attribute_names=[
+                        "image_path",
+                        "medium_path",
+                        "thumbnail_path",
+                        "original_image_path",
+                        "updated_at",
+                    ],
+                )
+                image_service.delete_replaced(
+                    stale, [item.image_path, item.medium_path, item.thumbnail_path]
+                )
+        except Exception as e:
+            logger.warning(f"Could not apply the erase mask for item {item.id}: {e}")
 
     do_auto_tag = not skip_ai and await _can_auto_tag(db, current_user)
 
@@ -1429,6 +1466,13 @@ async def rotate_item_image(
         regex="^(cw|ccw)$",
         description="Rotation direction: cw (clockwise) or ccw (counter-clockwise)",
     ),
+    quarters: int = Query(
+        1,
+        ge=1,
+        le=3,
+        description="How many 90 degree steps to turn, so several taps on the "
+        "button collapse into one request and one re-encode",
+    ),
 ) -> ItemResponse:
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
@@ -1447,9 +1491,17 @@ async def rotate_item_image(
 
     try:
         image_service = ImageService()
-        image_service.rotate_image(item.image_path, direction)
+        # Off the event loop: a turn rewrites three files, and a batch of garments
+        # being straightened must not queue up behind each other.
+        await asyncio.to_thread(image_service.rotate_image, item.image_path, direction, quarters)
         await db.commit()
-        await db.refresh(item)
+        # Only `updated_at`, never a bare refresh: a bare one expires the
+        # eager-loaded `additional_images` relationship too, and serialising the
+        # response then attempts lazy IO on an async session and fails
+        # (MissingGreenlet) — which is to say straightening a garment that has a
+        # second photo used to 500. A turn changes files on disk and no column, so
+        # there is nothing else to read back.
+        await db.refresh(item, attribute_names=["updated_at"])
         return ItemResponse.model_validate(item)
     except ValueError as e:
         raise HTTPException(
@@ -1526,6 +1578,156 @@ async def remove_item_background(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to remove background",
+        ) from None
+
+
+#: A brush mask is a PNG the size of the picture the user painted on, so it is
+#: bounded by the image it edits rather than by anything the client chooses.
+MAX_BRUSH_MASK_BYTES = 8 * 1024 * 1024
+
+
+async def _read_brush_mask(mask: UploadFile) -> bytes:
+    """The painted mask, validated before it reaches Pillow."""
+    data = await mask.read()
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty brush mask",
+        )
+    if len(data) > MAX_BRUSH_MASK_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Brush mask is too large",
+        )
+    try:
+        with Image.open(BytesIO(data)) as probe:
+            probe.verify()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Brush mask is not a readable image",
+        ) from None
+    return data
+
+
+async def _rerender_cutout(
+    db: AsyncSession,
+    item: ClothingItem,
+    render: Callable[[], dict[str, str]],
+) -> ItemResponse:
+    """Swap an item onto freshly written image files, then bin the old ones.
+
+    Shared by the eraser and its reset: both re-render all three sizes under new
+    names (a photo becomes a ``.webp`` cut-out the first time), so both have to
+    move the item across and only then delete what it used to point at.
+    """
+    result = await asyncio.to_thread(render)
+    previous = _adopt_paths(item, result)
+    item.original_image_path = result["original_backup_path"]
+    await db.commit()
+    await db.refresh(
+        item,
+        attribute_names=[
+            "image_path",
+            "medium_path",
+            "thumbnail_path",
+            "original_image_path",
+            "updated_at",
+        ],
+    )
+    image_service = ImageService()
+    image_service.delete_replaced(
+        previous, [item.image_path, item.medium_path, item.thumbnail_path]
+    )
+    return ItemResponse.model_validate(item)
+
+
+@router.post("/{item_id}/cutout-mask", response_model=ItemResponse)
+async def brush_item_cutout(
+    item_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    mask: UploadFile = File(..., description="RGBA PNG: red erases, green restores"),
+    space: str = Form(
+        "cutout",
+        description="Where the strokes were painted: 'cutout' (the visible cut-out) "
+        "or 'original' (the whole stored photo)",
+    ),
+) -> ItemResponse:
+    """Edit the garment's transparency by hand — "borra lo que sobra".
+
+    The model gets interior holes wrong often enough — a halter neckline, a bag
+    handle — that the user needs a way to finish the job, and the fix has to land
+    on the stored alpha so that every screen shows the corrected cut-out
+    afterwards, not just the one the user was looking at.
+    """
+    if space not in ("cutout", "original"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="space must be 'cutout' or 'original'",
+        )
+
+    item_service = ItemService(db)
+    item = await item_service.get_by_id(item_id, current_user.id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+    if not item.image_path:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Item has no image")
+
+    data = await _read_brush_mask(mask)
+    image_service = ImageService()
+    stored_path = item.image_path
+    backup = item.original_image_path
+
+    try:
+        return await _rerender_cutout(
+            db,
+            item,
+            lambda: image_service.brush_cutout(
+                stored_path, data, backup_path=backup, mask_space=space
+            ),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+    except Exception as e:
+        logger.error(f"Failed to edit cut-out for item {item_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to edit the cut-out",
+        ) from None
+
+
+@router.delete("/{item_id}/cutout-mask", response_model=ItemResponse)
+async def reset_item_cutout(
+    item_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> ItemResponse:
+    """Throw away the user's brush strokes and go back to the automatic cut-out."""
+    item_service = ItemService(db)
+    item = await item_service.get_by_id(item_id, current_user.id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+    if not item.image_path:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Item has no image")
+
+    image_service = ImageService()
+    stored_path = item.image_path
+    backup = item.original_image_path
+
+    try:
+        return await _rerender_cutout(
+            db,
+            item,
+            lambda: image_service.reset_cutout(stored_path, backup_path=backup),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+    except Exception as e:
+        logger.error(f"Failed to reset cut-out for item {item_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset the cut-out",
         ) from None
 
 

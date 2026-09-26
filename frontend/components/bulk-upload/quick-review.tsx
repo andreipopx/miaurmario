@@ -254,7 +254,10 @@ export function QuickReview({
                         onEdit(item.id, { primaryColor: color, primaryColorHex: picked })
                       }
                       triggerLabel={t('pickColour')}
-                      triggerClassName="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      // 44 px, like every other target in this flow: at 32 it was
+                      // both hard to hit and sitting on top of the tile's own button,
+                      // stealing the corner of the thing that opens the editor.
+                      triggerClassName="absolute right-1.5 top-1.5 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-background/90 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       trigger={<Pipette className="h-4 w-4" strokeWidth={2} aria-hidden />}
                     />
                   </div>
@@ -317,7 +320,10 @@ export function QuickReview({
                   </div>
                 )}
 
-                {onPairBack && !picking && (
+                {/* Only when there is another garment in the batch to hand the photo
+                    to. It used to show on every tile, so on a batch of one it was two
+                    taps to be told "no hay otra prenda en esta tanda todavía". */}
+                {onPairBack && !picking && targets.length > 0 && (
                   <div className="border-t border-border p-2">
                     <Button
                       type="button"
@@ -325,7 +331,6 @@ export function QuickReview({
                       size="sm"
                       className="h-auto w-full min-w-0 justify-start whitespace-normal py-2"
                       onClick={() => setPickingFor(item.id)}
-                      aria-expanded={false}
                     >
                       <Layers className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                       {/* Wraps rather than truncating: two of these sit side by side in

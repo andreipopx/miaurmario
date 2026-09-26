@@ -19,9 +19,24 @@ function useSetTokenIfAvailable() {
   }
 }
 
-export function useItems(filters: ItemFilter = {}, page = 1, pageSize = 20) {
+/**
+ * A page of the wardrobe.
+ *
+ * `enabled` is for callers that are always mounted but only sometimes on screen — a
+ * dialog, typically. Without it the merge-back dialog, which the wardrobe page
+ * mounts unconditionally, kept a thirty-garment list warm and re-fetched it every
+ * thirty seconds (every five while anything was being analysed) whether or not
+ * anybody had opened it.
+ */
+export function useItems(
+  filters: ItemFilter = {},
+  page = 1,
+  pageSize = 20,
+  options: { enabled?: boolean } = {}
+) {
   const { data: session, status } = useSession();
   useSetTokenIfAvailable();
+  const wanted = options.enabled ?? true;
 
   return useQuery({
     queryKey: ['items', filters, page, pageSize],
@@ -42,7 +57,7 @@ export function useItems(filters: ItemFilter = {}, page = 1, pageSize = 20) {
 
       return api.get<ItemListResponse>('/items', { params });
     },
-    enabled: status !== 'loading',
+    enabled: wanted && status !== 'loading',
     // Poll more frequently when items are processing (every 5 seconds), otherwise every 30 seconds
     refetchInterval: (query) => {
       const data = query.state.data as ItemListResponse | undefined;

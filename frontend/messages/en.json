@@ -856,7 +856,8 @@
         }
       },
       "choosePhoto": "Choose a photo",
-      "takePhoto": "Take a photo"
+      "takePhoto": "Take a photo",
+      "photoNeeded": "The garment's photo is missing."
     },
     "searchCountPlaceholder": "Search your {count, plural, one {# item} other {# items}}",
     "categories": "Categories",
@@ -4229,7 +4230,8 @@
       "suggestYes": "Yes",
       "suggestNo": "No",
       "mergedCount": "{count, plural, one {# back joined} other {# backs joined}}",
-      "mergeFailed": "Could not join the photo to that garment"
+      "mergeFailed": "Could not join the photo to that garment",
+      "saveFailedCount": "I couldn't save {count, plural, one {# garment} other {# garments}}. What you typed is still here — try again."
     },
     "stepper": {
       "position": "Item {current} of {total}",

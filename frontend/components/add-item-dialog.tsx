@@ -472,7 +472,16 @@ export function AddItemDialog({
                 <CareLabelField value={care} onChange={setCare} idPrefix="add-care" />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-col items-stretch gap-2 pt-2 sm:flex-row sm:justify-end">
+                {/* Said rather than left to be guessed. Every other field on this form
+                    is editable, so somebody who filled in the type, the brand, the
+                    colour and the care label met a dead primary button with nothing
+                    explaining it. */}
+                {!file && (
+                  <p className="text-[12px] leading-snug text-muted-foreground sm:mr-auto sm:self-center">
+                    {t('photoNeeded')}
+                  </p>
+                )}
                 <Button type="button" variant="secondary" onClick={handleCloseRequest}>
                   {t('cancel')}
                 </Button>

@@ -856,7 +856,8 @@
         }
       },
       "choosePhoto": "Elegir foto",
-      "takePhoto": "Hacer foto"
+      "takePhoto": "Hacer foto",
+      "photoNeeded": "Falta la foto de la prenda."
     },
     "searchCountPlaceholder": "Busca en tus {count, plural, one {# prenda} other {# prendas}}",
     "categories": "Categorías",
@@ -4229,7 +4230,8 @@
       "suggestYes": "Sí",
       "suggestNo": "No",
       "mergedCount": "{count, plural, one {# espalda unida} other {# espaldas unidas}}",
-      "mergeFailed": "No se pudo unir la foto a esa prenda"
+      "mergeFailed": "No se pudo unir la foto a esa prenda",
+      "saveFailedCount": "No he podido guardar {count, plural, one {# prenda} other {# prendas}}. Lo que has escrito sigue aquí: vuelve a intentarlo."
     },
     "stepper": {
       "position": "Prenda {current} de {total}",

@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Camera, ImagePlus, Upload } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -72,9 +73,20 @@ export function PhotoPicker({
             <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
             {t('choose')}
           </Button>
-          {/* A separate input so the phone opens the camera instead of the library. */}
-          <Button asChild variant="secondary" className="w-full sm:w-auto">
-            <label className="cursor-pointer">
+          {/* A separate input so the phone opens the camera instead of the library.
+              The disabled state has to be on the label as well as on the input:
+              disabling only the input left a button that looked perfectly alive and
+              did nothing at all once the batch was full, while "Elegir" beside it
+              greyed out properly. */}
+          <Button
+            asChild
+            variant="secondary"
+            className={cn(
+              'w-full sm:w-auto',
+              room === 0 && 'pointer-events-none opacity-50'
+            )}
+          >
+            <label className="cursor-pointer" aria-disabled={room === 0}>
               <Camera className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
               {t('camera')}
               <input

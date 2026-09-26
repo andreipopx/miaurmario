@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Loader2, Search, Shirt } from 'lucide-react';
@@ -68,14 +68,29 @@ export function MergeBackDialog({
   const { data, isLoading } = useItems(
     { search: query.trim() || undefined, sort_by: 'created_at', sort_order: 'desc' },
     1,
-    30
+    30,
+    // Only while it is on screen: this dialog is mounted by the wardrobe page whether
+    // or not anybody has opened it, and it was polling the whole time.
+    { enabled: open }
   );
 
   const candidates = useMemo(
     () => (data?.items ?? []).filter((item) => item.id !== source?.id),
     [data, source?.id]
   );
-  const target = candidates.find((item) => item.id === targetId) ?? null;
+  /**
+   * The garment that was chosen, kept even when it falls out of the search.
+   *
+   * `target` used to be looked up in the *current* results, so picking a garment and
+   * then typing in the search box made the choice evaporate: the confirm button went
+   * quietly disabled and the explanation reverted to the generic one, with nothing
+   * saying the selection had gone.
+   */
+  const chosen = useRef<Item | null>(null);
+  const fromList = candidates.find((item) => item.id === targetId) ?? null;
+  if (fromList) chosen.current = fromList;
+  if (targetId === null) chosen.current = null;
+  const target = fromList ?? (chosen.current?.id === targetId ? chosen.current : null);
 
   const close = () => {
     onOpenChange(false);

@@ -559,6 +559,11 @@ async def bulk_tag_items(
 
         if entry.type:
             item.type = entry.type
+        if entry.subtype is not None:
+            # "" clears the column: the tagger's subtype guess ("wrap" for a halter
+            # top) is what the pass is most often here to remove, and a row that
+            # cannot say "none of these" would leave it on the garment forever.
+            item.subtype = entry.subtype or None
         if entry.primary_color:
             item.primary_color = entry.primary_color
             if not item.colors:

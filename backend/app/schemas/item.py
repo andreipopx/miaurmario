@@ -385,6 +385,11 @@ class BulkTagEntry(BaseModel):
 
     item_id: UUID
     type: str | None = Field(None, max_length=50)
+    # The detail inside the type ("halter", "plisada" → `pleated`). Unlike `type`, an
+    # empty string is meaningful here: the tagger guesses subtype badly and removing
+    # a wrong guess is the commonest edit the quick pass makes, so "" clears it while
+    # omitting the field leaves whatever is stored alone.
+    subtype: str | None = Field(None, max_length=50)
     primary_color: str | None = Field(None, max_length=50)
     # The sampled shade of the garment, "#rrggbb". Display only: `primary_color`
     # stays the family everything else reasons on.

@@ -17,6 +17,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NextIntlClientProvider } from 'next-intl'
 import React from 'react'
 
@@ -89,6 +90,8 @@ const h = vi.hoisted(() => ({
   brush: vi.fn(),
   reset: vi.fn(),
   rotate: vi.fn(),
+  reanalyze: vi.fn(),
+  remove: vi.fn(),
 }))
 
 const idleQuery = { data: undefined, isLoading: false, isError: false }
@@ -97,11 +100,15 @@ const idle = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }
 vi.mock('@/lib/hooks/use-items', () => ({
   useUpdateItem: () => idle,
   useDeleteItem: () => idle,
-  useReanalyzeItem: () => idle,
+  useReanalyzeItem: () => ({
+    mutate: h.reanalyze,
+    mutateAsync: h.reanalyze,
+    isPending: false,
+  }),
   useRotateImage: () => ({ mutate: h.rotate, mutateAsync: h.rotate, isPending: false }),
   useBrushCutout: () => ({ mutate: h.brush, mutateAsync: h.brush, isPending: false }),
   useResetCutout: () => ({ mutate: h.reset, mutateAsync: h.reset, isPending: false }),
-  useRemoveBackground: () => idle,
+  useRemoveBackground: () => ({ mutate: h.remove, mutateAsync: h.remove, isPending: false }),
   useRestoreOriginal: () => idle,
   useReplaceItemImage: () => idle,
   useLogWash: () => idle,
@@ -180,10 +187,18 @@ function jumperWithABack(): Item {
 }
 
 function renderDetail(item: Item) {
+  // Edit mode brings the care-label field along, and that field owns a mutation of
+  // its own, so the dialog needs a real query client even though every hook this
+  // test cares about is stubbed above.
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
   return render(
-    <NextIntlClientProvider locale="es" messages={es}>
-      <ItemDetailDialog item={item} open onOpenChange={vi.fn()} />
-    </NextIntlClientProvider>
+    <QueryClientProvider client={client}>
+      <NextIntlClientProvider locale="es" messages={es}>
+        <ItemDetailDialog item={item} open onOpenChange={vi.fn()} />
+      </NextIntlClientProvider>
+    </QueryClientProvider>
   )
 }
 
@@ -192,8 +207,24 @@ function showTheBack() {
   fireEvent.click(screen.getByRole('button', { name: es.common.aria.nextImage }))
 }
 
+/**
+ * The pencil, which is now the only door to the tools that rewrite a photo.
+ *
+ * Turning a photo and erasing part of it are one stray tap away from something the
+ * owner cannot undo, so they are not offered until he says he is editing. Every test
+ * below goes through here for the same reason he has to.
+ */
+function startEditing() {
+  fireEvent.click(screen.getByRole('button', { name: es.wardrobe.item.toolbar.editTags }))
+}
+
 function openTheEraser() {
+  startEditing()
   fireEvent.click(screen.getByRole('button', { name: es.imageBrush.open }))
+}
+
+function turnRight() {
+  fireEvent.click(screen.getByRole('button', { name: es.wardrobe.item.toolbar.rotateRight }))
 }
 
 describe('the eraser edits the photo on screen', () => {
@@ -260,7 +291,8 @@ describe('straightening the photo on screen', () => {
 
   it('turns the garment’s own photo when that is what is shown', async () => {
     renderDetail(jumperWithABack())
-    fireEvent.click(screen.getByRole('button', { name: es.wardrobe.item.toolbar.rotateRight }))
+    startEditing()
+    turnRight()
 
     await vi.waitFor(() => expect(h.rotate).toHaveBeenCalledTimes(1))
     expect(h.rotate.mock.calls[0][0]).toMatchObject({
@@ -273,8 +305,9 @@ describe('straightening the photo on screen', () => {
 
   it('turns the back photo once the back is what is shown', async () => {
     renderDetail(jumperWithABack())
+    startEditing()
     showTheBack()
-    fireEvent.click(screen.getByRole('button', { name: es.wardrobe.item.toolbar.rotateRight }))
+    turnRight()
 
     await vi.waitFor(() => expect(h.rotate).toHaveBeenCalledTimes(1))
     expect(h.rotate.mock.calls[0][0]).toMatchObject({ id: 'i1', imageId: 'img-back' })
@@ -282,12 +315,13 @@ describe('straightening the photo on screen', () => {
 
   it('keeps each photo’s turns to itself', async () => {
     renderDetail(jumperWithABack())
+    startEditing()
     // One turn on the front, then two on the back: three requests for two photos,
     // and the back's are the back's.
-    fireEvent.click(screen.getByRole('button', { name: es.wardrobe.item.toolbar.rotateRight }))
+    turnRight()
     await vi.waitFor(() => expect(h.rotate).toHaveBeenCalledTimes(1))
     showTheBack()
-    fireEvent.click(screen.getByRole('button', { name: es.wardrobe.item.toolbar.rotateRight }))
+    turnRight()
 
     await vi.waitFor(() => expect(h.rotate).toHaveBeenCalledTimes(2))
     expect(h.rotate.mock.calls[0][0].imageId).toBeNull()
@@ -295,6 +329,66 @@ describe('straightening the photo on screen', () => {
   })
 })
 
+
+// ---- what one stray tap can reach -----------------------------------------------
+
+describe('the garment dialog keeps the dangerous things out of reach', () => {
+  beforeEach(() => {
+    h.brush.mockReset().mockResolvedValue({})
+    h.reset.mockReset().mockResolvedValue({})
+    h.rotate.mockReset().mockResolvedValue({})
+    h.reanalyze.mockReset()
+    h.remove.mockReset().mockResolvedValue({})
+  })
+
+  it('offers only the two harmless things before you say you are editing', () => {
+    renderDetail(jumperWithABack())
+
+    expect(screen.getByRole('button', { name: es.wardrobe.item.toolbar.favoriteAdd })).toBeTruthy()
+    expect(screen.getByRole('button', { name: es.wardrobe.item.toolbar.pairings })).toBeTruthy()
+    // Everything that rewrites a photo is behind the pencil.
+    for (const name of [
+      es.imageBrush.open,
+      es.wardrobe.item.toolbar.rotateRight,
+      es.wardrobe.item.toolbar.rotateLeft,
+      es.wardrobe.item.toolbar.removeBackground,
+      es.wardrobe.item.toolbar.replaceImage,
+    ]) {
+      expect(screen.queryByRole('button', { name })).toBeNull()
+    }
+  })
+
+  it('unlocks the photo tools with the pencil, and not before', () => {
+    renderDetail(jumperWithABack())
+    startEditing()
+
+    expect(screen.getByRole('button', { name: es.imageBrush.open })).toBeTruthy()
+    expect(screen.getByRole('button', { name: es.wardrobe.item.toolbar.rotateRight })).toBeTruthy()
+  })
+
+  it('keeps the rest folded away until asked, and re-analysis behind a question', () => {
+    renderDetail(jumperWithABack())
+    // Folded: not in the document at all, so there is nothing to catch a thumb.
+    expect(screen.queryByRole('button', { name: es.wardrobe.item.deleteButton })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: es.wardrobe.item.toolbar.more }))
+    // An overflow row is named by its title *and* the sentence under it, which is the
+    // whole point of the row, so match on the title.
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: new RegExp(`^${es.wardrobe.item.toolbar.reanalyzeWithAi}`),
+      })
+    )
+
+    // One tap raises the question rather than overwriting the owner's own tags.
+    expect(h.reanalyze).not.toHaveBeenCalled()
+    expect(screen.getByText(es.wardrobe.item.reanalyzeConfirm.title)).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: es.wardrobe.item.reanalyzeConfirm.confirm })
+    )
+    expect(h.reanalyze).toHaveBeenCalledWith('i1')
+  })
+})
 // ---- the flat lay: layered, and seen from behind ---------------------------------
 
 const piece = (id: string, type: string, extra: Partial<FlatLayInput> = {}): FlatLayInput => ({

@@ -84,7 +84,16 @@ export function TagStepper({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLElement && event.target.closest('[role="listbox"]')) return;
+      // Not while somebody is typing. The subtype field's "otro" box is a plain
+      // input, so pressing Left to fix a typo used to jump to the next garment and
+      // take the half-typed word with it.
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        if (target.closest('[role="listbox"]')) return;
+        if (target.isContentEditable) return;
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      }
       if (event.key === 'ArrowRight') {
         event.preventDefault();
         goNext();

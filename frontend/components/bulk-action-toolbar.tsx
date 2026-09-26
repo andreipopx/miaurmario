@@ -95,17 +95,29 @@ export function BulkActionToolbar({
 
   return (
     // Floats above the mobile dock (24px inset + 64px dock + safe area) on < lg.
+    //
+    // Two rows rather than one, and the first of them scrollable, because one row was
+    // a lie at phone width: with a garment picked and more than one page, the buttons
+    // added up to about 380px inside a 288px pill and "eliminar" and the pager were
+    // pushed off the right-hand edge of the screen, where no thumb could reach them.
+    // A near-pill radius instead of `rounded-full` so a second row still looks right.
     <div
       role="toolbar"
-      aria-label={t('selectAll')}
-      className="glass-dock fixed bottom-float-1 left-1/2 z-float flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-1 rounded-full p-1.5 sm:gap-2 sm:px-2 lg:bottom-6"
+      aria-label={t('toolbarLabel')}
+      className="glass-dock fixed bottom-float-1 left-1/2 z-float flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-col gap-1 rounded-[26px] p-1.5 lg:bottom-6"
     >
-      {/* Select All Checkbox */}
+      <div className="flex items-center gap-1 overflow-x-auto scrollbar-none sm:gap-2 sm:px-1">
+      {/* Selects the garments on *this* page, which is what it has always done. It
+          used to be called "seleccionar todas" and to change to "todas" the moment a
+          page was full, so on a wardrobe of 120 over six pages it claimed all of them
+          while holding twenty — and offered "seleccionar las 120 que coinciden" in the
+          same breath. */}
       <button
         type="button"
         onClick={onSelectAll}
         aria-pressed={isAllSelected ? true : isPartiallySelected ? 'mixed' : false}
-        aria-label={isAllSelected ? t('all') : t('selectAll')}
+        aria-label={isAllSelected ? t('pageSelected') : t('selectPage')}
+        title={isAllSelected ? t('pageSelected') : t('selectPage')}
         className="flex h-11 shrink-0 items-center gap-2 rounded-full px-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         {isAllSelected ? (
@@ -116,7 +128,7 @@ export function BulkActionToolbar({
           <Square className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
         )}
         <span className="hidden whitespace-nowrap text-sm font-semibold sm:inline">
-          {isAllSelected ? t('all') : t('selectAll')}
+          {isAllSelected ? t('pageSelected') : t('selectPage')}
         </span>
       </button>
 
@@ -147,17 +159,6 @@ export function BulkActionToolbar({
         )}
       </span>
 
-      {canSelectAllMatching && (
-        <Button
-          variant="link"
-          size="sm"
-          className="hidden shrink-0 text-xs sm:inline-flex"
-          onClick={onSelectAllMatching}
-        >
-          {t('selectAllMatching', { total: totalItems })}
-        </Button>
-      )}
-
       {hasSelection && (
         <>
           <Button
@@ -166,6 +167,7 @@ export function BulkActionToolbar({
             onClick={onClear}
             className="shrink-0 text-muted-foreground"
             aria-label={t('clearSelection')}
+            title={t('clearSelection')}
           >
             <X className="h-4 w-4" strokeWidth={1.75} />
           </Button>
@@ -181,23 +183,45 @@ export function BulkActionToolbar({
               <Layers className="h-4 w-4" strokeWidth={1.75} />
             </Button>
           )}
-          <Button
-            variant="secondary"
-            size="icon"
-            className="shrink-0"
-            onClick={onReanalyze}
-            disabled={isReanalyzing}
-            aria-label={t('reanalyze')}
-          >
-            {isReanalyzing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
-            )}
-          </Button>
+          {/* Asked, like deleting is. Re-analysing overwrites the type, the colour and
+              the tags of every garment picked with whatever the model says this time,
+              and "seleccionar las 120 que coinciden" makes that the whole wardrobe —
+              it used to fire on one tap of an unlabelled icon. */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="icon" className="shrink-0" disabled={isDeleting} aria-label={t('delete')}>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="shrink-0"
+                disabled={isReanalyzing}
+                aria-label={t('reanalyze')}
+                title={t('reanalyze')}
+              >
+                {isReanalyzing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {selection.mode === 'all' && selection.excludedIds.size === 0
+                    ? t('confirmReanalyzeAll', { total: totalItems })
+                    : t('confirmReanalyzeCount', { count: selectedCount })}
+                </AlertDialogTitle>
+                <AlertDialogDescription>{t('confirmReanalyzeBody')}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={onReanalyze}>{t('reanalyze')}</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="icon" className="shrink-0" disabled={isDeleting} aria-label={t('delete')} title={t('delete')}>
                 {isDeleting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -234,7 +258,7 @@ export function BulkActionToolbar({
       {showPagination && (
         <>
           <div className="h-5 w-px shrink-0 bg-border" aria-hidden />
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-0.5" role="group" aria-label={t('pagination')}>
             <Button
               variant="ghost"
               size="icon"
@@ -242,6 +266,7 @@ export function BulkActionToolbar({
               disabled={page === 1}
               onClick={() => onPageChange(1)}
               aria-label={t('firstPage')}
+              title={t('firstPage')}
             >
               <ChevronsLeft className="h-4 w-4" strokeWidth={1.75} />
             </Button>
@@ -251,6 +276,7 @@ export function BulkActionToolbar({
               disabled={page === 1}
               onClick={() => onPageChange(page - 1)}
               aria-label={t('prevPage')}
+              title={t('prevPage')}
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
             </Button>
@@ -263,6 +289,7 @@ export function BulkActionToolbar({
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
               aria-label={t('nextPage')}
+              title={t('nextPage')}
             >
               <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
             </Button>
@@ -273,11 +300,26 @@ export function BulkActionToolbar({
               disabled={page >= totalPages}
               onClick={() => onPageChange(totalPages)}
               aria-label={t('lastPage')}
+              title={t('lastPage')}
             >
               <ChevronsRight className="h-4 w-4" strokeWidth={1.75} />
             </Button>
           </div>
         </>
+      )}
+      </div>
+
+      {/* "…y las de las otras páginas" was desktop-only, which made a bulk delete or a
+          bulk re-analysis of a whole wardrobe impossible on the device the wardrobe is
+          uploaded from. It has a row of its own now, so it fits at 320px. */}
+      {canSelectAllMatching && (
+        <Button
+          variant="link"
+          className="h-9 w-full min-w-0 justify-center px-3 text-xs"
+          onClick={onSelectAllMatching}
+        >
+          <span className="min-w-0 truncate">{t('selectAllMatching', { total: totalItems })}</span>
+        </Button>
       )}
     </div>
   );

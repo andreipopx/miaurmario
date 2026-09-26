@@ -109,6 +109,66 @@ interface ItemDetailDialogProps {
 
 // Images now use signed URLs from backend (item.image_url, item.thumbnail_url)
 
+/**
+ * A row in an overflow menu: what it is called, and a sentence saying what it does.
+ *
+ * The strip this replaced was icon-only, and the icons were not the problem — the
+ * problem was that "scissors" and "undo" do not say *quitar el fondo* and *volver a
+ * la foto original* to anybody who has not read the code. So a row is wide, named,
+ * and explains itself, which is affordable precisely because these are the rare
+ * actions: nobody is tapping them twenty times in a row.
+ */
+function OverflowAction({
+  icon,
+  label,
+  description,
+  onClick,
+  disabled = false,
+  busy = false,
+  destructive = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  onClick: () => void;
+  disabled?: boolean;
+  busy?: boolean;
+  destructive?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || busy}
+      className={cn(
+        'flex min-h-[44px] w-full items-start gap-3 rounded-[14px] px-3 py-2.5 text-left',
+        'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'disabled:pointer-events-none disabled:opacity-50',
+        destructive ? 'text-destructive hover:bg-destructive/10' : 'hover:bg-panel'
+      )}
+    >
+      <span className="mt-0.5 shrink-0" aria-hidden>
+        {busy ? (
+          <Loader2 className="h-[18px] w-[18px] animate-spin motion-reduce:animate-none" />
+        ) : (
+          icon
+        )}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[14px] font-semibold leading-snug">{label}</span>
+        <span
+          className={cn(
+            'block text-[12px] leading-snug',
+            destructive ? 'text-destructive/85' : 'text-muted-foreground'
+          )}
+        >
+          {description}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 /** The one-tap tag chip, same shape as the quick review pass uses. */
 function tagChipClass(active: boolean): string {
   return cn(
@@ -153,6 +213,18 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   /** The eraser panel, in place of the photo. */
   const [brushing, setBrushing] = useState(false);
+  /** The rare actions, folded away: one for the garment, one for its photo. */
+  const [showMore, setShowMore] = useState(false);
+  const [showPhotoTools, setShowPhotoTools] = useState(false);
+  /**
+   * Asked before re-analysing.
+   *
+   * Re-analysis rewrites the type, the colour and the tags with whatever the model
+   * says this time, so on a garment somebody has already corrected by hand it is a
+   * destructive action wearing a refresh icon. It used to fire on one tap of an
+   * unlabelled button in the middle of a scrolling strip.
+   */
+  const [confirmReanalyze, setConfirmReanalyze] = useState(false);
   /** Asked before throwing away edits the user has not saved. */
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   /** Briefly true after a successful save, so the button can say so. */
@@ -220,6 +292,9 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
       setCareTouched(false);
       setBrushing(false);
       setSaved(false);
+      setShowMore(false);
+      setShowPhotoTools(false);
+      setConfirmReanalyze(false);
     }
   }, [item?.id]);
 
@@ -358,11 +433,16 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
   };
 
   const handleReanalyze = async () => {
+    setConfirmReanalyze(false);
     try {
       await reanalyzeItem.mutateAsync(item.id);
-      // Status will update to 'processing' and UI will reflect it
+      // The photo then wears the "analizando" veil, but that is a slow, quiet
+      // change on a screen the user may already have scrolled past, so the queue
+      // says so out loud too. Silence here used to be the only answer a tap got.
+      toast.success(t('toast.reanalyzeQueued'));
     } catch (error) {
       console.error('Failed to trigger re-analysis:', error);
+      toast.error(t('toast.reanalyzeFailed'));
     }
   };
 
@@ -578,14 +658,19 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                 changes shape, so the layout never jumps. */}
             {isEditing ? (
               <div className="flex gap-2">
+                {/* "Cancelar edición" truncated to "Cancel…" beside "Guardar" at
+                    320px, so the word is short and the full sense is in the
+                    accessible name, which contains the visible one. */}
                 <Button
                   variant="secondary"
                   className="min-w-0 flex-1"
                   onClick={stopEditing}
                   disabled={updateItem.isPending}
+                  aria-label={t('toolbar.cancelEditing')}
+                  title={t('toolbar.cancelEditing')}
                 >
                   <X className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
-                  <span className="min-w-0 truncate">{t('toolbar.cancelEditing')}</span>
+                  <span className="min-w-0 truncate">{tc('cancel')}</span>
                 </Button>
                 <Button
                   className="min-w-0 flex-1"
@@ -626,159 +711,218 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                 {t('form.unsaved')}
               </p>
             )}
-            <div
-              role="toolbar"
-              aria-label={t('toolbar.label')}
-              className="-mx-5 flex items-center gap-1.5 overflow-x-auto scrollbar-none px-5 pb-0.5"
-            >
-              <Button
-                variant="secondary"
-                size="icon"
-                className="shrink-0"
-                onClick={handleToggleFavorite}
-                disabled={updateItem.isPending}
-                aria-pressed={!!item.favorite}
-                title={t('toolbar.toggleFavorite')}
-                aria-label={t('toolbar.toggleFavorite')}
-              >
-                <Heart
-                  strokeWidth={1.75}
-                  className={`h-5 w-5 ${
-                    item.favorite ? 'fill-signature text-foreground' : 'text-foreground'
-                  }`}
-                />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="shrink-0"
-                onClick={() => setShowPairingsDialog(true)}
-                disabled={item.status !== 'ready'}
-                title={t('toolbar.findMatchingOutfits')}
-                aria-label={t('toolbar.findMatchingOutfits')}
-              >
-                <Layers className="h-5 w-5" strokeWidth={1.75} />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="shrink-0"
-                onClick={handleReanalyze}
-                disabled={isAnalyzing}
-                title={isAnalyzing ? t('toolbar.analysisInProgress') : t('toolbar.reanalyzeWithAi')}
-                aria-label={isAnalyzing ? t('toolbar.analysisInProgress') : t('toolbar.reanalyzeWithAi')}
-              >
-                <RefreshCw
-                  className={`h-5 w-5 ${isAnalyzing ? 'animate-spin' : ''}`}
-                />
-              </Button>
-              {/* Never disabled mid-save: the photo turns straight away and the
-                  saves queue up behind it, so several turns in a row cost no waiting.
-                  A small spinner after the pair says one is still being written. */}
-              <Button
-                variant="secondary"
-                size="icon"
-                className="shrink-0"
-                onClick={() => handleRotate('ccw')}
-                title={t('toolbar.rotateLeft')}
-                aria-label={t('toolbar.rotateLeft')}
-              >
-                <RotateCcw className="h-5 w-5" strokeWidth={1.75} />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="shrink-0"
-                onClick={() => handleRotate('cw')}
-                title={t('toolbar.rotateRight')}
-                aria-label={t('toolbar.rotateRight')}
-              >
-                <RotateCw className="h-5 w-5" strokeWidth={1.75} />
-              </Button>
-              {rotation.isBusy(activeImage.id) && (
-                <Loader2
-                  className="h-4 w-4 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none"
-                  aria-label={tCrop('saving')}
-                />
-              )}
-              {features?.background_removal && (
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={handleRemoveBackground}
-                  disabled={removeBackground.isPending || !item.image_url}
-                  title={t('toolbar.removeBackground')}
-                  aria-label={t('toolbar.removeBackground')}
+            {/* What is on top, and what is not.
+                This used to be one scrolling strip of nine unlabelled icons —
+                favourite, outfits, re-analyse, two rotations, remove background,
+                eraser, undo, replace photo — where a stray tap could re-cut a photo
+                or overwrite tags the owner had just typed, and where half of them
+                scrolled off the right edge of a phone. So:
+
+                * two named things stay out: favourite and combinations, which are
+                  the only two anybody opens a garment to do and neither of which
+                  can lose anything;
+                * everything else is a row in "Más opciones" with a plain-Spanish
+                  name and a sentence saying what it will do;
+                * and anything that rewrites the photo or the tags is locked behind
+                  the pencil, because "bloquearlos hasta que le des a editar" is
+                  exactly right: you cannot undo a re-analysis. */}
+            {!isEditing ? (
+              <div className="space-y-2">
+                {/* Side by side when both words fit, stacked when they do not.
+                    `basis` in rem is the trick: it grows with the root font size, so
+                    at 125% the row runs out of space and wraps by itself rather than
+                    truncating "Favorita" to "Favo…" and "Combinar" to "Com…". A
+                    320px screen wraps for the same reason. */}
+                <div
+                  role="group"
+                  aria-label={t('toolbar.label')}
+                  className="flex flex-wrap gap-2"
                 >
-                  {removeBackground.isPending ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Scissors className="h-5 w-5" strokeWidth={1.75} />
-                  )}
-                </Button>
-              )}
-              {/* Whatever the automatic cut-out got wrong, by hand. The same control
-                  as in the add form, and it edits the stored alpha, so the fix shows
-                  on every screen and not only on this one. */}
-              <Button
-                variant={brushing ? 'default' : 'secondary'}
-                size="icon"
-                className="shrink-0"
-                onClick={openEraser}
-                disabled={!item.image_url}
-                aria-pressed={brushing}
-                title={tBrush('open')}
-                aria-label={tBrush('open')}
-              >
-                <Eraser className="h-5 w-5" strokeWidth={1.75} />
-              </Button>
-              {item.original_image_path && (
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={handleRestoreOriginal}
-                  disabled={restoreOriginal.isPending}
-                  title={t('toolbar.undoBackgroundRemoval')}
-                  aria-label={t('toolbar.undoBackgroundRemoval')}
+                  <Button
+                    variant="secondary"
+                    className="min-w-0 flex-1 basis-[8.5rem]"
+                    onClick={handleToggleFavorite}
+                    disabled={updateItem.isPending}
+                    aria-pressed={!!item.favorite}
+                  >
+                    <Heart
+                      strokeWidth={1.75}
+                      aria-hidden
+                      className={cn(
+                        'h-[18px] w-[18px] shrink-0',
+                        item.favorite && 'fill-signature'
+                      )}
+                    />
+                    <span className="min-w-0 truncate">
+                      {item.favorite ? t('toolbar.favoriteRemove') : t('toolbar.favoriteAdd')}
+                    </span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="min-w-0 flex-1 basis-[8.5rem]"
+                    onClick={() => setShowPairingsDialog(true)}
+                    disabled={item.status !== 'ready'}
+                    title={item.status !== 'ready' ? t('toolbar.pairingsNotReady') : undefined}
+                  >
+                    <Layers className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
+                    <span className="min-w-0 truncate">{t('toolbar.pairings')}</span>
+                  </Button>
+                </div>
+                <Collapsible open={showMore} onOpenChange={setShowMore}>
+                  <CollapsibleTrigger className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-muted-foreground transition-colors hover:bg-panel hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    {t('toolbar.more')}
+                    <ChevronDown
+                      className={cn('h-4 w-4 transition-transform', showMore && 'rotate-180')}
+                      aria-hidden
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-1">
+                    <OverflowAction
+                      icon={<RefreshCw className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                      label={t('toolbar.reanalyzeWithAi')}
+                      description={t('toolbar.reanalyzeWhat')}
+                      busy={isAnalyzing}
+                      disabled={isAnalyzing}
+                      onClick={() => setConfirmReanalyze(true)}
+                    />
+                    <OverflowAction
+                      icon={<Layers className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                      label={tMerge('openFromItem')}
+                      description={t('toolbar.mergeBackWhat')}
+                      onClick={() => setShowMergeBack(true)}
+                    />
+                    <OverflowAction
+                      destructive
+                      icon={<Trash2 className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                      label={t('deleteButton')}
+                      description={t('toolbar.deleteWhat')}
+                      onClick={() => setShowDeleteConfirm(true)}
+                    />
+                    {/* Said here rather than under the photo, because here is where
+                        somebody hunting for the rotate button will look. */}
+                    <p className="px-3 pb-1 pt-1.5 text-[12px] leading-snug text-muted-foreground">
+                      {t('toolbar.photoLocked')}
+                    </p>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p
+                  id="item-photo-tools"
+                  className="text-[12px] font-semibold text-muted-foreground"
                 >
-                  {restoreOriginal.isPending ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Undo2 className="h-5 w-5" strokeWidth={1.75} />
+                  {t('toolbar.photoGroup')}
+                </p>
+                {/* Never disabled mid-save: the photo turns straight away and the
+                    saves queue up behind it, so several turns in a row cost no
+                    waiting. A small spinner after the pair says one is still being
+                    written. */}
+                <div
+                  role="group"
+                  aria-labelledby="item-photo-tools"
+                  className="flex items-center gap-2"
+                >
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => handleRotate('ccw')}
+                    title={t('toolbar.rotateLeft')}
+                    aria-label={t('toolbar.rotateLeft')}
+                  >
+                    <RotateCcw className="h-5 w-5" strokeWidth={1.75} />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => handleRotate('cw')}
+                    title={t('toolbar.rotateRight')}
+                    aria-label={t('toolbar.rotateRight')}
+                  >
+                    <RotateCw className="h-5 w-5" strokeWidth={1.75} />
+                  </Button>
+                  {rotation.isBusy(activeImage.id) && (
+                    <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground" role="status">
+                      <Loader2
+                        className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none"
+                        aria-hidden
+                      />
+                      {tCrop('saving')}
+                    </span>
                   )}
+                </div>
+                {/* Whatever the automatic cut-out got wrong, by hand. The same
+                    control as in the add form, and it edits the stored alpha, so the
+                    fix shows on every screen and not only on this one. */}
+                <Button
+                  variant={brushing ? 'default' : 'secondary'}
+                  className="w-full min-w-0"
+                  onClick={openEraser}
+                  disabled={!item.image_url}
+                  aria-pressed={brushing}
+                >
+                  <Eraser className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
+                  <span className="min-w-0 truncate">{tBrush('open')}</span>
                 </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="icon"
-                className="shrink-0"
-                onClick={() => replaceImageInputRef.current?.click()}
-                disabled={replaceImage.isPending}
-                title={t('toolbar.replaceImage')}
-                aria-label={t('toolbar.replaceImage')}
-              >
-                {replaceImage.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
-                )}
-              </Button>
-              <input
-                ref={replaceImageInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleReplaceImage(file);
-                  }
-                  e.target.value = '';
-                }}
-              />
-            </div>
+                <Collapsible open={showPhotoTools} onOpenChange={setShowPhotoTools}>
+                  <CollapsibleTrigger className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-muted-foreground transition-colors hover:bg-panel hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    {t('toolbar.morePhoto')}
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 transition-transform',
+                        showPhotoTools && 'rotate-180'
+                      )}
+                      aria-hidden
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-1">
+                    {features?.background_removal && (
+                      <OverflowAction
+                        icon={<Scissors className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                        label={t('toolbar.removeBackground')}
+                        description={t('toolbar.removeBackgroundWhat')}
+                        busy={removeBackground.isPending}
+                        disabled={removeBackground.isPending || !item.image_url}
+                        onClick={handleRemoveBackground}
+                      />
+                    )}
+                    {item.original_image_path && (
+                      <OverflowAction
+                        icon={<Undo2 className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                        label={t('toolbar.undoBackgroundRemoval')}
+                        description={t('toolbar.restoreOriginalWhat')}
+                        busy={restoreOriginal.isPending}
+                        disabled={restoreOriginal.isPending}
+                        onClick={handleRestoreOriginal}
+                      />
+                    )}
+                    <OverflowAction
+                      icon={<ImagePlus className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                      label={t('toolbar.replaceImage')}
+                      description={t('toolbar.replaceImageWhat')}
+                      busy={replaceImage.isPending}
+                      disabled={replaceImage.isPending}
+                      onClick={() => replaceImageInputRef.current?.click()}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+                <input
+                  ref={replaceImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleReplaceImage(file);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+            )}
           </DialogHeader>
 
           {/* Scrollable content */}
@@ -1555,30 +1699,10 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
             </div>
             </div>
 
-            {/* Delete button - separated from other actions for safety */}
-            {!isEditing && (
-              <div className="mt-6 flex flex-col items-start gap-1 border-t border-border pt-4">
-                {/* Here rather than in the toolbar because this is the garment that
-                    turned out to *be* a photo: people uploaded fronts and backs
-                    separately for years, and this is where they find out. */}
-                <Button
-                  variant="ghost"
-                  className="-ml-2"
-                  onClick={() => setShowMergeBack(true)}
-                >
-                  <Layers className="h-4 w-4" strokeWidth={1.75} />
-                  {tMerge('openFromItem')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="-ml-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                  {t('deleteButton')}
-                </Button>
-              </div>
-            )}
+            {/* "Eliminar" and "es la espalda de otra prenda" used to be repeated
+                down here as well as offered in the header, which is two places to
+                look for one thing and one of them a long scroll away. They live in
+                "Más opciones" now, with a sentence each. */}
           </div>
         </DialogContent>
       </Dialog>
@@ -1638,6 +1762,23 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {t('discardConfirm.discard')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Re-analysing is not "refresh": it overwrites whatever the owner typed with
+          whatever the model says this time. Asked, therefore, rather than fired. */}
+      <AlertDialog open={confirmReanalyze} onOpenChange={setConfirmReanalyze}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('reanalyzeConfirm.title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('reanalyzeConfirm.description')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tc('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReanalyze}>
+              {t('reanalyzeConfirm.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

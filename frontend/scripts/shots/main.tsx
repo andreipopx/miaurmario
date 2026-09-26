@@ -8,6 +8,7 @@
 
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 
 import '@/app/globals.css';
@@ -15,9 +16,11 @@ import '@/app/globals.css';
 import es from '@/messages/es.json';
 import { AlphaBrush } from '@/components/shared/alpha-brush';
 import { GarmentThumb } from '@/components/bulk-upload/garment-thumb';
+import { ItemDetailDialog } from '@/components/item-detail-dialog';
 import { garmentFrameStyle } from '@/lib/garment-framing';
 import { garmentTileTint } from '@/lib/garment-tint';
 import { cn } from '@/lib/utils';
+import type { Item } from '@/lib/types';
 
 const params = new URLSearchParams(window.location.search);
 const scene = params.get('scene') || 'eraser';
@@ -102,6 +105,52 @@ function Eraser() {
   );
 }
 
+/**
+ * A garment as the dialog receives one, with two photos and a hand-sampled shade.
+ *
+ * Enough of a real `Item` for the header to make every decision it makes: an
+ * original to restore to, a cut-out to erase on, and a second photo so the gallery's
+ * arrows and the per-photo tools are in the picture.
+ */
+const GARMENT = {
+  id: 'shot-1',
+  user_id: 'u',
+  type: 'top',
+  subtype: 'halter',
+  name: 'Top halter rojo',
+  brand: 'Zara',
+  favorite: false,
+  status: 'ready',
+  image_path: 'halter.webp',
+  image_url: '/halter-isnet.png?signed=1',
+  thumbnail_url: '/halter-isnet.png',
+  original_image_url: '/halter-photo.png?signed=1',
+  original_image_path: 'halter-photo.jpg',
+  has_cutout: true,
+  image_view: 'front',
+  primary_color: 'red',
+  primary_color_hex: '#c2445f',
+  wear_count: 4,
+  created_at: '2026-09-01T10:00:00Z',
+  updated_at: '2026-09-01T10:00:00Z',
+  tags: {},
+  additional_images: [
+    {
+      id: 'shot-back',
+      image_url: '/halter-photo.png',
+      thumbnail_url: '/halter-photo.png',
+      original_image_url: '/halter-photo.png',
+      image_view: 'back',
+      has_cutout: false,
+    },
+  ],
+} as unknown as Item;
+
+/** The garment dialog, mounted whole, so the header in the picture is the real one. */
+function Garment() {
+  return <ItemDetailDialog item={GARMENT} open onOpenChange={() => undefined} />;
+}
+
 function ReviewTiles() {
   const [turns, setTurns] = useState(0);
   return (
@@ -171,14 +220,26 @@ function App() {
           <ReviewTiles />
         </>
       )}
+      {scene === 'garment' && <Garment />}
     </div>
   );
 }
 
+// No retries and no refetching: the scenes have no backend, and a query that keeps
+// trying would repaint the screen under the camera.
+const queries = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false, refetchOnWindowFocus: false, refetchInterval: false },
+    mutations: { retry: false },
+  },
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <NextIntlClientProvider locale="es" messages={es} timeZone="Europe/Madrid">
-      <App />
-    </NextIntlClientProvider>
+    <QueryClientProvider client={queries}>
+      <NextIntlClientProvider locale="es" messages={es} timeZone="Europe/Madrid">
+        <App />
+      </NextIntlClientProvider>
+    </QueryClientProvider>
   </StrictMode>
 );

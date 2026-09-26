@@ -28,7 +28,9 @@ export function RotateButtons({
   size?: 'sm' | 'md';
 }) {
   const t = useTranslations('imageCrop');
-  const box = size === 'sm' ? 'h-9 w-9' : 'h-11 w-11';
+  // `sm` is a smaller *glyph*, not a smaller target. It used to be 36 px, which made
+  // the docstring above untrue on the one screen where straightening matters most —
+  // the review grid, where every photo comes out of a phone lying on its side.
   const glyph = size === 'sm' ? 'h-4 w-4' : 'h-[18px] w-[18px]';
 
   return (
@@ -39,7 +41,7 @@ export function RotateButtons({
           type="button"
           size="icon"
           variant="secondary"
-          className={cn('shrink-0', box)}
+          className={cn('h-11 w-11 shrink-0')}
           onClick={(event) => {
             event.stopPropagation();
             onRotate(direction);
@@ -54,11 +56,19 @@ export function RotateButtons({
           )}
         </Button>
       ))}
+      {/* An `aria-label` on a bare svg is announced by nothing, so "guardando el
+          giro" was sighted-only. A live region says it instead. */}
       {busy && (
-        <Loader2
-          className={cn('shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none', glyph)}
-          aria-label={t('saving')}
-        />
+        <span role="status" className="flex shrink-0 items-center">
+          <Loader2
+            className={cn(
+              'shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none',
+              glyph
+            )}
+            aria-hidden
+          />
+          <span className="sr-only">{t('saving')}</span>
+        </span>
       )}
     </div>
   );

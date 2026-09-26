@@ -18,8 +18,21 @@ const frontend = path.resolve(here, '..', '..');
 
 export default defineConfig({
   root: here,
-  resolve: { alias: { '@': frontend } },
+  resolve: {
+    alias: {
+      '@': frontend,
+      // Three pieces of Next that only exist inside Next. Shimming them is what lets
+      // a scene mount a whole dialog — the garment editor — rather than a copy of its
+      // markup that would drift the first time somebody changed the real one.
+      'next/image': path.resolve(here, 'shims/next-image.tsx'),
+      'next/navigation': path.resolve(here, 'shims/next-navigation.ts'),
+      'next-auth/react': path.resolve(here, 'shims/next-auth.ts'),
+    },
+  },
   plugins: [react()],
+  // Next hands the browser a `process.env`; Vite does not, and the app's API client
+  // reads it at module load, so a scene that imports a dialog would die on import.
+  define: { 'process.env': JSON.stringify({ NODE_ENV: 'development' }) },
   css: { postcss: frontend },
   server: { host: '127.0.0.1', port: 5199, fs: { allow: [frontend] } },
 });

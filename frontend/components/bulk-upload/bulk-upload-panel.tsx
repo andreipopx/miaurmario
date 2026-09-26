@@ -94,8 +94,23 @@ export function BulkUploadPanel({
    * is pressed and settles the server up behind it, collapsing a flurry of taps into
    * one request per garment.
    */
+  /**
+   * One "girada y guardada" per flurry, not one per garment.
+   *
+   * Straightening eight photos in a queue produced eight identical toasts stacked up
+   * the screen, while the failure path in the queue itself is deliberately throttled
+   * to one — twenty toasts is not twenty pieces of information either way round.
+   */
+  const savedToast = useRef(false);
   const rotation = useRotationQueue({
-    onSaved: () => toast.success(t('review.rotated')),
+    onSaved: () => {
+      if (savedToast.current) return;
+      savedToast.current = true;
+      toast.success(t('review.rotated'));
+      setTimeout(() => {
+        savedToast.current = false;
+      }, 4000);
+    },
   });
   const turns = rotation.turns;
   /**
@@ -199,6 +214,10 @@ export function BulkUploadPanel({
     // The merges go first and one at a time: each one deletes a garment, and a tag
     // edit for a garment that is about to stop existing has nothing to write to.
     let merged = 0;
+    // Only the pairs that actually landed are forgotten. Clearing all of them on any
+    // success made the failed ones vanish from the screen under a toast saying N were
+    // moved, so the user had no way to see which one to try again.
+    const moved = new Set<string>();
     for (const [sourceId, pairing] of Object.entries(backPairings)) {
       try {
         await mergeInto.mutateAsync({
@@ -207,13 +226,17 @@ export function BulkUploadPanel({
           view: pairing.view,
         });
         merged += 1;
+        moved.add(sourceId);
       } catch {
         toast.error(t('review.mergeFailed'));
       }
     }
+    const pairsLeft = Object.keys(backPairings).filter((id) => !moved.has(id));
     if (merged > 0) {
       toast.success(t('review.mergedCount', { count: merged }));
-      setBackPairings({});
+      setBackPairings((current) =>
+        Object.fromEntries(Object.entries(current).filter(([id]) => !moved.has(id)))
+      );
     }
 
     const entries = Object.entries(edits)
@@ -232,13 +255,27 @@ export function BulkUploadPanel({
         formality: edit.formality,
       }));
     if (entries.length === 0) {
+      // A merge that failed is unfinished business, so the sheet stays open on it
+      // rather than closing over an error toast as though the save had worked.
+      if (pairsLeft.length > 0) return;
       if (!reviewingBacklog) reset();
       onClose();
       return;
     }
     try {
-      await batchTag.mutateAsync(entries);
-      toast.success(t('review.saved', { count: entries.length }));
+      const result = await batchTag.mutateAsync(entries);
+      // What the server says it wrote, not what we asked it to write. A 200 carrying
+      // `failed: 3` used to be reported as a complete success and the edits thrown
+      // away with it, so three garments silently kept the tagger's guesses.
+      const updated = result?.updated ?? entries.length;
+      const failed = result?.failed ?? 0;
+      if (updated > 0) toast.success(t('review.saved', { count: updated }));
+      if (failed > 0) {
+        toast.error(t('review.saveFailedCount', { count: failed }));
+        // Keep the whole draft: we are not told which rows failed, and dropping the
+        // ones that worked would leave the user unable to retry the rest.
+        return;
+      }
       setEdits({});
       // The backlog pass owns no photos, so there is no queue to clear.
       if (!reviewingBacklog) reset();

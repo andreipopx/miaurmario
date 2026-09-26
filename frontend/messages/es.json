@@ -558,7 +558,6 @@
     "perPage": "{size} por página",
     "needsWashFilter": "Por lavar",
     "favoritesFilter": "Favoritas",
-    "clearFilters": "Limpiar filtros",
     "loadError": "No se pudieron cargar las prendas. Inténtalo de nuevo.",
     "noResults": "No se encontraron prendas con esos filtros.",
     "clearFiltersButton": "Limpiar filtros",
@@ -624,7 +623,21 @@
         "setAsPrimary": "Marcar como principal",
         "deleteImage": "Borrar imagen",
         "label": "Acciones de la prenda",
-        "editTags": "Editar prenda y etiquetas"
+        "editTags": "Editar prenda y etiquetas",
+        "favoriteAdd": "Favorita",
+        "favoriteRemove": "Quitar favorita",
+        "pairings": "Combinar",
+        "pairingsNotReady": "Espera a que termine el análisis",
+        "more": "Más opciones",
+        "morePhoto": "Más cosas con la foto",
+        "photoGroup": "La foto",
+        "photoLocked": "Para girar la foto, borrar lo que sobra o cambiarla, toca «Editar prenda y etiquetas».",
+        "reanalyzeWhat": "La IA vuelve a mirar la foto y reescribe el tipo, el color y las etiquetas. Lo que hayas puesto a mano se pierde.",
+        "mergeBackWhat": "Mueve esta foto a otra prenda —como su espalda o su detalle— y borra esta ficha.",
+        "deleteWhat": "Se borra para siempre, con sus fotos.",
+        "removeBackgroundWhat": "Recorta la prenda y deja el fondo de la foto en transparente.",
+        "restoreOriginalWhat": "Deshace el recorte y los retoques: vuelve la foto tal como la hiciste.",
+        "replaceImageWhat": "Cambia esta foto por otra. La de ahora se pierde."
       },
       "analyzing": "Stinky la está olisqueando…",
       "form": {
@@ -756,7 +769,9 @@
         "originalRestoreFailed": "No se pudo restaurar la original",
         "imageReplaced": "Imagen reemplazada",
         "imageReplaceFailed": "No se pudo reemplazar la imagen",
-        "saveFailed": "No he podido guardar los cambios. Vuelve a intentarlo."
+        "saveFailed": "No he podido guardar los cambios. Vuelve a intentarlo.",
+        "reanalyzeQueued": "A la cola: la IA vuelve a mirar esta prenda",
+        "reanalyzeFailed": "No he podido volver a analizarla"
       },
       "wornAgo": "{days, plural, =0 {Usada hoy} =1 {Usada ayer} other {Usada hace # días}}",
       "imageN": "Imagen {n}",
@@ -766,6 +781,11 @@
         "description": "Has cambiado cosas de esta prenda y no las he guardado todavía. Si sigues, se pierden.",
         "keepEditing": "Seguir editando",
         "discard": "Descartar"
+      },
+      "reanalyzeConfirm": {
+        "title": "¿Volver a analizar con IA?",
+        "description": "La IA reescribirá el tipo, el color y las etiquetas de esta prenda con lo que vea en la foto. Si las habías corregido a mano, perderás esas correcciones.",
+        "confirm": "Volver a analizar"
       }
     },
     "bulk": {
@@ -784,18 +804,11 @@
       "typeLabel": "Tipo",
       "typePlaceholder": "Que lo detecte la IA...",
       "colorLabel": "Color principal",
-      "colorPlaceholder": "Elige un color",
       "brandLabel": "Marca",
       "brandPlaceholder": "Ej: Zara, Uniqlo",
       "nameLabel": "Nombre (opcional)",
       "namePlaceholder": "Ej: camisa azul oxford",
-      "chooseImage": "Elegir una imagen",
-      "chooseImages": "Elegir imágenes",
-      "dropHere": "Suelta las imágenes aquí",
-      "dragDropHint": "o arrastra hasta {max} imágenes (máx {size} MB cada una)",
       "uploading": "Subiendo...",
-      "uploadCta": "Añadir al armario",
-      "bulkHint": "Selecciona hasta {max} imágenes a la vez. Se analizan en segundo plano.",
       "cancel": "Cancelar",
       "toast": {
         "singleSuccess": "Prenda añadida al armario",
@@ -803,7 +816,7 @@
         "processingBackground": "Se están analizando en segundo plano."
       },
       "description": "Sube fotos de tus prendas",
-      "dragDropSingle": "Arrastra una imagen o toca para elegir",
+      "dragDropSingle": "Arrastra una imagen aquí",
       "dragDropSingleActive": "Suelta la imagen aquí...",
       "acceptedFormats": "JPEG, PNG, WebP o HEIC",
       "typeHint": "(Stinky lo detecta si lo dejas vacío)",
@@ -843,10 +856,10 @@
         }
       },
       "choosePhoto": "Elegir foto",
-      "takePhoto": "Hacer foto"
+      "takePhoto": "Hacer foto",
+      "photoNeeded": "Falta la foto de la prenda."
     },
     "searchCountPlaceholder": "Busca en tus {count, plural, one {# prenda} other {# prendas}}",
-    "moreFilters": "Más filtros",
     "categories": "Categorías",
     "washBadge": "Lavar",
     "favorite": "Favorita",
@@ -915,7 +928,9 @@
     "share": {
       "failed": "No nos ha llegado lo que compartiste. Añade la prenda desde aquí.",
       "iosHint": "En iPhone y iPad no existe el menú de compartir hacia apps web: pega el enlace o elige la foto desde aquí."
-    }
+    },
+    "filtersAndSort": "Filtros y orden",
+    "clearFiltersAndSort": "Quitar filtros y orden"
   },
   "suggest": {
     "title": "El Estilista",
@@ -1925,13 +1940,6 @@
     }
   },
   "bulk": {
-    "confirmDialog": {
-      "cancel": "Cancelar",
-      "archive": "Archivar",
-      "delete": "Eliminar",
-      "restore": "Restaurar",
-      "move": "Mover"
-    },
     "all": "Todas",
     "selectAll": "Seleccionar todas",
     "noneSelected": "Ninguna seleccionada",
@@ -1950,7 +1958,13 @@
     "prevPage": "Página anterior",
     "nextPage": "Página siguiente",
     "lastPage": "Última página",
-    "pagination": "Paginación"
+    "pagination": "Paginación",
+    "toolbarLabel": "Selección y páginas",
+    "selectPage": "Seleccionar esta página",
+    "pageSelected": "Página entera",
+    "confirmReanalyzeAll": "¿Volver a analizar las {total} prendas?",
+    "confirmReanalyzeCount": "¿Volver a analizar {count, plural, one {# prenda} other {# prendas}}?",
+    "confirmReanalyzeBody": "La IA reescribirá el tipo, el color y las etiquetas de cada prenda con lo que vea en su foto. Lo que hayas corregido a mano se pierde."
   },
   "outfitPreview": {
     "rotateLeft": "Girar a la izquierda",
@@ -4216,7 +4230,8 @@
       "suggestYes": "Sí",
       "suggestNo": "No",
       "mergedCount": "{count, plural, one {# espalda unida} other {# espaldas unidas}}",
-      "mergeFailed": "No se pudo unir la foto a esa prenda"
+      "mergeFailed": "No se pudo unir la foto a esa prenda",
+      "saveFailedCount": "No he podido guardar {count, plural, one {# prenda} other {# prendas}}. Lo que has escrito sigue aquí: vuelve a intentarlo."
     },
     "stepper": {
       "position": "Prenda {current} de {total}",
@@ -4239,8 +4254,7 @@
       "subtypeHint": "(opcional)",
       "subtypeOther": "Otro",
       "subtypeOtherLabel": "Otro detalle",
-      "subtypeOtherPlaceholder": "Escríbelo",
-      "subtypeClear": "Sin detalle"
+      "subtypeOtherPlaceholder": "Escríbelo"
     },
     "statusBar": {
       "open": "Abrir la subida de prendas",
@@ -4280,9 +4294,24 @@
   },
   "imageBrush": {
     "title": "Borra lo que sobra",
-    "hint": "Pinta encima para quitar lo que no es la prenda. Si el recorte automático se comió algo, cambia a «devolver» y píntalo de vuelta.",
-    "hintEraseOnly": "Pinta encima para quitar lo que no es la prenda.",
-    "tools": "Borrador",
+    "action": "Qué hace",
+    "tool": "Cómo",
+    "toolBrush": "Pincel",
+    "toolLasso": "Lazo",
+    "toolRect": "Recuadro",
+    "toolPan": "Mover",
+    "hintBrushErase": "Pinta encima de lo que no es la prenda y desaparecerá.",
+    "hintBrushRestore": "Pinta encima de lo que el recorte se comió y volverá a aparecer.",
+    "hintLassoErase": "Rodea un hueco con el dedo —el del cuello halter, por ejemplo— y al soltar todo lo de dentro desaparece.",
+    "hintLassoRestore": "Rodea una zona con el dedo y al soltar todo lo de dentro vuelve a aparecer.",
+    "hintRectErase": "Arrastra un recuadro y al soltar todo lo de dentro desaparece.",
+    "hintRectRestore": "Arrastra un recuadro y al soltar todo lo de dentro vuelve a aparecer.",
+    "hintPan": "Arrastra para mover la foto. Toca dos veces para acercar o alejar.",
+    "zoomHint": "Para acercar: pellizca con dos dedos, usa la rueda del ratón o los botones + y −. El pincel mantiene su tamaño sobre la prenda, no sobre la pantalla.",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "zoomFit": "Ver la foto entera",
+    "zoomLevel": "{percent}%",
     "erase": "Borrar",
     "restore": "Devolver",
     "eraseArea": "Foto de la prenda: pinta para borrar",
@@ -4295,7 +4324,7 @@
     "open": "Borra lo que sobra",
     "edited": "Retocada a mano",
     "noPreview": "No puedo mostrar esta foto aquí",
-    "keyboardHint": "Con el teclado: flechas para mover el pincel, Enter para pintar.",
+    "keyboardHint": "Con el teclado: flechas para mover el pincel, Enter para pintar, + y − para acercar, 0 para ver la foto entera.",
     "saved": "Listo, la prenda queda así en todas las pantallas",
     "saveFailed": "No he podido guardar el retoque. Vuelve a intentarlo.",
     "wasReset": "Vuelta al recorte automático",

@@ -257,6 +257,15 @@ export function buildFlatLay<T extends FlatLayInput>(
   const shown = ordered.slice(0, Math.max(0, max));
   const roleCounts = new Map<FlatLayRole, number>();
 
+  // A dress worn over trousers is a layered look, not one piece hiding the
+  // other. The bottom keeps its own band below, and the dress is painted in
+  // front of it so its hem covers the waistband instead of the other way
+  // round. Paint order only, and only for a look that really has both.
+  const shownRoles = shown.map((item) => flatLayRole(item.type));
+  const layeredOverBottom = shownRoles.includes('full_body') && shownRoles.includes('bottom');
+  const zOf = (role: FlatLayRole): number =>
+    layeredOverBottom && role === 'full_body' ? ROLE_Z.bottom + 0.5 : ROLE_Z[role];
+
   // 1. Across the frame: each garment's column and size come from its role.
   const sized = shown.map((item) => {
     const role = flatLayRole(item.type);
@@ -273,7 +282,7 @@ export function buildFlatLay<T extends FlatLayInput>(
       width: Math.max(0.12, (slot ? slot.width : base.width) + (slot ? 0 : nudge.dw)),
       dy: slot ? 0 : nudge.dy,
       at: slot ? slot.at : 0,
-      z: ROLE_Z[role] * 10 + seen,
+      z: zOf(role) * 10 + seen,
     };
   });
 

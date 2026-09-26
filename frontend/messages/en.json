@@ -3802,6 +3802,13 @@
           "sin_decir": "I'd rather not say"
         }
       },
+      "layering": {
+        "title": "I like layering pieces",
+        "body": "With this on I can suggest layers: a dress over trousers, a top under another top, a shirt under a dress. Only when it works, never as a rule.",
+        "label": "Layer pieces",
+        "on": "On: I'll double up layers when the look calls for it.",
+        "off": "Off: one piece up top and one below, nothing doubled up."
+      },
       "sizes": {
         "title": "Your usual sizes",
         "body": "Optional, and every shop is different: put down whatever you normally order. I use it to tell you which size to look at if I suggest something you don't own.",

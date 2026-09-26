@@ -25,6 +25,7 @@ from app.models.user import User
 from app.services.ai_access import require_ai_client
 from app.services.ai_service import AIResponseError
 from app.services.item_scorer import ScoredItem, get_season, score_items
+from app.services.layering import layering_context
 from app.services.music_service import (
     SongContext,
     format_song_context_for_prompt,
@@ -645,7 +646,12 @@ class RecommendationService:
             select(ClothingItem.id, ClothingItem.type).where(ClothingItem.id.in_(valid_ids))
         )
         item_type_map = {row.id: (row.type or "").lower() for row in items_result}
-        valid_ids = deduplicate_by_body_slot(valid_ids, item_type_map)
+        # ...but a layered look is not a slip: keep the collisions this user has
+        # already worn, and any of them if they asked for layers in «Tu estilo».
+        layering = await layering_context(self.db, user.id)
+        valid_ids = deduplicate_by_body_slot(
+            valid_ids, item_type_map, keep_pairs=layering.keep_pairs
+        )
 
         reasoning = outfit_data.get("headline") or outfit_data.get("reasoning")
         style_notes = outfit_data.get("styling_tip") or outfit_data.get("style_notes")

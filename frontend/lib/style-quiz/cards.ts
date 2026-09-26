@@ -246,6 +246,12 @@ export interface StyleQuizProfile {
   fit: FitChoice | null;
   /** Which section to dress them from; `null` means "never asked" = "ambas". */
   garment_pref: GarmentPref | null;
+  /**
+   * «Me gusta superponer prendas». Off by default. A permission, never an
+   * obligation: with it on Stinky *may* put a dress over trousers or a top
+   * under another top, and the body-slot rules stop pruning those looks.
+   */
+  layering: boolean;
   completed: boolean;
   /** Shape of the stored answers; the backend owns both of these. */
   version?: number;
@@ -272,6 +278,7 @@ export const emptyProfile = (): StyleQuizProfile => ({
   occasions: [],
   fit: null,
   garment_pref: null,
+  layering: false,
   completed: false,
 });
 
@@ -345,6 +352,7 @@ export function hasAnswers(profile: StyleQuizProfile): boolean {
       profile.colors_avoid.length ||
       profile.occasions.length ||
       profile.fit ||
-      profile.garment_pref
+      profile.garment_pref ||
+      profile.layering
   );
 }

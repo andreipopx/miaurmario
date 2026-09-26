@@ -3802,6 +3802,13 @@
           "sin_decir": "Prefiero no decirlo"
         }
       },
+      "layering": {
+        "title": "Me gusta superponer prendas",
+        "body": "Con esto activado puedo proponerte capas: un vestido sobre pantalón, un top bajo otro top, una camisa bajo un vestido. Solo cuando queda bien, nunca por obligación.",
+        "label": "Superponer prendas",
+        "on": "Activado: doblo capas cuando el look lo pide.",
+        "off": "Desactivado: te propongo una prenda arriba y otra abajo, sin doblar."
+      },
       "sizes": {
         "title": "Tus tallas habituales",
         "body": "Opcional, y cada tienda es un mundo: apunta la que sueles pedir. La uso para decirte qué talla mirar si te propongo algo que no tienes.",

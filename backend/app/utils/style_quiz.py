@@ -14,12 +14,17 @@ both the stylist prompts and the non-AI scorer need the same mapping:
 Keep the id list in sync with ``frontend/lib/style-quiz/cards.ts``; unknown ids
 coming from an older/newer client are dropped rather than rejected.
 
-Besides the cards, the quiz stores one optional preference about *clothes*:
-``garment_pref`` — which section of a shop the user wants to be dressed from.
-It is asked, never inferred, and leaving it unanswered is a first-class answer
-that changes nothing anywhere. Habitual sizes are deliberately **not** here:
-they live with the other measurements on the user, so there is one place that
-knows them.
+Besides the cards, the quiz stores two optional preferences about *clothes*:
+
+* ``garment_pref`` — which section of a shop the user wants to be dressed from.
+  It is asked, never inferred, and leaving it unanswered is a first-class answer
+  that changes nothing anywhere.
+* ``layering`` — «Me gusta superponer prendas», off by default. It is the one
+  answer about *how* to combine what they own, and it is a permission rather
+  than an instruction (see ``LAYERING_PROMPT_ES``).
+
+Habitual sizes are deliberately **not** here: they live with the other
+measurements on the user, so there is one place that knows them.
 """
 
 from collections.abc import Iterable, Mapping
@@ -118,6 +123,21 @@ FIT_ES: dict[str, str] = {
     "mixto": "mezcla: una parte holgada y la otra ajustada",
 }
 
+#: «Me gusta superponer prendas» — the one thing the quiz says about *how* to
+#: combine what the user owns rather than about what they like. Off by default:
+#: with it off nothing anywhere behaves differently from before it existed.
+#:
+#: It is a **permission, never an obligation**. The stylist may put a dress over
+#: trousers or a top under another top when the look asks for it, and is told in
+#: as many words that one piece is still a perfectly good answer.
+LAYERING_PROMPT_ES = (
+    "- Puede combinar capas: un vestido sobre pantalón, un top bajo otro top, "
+    "una camisa bajo un vestido — solo si queda bien. Es un permiso, no una "
+    "obligación: si el look pide una sola pieza, déjalo en una."
+)
+
+LAYERING_SUMMARY_ES = "Puedo superponer prendas: un vestido sobre pantalón, un top bajo otro top."
+
 #: Shape of the stored dict. Bump only when a reader has to branch on it.
 QUIZ_VERSION = 1
 
@@ -136,6 +156,7 @@ ANSWER_FIELDS: tuple[str, ...] = (
     "occasions",
     "fit",
     "garment_pref",
+    "layering",
 )
 
 
@@ -150,6 +171,7 @@ def empty_quiz() -> dict[str, Any]:
         "occasions": [],
         "fit": None,
         "garment_pref": None,
+        "layering": False,
         "completed": False,
         "version": QUIZ_VERSION,
         "updated_at": None,
@@ -204,6 +226,7 @@ def normalize_quiz(data: Mapping[str, Any] | None) -> dict[str, Any]:
     quiz["fit"] = fit if fit in FIT_CHOICES else None
     garment_pref = src.get("garment_pref")
     quiz["garment_pref"] = garment_pref if garment_pref in GARMENT_PREFS else None
+    quiz["layering"] = bool(src.get("layering"))
     quiz["completed"] = bool(src.get("completed"))
     # Set server-side on every write; a client-sent value is ignored.
     updated_at = src.get("updated_at")
@@ -226,6 +249,16 @@ def is_answered(quiz: Mapping[str, Any] | None) -> bool:
     return any(q[field] for field in ANSWER_FIELDS)
 
 
+def layering_allowed(quiz: Mapping[str, Any] | None) -> bool:
+    """Has the user asked for layered combinations? False unless they said so.
+
+    The single reader for «Me gusta superponer prendas»: the stylist prompts,
+    the body-slot rules and the heuristic composer all go through here, so a
+    user who never touched the toggle is treated exactly as before.
+    """
+    return bool(normalize_quiz(quiz)["layering"])
+
+
 def _labels(card_ids: Iterable[str]) -> str:
     return ", ".join(STYLE_CARDS_BY_ID[c].label_es for c in card_ids if c in STYLE_CARDS_BY_ID)
 
@@ -244,6 +277,8 @@ def quiz_prompt_lines(quiz: Mapping[str, Any] | None) -> list[str]:
     # behaves exactly as it did before this question existed.
     if q["garment_pref"] in GARMENT_PREF_PROMPT_ES:
         lines.append(GARMENT_PREF_PROMPT_ES[q["garment_pref"]])
+    if q["layering"]:
+        lines.append(LAYERING_PROMPT_ES)
     if q["colors_avoid"]:
         lines.append(f"- Colores que prefiere no llevar: {', '.join(q['colors_avoid'])}")
     if q["never_wear"]:
@@ -273,6 +308,8 @@ def quiz_summary_lines(quiz: Mapping[str, Any] | None) -> list[str]:
         lines.append(f"Prefieres que la ropa te quede {FIT_ES[q['fit']]}.")
     if q["garment_pref"] in GARMENT_PREF_SUMMARY_ES:
         lines.append(GARMENT_PREF_SUMMARY_ES[q["garment_pref"]])
+    if q["layering"]:
+        lines.append(LAYERING_SUMMARY_ES)
     if q["colors_avoid"]:
         lines.append(f"Evito estos colores: {', '.join(q['colors_avoid'])}.")
     if q["never_wear"]:

@@ -745,7 +745,11 @@ export function AlphaBrush({
       type="button"
       variant={tool === value ? 'default' : 'secondary'}
       aria-pressed={tool === value}
-      className="h-11 min-w-0 px-2"
+      // Two per row while the words fit and one per row when they do not: `basis` in
+      // rem grows with the root font size, so at 125% "Recuadro" stops being
+      // "Recuad…" instead of quietly losing its last two letters.
+      className="h-11 min-w-0 flex-1 basis-[7.5rem] px-2"
+      title={label}
       onClick={() => {
         setTool(value);
         setRegion(null);
@@ -758,7 +762,26 @@ export function AlphaBrush({
 
   return (
     <div ref={wrapper} className={cn('flex w-full flex-col items-center gap-3', className)}>
-      <p className="w-full text-[13px] font-semibold leading-snug">{t('title')}</p>
+      {/* Undo lives up here, beside the title, rather than at the end of the zoom
+          row: at 125% font that row is four 55px buttons and a label, and undo was
+          being wrapped onto a line of its own where it read as a stray control. It
+          undoes the whole edit a stroke at a time, so the top of the panel is where
+          it belongs anyway. */}
+      <div className="flex w-full items-center gap-2">
+        <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug">{t('title')}</p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="h-11 w-11 shrink-0"
+          disabled={strokes.length === 0}
+          onClick={undo}
+          aria-label={t('undo')}
+          title={t('undo')}
+        >
+          <Undo2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+        </Button>
+      </div>
       <p className="w-full text-[12px] leading-snug text-muted-foreground" aria-live="polite">
         {hint}
       </p>
@@ -877,17 +900,12 @@ export function AlphaBrush({
             )}
           </div>
         )}
-        {zoomed && (
-          <span className="pointer-events-none absolute right-1.5 top-1.5 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-bold tabular-nums">
-            {Math.round(view.zoom * 100)}%
-          </span>
-        )}
       </div>
 
       {/* Zoom, and the undo that used to hide beside the brush slider. Kept on its
           own row above the tools so that "how do I get closer" is answered without
           knowing about pinch. */}
-      <div className="flex w-full items-center gap-1.5" data-no-swipe>
+      <div className="flex w-full flex-wrap items-center gap-1.5" data-no-swipe>
         <Button
           type="button"
           variant="secondary"
@@ -900,8 +918,11 @@ export function AlphaBrush({
         >
           <Minus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
         </Button>
+        {/* Wide enough that "100%" and "256%" do not shove the buttons about, in
+            pixels rather than rem: at 125% font the whole row was 55px-wide buttons
+            plus a 70px label and the undo button ran off the edge of the panel. */}
         <span
-          className="min-w-[3.5rem] shrink-0 text-center text-[12px] font-semibold tabular-nums"
+          className="min-w-[48px] shrink-0 text-center text-[12px] font-semibold tabular-nums"
           aria-live="polite"
         >
           {t('zoomLevel', { percent: Math.round(view.zoom * 100) })}
@@ -930,18 +951,6 @@ export function AlphaBrush({
         >
           <Maximize2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
         </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          className="ml-auto h-11 w-11 shrink-0"
-          disabled={strokes.length === 0}
-          onClick={undo}
-          aria-label={t('undo')}
-          title={t('undo')}
-        >
-          <Undo2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-        </Button>
       </div>
 
       {/* What a gesture does. A two-up pair that splits the row evenly rather than
@@ -952,7 +961,7 @@ export function AlphaBrush({
           {t('action')}
         </p>
         <div
-          className={cn('grid w-full gap-2', canRestore ? 'grid-cols-2' : 'grid-cols-1')}
+          className="flex w-full flex-wrap gap-2"
           role="group"
           aria-labelledby="brush-action-label"
         >
@@ -960,7 +969,7 @@ export function AlphaBrush({
             type="button"
             variant={mode === 'erase' ? 'default' : 'secondary'}
             aria-pressed={mode === 'erase'}
-            className="h-11 min-w-0 px-2"
+            className="h-11 min-w-0 flex-1 basis-[8rem] px-2"
             onClick={() => setMode('erase')}
           >
             <Eraser className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
@@ -971,7 +980,7 @@ export function AlphaBrush({
               type="button"
               variant={mode === 'restore' ? 'default' : 'secondary'}
               aria-pressed={mode === 'restore'}
-              className="h-11 min-w-0 px-2"
+              className="h-11 min-w-0 flex-1 basis-[8rem] px-2"
               onClick={() => setMode('restore')}
             >
               <PaintBucket className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
@@ -987,7 +996,7 @@ export function AlphaBrush({
           {t('tool')}
         </p>
         <div
-          className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4"
+          className="flex w-full flex-wrap gap-2"
           role="group"
           aria-labelledby="brush-tool-label"
         >

@@ -658,14 +658,19 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                 changes shape, so the layout never jumps. */}
             {isEditing ? (
               <div className="flex gap-2">
+                {/* "Cancelar edición" truncated to "Cancel…" beside "Guardar" at
+                    320px, so the word is short and the full sense is in the
+                    accessible name, which contains the visible one. */}
                 <Button
                   variant="secondary"
                   className="min-w-0 flex-1"
                   onClick={stopEditing}
                   disabled={updateItem.isPending}
+                  aria-label={t('toolbar.cancelEditing')}
+                  title={t('toolbar.cancelEditing')}
                 >
                   <X className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
-                  <span className="min-w-0 truncate">{t('toolbar.cancelEditing')}</span>
+                  <span className="min-w-0 truncate">{tc('cancel')}</span>
                 </Button>
                 <Button
                   className="min-w-0 flex-1"
@@ -723,14 +728,19 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   exactly right: you cannot undo a re-analysis. */}
             {!isEditing ? (
               <div className="space-y-2">
+                {/* Side by side when both words fit, stacked when they do not.
+                    `basis` in rem is the trick: it grows with the root font size, so
+                    at 125% the row runs out of space and wraps by itself rather than
+                    truncating "Favorita" to "Favo…" and "Combinar" to "Com…". A
+                    320px screen wraps for the same reason. */}
                 <div
                   role="group"
                   aria-label={t('toolbar.label')}
-                  className="grid grid-cols-2 gap-2"
+                  className="flex flex-wrap gap-2"
                 >
                   <Button
                     variant="secondary"
-                    className="min-w-0"
+                    className="min-w-0 flex-1 basis-[8.5rem]"
                     onClick={handleToggleFavorite}
                     disabled={updateItem.isPending}
                     aria-pressed={!!item.favorite}
@@ -749,7 +759,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   </Button>
                   <Button
                     variant="secondary"
-                    className="min-w-0"
+                    className="min-w-0 flex-1 basis-[8.5rem]"
                     onClick={() => setShowPairingsDialog(true)}
                     disabled={item.status !== 'ready'}
                     title={item.status !== 'ready' ? t('toolbar.pairingsNotReady') : undefined}

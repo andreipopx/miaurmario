@@ -45,6 +45,7 @@ from app.services.recommendation_service import (
 )
 from app.services.weather_service import WeatherData
 from app.utils.clothing import ITEM_ROLE, canonical_item_order
+from app.utils.style_quiz import layering_allowed
 from app.utils.timezone import get_user_today
 
 logger = logging.getLogger(__name__)
@@ -188,6 +189,7 @@ def compose_outfit(
     occasion: str,
     base: list[ClothingItem] | None = None,
     pinned: ClothingItem | None = None,
+    allow_layering: bool = False,
 ) -> ComposedOutfit:
     """Build one look from items ranked best-first (item, score).
 
@@ -198,6 +200,12 @@ def compose_outfit(
     With ``pinned`` (a rescue) that garment is the look's starting point: it wins
     its own body slot outright and, if its role would not have been filled at
     all, it is added anyway. ``pinned`` must be one of the ``ranked`` items.
+
+    ``allow_layering`` («Me gusta superponer prendas», off by default) only
+    lifts a veto: a dress and a bottom, or a dress and a top, stop cancelling
+    each other out, so a pinned pair of trousers can be worn under a dress.
+    It never *adds* a second piece on its own — with the same ranking, a look
+    that came out as one dress still comes out as one dress.
     """
     by_role: dict[str, list[tuple[ClothingItem, float]]] = {}
     for item, score in ranked:
@@ -264,7 +272,7 @@ def compose_outfit(
     if pinned_role == "full_body":
         # A pinned dress is the look; a top and a bottom would fight it for the slot.
         wear_full = True
-    elif pinned_role in ("base_top", "bottom"):
+    elif pinned_role in ("base_top", "bottom") and not allow_layering:
         wear_full = False
     else:
         wear_full = full is not None and (
@@ -295,7 +303,8 @@ def compose_outfit(
 
     if pinned is not None and all(i.id != pinned.id for i in picked):
         # Its role never came up (an accessory on a plain day, a type we have no
-        # role for). A rescue is about this garment, so it goes in regardless.
+        # role for, or — with layering allowed — a bottom under a dress that won
+        # the slot). A rescue is about this garment, so it goes in regardless.
         picked.append(pinned)
 
     if len(picked) < MIN_CANDIDATES_FOR_OUTFIT:
@@ -470,7 +479,13 @@ class DayMomentService:
             key=lambda x: x[1],
             reverse=True,
         )
-        composed = compose_outfit(ranked, weather, occasion, base=base_items or None)
+        composed = compose_outfit(
+            ranked,
+            weather,
+            occasion,
+            base=base_items or None,
+            allow_layering=layering_allowed(prefs.taste_profile if prefs else None),
+        )
 
         type_map = {i.id: (i.type or "").lower() for i in candidates}
         ordered = canonical_item_order(composed.item_ids, type_map)

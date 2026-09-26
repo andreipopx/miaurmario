@@ -645,7 +645,10 @@
         "style": "Estilo",
         "styleHint": "(hasta dos)",
         "formality": "Formalidad",
-        "season": "Temporada"
+        "season": "Temporada",
+        "saving": "Guardando…",
+        "saved": "Guardado",
+        "unsaved": "Tienes cambios sin guardar."
       },
       "info": {
         "wornTimesWithLast": "Usada {count, plural, one {# vez} other {# veces}}",
@@ -752,11 +755,18 @@
         "originalRestored": "Imagen original restaurada",
         "originalRestoreFailed": "No se pudo restaurar la original",
         "imageReplaced": "Imagen reemplazada",
-        "imageReplaceFailed": "No se pudo reemplazar la imagen"
+        "imageReplaceFailed": "No se pudo reemplazar la imagen",
+        "saveFailed": "No he podido guardar los cambios. Vuelve a intentarlo."
       },
       "wornAgo": "{days, plural, =0 {Usada hoy} =1 {Usada ayer} other {Usada hace # días}}",
       "imageN": "Imagen {n}",
-      "addImage": "Añadir imagen"
+      "addImage": "Añadir imagen",
+      "discardConfirm": {
+        "title": "¿Descartas los cambios?",
+        "description": "Has cambiado cosas de esta prenda y no las he guardado todavía. Si sigues, se pierden.",
+        "keepEditing": "Seguir editando",
+        "discard": "Descartar"
+      }
     },
     "bulk": {
       "deleted": "{count, plural, one {# prenda eliminada} other {# prendas eliminadas}}",
@@ -3439,6 +3449,80 @@
     "loading": "Cargando…"
   },
   "tagValues": {
+    "subtypes": {
+      "a-line": "Línea A",
+      "ankle": "Tobillo",
+      "anorak": "Anorak",
+      "asymmetric": "Corte asimétrico",
+      "athletic": "Deportivos",
+      "bandeau": "Bandeau",
+      "bodycon": "Bodycon",
+      "bodysuit": "Body",
+      "bolo": "Bolo",
+      "bomber": "Bomber",
+      "bow-tie": "Pajarita",
+      "button-down": "Button-down",
+      "camisole": "Camisola",
+      "camp-collar": "Camp collar",
+      "cargo": "Cargo",
+      "chelsea": "Chelsea",
+      "chinos": "Chinos",
+      "chunky": "Chunky",
+      "combat": "Combat",
+      "corset": "Corsé",
+      "crew": "Media caña",
+      "crewneck": "Cuello redondo",
+      "cropped": "Crop",
+      "denim-jacket": "Vaquera",
+      "denim-skirt": "Vaquera",
+      "dress": "De vestir",
+      "flannel": "Franela",
+      "flats": "Planos",
+      "halter": "Halter",
+      "hawaiian": "Hawaiana",
+      "heels": "Tacones",
+      "henley": "Henley",
+      "high-top": "Caña alta",
+      "joggers": "Joggers",
+      "knee-high": "Hasta la rodilla",
+      "knit-dress": "De punto",
+      "leggings": "Leggings",
+      "loafers": "Mocasines",
+      "long-sleeve": "Manga larga",
+      "low-top": "Caña baja",
+      "maxi": "Maxi",
+      "midi": "Midi",
+      "mini": "Mini",
+      "mules": "Mules",
+      "necktie": "Corbata",
+      "no-show": "Invisibles",
+      "off-shoulder": "Hombros descubiertos",
+      "oxford": "Oxford",
+      "oxfords": "Oxford",
+      "parka": "Parka",
+      "peasant": "Campesina",
+      "pencil": "De tubo",
+      "platforms": "Plataformas",
+      "pleated": "Plisada",
+      "pullover": "Pullover",
+      "rain": "De agua",
+      "ruffled": "Con volantes",
+      "shirt-dress": "Camisero",
+      "skort": "Falda pantalón",
+      "sleeveless": "Sin mangas",
+      "slip-dress": "Slip dress",
+      "slip-on": "Slip-on",
+      "straps": "De tirantes",
+      "sundress": "De verano",
+      "sweatpants": "Chándal",
+      "trousers": "De vestir",
+      "trucker": "Trucker",
+      "tulle": "De tul",
+      "turtleneck": "Cuello alto",
+      "v-neck": "Cuello de pico",
+      "windbreaker": "Cortavientos",
+      "wrap": "Cruzado"
+    },
     "colors": {
       "black": "Negro",
       "charcoal": "Gris marengo",
@@ -3810,6 +3894,13 @@
           "sin_decir": "Prefiero no decirlo"
         }
       },
+      "layering": {
+        "title": "Me gusta superponer prendas",
+        "body": "Con esto activado puedo proponerte capas: un vestido sobre pantalón, un top bajo otro top, una camisa bajo un vestido. Solo cuando queda bien, nunca por obligación.",
+        "label": "Superponer prendas",
+        "on": "Activado: doblo capas cuando el look lo pide.",
+        "off": "Desactivado: te propongo una prenda arriba y otra abajo, sin doblar."
+      },
       "sizes": {
         "title": "Tus tallas habituales",
         "body": "Opcional, y cada tienda es un mundo: apunta la que sueles pedir. La uso para decirte qué talla mirar si te propongo algo que no tienes.",
@@ -4143,7 +4234,13 @@
       "pickColour": "Sacar el color de la foto",
       "styleLegend": "Estilo",
       "styleHint": "(hasta dos)",
-      "formalityLegend": "Formalidad"
+      "formalityLegend": "Formalidad",
+      "subtypeLegend": "Detalle",
+      "subtypeHint": "(opcional)",
+      "subtypeOther": "Otro",
+      "subtypeOtherLabel": "Otro detalle",
+      "subtypeOtherPlaceholder": "Escríbelo",
+      "subtypeClear": "Sin detalle"
     },
     "statusBar": {
       "open": "Abrir la subida de prendas",
@@ -4178,7 +4275,33 @@
       "square": "Cuadrado",
       "portrait": "Vertical",
       "landscape": "Apaisado"
-    }
+    },
+    "saving": "Guardando el giro"
+  },
+  "imageBrush": {
+    "title": "Borra lo que sobra",
+    "hint": "Pinta encima para quitar lo que no es la prenda. Si el recorte automático se comió algo, cambia a «devolver» y píntalo de vuelta.",
+    "hintEraseOnly": "Pinta encima para quitar lo que no es la prenda.",
+    "tools": "Borrador",
+    "erase": "Borrar",
+    "restore": "Devolver",
+    "eraseArea": "Foto de la prenda: pinta para borrar",
+    "restoreArea": "Foto de la prenda: pinta para devolver",
+    "undo": "Deshacer el último trazo",
+    "brushSize": "Grosor del pincel",
+    "apply": "Guardar",
+    "cancel": "Cancelar",
+    "reset": "Volver al automático",
+    "open": "Borra lo que sobra",
+    "edited": "Retocada a mano",
+    "noPreview": "No puedo mostrar esta foto aquí",
+    "keyboardHint": "Con el teclado: flechas para mover el pincel, Enter para pintar.",
+    "saved": "Listo, la prenda queda así en todas las pantallas",
+    "saveFailed": "No he podido guardar el retoque. Vuelve a intentarlo.",
+    "wasReset": "Vuelta al recorte automático",
+    "resetFailed": "No he podido volver al automático",
+    "pendingOne": "Guardaremos la prenda con lo que has borrado",
+    "clearedByRotate": "Al girar la foto he quitado lo que habías borrado: vuelve a pintarlo."
   },
   "imageViews": {
     "question": "¿Qué se ve en esta foto?",

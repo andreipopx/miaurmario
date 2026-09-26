@@ -645,7 +645,10 @@
         "style": "Style",
         "styleHint": "(up to two)",
         "formality": "Formality",
-        "season": "Season"
+        "season": "Season",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "unsaved": "You have unsaved changes."
       },
       "info": {
         "wornTimesWithLast": "Worn {count, plural, one {# time} other {# times}}",
@@ -752,11 +755,18 @@
         "originalRestored": "Original image restored",
         "originalRestoreFailed": "Could not restore the original",
         "imageReplaced": "Image replaced",
-        "imageReplaceFailed": "Could not replace the image"
+        "imageReplaceFailed": "Could not replace the image",
+        "saveFailed": "I couldn't save your changes. Try again."
       },
       "wornAgo": "{days, plural, =0 {Worn today} =1 {Worn yesterday} other {Worn # days ago}}",
       "imageN": "Image {n}",
-      "addImage": "Add image"
+      "addImage": "Add image",
+      "discardConfirm": {
+        "title": "Discard your changes?",
+        "description": "You've changed things about this garment and I haven't saved them yet. Carrying on loses them.",
+        "keepEditing": "Keep editing",
+        "discard": "Discard"
+      }
     },
     "bulk": {
       "deleted": "{count, plural, one {Deleted # item} other {Deleted # items}}",
@@ -3439,6 +3449,80 @@
     "loading": "Loading…"
   },
   "tagValues": {
+    "subtypes": {
+      "a-line": "A-line",
+      "ankle": "Ankle",
+      "anorak": "Anorak",
+      "asymmetric": "Asymmetric",
+      "athletic": "Athletic",
+      "bandeau": "Bandeau",
+      "bodycon": "Bodycon",
+      "bodysuit": "Bodysuit",
+      "bolo": "Bolo",
+      "bomber": "Bomber",
+      "bow-tie": "Bow tie",
+      "button-down": "Button-down",
+      "camisole": "Camisole",
+      "camp-collar": "Camp collar",
+      "cargo": "Cargo",
+      "chelsea": "Chelsea",
+      "chinos": "Chinos",
+      "chunky": "Chunky",
+      "combat": "Combat",
+      "corset": "Corset",
+      "crew": "Crew",
+      "crewneck": "Crewneck",
+      "cropped": "Cropped",
+      "denim-jacket": "Denim",
+      "denim-skirt": "Denim",
+      "dress": "Dress",
+      "flannel": "Flannel",
+      "flats": "Flats",
+      "halter": "Halter",
+      "hawaiian": "Hawaiian",
+      "heels": "Heels",
+      "henley": "Henley",
+      "high-top": "High-top",
+      "joggers": "Joggers",
+      "knee-high": "Knee-high",
+      "knit-dress": "Knit",
+      "leggings": "Leggings",
+      "loafers": "Loafers",
+      "long-sleeve": "Long sleeve",
+      "low-top": "Low-top",
+      "maxi": "Maxi",
+      "midi": "Midi",
+      "mini": "Mini",
+      "mules": "Mules",
+      "necktie": "Necktie",
+      "no-show": "No-show",
+      "off-shoulder": "Off-shoulder",
+      "oxford": "Oxford",
+      "oxfords": "Oxfords",
+      "parka": "Parka",
+      "peasant": "Peasant",
+      "pencil": "Pencil",
+      "platforms": "Platforms",
+      "pleated": "Pleated",
+      "pullover": "Pullover",
+      "rain": "Rain",
+      "ruffled": "Ruffled",
+      "shirt-dress": "Shirt dress",
+      "skort": "Skort",
+      "sleeveless": "Sleeveless",
+      "slip-dress": "Slip dress",
+      "slip-on": "Slip-on",
+      "straps": "Straps",
+      "sundress": "Sundress",
+      "sweatpants": "Sweatpants",
+      "trousers": "Trousers",
+      "trucker": "Trucker",
+      "tulle": "Tulle",
+      "turtleneck": "Turtleneck",
+      "v-neck": "V-neck",
+      "windbreaker": "Windbreaker",
+      "wrap": "Wrap"
+    },
     "colors": {
       "black": "Black",
       "charcoal": "Charcoal",
@@ -3810,6 +3894,13 @@
           "sin_decir": "I'd rather not say"
         }
       },
+      "layering": {
+        "title": "I like layering pieces",
+        "body": "With this on I can suggest layers: a dress over trousers, a top under another top, a shirt under a dress. Only when it works, never as a rule.",
+        "label": "Layer pieces",
+        "on": "On: I'll double up layers when the look calls for it.",
+        "off": "Off: one piece up top and one below, nothing doubled up."
+      },
       "sizes": {
         "title": "Your usual sizes",
         "body": "Optional, and every shop is different: put down whatever you normally order. I use it to tell you which size to look at if I suggest something you don't own.",
@@ -4143,7 +4234,13 @@
       "pickColour": "Take the colour off the photo",
       "styleLegend": "Style",
       "styleHint": "(up to two)",
-      "formalityLegend": "Formality"
+      "formalityLegend": "Formality",
+      "subtypeLegend": "Detail",
+      "subtypeHint": "(optional)",
+      "subtypeOther": "Other",
+      "subtypeOtherLabel": "Other detail",
+      "subtypeOtherPlaceholder": "Type it",
+      "subtypeClear": "No detail"
     },
     "statusBar": {
       "open": "Open the item upload",
@@ -4178,7 +4275,33 @@
       "square": "Square",
       "portrait": "Portrait",
       "landscape": "Landscape"
-    }
+    },
+    "saving": "Saving the turn"
+  },
+  "imageBrush": {
+    "title": "Erase what doesn't belong",
+    "hint": "Paint over anything that isn't the garment. If the automatic cut-out ate part of it, switch to “bring back” and paint it in again.",
+    "hintEraseOnly": "Paint over anything that isn't the garment.",
+    "tools": "Eraser",
+    "erase": "Erase",
+    "restore": "Bring back",
+    "eraseArea": "Garment photo: paint to erase",
+    "restoreArea": "Garment photo: paint to bring back",
+    "undo": "Undo the last stroke",
+    "brushSize": "Brush size",
+    "apply": "Save",
+    "cancel": "Cancel",
+    "reset": "Back to automatic",
+    "open": "Erase what doesn't belong",
+    "edited": "Touched up by hand",
+    "noPreview": "I can't show this photo here",
+    "keyboardHint": "With a keyboard: arrows move the brush, Enter paints.",
+    "saved": "Done — the garment looks like this on every screen now",
+    "saveFailed": "I couldn't save the touch-up. Try again.",
+    "wasReset": "Back to the automatic cut-out",
+    "resetFailed": "I couldn't go back to automatic",
+    "pendingOne": "We'll save the garment with what you erased",
+    "clearedByRotate": "Rotating the photo cleared what you'd erased — paint it again."
   },
   "imageViews": {
     "question": "What does this photo show?",

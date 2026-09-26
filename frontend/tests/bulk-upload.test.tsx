@@ -12,7 +12,13 @@ import {
   screenFiles,
   type QueuedPhoto,
 } from '@/lib/bulk-upload/queue'
-import { OTHER_COLORS, OTHER_TYPES, QUICK_COLORS, QUICK_TYPES, needsType } from '@/components/bulk-upload/tag-choices'
+import {
+  ALL_COLORS,
+  ALL_TYPES,
+  DEFAULT_QUICK_COLORS,
+  DEFAULT_QUICK_TYPES,
+  needsType,
+} from '@/components/bulk-upload/tag-choices'
 import { failureOf } from '@/lib/bulk-upload/bulk-upload-context'
 import { ApiError, NetworkError } from '@/lib/api'
 import es from '@/messages/es.json'
@@ -130,18 +136,21 @@ describe('needsType', () => {
 })
 
 describe('quick tag shortlists', () => {
-  it('never offers the same value twice', () => {
-    expect(OTHER_TYPES.filter((t) => (QUICK_TYPES as readonly string[]).includes(t))).toEqual([])
-    expect(OTHER_COLORS.filter((c) => (QUICK_COLORS as readonly string[]).includes(c))).toEqual([])
+  it('keeps the full vocabulary reachable', () => {
+    // The selects hold everything, buttons included: the button row is now this
+    // owner's wardrobe, so a select built from its complement would be a moving
+    // target. See tag-choices for the whole argument.
+    for (const type of DEFAULT_QUICK_TYPES) expect(ALL_TYPES).toContain(type)
+    for (const color of DEFAULT_QUICK_COLORS) expect(ALL_COLORS).toContain(color)
   })
 
   it('offers every shortlisted value as a real tag value', () => {
     // The shortlist is a subset of the tag vocabulary, or the stepper would write
     // types the scorer has never heard of.
-    for (const type of QUICK_TYPES) {
+    for (const type of DEFAULT_QUICK_TYPES) {
       expect(es.clothingTypes).toHaveProperty(type)
     }
-    for (const color of QUICK_COLORS) {
+    for (const color of DEFAULT_QUICK_COLORS) {
       expect(es.tagValues.colors).toHaveProperty(color)
     }
   })

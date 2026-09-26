@@ -19,21 +19,61 @@ class BackgroundRemovalProvider(ABC):
 
 
 class RembgProvider(BackgroundRemovalProvider):
-    def __init__(self, model: str = "u2net"):
+    """A local rembg model, with a second model to fall back on.
+
+    The model is a file on disk — baked into the image at build time so a deploy
+    never downloads 180 MB, and so removal works with no network at all. Which
+    means a misspelt ``BG_REMOVAL_MODEL``, or a model the operator did not bake in,
+    would otherwise leave the app with no cut-outs whatsoever. Falling back to
+    ``fallback_model`` (u2net, always baked) keeps the feature working and says so
+    loudly in the log, and ``model`` reports what is actually loaded rather than
+    what was asked for.
+    """
+
+    def __init__(self, model: str = "u2net", fallback_model: str | None = None):
+        self.requested_model = model
+        self.fallback_model = fallback_model
+        #: What is actually loaded. Equal to ``requested_model`` until a load fails.
         self.model = model
         self._session = None
         # Guards the one-time load so the startup warm-up and a first request never both
         # pay the ~40s rembg import + ONNX session creation.
         self._lock = threading.Lock()
 
+    def _new_session(self, model: str):
+        from rembg import new_session
+
+        return new_session(model)
+
     def _get_session(self):
         if self._session is None:
             with self._lock:
                 if self._session is None:
-                    from rembg import new_session
-
-                    self._session = new_session(self.model)
+                    self._session = self._load()
         return self._session
+
+    def _load(self):
+        try:
+            session = self._new_session(self.requested_model)
+        except ImportError:
+            # rembg itself is missing: nothing to fall back to, and the API turns
+            # this into a 501 with installation instructions.
+            raise
+        except Exception:
+            if not self.fallback_model or self.fallback_model == self.requested_model:
+                raise
+            logger.warning(
+                "Background removal: model '%s' could not be loaded, falling back to '%s'. "
+                "Bake it into the image (see BG_REMOVAL_MODEL in the README) to use it.",
+                self.requested_model,
+                self.fallback_model,
+                exc_info=True,
+            )
+            session = self._new_session(self.fallback_model)
+            self.model = self.fallback_model
+        else:
+            self.model = self.requested_model
+        return session
 
     def warm_up(self) -> None:
         self._get_session()
@@ -81,7 +121,10 @@ def get_provider() -> BackgroundRemovalProvider:
     provider_type = settings.bg_removal_provider
 
     if provider_type == "rembg":
-        _provider = RembgProvider(model=settings.bg_removal_model)
+        _provider = RembgProvider(
+            model=settings.bg_removal_model,
+            fallback_model=settings.bg_removal_fallback_model,
+        )
     elif provider_type == "http":
         if not settings.bg_removal_url:
             raise ValueError("BG_REMOVAL_URL is required when BG_REMOVAL_PROVIDER=http")

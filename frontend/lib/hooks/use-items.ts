@@ -150,6 +150,97 @@ export function useRemoveBackground() {
   });
 }
 
+/**
+ * "Borra lo que sobra" on a garment already in the wardrobe.
+ *
+ * The mask goes to the server rather than the finished image: the stored alpha is
+ * what every screen reads, and the server owns where the cut-out sits inside the
+ * photo it was trimmed out of. `space` says which picture the strokes were painted
+ * on — the visible cut-out, or the whole stored photo.
+ *
+ * `imageId` picks the photo. Omitted, the strokes land on the garment's own photo;
+ * given, on that one extra photo and on nothing else — which is what makes touching
+ * up a back shot safe, since a garment can have a cut-out back and a white-backed
+ * front and each is fixed on its own.
+ */
+export function useBrushCutout() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      mask,
+      space = 'cutout',
+      imageId = null,
+    }: {
+      id: string;
+      mask: Blob;
+      space?: 'cutout' | 'original';
+      imageId?: string | null;
+    }) => {
+      const token = session?.accessToken || getAccessToken();
+      const formData = new FormData();
+      formData.append('mask', mask, 'mask.png');
+      formData.append('space', space);
+
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const url = imageId
+        ? `/api/v1/items/${id}/images/${imageId}/cutout-mask`
+        : `/api/v1/items/${id}/cutout-mask`;
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+        headers,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new ApiError(data.detail || 'Failed to edit the cut-out', response.status, data);
+      }
+
+      return response.json() as Promise<Item | ItemImage>;
+    },
+    onSuccess: (_, variables) => invalidateGarmentImage(queryClient, variables.id),
+  });
+}
+
+/**
+ * Throw the user's strokes away and go back to what the model decided — for the
+ * garment's own photo, or for one extra photo when `imageId` says so.
+ */
+export function useResetCutout() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({ id, imageId = null }: { id: string; imageId?: string | null }) => {
+      if (session?.accessToken) setAccessToken(session.accessToken as string);
+      return imageId
+        ? api.delete<ItemImage>(`/items/${id}/images/${imageId}/cutout-mask`)
+        : api.delete<Item>(`/items/${id}/cutout-mask`);
+    },
+    onSuccess: (_, variables) => invalidateGarmentImage(queryClient, variables.id),
+  });
+}
+
+/**
+ * Every list that shows a garment's picture, after that picture changed on disk.
+ *
+ * The signed URL changes on every read, so the only way a screen picks up a new
+ * cut-out is a refetch — and a garment appears in the wardrobe, in looks, and on
+ * the calendar, so all three have to be told.
+ */
+function invalidateGarmentImage(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  queryClient.invalidateQueries({ queryKey: ['items'] });
+  queryClient.invalidateQueries({ queryKey: ['item', id] });
+  queryClient.invalidateQueries({ queryKey: ['outfits'] });
+  queryClient.invalidateQueries({ queryKey: ['calendarOutfits'] });
+}
+
 export function useRestoreOriginal() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
@@ -614,21 +705,30 @@ export function useRotateImage() {
     mutationFn: async ({
       id,
       direction,
+      quarters = 1,
+      imageId = null,
     }: {
       id: string;
       direction: 'cw' | 'ccw';
+      /**
+       * How many 90° steps, 1-3. Several taps on the button collapse into one
+       * request and one re-encode, which is most of what made rotating a batch
+       * feel like waiting.
+       */
+      quarters?: number;
+      /**
+       * Which photo to turn: the garment's own when omitted, one extra photo when
+       * given. A back shot arrives sideways as often as a front one.
+       */
+      imageId?: string | null;
     }) => {
       if (session?.accessToken) {
         setAccessToken(session.accessToken as string);
       }
-      return api.post<Item>(`/items/${id}/rotate?direction=${direction}`);
+      const path = imageId ? `/items/${id}/images/${imageId}/rotate` : `/items/${id}/rotate`;
+      return api.post<Item | ItemImage>(`${path}?direction=${direction}&quarters=${quarters}`);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['item', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['outfits'] });
-      queryClient.invalidateQueries({ queryKey: ['calendarOutfits'] });
-    },
+    onSuccess: (_, variables) => invalidateGarmentImage(queryClient, variables.id),
   });
 }
 

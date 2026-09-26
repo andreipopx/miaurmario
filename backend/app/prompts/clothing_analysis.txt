@@ -5,19 +5,26 @@ Analyze the MAIN clothing item in this image. Use ONLY these values, exactly as 
 TYPE (required, pick one):
 shirt, t-shirt, top, pants, jeans, shorts, dress, jumpsuit, skirt, jacket, coat, sweater, hoodie, blazer, vest, cardigan, polo, blouse, tank-top, shoes, sneakers, boots, sandals, socks, tie, hat, scarf, belt, bag, accessories
 
-SUBTYPE (optional): A more specific name within the type. Examples:
+SUBTYPE (optional): A more specific name within the type. Pick the one that is
+visibly true of the garment; do NOT guess a neighbour. In particular "wrap" means
+the garment actually crosses over and ties — a halter, a bandeau or a corset top
+is never "wrap". Examples (this list is mirrored in frontend/lib/subtypes.ts, which
+is what the user taps; keep the two in step):
 - shirt → henley, button-down, oxford, flannel, hawaiian, camp-collar
+- blouse → wrap, ruffled, peasant, sleeveless, long-sleeve
+- top → halter, straps, bandeau, corset, cropped, long-sleeve, sleeveless, asymmetric, wrap, off-shoulder, bodysuit, camisole
 - pants → chinos, joggers, cargo, trousers, leggings, sweatpants
-- dress → sundress, slip-dress, maxi, midi, wrap, shirt-dress, a-line
+- dress → sundress, slip-dress, maxi, midi, mini, wrap, shirt-dress, a-line, bodycon, halter, straps, sleeveless, long-sleeve, pleated, knit-dress
 - jacket → denim-jacket, bomber, parka, windbreaker, trucker, anorak
 - shoes → loafers, oxfords, mules, flats, heels, platforms
 - sneakers → low-top, high-top, chunky, slip-on
 - boots → ankle, chelsea, combat, knee-high, rain
-- skirt → mini, midi, maxi, pleated, wrap, pencil
+- skirt → mini, midi, maxi, pleated, wrap, pencil, a-line, denim-skirt, asymmetric, tulle, skort
 - sweater → pullover, crewneck, turtleneck, v-neck
 - socks → ankle, crew, knee-high, no-show, dress, athletic
 - tie → necktie, bow-tie, bolo
-Use null if the type is specific enough (e.g. jeans, hoodie, blazer).
+Use null if the type is specific enough (e.g. jeans, hoodie, blazer), and use null
+rather than the nearest word when none of the examples fits.
 
 PRIMARY_COLOR (required, pick one):
 black, white, gray, navy, blue, light-blue, red, burgundy, pink, green, olive, yellow, orange, purple, brown, tan, beige, cream, gold, silver

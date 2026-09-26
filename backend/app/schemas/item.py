@@ -348,6 +348,19 @@ class ItemResponse(ItemBase):
 
     @computed_field
     @property
+    def original_image_url(self) -> str | None:
+        """The untouched photo, when one was kept aside.
+
+        The eraser needs it: restoring part of a cut-out has to show the pixels that
+        were there, and a stored cut-out keeps nothing usable under its own
+        transparency. It is the same file "deshacer el recorte" restores from.
+        """
+        if self.original_image_path:
+            return sign_image_url(self.original_image_path)
+        return None
+
+    @computed_field
+    @property
     def care_hints(self) -> list[str]:
         """Stable codes (``wash_30``, ``no_tumble``…) the frontend localises."""
         if self.care is None:
@@ -459,6 +472,11 @@ class BulkTagEntry(BaseModel):
 
     item_id: UUID
     type: str | None = Field(None, max_length=50)
+    # The detail inside the type ("halter", "plisada" → `pleated`). Unlike `type`, an
+    # empty string is meaningful here: the tagger guesses subtype badly and removing
+    # a wrong guess is the commonest edit the quick pass makes, so "" clears it while
+    # omitting the field leaves whatever is stored alone.
+    subtype: str | None = Field(None, max_length=50)
     primary_color: str | None = Field(None, max_length=50)
     # The sampled shade of the garment, "#rrggbb". Display only: `primary_color`
     # stays the family everything else reasons on.
@@ -604,6 +622,20 @@ class ItemImageResponse(BaseModel):
         looking at, never on the garment.
         """
         return bool(self.original_image_path)
+
+    @computed_field
+    @property
+    def original_image_url(self) -> str | None:
+        """This photo's untouched version, when one was kept aside.
+
+        The same thing `ItemResponse` exposes for the garment's own photo, and for the
+        same reason: painting part of a cut-out *back* has to show the pixels that
+        were there, and a stored cut-out keeps nothing usable under its own
+        transparency. Without it the eraser on a back photo could only erase.
+        """
+        if self.original_image_path:
+            return sign_image_url(self.original_image_path)
+        return None
 
 
 class ReorderImagesRequest(BaseModel):

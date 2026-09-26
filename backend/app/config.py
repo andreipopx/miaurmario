@@ -165,7 +165,18 @@ class Settings(BaseSettings):
 
     # Background removal
     bg_removal_provider: str = Field(default="rembg")  # "rembg" or "http"
-    bg_removal_model: str = Field(default="u2net")  # rembg model name
+    # isnet-general-use rather than u2net: on shapes with holes the fabric encloses
+    # it cuts the gap between arm and body (0.54 of the hole left opaque -> 0.025)
+    # and the inside of a bag handle (0.067 -> 0.011), and lifts the silhouette
+    # everywhere, at a comparable cost per photo. It does *not* fix a small enclosed
+    # neckline; only birefnet-general-lite does, and at eight times the cost, so it
+    # is baked into the image and left for an operator to choose. The numbers and
+    # the reasoning are in the README. See RembgProvider for the fallback when the
+    # chosen model is not on disk.
+    bg_removal_model: str = Field(default="isnet-general-use")  # rembg model name
+    #: Loaded instead when ``bg_removal_model`` cannot be created — a model that
+    #: was never baked into the image would otherwise mean no cut-outs at all.
+    bg_removal_fallback_model: str = Field(default="u2net")
     bg_removal_url: str | None = Field(default=None)  # URL for http provider (e.g. withoutbg)
     bg_removal_api_key: str | None = Field(default=None)  # API key for http provider
     # Import rembg + create the model session in a background thread at API startup.

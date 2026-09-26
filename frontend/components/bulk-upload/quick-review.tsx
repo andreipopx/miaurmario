@@ -26,6 +26,8 @@ import {
 
 export interface ReviewEdit {
   type?: string;
+  /** `null` clears it: the garment is a plain one of its type after all. */
+  subtype?: string | null;
   primaryColor?: string;
   /**
    * The shade sampled off this garment's photo. `undefined` means "unchanged";
@@ -47,6 +49,7 @@ export function draftOf(item: Item, edit: ReviewEdit | undefined): StepperDraft 
     fullImageUrl: item.image_url ?? item.medium_url ?? item.thumbnail_url,
     hasCutout: item.has_cutout,
     type: edit?.type ?? item.type,
+    subtype: edit?.subtype !== undefined ? edit.subtype : item.subtype,
     primaryColor: edit?.primaryColor ?? item.primary_color,
     primaryColorHex:
       edit?.primaryColorHex !== undefined ? edit.primaryColorHex : item.primary_color_hex,
@@ -93,7 +96,8 @@ export function QuickReview({
   onOpen: (itemId: string | null) => void;
   onEdit: (itemId: string, changes: TagChanges) => void;
   onRotate: (itemId: string, direction: 'cw' | 'ccw') => void;
-  rotating: string | null;
+  /** Whether this garment has a turn still being written. It never blocks the buttons. */
+  rotating: (itemId: string) => boolean;
   turns?: Readonly<Record<string, number>>;
   onStartStepper: () => void;
   /**
@@ -203,6 +207,7 @@ export function QuickReview({
                     >
                       <GarmentThumb
                         src={draft.imageUrl}
+                        type={draft.type}
                         color={draft.primaryColor}
                         colorHex={hex}
                         hasCutout={draft.hasCutout}
@@ -261,7 +266,7 @@ export function QuickReview({
                       </p>
                       <RotateButtons
                         onRotate={(direction) => onRotate(item.id, direction)}
-                        busy={rotating === item.id}
+                        busy={rotating(item.id)}
                         size="sm"
                       />
                       <p className="text-[12px] leading-snug text-muted-foreground">

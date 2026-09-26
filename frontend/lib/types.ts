@@ -96,6 +96,12 @@ export interface Item {
   thumbnail_url?: string;
   medium_url?: string;
   /**
+   * The untouched photo, when one was kept aside. The eraser needs it: restoring
+   * part of a cut-out has to put the pixels that were there back, and a stored
+   * cut-out keeps nothing usable under its own transparency.
+   */
+  original_image_url?: string | null;
+  /**
    * True when the stored image keeps its transparency (a real cut-out) rather
    * than having a white background baked in. The grid needs to know: a white-backed
    * photo is drawn with `mix-blend-multiply` so the tile's tint shows through,
@@ -370,6 +376,11 @@ export interface ItemImage {
   has_cutout?: boolean;
   /** Whether this photo's own background removal can still be undone. */
   can_restore_original?: boolean;
+  /**
+   * This photo's untouched version, when one was kept aside — what the eraser paints
+   * back from. Per photo, like everything else here.
+   */
+  original_image_url?: string | null;
 }
 
 // Wash tracking types

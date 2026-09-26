@@ -98,6 +98,35 @@ App-level building blocks:
 - **Desktop (lg+)**: 256px white sidebar with the wordmark and pill nav rows (active = pink),
   content centred at `max-w-6xl`.
 
+## Layers (z-index)
+
+One scale, named. Tokens live in `app/globals.css` (`--z-*`) and are mapped to Tailwind classes in
+`tailwind.config.js`, so you write `z-dock`, `z-modal`, … and never `z-[57]`.
+
+| Class | Value | What lives there |
+| --- | --- | --- |
+| `z-page` | 30 | fixed strips that must slide **under** the header: pull-to-refresh spinner, a page's own filter bar |
+| `z-header` | 40 | the app header, and the gradient fade behind the dock |
+| `z-dock` | 50 | mobile dock, desktop sidebar |
+| `z-float` | 60 | pills floating over the dock's area: bulk-action toolbar + pagination, offline indicator, chat composer |
+| `z-status` | 70 | background-upload status bar — above all page furniture, so nothing on the page can hide it |
+| `z-drawer` | 80 | mobile nav drawer and its scrim |
+| `z-modal` | 90 | dialogs, sheets, feature tour, style quiz (overlay **and** content) |
+| `z-popover` | 100 | menus, selects, tooltips, comboboxes — they can open from inside a modal |
+| `z-lightbox` | 110 | `yet-another-react-lightbox` (via `--yarl__portal_zindex`) |
+| `z-toast` | 120 | sonner (its own default is 999999999; we pin it here) |
+
+A raw `z-10` / `z-20` is still right for stacking **inside** one component's box: a badge on a tile,
+a veil over a card, a dropdown under its input, the flat-lay stacking garments by data. Anything
+`fixed` or portalled — anything that can land on top of another part of the app — takes a name.
+
+**Bottom slots.** Three things want the space above the dock, so they queue instead of overlapping:
+the dock itself, then `bottom-float-1` (`--float-slot-1`, 6.25rem + safe area: bulk-action toolbar
+and pagination, offline indicator), then `bottom-float-2` (one 4.25rem slot higher: the upload status
+bar). Whatever sits in slot 2 also sets `--float-extra`, which `.pb-dock` adds to its bottom padding
+so the extra pill never comes to rest on the last row of a grid. Slot heights are in `rem`, so they
+still clear their neighbour at 125% font size.
+
 ## Accessibility
 
 - Touch targets ≥ 44px (`h-11`, `min-h-[44px]`).

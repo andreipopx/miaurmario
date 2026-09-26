@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -11,8 +12,14 @@ import { useBulkUpload } from '@/lib/bulk-upload/bulk-upload-context';
  * The batch, while the sheet is closed.
  *
  * Without this the upload would be invisible the moment you navigate away, which
- * is precisely when people assume it died and start again. It sits above the
- * mobile dock and is a link straight back into the sheet.
+ * is precisely when people assume it died and start again. It is a link straight
+ * back into the sheet.
+ *
+ * Where it sits: floating slot 2, i.e. above the dock *and* above slot 1, which
+ * the wardrobe's bulk-action toolbar and its pagination already own — two pills
+ * in one slot is how the progress ended up half-hidden behind "1/3". Layer
+ * `z-status` keeps it over everything on the page and under drawers, dialogs
+ * and toasts; see the layer table in app/globals.css.
  */
 export function UploadStatusBar() {
   const t = useTranslations('bulkUpload.statusBar');
@@ -21,7 +28,20 @@ export function UploadStatusBar() {
 
   const sheetIsOpen = searchParams?.get('bulk') === '1';
   const interesting = counts.busy > 0 || counts.failed > 0;
-  if (!interesting || sheetIsOpen || photos.length === 0) return null;
+  const visible = interesting && !sheetIsOpen && photos.length > 0;
+
+  // While we occupy slot 2, every page reserves one more slot of bottom padding
+  // (see .pb-dock), so the bar can never come to rest on the last row of a grid.
+  useEffect(() => {
+    if (!visible) return;
+    const root = document.documentElement;
+    root.style.setProperty('--float-extra', 'var(--float-slot-height)');
+    return () => {
+      root.style.removeProperty('--float-extra');
+    };
+  }, [visible]);
+
+  if (!visible) return null;
 
   const done = counts.saved + counts.duplicate + counts.failed;
   const pct = counts.total === 0 ? 0 : Math.round((done / counts.total) * 100);
@@ -29,8 +49,7 @@ export function UploadStatusBar() {
 
   return (
     <div
-      className="fixed inset-x-4 z-40 mx-auto max-w-md max-[359px]:inset-x-3 lg:inset-x-auto lg:right-6 lg:mx-0 lg:w-80"
-      style={{ bottom: 'calc(6.25rem + env(safe-area-inset-bottom))' }}
+      className="fixed inset-x-4 bottom-float-2 z-status mx-auto max-w-md max-[359px]:inset-x-3 lg:inset-x-auto lg:bottom-float-1 lg:right-6 lg:mx-0 lg:w-80"
       data-testid="bulk-status-bar"
     >
       <Link

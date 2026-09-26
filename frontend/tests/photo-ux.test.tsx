@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import React from 'react'
 
@@ -378,17 +378,39 @@ describe('rotating from the upload queue', () => {
     expect(screen.queryByRole('button', { name: /Girar/ })).not.toBeInTheDocument()
   })
 
-  it('turns the row thumbnail to match what was saved', () => {
+  it('turns the row thumbnail to match the garment, keyed by garment and not by row', () => {
+    // The same garment appears in the queue, in the review grid and in the stepper,
+    // so the turns are keyed by its item id and all three agree about which way up
+    // it is.
     const { container } = renderWithIntl(
       <UploadQueueList
         photos={[row({ state: 'done', itemId: 'i1', previewUrl: 'blob:x' })]}
         onRetry={vi.fn()}
         onRemove={vi.fn()}
         onRotate={vi.fn()}
-        turns={{ p1: 3 }}
+        turns={{ i1: 3 }}
       />
     )
     expect(container.querySelector('img')).toHaveStyle({ transform: 'rotate(270deg)' })
+  })
+
+  it('keeps the buttons live while a turn is still being saved', () => {
+    // This is the whole fix: a tap used to disable the button until the server came
+    // back, so rotating a batch was a sequence of little waits.
+    const onRotate = vi.fn()
+    renderWithIntl(
+      <UploadQueueList
+        photos={[row({ state: 'done', itemId: 'i1', name: 'jeans.jpg' })]}
+        onRetry={vi.fn()}
+        onRemove={vi.fn()}
+        onRotate={onRotate}
+        rotating={() => true}
+      />
+    )
+    const button = screen.getByRole('button', { name: 'Girar jeans.jpg a la derecha' })
+    expect(button).not.toBeDisabled()
+    fireEvent.click(button)
+    expect(onRotate).toHaveBeenCalledTimes(1)
   })
 
   it('says which way each button goes, per photo', () => {

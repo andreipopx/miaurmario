@@ -202,7 +202,7 @@ export function FeatureTour() {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(o) => (o ? setOpen(true) : finish())}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-modal bg-black/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           onKeyDown={onKeyDown}
@@ -213,7 +213,7 @@ export function FeatureTour() {
             primary.current?.focus({ preventScroll: true });
           }}
           className={cn(
-            'fixed left-1/2 top-1/2 z-[90] flex max-h-[calc(100dvh-1.5rem)] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto rounded-lg bg-background shadow-[0_20px_60px_rgba(0,0,0,0.25)] focus:outline-none',
+            'fixed left-1/2 top-1/2 z-modal flex max-h-[calc(100dvh-1.5rem)] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto rounded-lg bg-background shadow-[0_20px_60px_rgba(0,0,0,0.25)] focus:outline-none',
             'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none'
           )}
         >

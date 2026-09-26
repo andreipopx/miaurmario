@@ -18,6 +18,11 @@ export type TagKind =
   | 'patterns'
   | 'materials'
   | 'styles'
+  // The more specific name inside a type: a halter top, a falda plisada. The
+  // vocabulary lives in `lib/subtypes`; a subtype in no catalogue — an old
+  // free-text entry, a word the model invented — falls through to the humanised
+  // slug below rather than rendering blank.
+  | 'subtypes'
   | 'formality'
   | 'seasons'
   | 'fit'

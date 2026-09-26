@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Chip } from '@/components/chip';
 import { LazyStinky } from '@/components/native/lazy-stinky';
 import { useFormatDate } from '@/lib/date-locale';
@@ -292,6 +294,31 @@ export default function StyleProfilePage() {
                 ))}
               </div>
               <p className="mt-2 text-[13px] leading-snug text-muted-foreground">{t('garment.note')}</p>
+            </div>
+
+            {/* «Me gusta superponer prendas»: a permission, never an obligation. */}
+            <div>
+              <p className="eyebrow">{t('layering.title')}</p>
+              <p className="mt-1 text-[13px] leading-snug text-muted-foreground">{t('layering.body')}</p>
+              <div className="mt-2 flex min-h-[44px] flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-tile bg-panel px-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <Label htmlFor="style-layering" className="block cursor-pointer text-sm font-bold">
+                    {t('layering.label')}
+                  </Label>
+                  <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
+                    {draft.layering ? t('layering.on') : t('layering.off')}
+                  </p>
+                </div>
+                {/* The pill stays 24px tall; the invisible ::before gives it the
+                    44px touch target without changing how it looks. */}
+                <Switch
+                  id="style-layering"
+                  data-testid="edit-layering"
+                  checked={draft.layering}
+                  onCheckedChange={(layering) => setDraft((d) => ({ ...d, layering }))}
+                  className="relative shrink-0 before:absolute before:left-1/2 before:top-1/2 before:h-11 before:w-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
+                />
+              </div>
             </div>
 
             <div>

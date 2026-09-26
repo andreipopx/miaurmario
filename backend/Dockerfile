@@ -14,13 +14,40 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt requirements-extras.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-extras.txt
 
-# Bake the rembg model into the image so the first background removal after a
-# deploy does not download 176 MB. rembg looks in $U2NET_HOME (default
-# ~/.u2net, which would be /root for this build step but /home/appuser at
-# runtime), so pin it to a shared, world-readable path.
+# Bake the rembg models into the image so the first background removal after a
+# deploy does not download 180 MB, and so cutting a garment out never needs the
+# network. rembg looks in $U2NET_HOME (default ~/.u2net, which would be /root for
+# this build step but /home/appuser at runtime), so pin it to a shared,
+# world-readable path.
+#
+# Three models, because which one is right depends on the garment. Measured on
+# textured synthetic photos whose holes we know the truth for — "leak" is how much
+# of a hole the fabric encloses is left opaque, where 0 is see-through and 1 is the
+# bug users reported:
+#
+#   model                   halter neck   bag handle   arm gap   worst IoU   s/photo
+#   u2net                   0.996         0.067        0.540     0.941       1.0
+#   isnet-general-use       0.996         0.011        0.025     0.958       1.4
+#   birefnet-general-lite   0.028         0.005        0.019     0.999       11.0
+#
+# isnet-general-use is the default: it solves the arm gap and the bag handle and
+# lifts the silhouette everywhere, at the same order of cost. It does **not** solve
+# a small enclosed neckline — birefnet-general-lite is the only one that does, and
+# it is roughly eight times slower, which is too slow to sit in an upload. So it is
+# baked in but not selected: switching is one env var and no network.
+#   BG_REMOVAL_MODEL=birefnet-general-lite
+# u2net stays as BG_REMOVAL_FALLBACK_MODEL. Whatever the model misses, the eraser
+# in the app fixes by hand — that is the part that is actually guaranteed.
+#
+# Dropping a model to save ~210 MB of image is fine; the app falls back to u2net
+# and logs it:
+#   docker build --build-arg REMBG_MODELS="u2net isnet-general-use"
+ARG REMBG_MODELS="isnet-general-use u2net birefnet-general-lite"
 ENV U2NET_HOME=/opt/u2net
 RUN mkdir -p "$U2NET_HOME" \
-    && python -c "from rembg import new_session; new_session('u2net')" \
+    && for model in $REMBG_MODELS; do \
+         python -c "import sys; from rembg import new_session; new_session(sys.argv[1])" "$model"; \
+       done \
     && chmod -R a+rX "$U2NET_HOME"
 
 # Copy application code

@@ -4,9 +4,12 @@
 
 import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Check, Crop, RotateCcw, RotateCw, X } from 'lucide-react';
+import { Check, Crop, Eraser, RotateCcw, RotateCw, X } from 'lucide-react';
+
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { AlphaBrush } from '@/components/shared/alpha-brush';
 import { ImageCropper } from '@/components/shared/image-cropper';
 import { cn } from '@/lib/utils';
 import { isWholeImage, normaliseQuarters, turnedSize, type CropRect } from '@/lib/image-crop';
@@ -17,9 +20,16 @@ export interface PhotoFraming {
   quarters: number;
   /** In pixels of the turned photo, or null for "keep the whole thing". */
   crop: CropRect | null;
+  /**
+   * "Borra lo que sobra", painted before the garment existed: an RGBA PNG in the
+   * coordinates of the turned, *uncropped* photo. The server frames it with the same
+   * steps in the same order and applies it once the cut-out exists, so a turn
+   * invalidates it (the coordinates moved) while a crop does not.
+   */
+  erase: Blob | null;
 }
 
-export const NO_FRAMING: PhotoFraming = { quarters: 0, crop: null };
+export const NO_FRAMING: PhotoFraming = { quarters: 0, crop: null, erase: null };
 
 /**
  * The photo, the way it will be saved.
@@ -46,14 +56,23 @@ export function PhotoPreview({
 }) {
   const t = useTranslations('wardrobe.add');
   const tCrop = useTranslations('imageCrop');
+  const tBrush = useTranslations('imageBrush');
   const [cropping, setCropping] = useState(false);
+  const [erasing, setErasing] = useState(false);
   /** The live rect from the cropper, only committed when the user says so. */
   const [draft, setDraft] = useState<CropRect | null>(null);
   const [natural, setNatural] = useState<{ width: number; height: number } | null>(null);
 
   const turn = (by: number) => {
-    // A turn invalidates the crop: its coordinates were in the old frame.
-    onFramingChange({ quarters: normaliseQuarters(framing.quarters + by), crop: null });
+    // A turn invalidates both the crop and the strokes: their coordinates were in
+    // the old frame. Losing a crop is obvious; losing the strokes is not, so if
+    // there were any the user is told.
+    if (framing.erase) toast.info(tBrush('clearedByRotate'));
+    onFramingChange({
+      quarters: normaliseQuarters(framing.quarters + by),
+      crop: null,
+      erase: null,
+    });
   };
 
   const onCropChange = useCallback((rect: CropRect | null) => setDraft(rect), []);
@@ -84,6 +103,25 @@ export function PhotoPreview({
           </Button>
         </div>
         <p className="text-[12px] leading-snug text-muted-foreground">{tCrop('keyboardHint')}</p>
+      </div>
+    );
+  }
+
+  // The same surface the cropper uses, and the same deal: nothing leaves this panel
+  // until the user applies it. There is no cut-out to look at yet, so the brush is
+  // for what is plainly not the garment — the hanger, the floor, the other jumper.
+  if (erasing) {
+    return (
+      <div className="rounded-tile bg-panel p-3">
+        <AlphaBrush
+          src={src}
+          quarters={framing.quarters}
+          onApply={({ mask }) => {
+            onFramingChange({ ...framing, erase: mask });
+            setErasing(false);
+          }}
+          onCancel={() => setErasing(false)}
+        />
       </div>
     );
   }
@@ -120,14 +158,23 @@ export function PhotoPreview({
         >
           <X className="h-4 w-4" strokeWidth={1.75} />
         </Button>
-        {framing.crop && (
-          <span className="absolute left-2 top-2 rounded-full bg-success px-2 py-1 text-[11px] font-bold text-success-foreground">
-            {tCrop('cropped')}
-          </span>
-        )}
+        <span className="absolute left-2 top-2 flex flex-wrap gap-1">
+          {framing.crop && (
+            <span className="rounded-full bg-success px-2 py-1 text-[11px] font-bold text-success-foreground">
+              {tCrop('cropped')}
+            </span>
+          )}
+          {framing.erase && (
+            <span className="rounded-full bg-signature px-2 py-1 text-[11px] font-bold text-signature-foreground">
+              {tBrush('edited')}
+            </span>
+          )}
+        </span>
       </div>
 
-      {/* One row, three 44px targets: straighten, straighten the other way, crop. */}
+      {/* One row, four 44px targets: straighten, straighten the other way, crop,
+          erase. They wrap rather than shrink, so none of them goes under 44px at
+          320px or at 125% font. */}
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={tCrop('tools')}>
         <Button
           type="button"
@@ -160,10 +207,23 @@ export function PhotoPreview({
           <Crop className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
           <span className="min-w-0 truncate">{framing.crop ? tCrop('recrop') : tCrop('crop')}</span>
         </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          className="h-11 min-w-0 flex-1"
+          onClick={() => setErasing(true)}
+        >
+          <Eraser className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
+          <span className="min-w-0 truncate">{tBrush('open')}</span>
+        </Button>
       </div>
 
       <p className="text-[12px] leading-snug text-muted-foreground" aria-live="polite">
-        {framing.quarters || framing.crop ? tCrop('willSave') : tCrop('asIs')}
+        {framing.erase
+          ? tBrush('pendingOne')
+          : framing.quarters || framing.crop
+            ? tCrop('willSave')
+            : tCrop('asIs')}
       </p>
     </div>
   );

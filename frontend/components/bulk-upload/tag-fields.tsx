@@ -1,27 +1,29 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Pipette } from 'lucide-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ColorEyedropper } from '@/components/color-eyedropper';
+import { SubtypeField } from '@/components/bulk-upload/subtype-field';
 import { clothingColorHex, isLightColor, swatchHex } from '@/lib/colors';
+import { useQuickTagChoices } from '@/lib/hooks/use-tag-usage';
+import { subtypeAfterTypeChange } from '@/lib/subtypes';
 import { useTagLabel } from '@/lib/tag-labels';
 import { cn } from '@/lib/utils';
 import {
+  ALL_COLORS,
+  ALL_TYPES,
   FORMALITY_LEVELS,
-  OTHER_COLORS,
-  OTHER_TYPES,
-  QUICK_COLORS,
   QUICK_STYLES,
-  QUICK_TYPES,
   toggleStyle,
 } from '@/components/bulk-upload/tag-choices';
 
 /** The tags the quick pass writes. Everything is optional and nullable. */
 export interface TagDraft {
   type?: string | null;
+  /** The more specific name inside the type: a halter top, a falda plisada. */
+  subtype?: string | null;
   primaryColor?: string | null;
   /** The shade sampled off the photo, `#rrggbb`. Display only, beside the family. */
   primaryColorHex?: string | null;
@@ -31,6 +33,12 @@ export interface TagDraft {
 
 export interface TagChanges {
   type?: string;
+  /**
+   * `null` clears it, which is the commonest edit here: the tagger guesses subtype
+   * badly (`wrap` for a halter top) and the user is mostly removing a wrong guess
+   * or replacing it. `undefined` means the subtype was not touched.
+   */
+  subtype?: string | null;
   primaryColor?: string;
   /**
    * `null` is meaningful: the user picked a family off the swatches, so whatever
@@ -43,13 +51,17 @@ export interface TagChanges {
 }
 
 /**
- * Tipo, color, estilo, formalidad — one tap each, no hunting, and the eyedropper
- * beside the swatches for the colour the palette does not have a name for.
+ * Tipo, detalle, color, estilo, formalidad — one tap each, no hunting, and the
+ * eyedropper beside the swatches for the colour the palette does not have a name
+ * for.
  *
  * Shared by the one-at-a-time stepper and the review grid's inline editor so the
  * two can never drift: the same shortlists, the same vocabulary, the same
  * behaviour. Every control is a real button or select, so the whole thing is
  * tab-navigable and each target is at least 44 px.
+ *
+ * The type and colour buttons are this owner's own most-used values (see
+ * `useQuickTagChoices`); the selects beside them always hold the full vocabulary.
  *
  * `onDetailsTouched` fires when style or formality is changed, which is how the
  * stepper knows not to skip to the next garment under the user's fingers.
@@ -78,9 +90,38 @@ export function TagFields({
   const t = useTranslations('bulkUpload.stepper');
   const tagLabel = useTagLabel();
 
-  const typeOptions = useMemo(() => OTHER_TYPES, []);
-  const colorOptions = useMemo(() => OTHER_COLORS, []);
+  /** This owner's own most-used types and colours, defaults until they are known. */
+  const { types: quickTypes, colors: quickColors } = useQuickTagChoices();
+  /**
+   * The selects offer the *whole* vocabulary, not the complement of the buttons.
+   *
+   * They used to hold "everything the shortlist does not", which was safe while the
+   * shortlist was a constant. It is now this person's wardrobe, so a complement
+   * computed from it would make the full list a moving target — a type could be
+   * both off the button row and out of the select depending on what they own. Every
+   * value is therefore always in the select; it only *displays* one the buttons are
+   * not already showing, so the "más tipos" placeholder still means what it says.
+   */
+  const typeOptions = ALL_TYPES;
+  const colorOptions = ALL_COLORS;
+  const selectedType = draft.type ?? '';
+  const selectedColor = draft.primaryColor ?? '';
   const styles = draft.style ?? [];
+
+  /**
+   * Picking a type may retire the subtype under it. `wrap` on a dress is not `wrap`
+   * on a pair of jeans, and the commonest way to end up with nonsense is to correct
+   * a wrong type and leave the tagger's subtype sitting beneath it.
+   */
+  const pickType = (type: string) => {
+    const subtype = subtypeAfterTypeChange(type, draft.subtype);
+    if (subtype === (draft.subtype ?? null)) {
+      onChange({ type });
+      return;
+    }
+    onChange({ type, subtype });
+  };
+
   /** The shade sampled off this garment, if there is one to show. */
   const measured = swatchHex(null, draft.primaryColorHex);
 
@@ -95,12 +136,12 @@ export function TagFields({
       <fieldset>
         <legend className="mb-2 text-[13px] font-semibold">{t('typeLegend')}</legend>
         <div className="flex flex-wrap gap-1.5">
-          {QUICK_TYPES.map((type) => (
+          {quickTypes.map((type) => (
             <button
               key={type}
               type="button"
               aria-pressed={draft.type === type}
-              onClick={() => onChange({ type })}
+              onClick={() => pickType(type)}
               className={chip(draft.type === type)}
             >
               {tagLabel('types', type)}
@@ -108,8 +149,14 @@ export function TagFields({
           ))}
         </div>
         <Select
-          value={(typeOptions as readonly string[]).includes(draft.type ?? '') ? (draft.type as string) : ''}
-          onValueChange={(type) => onChange({ type })}
+          value={
+            // Blank while a button already shows the answer, so the trigger reads
+            // "más tipos" rather than echoing the chip beside it.
+            quickTypes.includes(selectedType) || !typeOptions.includes(selectedType)
+              ? ''
+              : selectedType
+          }
+          onValueChange={pickType}
         >
           <SelectTrigger className="mt-2 h-11" aria-label={t('moreTypes')} id={`${idPrefix}-more-types`}>
             <SelectValue placeholder={t('moreTypes')} />
@@ -124,10 +171,23 @@ export function TagFields({
         </Select>
       </fieldset>
 
+      {/* Right under the type, because that is what it is a detail of. */}
+      <SubtypeField
+        type={draft.type}
+        value={draft.subtype}
+        onChange={(subtype) => {
+          onChange({ subtype });
+          // Someone who bothered to name the detail is not done with this garment,
+          // so the stepper must not skip out from under them on the next colour tap.
+          onDetailsTouched?.();
+        }}
+        idPrefix={idPrefix}
+      />
+
       <fieldset>
         <legend className="mb-2 text-[13px] font-semibold">{t('colorLegend')}</legend>
         <div className="flex flex-wrap gap-1.5">
-          {QUICK_COLORS.map((color) => {
+          {quickColors.map((color) => {
             const hex = clothingColorHex(color) ?? '#CCCCCC';
             const active = draft.primaryColor === color;
             return (
@@ -189,9 +249,9 @@ export function TagFields({
         </div>
         <Select
           value={
-            (colorOptions as readonly string[]).includes(draft.primaryColor ?? '')
-              ? (draft.primaryColor as string)
-              : ''
+            quickColors.includes(selectedColor) || !colorOptions.includes(selectedColor)
+              ? ''
+              : selectedColor
           }
           onValueChange={(primaryColor) => {
             onChange({ primaryColor, primaryColorHex: null });

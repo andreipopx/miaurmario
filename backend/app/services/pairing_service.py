@@ -13,6 +13,7 @@ from app.models.preference import UserPreference
 from app.models.user import User
 from app.services.ai_access import require_ai_client
 from app.services.ai_service import AIResponseError
+from app.services.layering import layering_context
 from app.services.stinky_memory import stylist_memory_lines
 from app.utils.clothing import deduplicate_by_body_slot
 from app.utils.error_codes import CodedValueError
@@ -242,6 +243,10 @@ class PairingService:
         for item in available_items:
             item_type_map[item.id] = (item.type or "").lower()
 
+        # A layered look is not a slip: keep the same-slot collisions this user
+        # has already worn, and any of them if they asked for layers.
+        layering = await layering_context(self.db, user.id)
+
         for pairing in pairings_data[:num_pairings]:
             # Get item numbers from the pairing
             selected_numbers = pairing.get("items", [])
@@ -262,7 +267,9 @@ class PairingService:
                 valid_ids.insert(0, source_item.id)
 
             # Deduplicate by body slot (e.g. prevent shorts + pants)
-            valid_ids = deduplicate_by_body_slot(valid_ids, item_type_map)
+            valid_ids = deduplicate_by_body_slot(
+                valid_ids, item_type_map, keep_pairs=layering.keep_pairs
+            )
 
             if len(valid_ids) < 2:
                 logger.warning("Pairing has too few valid items, skipping")

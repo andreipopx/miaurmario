@@ -26,13 +26,13 @@ export function MobileNav() {
       <div
         aria-hidden
         data-dock
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 h-28 bg-gradient-to-b from-transparent to-background/90 lg:hidden"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-header h-28 bg-gradient-to-b from-transparent to-background/90 lg:hidden"
       />
       <nav
         data-dock
         data-dock-nav
         aria-label={t('primary')}
-        className="glass-dock fixed inset-x-4 z-50 mx-auto flex h-16 max-w-md items-center justify-between rounded-[32px] p-2 max-[359px]:inset-x-3 max-[359px]:p-1.5 lg:hidden"
+        className="glass-dock fixed inset-x-4 z-dock mx-auto flex h-16 max-w-md items-center justify-between rounded-[32px] p-2 max-[359px]:inset-x-3 max-[359px]:p-1.5 lg:hidden"
         style={{ bottom: 'calc(24px + env(safe-area-inset-bottom))' }}
       >
         {MAIN_SECTIONS.map((item) => {

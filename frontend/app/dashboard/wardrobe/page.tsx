@@ -30,6 +30,7 @@ import { useItems, useItem, useItemTypes, useReanalyzeItem, useCancelAnalysis, u
 import { useUserProfile } from '@/lib/hooks/use-user';
 import { Item } from '@/lib/types';
 import { swatchHex } from '@/lib/colors';
+import { garmentFrameStyle } from '@/lib/garment-framing';
 import { toast } from 'sonner';
 import { cn, getDaysSinceDateInTimezone } from '@/lib/utils';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
@@ -120,6 +121,10 @@ const ItemCard = memo(function ItemCard({
                 // garment itself, in either theme.
                 !item.has_cutout && 'mix-blend-multiply'
               )}
+              // Scaled by what the garment is, so a hat is not drawn the size of a
+              // coat and a grid of mixed types reads with believable proportions.
+              // Presentation only, and only for cut-outs (see lib/garment-framing).
+              style={garmentFrameStyle(item.type, item.has_cutout)}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : (

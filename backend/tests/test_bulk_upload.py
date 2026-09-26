@@ -371,6 +371,69 @@ class TestBulkTagging:
         assert item.tagged_at is not None
 
     @pytest.mark.asyncio
+    async def test_the_quick_pass_saves_the_subtype_too(
+        self, client: AsyncClient, auth_headers, db_session: AsyncSession
+    ):
+        """A halter top is a halter top, not whatever the tagger guessed."""
+        item_id = await self._upload(client, auth_headers, seed=23)
+
+        response = await client.post(
+            "/api/v1/items/bulk/tag",
+            json={"items": [{"item_id": item_id, "type": "top", "subtype": "halter"}]},
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200, response.text
+        db_session.expire_all()
+        result = await db_session.execute(select(ClothingItem).where(ClothingItem.id == item_id))
+        item = result.scalar_one()
+        assert item.type == "top"
+        assert item.subtype == "halter"
+
+    @pytest.mark.asyncio
+    async def test_an_empty_subtype_clears_the_taggers_guess(
+        self, client: AsyncClient, auth_headers, db_session: AsyncSession
+    ):
+        """The commonest subtype edit is removing a wrong one, so "" must clear it."""
+        item_id = await self._upload(client, auth_headers, seed=24)
+        result = await db_session.execute(select(ClothingItem).where(ClothingItem.id == item_id))
+        item = result.scalar_one()
+        item.subtype = "wrap"
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/items/bulk/tag",
+            json={"items": [{"item_id": item_id, "subtype": ""}]},
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200, response.text
+        db_session.expire_all()
+        result = await db_session.execute(select(ClothingItem).where(ClothingItem.id == item_id))
+        assert result.scalar_one().subtype is None
+
+    @pytest.mark.asyncio
+    async def test_a_row_that_does_not_mention_subtype_leaves_it_alone(
+        self, client: AsyncClient, auth_headers, db_session: AsyncSession
+    ):
+        item_id = await self._upload(client, auth_headers, seed=25)
+        result = await db_session.execute(select(ClothingItem).where(ClothingItem.id == item_id))
+        item = result.scalar_one()
+        item.subtype = "bandeau"
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/items/bulk/tag",
+            json={"items": [{"item_id": item_id, "type": "top"}]},
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200, response.text
+        db_session.expire_all()
+        result = await db_session.execute(select(ClothingItem).where(ClothingItem.id == item_id))
+        assert result.scalar_one().subtype == "bandeau"
+
+    @pytest.mark.asyncio
     async def test_confirming_an_ai_guess_without_changes_marks_it_reviewed(
         self, client: AsyncClient, auth_headers, db_session: AsyncSession
     ):

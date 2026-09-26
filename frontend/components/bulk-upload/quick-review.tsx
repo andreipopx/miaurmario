@@ -318,12 +318,16 @@ export function QuickReview({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="w-full min-w-0 justify-start"
+                      className="h-auto w-full min-w-0 justify-start whitespace-normal py-2"
                       onClick={() => setPickingFor(item.id)}
                       aria-expanded={false}
                     >
                       <Layers className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                      <span className="min-w-0 truncate">{t('isBackOf')}</span>
+                      {/* Wraps rather than truncating: two of these sit side by side in
+                          a 360 px grid, and "Es la espalda …" says nothing. */}
+                      <span className="min-w-0 whitespace-normal text-left leading-tight">
+                        {t('isBackOf')}
+                      </span>
                     </Button>
                   </div>
                 )}

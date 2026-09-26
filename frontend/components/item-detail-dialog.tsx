@@ -715,7 +715,7 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                         type="button"
                         className={`relative h-12 w-12 overflow-hidden rounded-[14px] bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${activeImageIndex === idx + 1 ? 'ring-[2.5px] ring-inset ring-signature' : ''}`}
                         onClick={() => setActiveImageIndex(idx + 1)}
-                        aria-label={t('imageN', { n: idx + 2 })}
+                        aria-label={`${t('imageN', { n: idx + 2 })} — ${viewLabel(img.image_view)}`}
                         aria-current={activeImageIndex === idx + 1 ? 'true' : undefined}
                       >
                         <Image src={img.thumbnail_url || img.image_url} alt="" fill className="object-contain p-1" sizes="48px" />

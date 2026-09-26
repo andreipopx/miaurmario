@@ -20,24 +20,29 @@ RUN pip install --no-cache-dir -r requirements.txt -r requirements-extras.txt
 # this build step but /home/appuser at runtime), so pin it to a shared,
 # world-readable path.
 #
-# isnet-general-use is the default (BG_REMOVAL_MODEL) because it is markedly
-# better at holes enclosed by fabric — a halter neckline, a bag handle, the gap
-# between arm and body. Measured on synthetic shapes with known holes:
+# Three models, because which one is right depends on the garment. Measured on
+# textured synthetic photos whose holes we know the truth for — "leak" is how much
+# of a hole the fabric encloses is left opaque, where 0 is see-through and 1 is the
+# bug users reported:
 #
-#   model                   hole left opaque   IoU      s/photo (768px, 8 cpu)
-#   u2net                   0.61               0.949    1.0
-#   u2netp                  0.38               0.971    0.3
-#   silueta                 0.56               0.957    0.9
-#   isnet-general-use       0.34               0.985    1.4   <- default
-#   birefnet-general-lite   0.13               0.993    11.0
-#   u2net_cloth_seg         (segments a person, not a flat garment: unusable)
+#   model                   halter neck   bag handle   arm gap   worst IoU   s/photo
+#   u2net                   0.996         0.067        0.540     0.941       1.0
+#   isnet-general-use       0.996         0.011        0.025     0.958       1.4
+#   birefnet-general-lite   0.028         0.005        0.019     0.999       11.0
 #
-# u2net stays baked in as BG_REMOVAL_FALLBACK_MODEL. birefnet-general-lite is the
-# quality-over-speed option: ~8x the time per photo, so it is not baked in by
-# default, but an operator who wants it can add it here without giving the
-# container a network dependency:
-#   docker build --build-arg REMBG_MODELS="u2net isnet-general-use birefnet-general-lite"
-ARG REMBG_MODELS="isnet-general-use u2net"
+# isnet-general-use is the default: it solves the arm gap and the bag handle and
+# lifts the silhouette everywhere, at the same order of cost. It does **not** solve
+# a small enclosed neckline — birefnet-general-lite is the only one that does, and
+# it is roughly eight times slower, which is too slow to sit in an upload. So it is
+# baked in but not selected: switching is one env var and no network.
+#   BG_REMOVAL_MODEL=birefnet-general-lite
+# u2net stays as BG_REMOVAL_FALLBACK_MODEL. Whatever the model misses, the eraser
+# in the app fixes by hand — that is the part that is actually guaranteed.
+#
+# Dropping a model to save ~210 MB of image is fine; the app falls back to u2net
+# and logs it:
+#   docker build --build-arg REMBG_MODELS="u2net isnet-general-use"
+ARG REMBG_MODELS="isnet-general-use u2net birefnet-general-lite"
 ENV U2NET_HOME=/opt/u2net
 RUN mkdir -p "$U2NET_HOME" \
     && for model in $REMBG_MODELS; do \

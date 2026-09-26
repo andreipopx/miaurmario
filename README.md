@@ -359,42 +359,47 @@ pip install rembg[cpu]  # add to your image, or install manually
 ```
 No config needed — works out of the box.
 
-**Which model.** The one that matters is how well it cuts out a hole the fabric
-encloses: a halter neckline, a bag handle, the gap between an arm and the body.
-Measured on synthetic shapes whose holes we know the truth for (mean alpha left in
-the hole, where 0 is see-through and 1 is the bug; IoU against the true
-silhouette; seconds per 768px photo on 8 CPUs):
+**Which model.** The thing that goes wrong is a hole the fabric *encloses* — a
+halter neckline, the space inside a bag handle, the gap between an arm and the
+body — which stays filled with background. Measured on textured synthetic photos
+whose holes we know the truth for. "Leak" is how much of the hole is left opaque:
+**0 is see-through, 1 is the bug**.
 
-| `BG_REMOVAL_MODEL` | hole left opaque | IoU | s/photo | size |
-| --- | --- | --- | --- | --- |
-| `u2net` | 0.61 | 0.949 | 1.0 | 168 MB |
-| `u2netp` | 0.38 | 0.971 | 0.3 | 4 MB |
-| `silueta` | 0.56 | 0.957 | 0.9 | 43 MB |
-| **`isnet-general-use`** (default) | **0.34** | **0.985** | 1.4 | 171 MB |
-| `birefnet-general-lite` | 0.13 | 0.993 | 11.0 | 214 MB |
-| `u2net_cloth_seg` | — | 0.29 | 3.1 | 169 MB |
+| `BG_REMOVAL_MODEL` | halter neck | bag handle | arm gap | worst IoU | s/photo | size |
+| --- | --- | --- | --- | --- | --- | --- |
+| `u2net` | 0.996 | 0.067 | 0.540 | 0.941 | 1.0 | 168 MB |
+| **`isnet-general-use`** (default) | 0.996 | **0.011** | **0.025** | 0.958 | 1.4 | 171 MB |
+| `birefnet-general-lite` | **0.028** | **0.005** | **0.019** | **0.999** | 11.0 | 214 MB |
 
-`isnet-general-use` is the default: it halves the leak against `u2net` at a
-comparable cost per photo. `birefnet-general-lite` is better again and about eight
-times slower, which is too slow to sit in an upload; it is not baked into the image
-by default, so add it at build time rather than letting the container reach for the
-network:
+Read that honestly: `isnet-general-use` is the default because it solves the arm gap
+and the bag handle outright and lifts the silhouette everywhere, at the same order
+of cost. **It does not solve a small enclosed neckline** — `birefnet-general-lite` is
+the only one that does, and it is about eight times slower, which is too slow to sit
+inside an upload. It is baked into the image but not selected, so choosing it is one
+env var and no network:
 
-```bash
-docker build --build-arg REMBG_MODELS="u2net isnet-general-use birefnet-general-lite" backend/
+```env
+BG_REMOVAL_MODEL=birefnet-general-lite
 ```
 
-`u2net_cloth_seg` segments clothing *on a person* (into top/bottom/full body) and
-finds nothing in a photo of a garment on its own — it is not a drop-in here.
+Two others were measured and rejected: `u2netp` (leak 0.38 average, but a much
+looser silhouette) and `u2net_cloth_seg`, which segments clothing *on a person* into
+top/bottom/full-body and finds nothing at all in a photo of a garment on its own.
 
 A model that is not on disk falls back to `BG_REMOVAL_FALLBACK_MODEL` (`u2net`,
-always baked in) with a warning, so a typo cannot leave the app with no cut-outs.
+always baked in) with a warning, so a typo — or dropping a model from the build to
+save space — cannot leave the app with no cut-outs:
 
-**Whatever the model misses, the user can fix.** Every garment has an eraser
-("borra lo que sobra"): erase and restore brushes over the photo that edit the
-*stored* alpha, so the correction shows everywhere afterwards, with an undo and a
-"volver al automático". It works on a garment whose background was never removed
-too, which is the whole cut-out story for someone running without AI.
+```bash
+docker build --build-arg REMBG_MODELS="u2net isnet-general-use" backend/
+```
+
+**Whatever the model misses, the user fixes — and that is the part that is actually
+guaranteed.** Every garment has an eraser ("borra lo que sobra"): erase and restore
+brushes over the photo that edit the *stored* alpha, so the correction shows on
+every screen afterwards, with an undo per stroke and a "volver al automático". It
+works on a garment whose background was never removed too, which is the whole
+cut-out story for someone running without AI.
 
 **HTTP provider (e.g. [withoutbg](https://github.com/nicholasgasior/withoutbg)):**
 ```env

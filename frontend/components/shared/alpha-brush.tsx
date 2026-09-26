@@ -439,14 +439,20 @@ export function AlphaBrush({
         )}
       </div>
 
-      {/* Erase or restore. Two 44px targets, and the second one only when there is
-          a photo to restore from. */}
-      <div className="flex w-full flex-wrap items-center gap-2" role="group" aria-label={t('tools')}>
+      {/* Erase or restore, as a two-up pair that splits the row evenly rather than
+          competing with the undo button for it — at 320px and at 125% font "Devolver"
+          was being truncated to "Devo…", which is not a word. Undo moved down beside
+          the brush size, where there is room for it. */}
+      <div
+        className={cn('grid w-full gap-2', canRestore ? 'grid-cols-2' : 'grid-cols-1')}
+        role="group"
+        aria-label={t('tools')}
+      >
         <Button
           type="button"
           variant={mode === 'erase' ? 'default' : 'secondary'}
           aria-pressed={mode === 'erase'}
-          className="h-11 min-w-0 flex-1"
+          className="h-11 min-w-0 px-2"
           onClick={() => setMode('erase')}
         >
           <Eraser className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
@@ -457,13 +463,29 @@ export function AlphaBrush({
             type="button"
             variant={mode === 'restore' ? 'default' : 'secondary'}
             aria-pressed={mode === 'restore'}
-            className="h-11 min-w-0 flex-1"
+            className="h-11 min-w-0 px-2"
             onClick={() => setMode('restore')}
           >
             <PaintBucket className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
             <span className="min-w-0 truncate">{t('restore')}</span>
           </Button>
         )}
+      </div>
+
+      <div className="w-full" data-no-swipe>
+        <p className="mb-1 text-[12px] text-muted-foreground" id="brush-size-label">
+          {t('brushSize')}
+        </p>
+        <div className="flex items-center gap-3">
+        <Slider
+          aria-label={t('brushSize')}
+          min={0}
+          max={1}
+          step={0.01}
+          value={[sizePosition]}
+          disabled={!mask}
+          onValueChange={([value]) => setSizePosition(value)}
+        />
         <Button
           type="button"
           variant="secondary"
@@ -476,56 +498,43 @@ export function AlphaBrush({
         >
           <Undo2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
         </Button>
+        </div>
       </div>
 
-      <div className="flex w-full items-center gap-3" data-no-swipe>
-        <span className="shrink-0 text-[12px] text-muted-foreground">{t('brushSize')}</span>
-        <Slider
-          aria-label={t('brushSize')}
-          min={0}
-          max={1}
-          step={0.01}
-          value={[sizePosition]}
-          disabled={!mask}
-          onValueChange={([value]) => setSizePosition(value)}
-        />
-      </div>
+      {/* "Volver al automático" is a bigger, rarer decision than the other two — it
+          throws away every edit ever made to this garment, not just this session's —
+          so it sits on its own line above them rather than beside "Guardar". */}
+      {canReset && onReset && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full min-w-0"
+          onClick={onReset}
+          disabled={busy || resetting}
+        >
+          {resetting ? (
+            <Loader2
+              className="h-[18px] w-[18px] shrink-0 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+          ) : (
+            <RotateCcw className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
+          )}
+          <span className="min-w-0 truncate">{t('reset')}</span>
+        </Button>
+      )}
 
-      <div className="flex w-full flex-col gap-2 sm:flex-row">
+      <div className="grid w-full grid-cols-2 gap-2">
         <Button
           type="button"
           variant="ghost"
-          className="min-w-0 sm:flex-1"
+          className="min-w-0 px-2"
           onClick={onCancel}
           disabled={busy}
         >
           <span className="min-w-0 truncate">{t('cancel')}</span>
         </Button>
-        {canReset && onReset && (
-          <Button
-            type="button"
-            variant="secondary"
-            className="min-w-0 sm:flex-1"
-            onClick={onReset}
-            disabled={busy || resetting}
-          >
-            {resetting ? (
-              <Loader2
-                className="h-[18px] w-[18px] shrink-0 animate-spin motion-reduce:animate-none"
-                aria-hidden
-              />
-            ) : (
-              <RotateCcw className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
-            )}
-            <span className="min-w-0 truncate">{t('reset')}</span>
-          </Button>
-        )}
-        <Button
-          type="button"
-          className="min-w-0 sm:flex-1"
-          onClick={apply}
-          disabled={!painted || busy}
-        >
+        <Button type="button" className="min-w-0 px-2" onClick={apply} disabled={!painted || busy}>
           {busy ? (
             <Loader2
               className="h-[18px] w-[18px] shrink-0 animate-spin motion-reduce:animate-none"

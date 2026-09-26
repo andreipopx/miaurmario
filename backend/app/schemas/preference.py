@@ -136,6 +136,14 @@ class StyleQuizProfile(BaseModel):
             "behaves exactly like 'ambas' and is never inferred from anything else"
         ),
     )
+    layering: bool = Field(
+        default=False,
+        description=(
+            "«Me gusta superponer prendas». Off by default. A permission, never "
+            "an obligation: the stylist may layer a dress over trousers or a top "
+            "under another top, and the body-slot rules stop pruning those"
+        ),
+    )
     completed: bool = Field(
         default=False, description="They reached the end of the deck (vs. skipped)"
     )

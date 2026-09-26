@@ -39,6 +39,7 @@ from app.services.recommendation_service import (
     RecommendationService,
 )
 from app.utils.clothing import ITEM_ROLE, canonical_item_order
+from app.utils.style_quiz import layering_allowed
 from app.utils.timezone import get_user_today
 
 logger = logging.getLogger(__name__)
@@ -160,7 +161,17 @@ class ItemRescueService:
             ranked.append((pinned, 0.0))
 
         try:
-            composed = compose_outfit(ranked, weather, occasion, pinned=pinned)
+            composed = compose_outfit(
+                ranked,
+                weather,
+                occasion,
+                pinned=pinned,
+                # With layers allowed, the garment being rescued no longer has to
+                # beat a dress for its slot — it can be worn under or over one.
+                allow_layering=layering_allowed(
+                    user.preferences.taste_profile if user.preferences else None
+                ),
+            )
         except InsufficientWardrobeError:
             return RescueResult(reason="no_combination", hints=await self.diagnose(user, item))
 

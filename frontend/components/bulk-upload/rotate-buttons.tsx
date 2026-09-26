@@ -9,9 +9,11 @@ import { cn } from '@/lib/utils';
 /**
  * Straighten a garment that is already in the wardrobe.
  *
- * Wherever this appears the turn is saved the moment it is pressed, so it says so
- * ("Girada y guardada") instead of leaving the user to wonder. Both targets are
- * 44 px, because this is a thing people do with a thumb.
+ * The turn happens on screen the moment it is pressed and is saved behind the user's
+ * back, so **`busy` does not disable anything**: it used to, and that is precisely
+ * what made rotating a batch painful — every tap bought a wait before the next one
+ * was allowed. It now only shows, quietly, that the last turn is still being written.
+ * Both targets are 44 px, because this is a thing people do with a thumb.
  */
 export function RotateButtons({
   onRotate,
@@ -20,6 +22,7 @@ export function RotateButtons({
   size = 'md',
 }: {
   onRotate: (direction: 'cw' | 'ccw') => void;
+  /** A save still in the air. Shown, never enforced. */
   busy?: boolean;
   className?: string;
   size?: 'sm' | 'md';
@@ -37,7 +40,6 @@ export function RotateButtons({
           size="icon"
           variant="secondary"
           className={cn('shrink-0', box)}
-          disabled={busy}
           onClick={(event) => {
             event.stopPropagation();
             onRotate(direction);
@@ -45,15 +47,19 @@ export function RotateButtons({
           aria-label={t(direction === 'cw' ? 'rotateRight' : 'rotateLeft')}
           title={t(direction === 'cw' ? 'rotateRight' : 'rotateLeft')}
         >
-          {busy ? (
-            <Loader2 className={cn('animate-spin motion-reduce:animate-none', glyph)} aria-hidden />
-          ) : direction === 'cw' ? (
+          {direction === 'cw' ? (
             <RotateCw className={glyph} strokeWidth={2} aria-hidden />
           ) : (
             <RotateCcw className={glyph} strokeWidth={2} aria-hidden />
           )}
         </Button>
       ))}
+      {busy && (
+        <Loader2
+          className={cn('shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none', glyph)}
+          aria-label={t('saving')}
+        />
+      )}
     </div>
   );
 }

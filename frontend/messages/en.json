@@ -4244,6 +4244,32 @@
       "square": "Square",
       "portrait": "Portrait",
       "landscape": "Landscape"
-    }
+    },
+    "saving": "Saving the turn"
+  },
+  "imageBrush": {
+    "title": "Erase what doesn't belong",
+    "hint": "Paint over anything that isn't the garment. If the automatic cut-out ate part of it, switch to “bring back” and paint it in again.",
+    "hintEraseOnly": "Paint over anything that isn't the garment.",
+    "tools": "Eraser",
+    "erase": "Erase",
+    "restore": "Bring back",
+    "eraseArea": "Garment photo: paint to erase",
+    "restoreArea": "Garment photo: paint to bring back",
+    "undo": "Undo the last stroke",
+    "brushSize": "Brush size",
+    "apply": "Save",
+    "cancel": "Leave it as it was",
+    "reset": "Back to automatic",
+    "open": "Erase what doesn't belong",
+    "edited": "Touched up by hand",
+    "noPreview": "I can't show this photo here",
+    "keyboardHint": "With a keyboard: arrows move the brush, Enter paints.",
+    "saved": "Done — the garment looks like this on every screen now",
+    "saveFailed": "I couldn't save the touch-up. Try again.",
+    "wasReset": "Back to the automatic cut-out",
+    "resetFailed": "I couldn't go back to automatic",
+    "pendingOne": "We'll save the garment with what you erased",
+    "clearedByRotate": "Rotating the photo cleared what you'd erased — paint it again."
   }
 }

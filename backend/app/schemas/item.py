@@ -274,6 +274,19 @@ class ItemResponse(ItemBase):
 
     @computed_field
     @property
+    def original_image_url(self) -> str | None:
+        """The untouched photo, when one was kept aside.
+
+        The eraser needs it: restoring part of a cut-out has to show the pixels that
+        were there, and a stored cut-out keeps nothing usable under its own
+        transparency. It is the same file "deshacer el recorte" restores from.
+        """
+        if self.original_image_path:
+            return sign_image_url(self.original_image_path)
+        return None
+
+    @computed_field
+    @property
     def care_hints(self) -> list[str]:
         """Stable codes (``wash_30``, ``no_tumble``…) the frontend localises."""
         if self.care is None:

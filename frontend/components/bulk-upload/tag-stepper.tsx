@@ -19,6 +19,7 @@ export interface StepperDraft {
   fullImageUrl?: string;
   hasCutout?: boolean;
   type?: string | null;
+  subtype?: string | null;
   primaryColor?: string | null;
   primaryColorHex?: string | null;
   style?: string[] | null;
@@ -30,7 +31,8 @@ interface TagStepperProps {
   startAt?: number;
   onChange: (itemId: string, changes: TagChanges) => void;
   onRotate?: (itemId: string, direction: 'cw' | 'ccw') => void;
-  rotating?: string | null;
+  /** Whether this garment has a turn still being written; it never blocks the buttons. */
+  rotating?: (itemId: string) => boolean;
   turns?: Readonly<Record<string, number>>;
   onDone: () => void;
 }
@@ -138,7 +140,7 @@ export function TagStepper({
           {onRotate && (
             <RotateButtons
               onRotate={(direction) => onRotate(current.itemId, direction)}
-              busy={rotating === current.itemId}
+              busy={rotating?.(current.itemId) ?? false}
             />
           )}
         </div>

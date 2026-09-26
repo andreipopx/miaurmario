@@ -156,7 +156,7 @@ describe('the review grid', () => {
         onOpen={vi.fn()}
         onEdit={vi.fn()}
         onRotate={vi.fn()}
-        rotating={null}
+        rotating={() => false}
         onStartStepper={vi.fn()}
       />
     )
@@ -180,7 +180,7 @@ describe('the review grid', () => {
         onOpen={vi.fn()}
         onEdit={vi.fn()}
         onRotate={vi.fn()}
-        rotating={null}
+        rotating={() => false}
         onStartStepper={vi.fn()}
       />
     )
@@ -197,7 +197,7 @@ describe('the review grid', () => {
         onOpen={vi.fn()}
         onEdit={vi.fn()}
         onRotate={vi.fn()}
-        rotating={null}
+        rotating={() => false}
         onStartStepper={vi.fn()}
       />
     )
@@ -298,7 +298,7 @@ describe('the tile and its swatch', () => {
         onOpen={vi.fn()}
         onEdit={vi.fn()}
         onRotate={vi.fn()}
-        rotating={null}
+        rotating={() => false}
         onStartStepper={vi.fn()}
       />
     )
@@ -333,7 +333,7 @@ describe('the tile and its swatch', () => {
         onOpen={vi.fn()}
         onEdit={vi.fn()}
         onRotate={vi.fn()}
-        rotating={null}
+        rotating={() => false}
         onStartStepper={vi.fn()}
       />
     )
@@ -354,7 +354,7 @@ describe('the review grid, with the colour field on it', () => {
         onOpen={vi.fn()}
         onEdit={onEdit}
         onRotate={vi.fn()}
-        rotating={null}
+        rotating={() => false}
         onStartStepper={vi.fn()}
       />
     )

@@ -4244,6 +4244,32 @@
       "square": "Cuadrado",
       "portrait": "Vertical",
       "landscape": "Apaisado"
-    }
+    },
+    "saving": "Guardando el giro"
+  },
+  "imageBrush": {
+    "title": "Borra lo que sobra",
+    "hint": "Pinta encima para quitar lo que no es la prenda. Si el recorte automático se comió algo, cambia a «devolver» y píntalo de vuelta.",
+    "hintEraseOnly": "Pinta encima para quitar lo que no es la prenda.",
+    "tools": "Borrador",
+    "erase": "Borrar",
+    "restore": "Devolver",
+    "eraseArea": "Foto de la prenda: pinta para borrar",
+    "restoreArea": "Foto de la prenda: pinta para devolver",
+    "undo": "Deshacer el último trazo",
+    "brushSize": "Grosor del pincel",
+    "apply": "Guardar",
+    "cancel": "Dejarlo como estaba",
+    "reset": "Volver al automático",
+    "open": "Borra lo que sobra",
+    "edited": "Retocada a mano",
+    "noPreview": "No puedo mostrar esta foto aquí",
+    "keyboardHint": "Con el teclado: flechas para mover el pincel, Enter para pintar.",
+    "saved": "Listo, la prenda queda así en todas las pantallas",
+    "saveFailed": "No he podido guardar el retoque. Vuelve a intentarlo.",
+    "wasReset": "Vuelta al recorte automático",
+    "resetFailed": "No he podido volver al automático",
+    "pendingOne": "Guardaremos la prenda con lo que has borrado",
+    "clearedByRotate": "Al girar la foto he quitado lo que habías borrado: vuelve a pintarlo."
   }
 }

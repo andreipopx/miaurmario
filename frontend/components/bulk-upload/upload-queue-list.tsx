@@ -56,10 +56,14 @@ export function UploadQueueList({
    * their way up have no garment to rotate yet, so they do not offer it.
    */
   onRotate?: (photo: QueuedPhoto, direction: 'cw' | 'ccw') => void;
-  /** Quarter turns saved so far, per row, so the thumbnail matches what is stored. */
+  /**
+   * Quarter turns to show each row at, keyed by the row's garment id. Optimistic:
+   * these are the turns the user has asked for, which may be a request or two ahead
+   * of the file on disk.
+   */
   turns?: Readonly<Record<string, number>>;
-  /** The row waiting on the server. */
-  rotating?: string | null;
+  /** Rows with a save still in the air. They stay tappable; the badge says so. */
+  rotating?: (photo: QueuedPhoto) => boolean;
 }) {
   const t = useTranslations('bulkUpload.queue');
   const tCrop = useTranslations('imageCrop');
@@ -80,7 +84,8 @@ export function UploadQueueList({
         const Icon = STATE_ICON[photo.state];
         const spinning = photo.state === 'uploading' || photo.state === 'pending';
         const canRotate = Boolean(photo.itemId) && photo.state !== 'error';
-        const busy = rotating === photo.id;
+        const busy = rotating?.(photo) ?? false;
+        const shown = (photo.itemId ? turns[photo.itemId] : 0) ?? 0;
         return (
           <li
             key={photo.id}
@@ -96,13 +101,20 @@ export function UploadQueueList({
                   src={photo.previewUrl}
                   alt=""
                   className="h-full w-full object-cover transition-transform duration-200 motion-reduce:transition-none"
-                  style={
-                    turns[photo.id]
-                      ? { transform: `rotate(${turns[photo.id] * 90}deg)` }
-                      : undefined
-                  }
+                  style={shown ? { transform: `rotate(${shown * 90}deg)` } : undefined}
                   aria-hidden
                 />
+              )}
+              {/* The turn is already on screen; this only says it is still being
+                  written. It sits on the thumbnail rather than in the button so the
+                  button stays a button the user can hit again straight away. */}
+              {busy && (
+                <span className="absolute bottom-0 right-0 rounded-tl-md bg-background/85 p-0.5">
+                  <Loader2
+                    className="h-3 w-3 animate-spin text-muted-foreground motion-reduce:animate-none"
+                    aria-hidden
+                  />
+                </span>
               )}
             </div>
 
@@ -138,8 +150,9 @@ export function UploadQueueList({
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
-              {/* Straightening saves immediately, so the row says so rather than
-                  leaving the user to wonder whether it took. */}
+              {/* Never disabled, not even mid-save: the turn shows straight away and
+                  the saves are queued behind it, so a row can be spun round as fast
+                  as a thumb can tap. */}
               {onRotate && canRotate && (
                 <>
                   {(['ccw', 'cw'] as const).map((direction) => (
@@ -149,19 +162,13 @@ export function UploadQueueList({
                       size="icon"
                       variant="ghost"
                       className="h-9 w-9"
-                      disabled={busy}
                       onClick={() => onRotate(photo, direction)}
                       aria-label={tCrop(direction === 'cw' ? 'rotateRightOne' : 'rotateLeftOne', {
                         name: photo.name,
                       })}
                       title={tCrop(direction === 'cw' ? 'rotateRight' : 'rotateLeft')}
                     >
-                      {busy ? (
-                        <Loader2
-                          className="h-4 w-4 animate-spin motion-reduce:animate-none"
-                          aria-hidden
-                        />
-                      ) : direction === 'cw' ? (
+                      {direction === 'cw' ? (
                         <RotateCw className="h-4 w-4" strokeWidth={2} aria-hidden />
                       ) : (
                         <RotateCcw className="h-4 w-4" strokeWidth={2} aria-hidden />

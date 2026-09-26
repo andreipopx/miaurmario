@@ -214,6 +214,9 @@ export function AddItemDialog({
       formData.append('crop_w', String(framing.crop.width));
       formData.append('crop_h', String(framing.crop.height));
     }
+    // "Borra lo que sobra", in the coordinates of the turned photo. The server puts
+    // it through the same framing as the pixels and applies it to the cut-out.
+    if (framing.erase) formData.append('erase_mask', framing.erase, 'erase.png');
 
     try {
       await createItem.mutateAsync(formData);

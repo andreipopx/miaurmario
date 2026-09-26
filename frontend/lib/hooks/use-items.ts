@@ -150,6 +150,82 @@ export function useRemoveBackground() {
   });
 }
 
+/**
+ * "Borra lo que sobra" on a garment already in the wardrobe.
+ *
+ * The mask goes to the server rather than the finished image: the stored alpha is
+ * what every screen reads, and the server owns where the cut-out sits inside the
+ * photo it was trimmed out of. `space` says which picture the strokes were painted
+ * on — the visible cut-out, or the whole stored photo.
+ */
+export function useBrushCutout() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      mask,
+      space = 'cutout',
+    }: {
+      id: string;
+      mask: Blob;
+      space?: 'cutout' | 'original';
+    }) => {
+      const token = session?.accessToken || getAccessToken();
+      const formData = new FormData();
+      formData.append('mask', mask, 'mask.png');
+      formData.append('space', space);
+
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const response = await fetch(`/api/v1/items/${id}/cutout-mask`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+        headers,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new ApiError(data.detail || 'Failed to edit the cut-out', response.status, data);
+      }
+
+      return response.json() as Promise<Item>;
+    },
+    onSuccess: (_, variables) => invalidateGarmentImage(queryClient, variables.id),
+  });
+}
+
+/** Throw the user's strokes away and go back to what the model decided. */
+export function useResetCutout() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (session?.accessToken) setAccessToken(session.accessToken as string);
+      return api.delete<Item>(`/items/${id}/cutout-mask`);
+    },
+    onSuccess: (_, id) => invalidateGarmentImage(queryClient, id),
+  });
+}
+
+/**
+ * Every list that shows a garment's picture, after that picture changed on disk.
+ *
+ * The signed URL changes on every read, so the only way a screen picks up a new
+ * cut-out is a refetch — and a garment appears in the wardrobe, in looks, and on
+ * the calendar, so all three have to be told.
+ */
+function invalidateGarmentImage(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  queryClient.invalidateQueries({ queryKey: ['items'] });
+  queryClient.invalidateQueries({ queryKey: ['item', id] });
+  queryClient.invalidateQueries({ queryKey: ['outfits'] });
+  queryClient.invalidateQueries({ queryKey: ['calendarOutfits'] });
+}
+
 export function useRestoreOriginal() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
@@ -485,21 +561,25 @@ export function useRotateImage() {
     mutationFn: async ({
       id,
       direction,
+      quarters = 1,
     }: {
       id: string;
       direction: 'cw' | 'ccw';
+      /**
+       * How many 90° steps, 1-3. Several taps on the button collapse into one
+       * request and one re-encode, which is most of what made rotating a batch
+       * feel like waiting.
+       */
+      quarters?: number;
     }) => {
       if (session?.accessToken) {
         setAccessToken(session.accessToken as string);
       }
-      return api.post<Item>(`/items/${id}/rotate?direction=${direction}`);
+      return api.post<Item>(
+        `/items/${id}/rotate?direction=${direction}&quarters=${quarters}`
+      );
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['item', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['outfits'] });
-      queryClient.invalidateQueries({ queryKey: ['calendarOutfits'] });
-    },
+    onSuccess: (_, variables) => invalidateGarmentImage(queryClient, variables.id),
   });
 }
 

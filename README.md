@@ -331,7 +331,8 @@ See the [k8s/](k8s/) directory for Kubernetes manifests including:
 | `SMTP_USER` | SMTP username | No |
 | `SMTP_PASSWORD` | SMTP password | No |
 | `BG_REMOVAL_PROVIDER` | Background removal backend: `rembg` or `http` (default: `rembg`) | No |
-| `BG_REMOVAL_MODEL` | rembg model name (default: `u2net`) | No |
+| `BG_REMOVAL_MODEL` | rembg model name (default: `isnet-general-use`) | No |
+| `BG_REMOVAL_FALLBACK_MODEL` | Loaded when `BG_REMOVAL_MODEL` is not on disk (default: `u2net`) | No |
 | `BG_REMOVAL_URL` | URL for HTTP bg removal provider | If http |
 | `BG_REMOVAL_API_KEY` | API key for HTTP bg removal provider | No |
 
@@ -356,7 +357,44 @@ Remove image backgrounds from wardrobe items. Two backends supported:
 ```bash
 pip install rembg[cpu]  # add to your image, or install manually
 ```
-No config needed — works out of the box. Change model with `BG_REMOVAL_MODEL` (default: `u2net`, options: `isnet-general-use`, `silueta`, `u2netp`).
+No config needed — works out of the box.
+
+**Which model.** The one that matters is how well it cuts out a hole the fabric
+encloses: a halter neckline, a bag handle, the gap between an arm and the body.
+Measured on synthetic shapes whose holes we know the truth for (mean alpha left in
+the hole, where 0 is see-through and 1 is the bug; IoU against the true
+silhouette; seconds per 768px photo on 8 CPUs):
+
+| `BG_REMOVAL_MODEL` | hole left opaque | IoU | s/photo | size |
+| --- | --- | --- | --- | --- |
+| `u2net` | 0.61 | 0.949 | 1.0 | 168 MB |
+| `u2netp` | 0.38 | 0.971 | 0.3 | 4 MB |
+| `silueta` | 0.56 | 0.957 | 0.9 | 43 MB |
+| **`isnet-general-use`** (default) | **0.34** | **0.985** | 1.4 | 171 MB |
+| `birefnet-general-lite` | 0.13 | 0.993 | 11.0 | 214 MB |
+| `u2net_cloth_seg` | — | 0.29 | 3.1 | 169 MB |
+
+`isnet-general-use` is the default: it halves the leak against `u2net` at a
+comparable cost per photo. `birefnet-general-lite` is better again and about eight
+times slower, which is too slow to sit in an upload; it is not baked into the image
+by default, so add it at build time rather than letting the container reach for the
+network:
+
+```bash
+docker build --build-arg REMBG_MODELS="u2net isnet-general-use birefnet-general-lite" backend/
+```
+
+`u2net_cloth_seg` segments clothing *on a person* (into top/bottom/full body) and
+finds nothing in a photo of a garment on its own — it is not a drop-in here.
+
+A model that is not on disk falls back to `BG_REMOVAL_FALLBACK_MODEL` (`u2net`,
+always baked in) with a warning, so a typo cannot leave the app with no cut-outs.
+
+**Whatever the model misses, the user can fix.** Every garment has an eraser
+("borra lo que sobra"): erase and restore brushes over the photo that edit the
+*stored* alpha, so the correction shows everywhere afterwards, with an undo and a
+"volver al automático". It works on a garment whose background was never removed
+too, which is the whole cut-out story for someone running without AI.
 
 **HTTP provider (e.g. [withoutbg](https://github.com/nicholasgasior/withoutbg)):**
 ```env

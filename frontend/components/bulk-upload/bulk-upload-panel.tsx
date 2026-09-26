@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useBatchItems, useBatchTagItems, useUntaggedItems } from '@/lib/hooks/use-wardrobe-stats';
-import { useRotateImage } from '@/lib/hooks/use-items';
+import { useRotationQueue } from '@/lib/hooks/use-rotation-queue';
 import { useBulkUpload } from '@/lib/bulk-upload/bulk-upload-context';
 import { PhotoPicker } from '@/components/bulk-upload/photo-picker';
 import { UploadQueueList } from '@/components/bulk-upload/upload-queue-list';
@@ -30,7 +30,9 @@ type Phase = 'pick' | 'queue' | 'review' | 'stepper';
 function hasContent(edit: ReviewEdit): boolean {
   return (
     Boolean(edit.type || edit.primaryColor || edit.formality || edit.style) ||
-    edit.primaryColorHex !== undefined
+    edit.primaryColorHex !== undefined ||
+    // `null` is a real answer here too: "it is a plain one of its type after all".
+    edit.subtype !== undefined
   );
 }
 
@@ -82,15 +84,18 @@ export function BulkUploadPanel({
   /** Which review tile has its tag editor open. */
   const [openTile, setOpenTile] = useState<string | null>(null);
   /**
-   * Turns already saved on the server, per garment.
+   * Straightening, optimistically.
    *
    * The signed image URL changes on every read, so a refetch does show the turned
-   * photo — but not before it arrives. Tracking the turns lets the thumbnail move
-   * the instant the button is pressed, which is the whole point of a rotate button.
+   * photo — but not before it arrives, and waiting for it made rotating a batch a
+   * sequence of little waits. The queue turns the thumbnail the instant the button
+   * is pressed and settles the server up behind it, collapsing a flurry of taps into
+   * one request per garment.
    */
-  const [turns, setTurns] = useState<Record<string, number>>({});
-  const [rotating, setRotating] = useState<string | null>(null);
-  const rotateImage = useRotateImage();
+  const rotation = useRotationQueue({
+    onSaved: () => toast.success(t('review.rotated')),
+  });
+  const turns = rotation.turns;
 
   // Read back from the server, so the grid shows the tags the worker wrote rather
   // than whatever the client happened to see last.
@@ -143,46 +148,19 @@ export function BulkUploadPanel({
 
   /**
    * Straightening is the one change on this screen that is not a draft: it is a
-   * file on disk, so it is saved on the spot and said so.
+   * file on disk. It is saved on the spot, but it never makes the user wait — the
+   * photo turns now and the queue catches the server up.
    */
-  const rotate = useCallback(
-    async (itemId: string, direction: 'cw' | 'ccw') => {
-      setRotating(itemId);
-      try {
-        await rotateImage.mutateAsync({ id: itemId, direction });
-        setTurns((current) => ({
-          ...current,
-          [itemId]: (((current[itemId] ?? 0) + (direction === 'cw' ? 1 : -1)) % 4 + 4) % 4,
-        }));
-        toast.success(t('review.rotated'));
-      } catch {
-        toast.error(t('review.rotateFailed'));
-      } finally {
-        setRotating(null);
-      }
-    },
-    [rotateImage, t]
-  );
+  const rotate = rotation.rotate;
 
   const rotatePhoto = useCallback(
     (photo: QueuedPhoto, direction: 'cw' | 'ccw') => {
-      if (!photo.itemId) return;
-      const itemId = photo.itemId;
-      setRotating(photo.id);
-      void rotateImage
-        .mutateAsync({ id: itemId, direction })
-        .then(() => {
-          setTurns((current) => ({
-            ...current,
-            [photo.id]: (((current[photo.id] ?? 0) + (direction === 'cw' ? 1 : -1)) % 4 + 4) % 4,
-            [itemId]: (((current[itemId] ?? 0) + (direction === 'cw' ? 1 : -1)) % 4 + 4) % 4,
-          }));
-          toast.success(t('review.rotated'));
-        })
-        .catch(() => toast.error(t('review.rotateFailed')))
-        .finally(() => setRotating(null));
+      // One key per garment, not per queue row: the same garment shows up in the
+      // queue, in the review grid and in the stepper, and all three have to agree
+      // about which way up it is.
+      if (photo.itemId) rotation.rotate(photo.itemId, direction);
     },
-    [rotateImage, t]
+    [rotation]
   );
 
   const save = useCallback(async () => {
@@ -191,6 +169,9 @@ export function BulkUploadPanel({
       .map(([itemId, edit]) => ({
         item_id: itemId,
         type: edit.type,
+        // Sent even when null, so clearing a subtype the tagger guessed wrong really
+        // does clear it.
+        subtype: edit.subtype ?? null,
         primary_color: edit.primaryColor,
         // `null` is meaningful here — "drop the shade the tagger sampled" — so it
         // goes over the wire, while `undefined` means the user never touched it.
@@ -216,13 +197,14 @@ export function BulkUploadPanel({
     }
   }, [batchTag, edits, onClose, reset, reviewingBacklog, t]);
 
+  const resetTurns = rotation.reset;
   const startOver = useCallback(() => {
     reset();
     setEdits({});
     setOpenTile(null);
-    setTurns({});
+    resetTurns();
     setPhase('pick');
-  }, [reset]);
+  }, [reset, resetTurns]);
 
   const busy = counts.busy > 0;
   const editCount = Object.values(edits).filter(hasContent).length;
@@ -290,7 +272,7 @@ export function BulkUploadPanel({
                   onRemove={remove}
                   onRotate={rotatePhoto}
                   turns={turns}
-                  rotating={rotating}
+                  rotating={(photo) => Boolean(photo.itemId) && rotation.isBusy(photo.itemId!)}
                 />
 
                 <Button
@@ -317,7 +299,7 @@ export function BulkUploadPanel({
                   onOpen={setOpenTile}
                   onEdit={editOne}
                   onRotate={rotate}
-                  rotating={rotating}
+                  rotating={rotation.isBusy}
                   turns={turns}
                   onStartStepper={() => setPhase('stepper')}
                 />
@@ -328,7 +310,7 @@ export function BulkUploadPanel({
                 drafts={items.map((item) => draftOf(item, edits[item.id]))}
                 onChange={editOne}
                 onRotate={rotate}
-                rotating={rotating}
+                rotating={rotation.isBusy}
                 turns={turns}
                 onDone={() => setPhase('review')}
               />

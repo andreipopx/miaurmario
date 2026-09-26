@@ -7,6 +7,11 @@ Three things are pinned here, all reported by people uploading a real wardrobe:
 * "borra lo que sobra" must land on the *stored* alpha, so the correction shows on
   every screen afterwards and not only the one the user was looking at, and it
   must be undoable back to what the model decided;
+* a region the user drew round — the lasso and the recuadro, which is how a halter
+  hole gets fixed in one gesture rather than a hundred dabs — must take everything
+  inside it and nothing outside it, must be able to give a region back as well, and
+  must land in the same place whatever resolution the mask was painted at, because
+  the user can now zoom in while painting;
 * a model that is not on disk must not cost the user their cut-outs.
 """
 
@@ -18,7 +23,7 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from PIL import Image
+from PIL import Image, ImageDraw
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.item import ClothingItem, ItemStatus
@@ -621,6 +626,146 @@ class TestEraserEndpoint:
             files={"mask": ("m.png", _stroke((10, 10), (0, 0, 1, 1), (255, 0, 0)), "image/png")},
         )
         assert response.status_code in (401, 403)
+
+
+def _region(size: tuple[int, int], points, colour, scale: float = 1.0) -> bytes:
+    """A mask with one filled polygon in it, the way the lasso and the recuadro send.
+
+    ``points`` are fractions of the photo, so the same region can be rendered at any
+    resolution — which is what ``scale`` is for: the eraser paints in the photo's own
+    pixels no matter how far the user has zoomed in, and a mask that arrives at a
+    different size than the stored alpha has to land in the same place regardless.
+    """
+    width = max(1, int(size[0] * scale))
+    height = max(1, int(size[1] * scale))
+    mask = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    ImageDraw.Draw(mask).polygon([(x * width, y * height) for x, y in points], fill=(*colour, 255))
+    out = BytesIO()
+    mask.save(out, format="PNG")
+    return out.getvalue()
+
+
+#: A rough ring drawn round the neck opening, in the coordinates of the *cut-out* —
+#: which is what the user is looking at and painting on. Deliberately looser than the
+#: hole itself on every side, so "the inside went" cannot be satisfied by the mask
+#: happening to trace the hole the model already found.
+LASSO = (
+    (0.36, 0.06),
+    (0.64, 0.06),
+    (0.76, 0.22),
+    (0.64, 0.40),
+    (0.36, 0.40),
+    (0.24, 0.22),
+)
+
+#: Cloth inside the ring: opaque to start with, and gone once the region is filled.
+INSIDE = ((0.30, 0.22), (0.50, 0.36))
+#: Cloth outside it, which is what makes this a region and not a wipe.
+OUTSIDE = ((0.10, 0.22), (0.50, 0.60))
+#: The middle of the neck opening: transparent already, and the target of "devolver".
+HOLE_CENTRE = (0.50, 0.20)
+
+
+class TestRegionFill:
+    """One gesture that encloses a hole, instead of a hundred little brush strokes.
+
+    The eraser now lets the user draw round a region — the gap inside a halter
+    neckline, the space under a bag handle — and fill all of it at once. On the wire
+    that is still an RGBA mask, so nothing new reaches the server; what is pinned here
+    is that a *filled polygon* behaves: everything inside it goes, everything outside
+    it stays, the same tool brings a region back, and it all lands in the same place
+    whatever resolution the mask arrives at.
+    """
+
+    @pytest.mark.asyncio
+    async def test_a_lasso_round_the_neck_erases_its_inside_and_nothing_else(
+        self, client: AsyncClient, auth_headers, cutout_item
+    ) -> None:
+        item, service = cutout_item
+        stored = service.get_image_path(item.image_path)
+        for at in INSIDE + OUTSIDE:
+            assert _alpha_at(stored, at) > 215, at
+
+        size = Image.open(stored).size
+        response = await client.post(
+            f"/api/v1/items/{item.id}/cutout-mask",
+            headers=auth_headers,
+            files={"mask": ("mask.png", _region(size, LASSO, (255, 0, 0)), "image/png")},
+            data={"space": "cutout"},
+        )
+
+        assert response.status_code == 200, response.text
+        after = service.get_image_path(response.json()["image_path"])
+        for at in INSIDE:
+            assert _alpha_at(after, at) < 40, at
+        for at in OUTSIDE:
+            assert _alpha_at(after, at) > 215, at
+
+    @pytest.mark.asyncio
+    async def test_a_region_brings_a_part_back_as_readily_as_it_takes_one_away(
+        self, client: AsyncClient, auth_headers, cutout_item
+    ) -> None:
+        """The same tool, the other way round: green restores what red would take.
+
+        The lasso is not an eraser with a different shape — it is a way of saying
+        "this region" — so "devolver" has to work with it too, or somebody who wiped
+        one hole too many has no way back short of throwing every edit away.
+        """
+        item, service = cutout_item
+        stored = service.get_image_path(item.image_path)
+        assert _alpha_at(stored, HOLE_CENTRE) < 40
+
+        size = Image.open(stored).size
+        response = await client.post(
+            f"/api/v1/items/{item.id}/cutout-mask",
+            headers=auth_headers,
+            files={"mask": ("mask.png", _region(size, LASSO, (0, 255, 0)), "image/png")},
+            data={"space": "cutout"},
+        )
+
+        assert response.status_code == 200, response.text
+        after = service.get_image_path(response.json()["image_path"])
+        assert _alpha_at(after, HOLE_CENTRE) > 215
+        for at in OUTSIDE:
+            assert _alpha_at(after, at) > 215, at
+
+    @pytest.mark.asyncio
+    async def test_the_same_region_lands_in_the_same_place_at_any_mask_resolution(
+        self, client: AsyncClient, auth_headers, db_session: AsyncSession, test_user: User
+    ) -> None:
+        """Zooming changes what the user can see, not where the strokes go.
+
+        The eraser records every stroke in the coordinates of the stored photo and
+        builds the mask at that resolution, so the zoom never reaches the wire. This
+        is the server's half of that promise: a mask that turns up at a quarter of the
+        size is scaled into the same frame and produces the same cut-out.
+        """
+        readings = []
+        for scale in (1.0, 0.25):
+            item, service = await _item_with_cutout(db_session, test_user)
+            size = Image.open(service.get_image_path(item.image_path)).size
+            response = await client.post(
+                f"/api/v1/items/{item.id}/cutout-mask",
+                headers=auth_headers,
+                files={
+                    "mask": (
+                        "mask.png",
+                        _region(size, LASSO, (255, 0, 0), scale=scale),
+                        "image/png",
+                    )
+                },
+                data={"space": "cutout"},
+            )
+            assert response.status_code == 200, response.text
+            after = service.get_image_path(response.json()["image_path"])
+            readings.append([_alpha_at(after, at) for at in INSIDE + OUTSIDE])
+
+        full, coarse = readings
+        for at, a, b in zip(INSIDE + OUTSIDE, full, coarse, strict=True):
+            # A quarter-size mask has a softer edge, so the numbers are not identical;
+            # what matters is that transparent stayed transparent and opaque opaque.
+            assert (a < 40) == (b < 40), at
+            assert (a > 215) == (b > 215), at
 
 
 class TestRotationEndpoint:

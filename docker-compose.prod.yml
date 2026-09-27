@@ -38,7 +38,10 @@ services:
 
   # FastAPI Backend
   backend:
-    image: ghcr.io/anyesh/wardrowbe:backend-latest
+    image: ${BACKEND_IMAGE:-miaurmario-backend:local}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: wardrobe_backend
     restart: unless-stopped
     extra_hosts:
@@ -101,7 +104,10 @@ services:
 
   # arq Worker for background jobs
   worker:
-    image: ghcr.io/anyesh/wardrowbe:backend-latest
+    image: ${BACKEND_IMAGE:-miaurmario-backend:local}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: wardrobe_worker
     restart: unless-stopped
     command: arq app.workers.worker.WorkerSettings
@@ -152,7 +158,10 @@ services:
 
   # Next.js Frontend
   frontend:
-    image: ghcr.io/anyesh/wardrowbe:frontend-latest
+    image: ${FRONTEND_IMAGE:-miaurmario-frontend:local}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: wardrobe_frontend
     restart: unless-stopped
     extra_hosts:

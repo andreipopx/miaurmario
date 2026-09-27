@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in Wardrowbe
+description: Report a bug in Miaurmario
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
@@ -52,7 +52,7 @@ body:
     id: deployment
     attributes:
       label: Deployment Type
-      description: How are you running Wardrowbe?
+      description: How are you running Miaurmario?
       options:
         - Docker Compose
         - Kubernetes

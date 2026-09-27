@@ -1,99 +1,90 @@
 # Security Policy
 
-## Supported Versions
+## Reporting a vulnerability
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
+Email **hola@andreipop.org**, or open a
+[private advisory](https://github.com/andreipopx/miaurmario/security/advisories/new)
+on this repository.
 
-## Reporting a Vulnerability
+Please do **not** open a public issue for a vulnerability.
 
-We take security vulnerabilities seriously. If you discover a security issue, please report it responsibly.
+This is a one-person project. Expect a first reply within about a week, and
+please give it 90 days before disclosing publicly — or less, by agreement, if
+the fix lands sooner.
 
-### How to Report
+Include whatever you have: what the issue is, how to reproduce it, what an
+attacker gets out of it, and the commit you tested. A suggested fix is welcome
+but not required.
 
-1. **Do NOT create a public GitHub issue** for security vulnerabilities
-2. Email the security report to: [security contact - to be configured]
-3. Or use GitHub's private vulnerability reporting feature
+## What is in scope
 
-### What to Include
+The code in this repository and the configuration it ships with:
 
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Suggested fix (if any)
+- the FastAPI backend and the arq worker (`backend/`)
+- the Next.js frontend, including its auth configuration and its API route
+  handlers (`frontend/`)
+- the Docker Compose stacks, the nginx configuration and the Dockerfiles
 
-### Response Timeline
+Things worth reporting, concretely:
 
-- **Initial Response**: Within 48 hours
-- **Status Update**: Within 7 days
-- **Fix Timeline**: Depends on severity
+- **Cross-account access.** Reading, changing or deleting another user's
+  garments, photos, outfits, chat history or settings. Image URLs are signed;
+  a way to reach an image without a valid signature is a bug. So is a friend
+  seeing more of your wardrobe than the outfits you shared with them.
+- **Authentication and session handling.** Magic-link tokens, the optional
+  password login, the sliding refresh, the invite-only gate, the waitlist —
+  anything that lets someone in who should not be in, or that lets a non-admin
+  reach the admin panel or the audit log.
+- **Secret exposure.** API keys stored for a user (bring-your-own-key AI
+  credentials, Spotify / Last.fm / Pinterest tokens) leaking through an
+  endpoint, a log line or an error page.
+- **Server-side request forgery** through any URL the server is asked to fetch —
+  an AI base URL, a shop link on import, an avatar.
+- **Injection** of any kind, including prompt injection that gets the stylist to
+  call a wardrobe tool on behalf of a user it is not talking to.
+- **Location privacy.** Coordinates are deliberately rounded to two decimals in
+  the browser and again on the server. Anything finer than that reaching the
+  database, a log or a third party is a bug.
 
-### Severity Levels
+## What is out of scope
 
-| Level | Description | Response Time |
-|-------|-------------|---------------|
-| Critical | Remote code execution, data breach | 24-48 hours |
-| High | Authentication bypass, privilege escalation | 7 days |
-| Medium | Information disclosure, XSS | 14 days |
-| Low | Minor issues | 30 days |
+- **Any live deployment.** The instances that exist are private and invite-only.
+  Do not test against one you were not given written permission to test against;
+  set up your own with `docker compose` instead.
+- Missing hardening that is the operator's decision and is documented as such:
+  running without HTTPS, exposing Postgres, choosing a weak `SECRET_KEY`.
+- Findings from an automated scanner with no demonstrated impact.
+- Denial of service through sheer volume.
+- Vulnerabilities in a third-party dependency with no path to exploit them
+  here — report those upstream. Dependabot already watches this repo.
+- Social engineering, physical access, and anything requiring an already
+  compromised device.
 
-## Security Best Practices
+## Supported versions
 
-When self-hosting Wardrowbe, follow these recommendations:
+There are no releases. `main` is the only supported branch, and fixes land
+there.
 
-### Secrets Management
+## Operating this safely
 
-- Generate strong secrets: `openssl rand -hex 32`
-- Never commit `.env` files
-- Rotate secrets periodically
-- Use different secrets for each environment
+If you self-host, the defaults that matter:
 
-### Network Security
+- Generate real secrets — `openssl rand -hex 32` for `SECRET_KEY` and
+  `NEXTAUTH_SECRET`, `Fernet.generate_key()` for
+  `INTEGRATIONS_TOKEN_ENCRYPTION_KEY` — and never commit `.env`.
+- Keep Postgres and Redis off the public network. Only the frontend and the
+  backend need to be reachable, and both should sit behind TLS.
+- Sign-up mode is a setting in the admin panel, not an environment variable,
+  and it **defaults to `open`**. On a deployment anyone can reach, switch it to
+  `invite_only` before you announce the URL — otherwise anyone who finds it can
+  create an account and upload to your disk.
+- Uploaded photos are stored as plain files under `STORAGE_PATH`. If that
+  matters to you, encrypt the volume.
+- If you configure an external AI provider, garment photographs and the text of
+  your chats with Stinky are sent to it. Running a local model (Ollama) keeps
+  them on your hardware; running with AI off keeps them off the network
+  entirely.
 
-- Always use HTTPS in production
-- Place behind a reverse proxy (nginx, Caddy, Traefik)
-- Use firewall rules to limit exposure
-- Consider VPN for admin access
+## Credit
 
-### Authentication
-
-- Use OIDC provider for multi-user deployments
-- Enable MFA on your OIDC provider
-- Regularly review user access
-
-### Updates
-
-- Keep Docker images updated
-- Monitor Dependabot alerts
-- Subscribe to security advisories
-
-### Backups
-
-- Regular database backups
-- Store backups securely (encrypted)
-- Test backup restoration
-
-## Known Security Considerations
-
-### Image Storage
-
-- Uploaded images are stored on disk
-- Access controlled via user authentication
-- Consider disk encryption for sensitive deployments
-
-### AI Service
-
-- AI requests may contain clothing images
-- Use local AI (Ollama) for maximum privacy
-- Review AI provider privacy policies if using cloud services
-
-### Database
-
-- Passwords are not stored (OIDC-based auth)
-- Session tokens use secure JWT
-- Database should be on private network
-
-## Acknowledgments
-
-We appreciate security researchers who help keep Wardrowbe secure. Contributors will be acknowledged (with permission) in release notes.
+Reporters are credited by name in the fix commit, if they want to be.

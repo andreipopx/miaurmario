@@ -1,262 +1,174 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [1.5.1](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.5.0...wardrowbe-v1.5.1) (2026-07-17)
-
-
-### 🐛 Bug Fixes
-
-* [#124](https://github.com/Anyesh/wardrowbe/issues/124) fix prod compose file well ([3cded21](https://github.com/Anyesh/wardrowbe/commit/3cded21db36b877ef2a0a90815a620be2cc4bdf5))
-* keep honoring NEXT_PUBLIC_API_URL when resolving the backend ([#124](https://github.com/Anyesh/wardrowbe/issues/124)) ([d8cca73](https://github.com/Anyesh/wardrowbe/commit/d8cca73dd5c20315e2d7d256b112663b84894c11))
-* proxy /api/v1 through a route handler so BACKEND_URL applies ([#124](https://github.com/Anyesh/wardrowbe/issues/124)) ([2fff9c3](https://github.com/Anyesh/wardrowbe/commit/2fff9c399e0feae14266c36a1afb5ff46c437207))
-
-## [1.5.0](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.4.0...wardrowbe-v1.5.0) (2026-07-16)
-
-
-### ✨ Features
-
-* add page-size control and scope select-all to current page ([#127](https://github.com/Anyesh/wardrowbe/issues/127)) ([7430a4f](https://github.com/Anyesh/wardrowbe/commit/7430a4f910a65d6db810a5381f362e91f902694f))
-* allow bulk upload without forced AI analysis ([#128](https://github.com/Anyesh/wardrowbe/issues/128)) ([7984e26](https://github.com/Anyesh/wardrowbe/commit/7984e26f4fa233a1a40d95805e74e6444ffa2bc6))
-* allow cancelling AI analysis on processing items ([#95](https://github.com/Anyesh/wardrowbe/issues/95)) ([05f3578](https://github.com/Anyesh/wardrowbe/commit/05f357808d55a74de1394b5ec36cf5472370ba21))
-* support PUID/PGID overrides on app containers ([#123](https://github.com/Anyesh/wardrowbe/issues/123)) ([14674cb](https://github.com/Anyesh/wardrowbe/commit/14674cbbfd79e371b08d9761f02542aafe040cc3))
-* undo background removal and replace primary image ([#126](https://github.com/Anyesh/wardrowbe/issues/126)) ([c1c10b2](https://github.com/Anyesh/wardrowbe/commit/c1c10b2803b90104d5323ef112e66f786af75baa))
-
-
-### 🐛 Bug Fixes
-
-* allow overriding backend URL for renamed compose services ([#124](https://github.com/Anyesh/wardrowbe/issues/124)) ([2a813d6](https://github.com/Anyesh/wardrowbe/commit/2a813d60d711aa31c45ae7c024f1389b345be170))
-* chunk bulk uploads so batches over the limit no longer fail ([#125](https://github.com/Anyesh/wardrowbe/issues/125)) ([a4df578](https://github.com/Anyesh/wardrowbe/commit/a4df578b187b0343eff5091c49b7e02b76ec0546))
-
-## [1.4.0](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.3.1...wardrowbe-v1.4.0) (2026-07-01)
-
-
-### ✨ Features
-
-* make internal AI optional and add capabilities endpoint ([#113](https://github.com/Anyesh/wardrowbe/issues/113)) ([376f9a6](https://github.com/Anyesh/wardrowbe/commit/376f9a6a1e846d3de7853f55ac76447f204c8529))
-
-
-### 🐛 Bug Fixes
-
-* add weather location fallbacks ([#75](https://github.com/Anyesh/wardrowbe/issues/75)) ([7426d6d](https://github.com/Anyesh/wardrowbe/commit/7426d6d8444769dd34263373ebf551ecaaf79b59))
-* show config error on login when no auth provider is registered ([22e73ad](https://github.com/Anyesh/wardrowbe/commit/22e73ade5a9999fba2fb303a0533569d38294286))
-
-## [1.3.1](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.3.0...wardrowbe-v1.3.1) (2026-06-26)
-
-
-### 🐛 Bug Fixes
-
-* make OIDC issuer URL trailing-slash agnostic ([#107](https://github.com/Anyesh/wardrowbe/issues/107)) ([152f175](https://github.com/Anyesh/wardrowbe/commit/152f17572488bb63bc5f65a0c1a3240752db12c1))
-* OIDC issue [#114](https://github.com/Anyesh/wardrowbe/issues/114) ([7354232](https://github.com/Anyesh/wardrowbe/commit/73542322e0d56913d5e3f249f4679c05efd0eb74))
-
-
-### 👷 CI/CD
-
-* publish Docker images to GHCR on main and releases ([#83](https://github.com/Anyesh/wardrowbe/issues/83)) ([af22e84](https://github.com/Anyesh/wardrowbe/commit/af22e8410d37f04800dafa4cbc09a94e7fddd6bc))
-* publish versioned images on release ([#112](https://github.com/Anyesh/wardrowbe/issues/112)) ([9677b39](https://github.com/Anyesh/wardrowbe/commit/9677b3918728355046d3d8f306b11b9a0d61bc6e))
-
-## [1.3.0](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.2.4...wardrowbe-v1.3.0) (2026-05-31)
-
-
-### ✨ Features
-
-* add mobile callback [#58](https://github.com/Anyesh/wardrowbe/issues/58) ([44cf285](https://github.com/Anyesh/wardrowbe/commit/44cf285d3d612d1e1e97d1af110c284b716cb398))
-
-
-### 🐛 Bug Fixes
-
-* align .env.example SECRET_KEY with dev-mode sentinel ([a8f9f5e](https://github.com/Anyesh/wardrowbe/commit/a8f9f5e5a8c66da81084e49b18fa8c47f82e11ef)), closes [#72](https://github.com/Anyesh/wardrowbe/issues/72)
-* Item pair score initialization for learning service ([9f7de07](https://github.com/Anyesh/wardrowbe/commit/9f7de07deb7216c55c2a091b481fc98be71d4ad2))
-* select wardrobe items beyond the first page in studio ([c73c571](https://github.com/Anyesh/wardrowbe/commit/c73c5717ff23fd849154f5e44569d854400bb600))
-* update cognitive cache thresh ([9170644](https://github.com/Anyesh/wardrowbe/commit/9170644a47140af7fb1e485c42af2688d9b95cde))
-* update pair context for feedback without a rating ([3764dec](https://github.com/Anyesh/wardrowbe/commit/3764dec0c6462aad253bed6ea3bf4a834b31e2b7))
-
-
-### 🔧 Maintenance
-
-* add cognitive cache ([886e65f](https://github.com/Anyesh/wardrowbe/commit/886e65f43d5fa89365bb10f122a3066ce7b81551))
-* **deps:** bump astral-sh/setup-uv from 4 to 7 ([84ceb98](https://github.com/Anyesh/wardrowbe/commit/84ceb98defc5c87b7322d4d26469d9fd65238e3f))
-* **deps:** bump googleapis/release-please-action from 4 to 5 ([8a31d2c](https://github.com/Anyesh/wardrowbe/commit/8a31d2c379805284feb4e4d746d340262791b529))
-
-
-### 👷 CI/CD
-
-* install cognitive-cache via uv tool install ([6ede4f2](https://github.com/Anyesh/wardrowbe/commit/6ede4f237567de29c250936f4bc05ff6b896f99e))
-
-
-### 📦 Build
-
-* **deps:** bump codecov/codecov-action from 4 to 6 ([436997e](https://github.com/Anyesh/wardrowbe/commit/436997e8a4ff461a6336c442f6872da441dce1f7))
-
-## [1.2.4](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.2.3...wardrowbe-v1.2.4) (2026-04-17)
-
-
-### 🐛 Bug Fixes
-
-* prevent same-slot item pairing, add socks/tie types, fix UI text… ([#55](https://github.com/Anyesh/wardrowbe/issues/55)) ([c457572](https://github.com/Anyesh/wardrowbe/commit/c4575720d706d30a432900693983b0a3b38fb1a8))
-* refetch outfit after commit ([f9b3ceb](https://github.com/Anyesh/wardrowbe/commit/f9b3ceba0eab745682168151cee3adc112641afc))
-
-## [1.2.3](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.2.2...wardrowbe-v1.2.3) (2026-03-30)
-
-
-### 🐛 Bug Fixes
-
-* use separate test database instead of falling back to production DB ([019d2e9](https://github.com/Anyesh/wardrowbe/commit/019d2e9b54a51c031b72281a2c4080d206a46b76))
-* use separate test database instead of falling back to production DB ([7eae5c9](https://github.com/Anyesh/wardrowbe/commit/7eae5c9882e218908ef94fe0a1d413138df1f381))
-
-## [1.2.2](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.2.1...wardrowbe-v1.2.2) (2026-03-20)
-
-
-### 🐛 Bug Fixes
-
-* 39: Add proper error messages for diagnose ([#40](https://github.com/Anyesh/wardrowbe/issues/40)) ([f4a71d1](https://github.com/Anyesh/wardrowbe/commit/f4a71d15eba68519f59ff571cca0a111d59cc0c7))
-* enable dev credential login in Docker production builds ([#43](https://github.com/Anyesh/wardrowbe/issues/43)) ([9aab711](https://github.com/Anyesh/wardrowbe/commit/9aab71185d82a1a789a104abdbb842511285e001))
-
-## [1.2.1](https://github.com/Anyesh/wardrowbe/compare/wardrowbe-v1.2.0...wardrowbe-v1.2.1) (2026-02-20)
-
-
-### 🐛 Bug Fixes
-
-* Add current user check ([84840ab](https://github.com/Anyesh/wardrowbe/commit/84840ab8da7727b24f127fa8d8ac18a57fbcbb51))
-* Add missing test:coverage script to package.json ([43b8dfa](https://github.com/Anyesh/wardrowbe/commit/43b8dfa6a254c4af67e95b1bb3fefee2eac9d0e4))
-* add missing URL fields to TypeScript interfaces ([6113dd6](https://github.com/Anyesh/wardrowbe/commit/6113dd6682227d82dc29251ed9a4fc9054047ad6))
-* **ci:** Fix backend storage path and update Node.js to 20 ([55cda11](https://github.com/Anyesh/wardrowbe/commit/55cda11c76e03a490d3faa6981f50016bb1ebfde))
-* Ensure opensource repo works for new users ([a003dbd](https://github.com/Anyesh/wardrowbe/commit/a003dbd1c65c8917148b00ac007b466fb6e3430a))
-* modernize Python type annotations for Ruff linting ([208920b](https://github.com/Anyesh/wardrowbe/commit/208920bb1f60318100584fc12a1732154570461b))
-* re-fetch items after update/archive/restore to load relationships ([edfa65c](https://github.com/Anyesh/wardrowbe/commit/edfa65ce5d9516f61b6094554886f7aec0d452f2))
-* Resolve all CI quality check failures ([2209cdf](https://github.com/Anyesh/wardrowbe/commit/2209cdf66ff86090b95e583a6d587be429c2b357))
-* resolve CI lint/type/test failures from v1.2.0 release ([3568174](https://github.com/Anyesh/wardrowbe/commit/35681741610d8f696665b63ffc2ee15ad6c94fea))
-* Resolve lint and format issues ([86799df](https://github.com/Anyesh/wardrowbe/commit/86799df4e116e3ab3ee4fde4da64e9b945263dac))
-* Update AccumulatedItem types to match Item interface ([3e85320](https://github.com/Anyesh/wardrowbe/commit/3e853208a9b2abd99489415d77c923216825689a))
-
-
-### 📝 Documentation
-
-* improve setup instructions and fix dev mode ([3b567de](https://github.com/Anyesh/wardrowbe/commit/3b567de06f49c5fbe04bfbc04c58ccbf3d743d69))
-
-
-### 🔧 Maintenance
-
-* add git-blame-ignore-revs for formatting commits ([38fcc6f](https://github.com/Anyesh/wardrowbe/commit/38fcc6f210089bfd0e2bb7979fbfc26487974ba5))
-* Add pre-commit hooks for lint/format enforcement ([90343d3](https://github.com/Anyesh/wardrowbe/commit/90343d39fbfd413bf6bbce273d7c7d5b205ba2cc))
-* Add tsbuildinfo to gitignore ([b5280aa](https://github.com/Anyesh/wardrowbe/commit/b5280aa158a3eb9228e712444ec62fef918b094e))
-* fix linting errors and add missing type properties ([f1c4848](https://github.com/Anyesh/wardrowbe/commit/f1c484883d766961410977de1a81837679a8630f))
-* **release:** Add example screens ([2add224](https://github.com/Anyesh/wardrowbe/commit/2add2242a1342de29777fcb4ae74068bb6c8aab1))
-
-
-### 💄 Styling
-
-* Update README badges to for-the-badge style ([#10](https://github.com/Anyesh/wardrowbe/issues/10)) ([6eff9e9](https://github.com/Anyesh/wardrowbe/commit/6eff9e9278a424ff49e1a9b1d93b5611eb05e123))
-
-## [Unreleased]
-
-### Added
-
-### Changed
-
-### Fixed
-
-## [1.2.0] - 2026-02-06
-
-### Added
-- **Wash Tracking** — Track when items need washing based on wear count
-  - Per-item configurable wash intervals (or smart defaults by clothing type, e.g. jeans every 6 wears, t-shirts every wear)
-  - Visual wash status indicator with progress bar in item detail
-  - "Mark as Washed" button to reset the counter
-  - Full wash history log with method and notes
-  - `needs_wash` filter in the wardrobe to quickly find dirty clothes
-  - Background worker sends consolidated laundry reminder notifications every 6 hours via ntfy
-- **Multi-Image Support** — Upload up to 4 additional photos per clothing item
-  - Image gallery with carousel navigation in item detail dialog
-  - Thumbnail strip for quick image switching
-  - Set any additional image as the new primary image (swaps them)
-  - Add/delete additional images while editing
-- **Family Outfit Ratings** — Rate and comment on family members' outfits
-  - Star rating (1–5) with optional comment
-  - Family Feed page to browse other members' outfits and leave ratings
-  - Ratings displayed on outfit history cards and preview dialogs
-  - Average family rating shown on outfit cards
-  - Family Feed link added to sidebar, mobile nav, and dashboard
-- **Wear Statistics** — Detailed per-item wear analytics
-  - Total wears, days since last worn, average wears per month
-  - Wear-by-month mini bar chart (last 6 months)
-  - Wear-by-day-of-week breakdown
-  - Most common occasion detection
-  - Wear timeline with outfit context (which items were worn together)
-- **Wardrobe Sorting & Filtering** — More control over how items are displayed
-  - Sort by: newest, oldest, recently worn, least recently worn, most/least worn, name A–Z/Z–A
-  - Filter by: needs wash, favorites
-  - Collapsible filter bar with active filter count badge
-  - "Clear filters" button
-- **Improved Item Navigation** — Click items in outfit views to jump to item detail
-  - Outfit suggestion items link to wardrobe detail
-  - Outfit preview dialog items link to wardrobe detail
-  - History card "wore instead" preview links to item detail
-  - Deep-link support via `?item=<id>` URL parameter
-- **Smarter AI Recommendations** — AI avoids suggesting items that need washing and recently worn exact outfit combinations
-- Signed image URLs for improved security
-
-### Changed
-- Wear history endpoint now includes full outfit context (which items were worn together)
-- "Wore instead" items now also update wash tracking counters
-- Item detail dialog redesigned with image gallery, wash status section, and wear history section
-- Forward auth token validation made more lenient (`iat` now optional)
-
-### Fixed
-- Ruff linting errors in auth.py and images.py
-- AccumulatedItem types to match Item interface
-- Analytics page item cards now use signed `thumbnail_url` instead of raw path
-- Token decode error handling improved with catch-all for malformed payloads
-
-## [1.1.0] - 2026-01-30
-
-### Added
-- **AI Learning System** - Netflix/Spotify-style recommendation learning that improves over time
-  - Learns color preferences from user feedback patterns
-  - Tracks item pair compatibility scores based on outfit acceptance
-  - Builds user learning profiles with computed style insights
-  - Generates actionable style recommendations
-- **"Wore Instead" Tracking** - Record what you actually wore when rejecting suggestions to improve future recommendations
-- **Learning Insights Dashboard** - View your learned preferences, best item pairs, and AI-generated style insights
-- **Outfit Performance Tracking** - Detailed metrics on outfit acceptance rates, ratings, and comfort scores
-- Pre-commit hooks for lint/format enforcement
-
-### Fixed
-- Backend storage path and updated Node.js to 20
-- Added missing test:coverage script to package.json
-- Ensure opensource repo works for new users
-- Resolved all CI quality check failures
-
-## [1.0.0] - 2026-01-25
-
-### Added
-- **Photo-based wardrobe management** - Upload photos with automatic AI-powered clothing analysis
-- **Smart outfit recommendations** - AI-generated suggestions based on weather, occasion, and preferences
-- **Scheduled notifications** - Daily outfit suggestions via ntfy, Mattermost, or email
-- **Family support** - Manage wardrobes for multiple household members
-- **Wear tracking** - History, ratings, and outfit feedback system
-- **Analytics dashboard** - Visualize wardrobe usage, color distribution, and wearing patterns
-- **Outfit calendar** - View and track outfit history by date
-- **Pairing system** - AI-generated clothing pairings with feedback learning
-- **User preferences** - Customizable style preferences and notification settings
-- **Authentication** - Secure user authentication with session management
-- **Health checks** - API health monitoring endpoints
-- **Docker support** - Full containerization with docker-compose for dev and production
-- **Kubernetes manifests** - Production-ready k8s deployment configurations
-- **Database migrations** - Alembic-based schema migrations
-- **Test suite** - Comprehensive backend and frontend tests
-
-### Technical
-- Backend: FastAPI with Python
-- Frontend: Next.js with TypeScript
-- Database: PostgreSQL with Redis caching
-- AI: Compatible with OpenAI, Ollama, LocalAI, or any OpenAI-compatible API
-- Reverse proxy: Nginx/Caddy configurations included
-
-[Unreleased]: https://github.com/username/wardrowbe/compare/v1.2.0...HEAD
-[1.2.0]: https://github.com/username/wardrowbe/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/username/wardrowbe/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/username/wardrowbe/releases/tag/v1.0.0
+Notable changes to **Miaurmario**.
+
+The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Dates are the dates the work landed on `main` in this repository.
+
+Miaurmario has never cut a tagged release. There are no version numbers below
+the fork point, only dated batches of work, because that is what actually
+happened. The version numbers in the upstream section belong to the project this
+one was forked from and are kept for provenance, not continuity — Miaurmario did
+not inherit `1.5.1` and is not `1.5.2`.
+
+---
+
+## Miaurmario (this fork)
+
+Forked on **2026-07-21** from [Anyesh/wardrowbe](https://github.com/Anyesh/wardrowbe)
+at upstream `1.5.1`, and since rewritten into a different product: a Spanish-first
+wardrobe PWA with a cat stylist.
+
+### 2026-09-26 — Garment photos you can actually fix
+
+- **Front and back photos.** Every photo on a garment knows which side it shows
+  (`delante` / `detrás`); a photo can be merged into an existing garment as its
+  back.
+- **Cut-outs that respect holes the fabric encloses** — a bag handle, the gap
+  between an arm and the body. Switched the default rembg model to
+  `isnet-general-use` and documented, rather than hid, the case it still misses
+  (a small halter neckline).
+- **Eraser** (`borra lo que sobra`): erase/restore brushes that edit the stored
+  alpha, zoom, whole-hole fill, undo per stroke, and a return to the automatic
+  cut-out. Works on garments whose background was never removed, so cut-outs no
+  longer depend on AI being available.
+- **Layering as a first-class idea**: a dress over trousers is a look, not a
+  mistake — in the flat lay, in the stylist, and as a taste preference
+  («Me gusta superponer prendas»).
+- **Tag vocabulary in the Spanish people actually speak**: tappable subtypes, and
+  quick-tag buttons drawn from the garments already in that wardrobe.
+- Garment detail reduced to two buttons plus «más opciones», with the photo tools
+  behind the pencil; thumbnail framing is saved; hats are sized like hats.
+- Fixed: the bulk review pass silently losing edits it said it had saved; the
+  wardrobe filter badge counting something other than what "clear" clears; a
+  saved rotation persisting on the preview.
+
+### 2026-09-25 — Bulk intake, colour and wear
+
+- **Batch uploader with a resumable queue** and a quick review pass over the
+  whole batch.
+- **Photo tools on intake**: straighten and crop, store the photo the user took
+  rather than the one the sensor saw, and pick the garment's colour by pointing
+  at it — the real shade is kept beside the colour family.
+- **Wear stats**: «Cuánto la usas» on each garment and «Tu armario en números»,
+  counting what gets worn and surfacing what does not.
+- **Outfits as flat lays** rather than four thumbnails, each garment sitting on a
+  whisper of its own colour.
+- **Automatic location** at city precision only (city + IANA timezone).
+- **Two daily alerts** — the morning look and the friend-activity digest —
+  switchable from Ajustes → Notificaciones.
+- Integrations page reordered to put Last.fm first and be honest about the state
+  of the other two; a way to ask the admin for a Spotify seat.
+- `Familia` hidden from the nav now that `Amigos` is the social layer.
+
+### 2026-09-24 — Landing page
+
+- `/` became a real landing page, with four screenshots of the running app.
+
+### 2026-09-23 — Stinky gets a voice, a memory and a taste profile
+
+- **Stinky's own cat voice** across the app, and a warmer stylist that deflects
+  lightly instead of refusing.
+- **Per-user memory Stinky writes himself**, fed back into his prompts.
+- **«Qué llevo puesto»**: read an outfit off a selfie and match it against the
+  wardrobe.
+- **«Tu estilo con Stinky»**: an illustrated swipe deck that captures a taste
+  profile, an editor for it in Ajustes, and the profile wired into the stylist.
+- **Easy intake**: share a photo into the app, paste a shop link, or scan a care
+  label.
+- Haptics were added and then reverted — they did not survive contact with iOS.
+
+### 2026-09-22 — Several looks a day, push, and the waitlist
+
+- **«Tu día» / momentos del día**: several looks for one day with suggested
+  transitions between them, on Hoy and in the API.
+- **Notifications**: email by default, plus a Web Push channel with per-event
+  settings and an install guide.
+- **Closed-beta waitlist**: access requests email (and push) the site admins.
+- **Last.fm** as a music source, behind a source-agnostic Música tab.
+- **Profile photos** with circle crop and EXIF stripping.
+- Navigation simplified to five areas with in-section tabs.
+- PWA: iOS splash screens, `viewport-fit=cover`, standalone polish on iOS and
+  Android, and a service worker that stops serving itself from cache.
+- A responsive pass: nothing overflows sideways at 320 px with large fonts,
+  with a Playwright audit script to keep it that way.
+- Onboarding: a welcome tour with Stinky, a first-garment card on Hoy, one-time
+  area tips.
+
+### 2026-09-21 — The big one: Stinky, friends, music, admin
+
+- **Stinky pop design system**: Figtree + Bagel Fat One, pill UI, floating glass
+  dock, the mascot built from photographs of the real cat, and every screen
+  restyled. Tokens live in CSS variables, so a palette swap is one file.
+- **«Habla con Stinky»**: a streaming chat with wardrobe tools, a per-tool-loop
+  cap, and per-user isolation; outfits saved from chat carry a `stinky_chat`
+  source.
+- **Amigos**: friendships by handle, per-outfit visibility (private · friends ·
+  public), a feed grouped per friend and day, «me encanta» and comments, an
+  in-app badge and a `/u/{username}` invite page. Friends never get session
+  access to another user's image folder.
+- **Música**: Spotify listening history and a daily listening mood, now-playing,
+  mood timeline, tops and history, plus exact-track song input for the stylist.
+- **AI access modes**: `none`, granted by the admin, or bring-your-own-key, with
+  per-user prompt/completion token accounting and friendly no-AI notices
+  wherever an AI feature would have run.
+- **Admin panel**: Resumen, Usuarios, Registro, Buzón, Sistema — audit log, app
+  settings, invites, a feedback inbox, announcements and a GDPR deletion job.
+- **Invite-only sign-up**, enforced on every account-creation path, with no email
+  enumeration.
+- **Optional password login** (argon2) alongside the magic link, sliding token
+  refresh, and a Seguridad settings page.
+- City search, reverse geocoding and IANA timezone validation (legacy browser
+  timezone ids are mapped forward).
+- Public privacy policy and terms at `/legal`.
+- Branded Miaurmario email templates.
+- AI tag values shown in Spanish across wardrobe, outfits and insights.
+
+### 2026-08-15 — Auth and Pinterest
+
+- Security-headers middleware.
+- **Magic-link sign-in**, usernames, and admin promotion.
+- **Pinterest integration**: OAuth, import and a cron refresh. The Pinterest app
+  is still awaiting API approval, so the page is status-driven and says so.
+
+### 2026-07-21 → 2026-07-23 — The rebrand
+
+- Installable PWA target and a Spanish i18n scaffold, then full Spanish
+  coverage; `es` is the default locale, resolved from a cookie with no
+  `Accept-Language` sniffing.
+- Rebranded to Miaurmario. (The first pass was an editorial Playfair aesthetic;
+  it was replaced wholesale by Stinky pop in September.)
+- Music-based mood input for the stylist.
+- Free-form drag-and-drop canvas in the outfit Studio — see
+  [`docs/outfit-builder.md`](docs/outfit-builder.md).
+- Dual-origin serving (LAN + Cloudflare Tunnel).
+
+---
+
+## Upstream history — Anyesh/wardrowbe, up to 1.5.1
+
+This section is **not** Miaurmario's history. It is the release history of the
+project this one was forked from, kept so the provenance of the code is clear.
+The full entries, with links to the commits and pull requests they refer to,
+live in that project's own changelog:
+[Anyesh/wardrowbe](https://github.com/Anyesh/wardrowbe).
+
+| Version | Date | Headline |
+| --- | --- | --- |
+| 1.5.1 | 2026-07-17 | Backend URL resolution and prod compose fixes |
+| 1.5.0 | 2026-07-16 | Bulk upload without forced AI analysis, page-size control, PUID/PGID overrides, undo background removal |
+| 1.4.0 | 2026-07-01 | Internal AI made optional, `/capabilities` endpoint, weather location fallbacks |
+| 1.3.1 | 2026-06-26 | OIDC fixes; Docker images published to GHCR |
+| 1.3.0 | 2026-05-31 | Mobile callback, outfit studio and recommendation-engine fixes |
+| 1.2.4 | 2026-04-17 | Pairing slot fixes, socks/tie types |
+| 1.2.3 | 2026-03-30 | Separate test database instead of falling back to production |
+| 1.2.2 | 2026-03-20 | Dev credential login in production builds, better diagnose errors |
+| 1.2.1 | 2026-02-20 | Type and lint cleanups across the open-sourced repo |
+| 1.2.0 | 2026-02-06 | Wash tracking, multi-image items, family outfit ratings, wear statistics, wardrobe sorting/filtering |
+| 1.1.0 | 2026-01-30 | AI learning system, "wore instead" tracking, learning insights dashboard |
+| 1.0.0 | 2026-01-25 | First release: photo wardrobe, AI tagging, outfit recommendations, notifications, analytics, Docker and Kubernetes deployment |
+
+Some of that still runs. Wash tracking, the learning system, the pairing engine,
+the analytics and the Kubernetes manifests are inherited and largely untouched by
+this fork; the family feature is present in the code but hidden from the
+navigation, because `Amigos` replaced it.

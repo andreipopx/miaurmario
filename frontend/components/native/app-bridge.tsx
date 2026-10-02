@@ -8,9 +8,9 @@ import { toast } from 'sonner';
 import { App } from '@capacitor/app';
 import { SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { SplashScreen } from '@capacitor/splash-screen';
 import { hasNativeBridge, nativePlatform } from '@/lib/native/app-shell';
 import { androidBackAction, inAppPath } from '@/lib/native/app-links';
+import { LAUNCH_SCREEN_MAX_MS, launchWaitsFor, markAppReady } from '@/lib/native/launch';
 import { canGoBackInApp } from '@/lib/native/navigation';
 
 /** Something modal is on top: a Radix dialog/sheet/menu or the photo lightbox. */
@@ -32,7 +32,7 @@ function dismissOverlay() {
  * Glue between the site and the Android/iOS app it runs in. Renders nothing,
  * does nothing in a browser.
  *
- * - hides the launch screen once React is up;
+ * - keeps the launch screen up until the first real screen is ready;
  * - matches the status bar icons to the theme;
  * - Android back button: close the open sheet, else go back, else Hoy, else leave;
  * - links the OS hands the app (the magic link in the email, a notification
@@ -50,7 +50,10 @@ export function AppBridge() {
   useEffect(() => {
     if (!hasNativeBridge()) return;
     document.documentElement.dataset.app = nativePlatform() ?? 'native';
-    void SplashScreen.hide({ fadeOutDuration: 200 }).catch(() => {});
+    // The dashboard drops the launch screen once it knows who you are; any
+    // other first screen is final already. Never longer than the cap.
+    if (!launchWaitsFor(latest.current.pathname)) markAppReady();
+    const launchCap = window.setTimeout(markAppReady, LAUNCH_SCREEN_MAX_MS);
 
     const open = (link: string | null | undefined) => {
       const path = inAppPath(link, window.location.host);
@@ -87,9 +90,15 @@ export function AppBridge() {
       }),
     ];
     return () => {
+      window.clearTimeout(launchCap);
       handles.forEach((h) => void h.then((l) => l.remove()).catch(() => {}));
     };
   }, []);
+
+  // Sent on from the dashboard to login or onboarding: that's the screen.
+  useEffect(() => {
+    if (hasNativeBridge() && !launchWaitsFor(pathname)) markAppReady();
+  }, [pathname]);
 
   useEffect(() => {
     if (!hasNativeBridge() || !resolvedTheme) return;

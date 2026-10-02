@@ -23,6 +23,7 @@ import { LocationSync } from '@/components/settings/location-sync';
 import { BulkUploadProvider } from '@/lib/bulk-upload/bulk-upload-context';
 import { UploadStatusBar } from '@/components/bulk-upload/upload-status-bar';
 import { OfflineWarmup } from '@/components/offline/offline-warmup';
+import { markAppReady } from '@/lib/native/launch';
 
 /** Screens with pull-to-refresh (feeds and lists that change under you). */
 const PULL_TO_REFRESH = new Set(['/dashboard', '/dashboard/wardrobe', '/dashboard/friends', '/dashboard/music']);
@@ -45,6 +46,8 @@ export default function DashboardLayout({
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
+    // In the Android/iOS app: who you are is known, so the launch screen can go.
+    if (!isLoading && isAuthenticated) markAppReady();
   }, [isLoading, isAuthenticated, router]);
 
   // Check onboarding status from API user

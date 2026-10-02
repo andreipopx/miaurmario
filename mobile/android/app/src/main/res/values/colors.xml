@@ -2,4 +2,6 @@
 <resources>
     <!-- Brand pink, the "signature" colour in frontend/app/globals.css. -->
     <color name="stinky_pink">#FF7EB6</color>
+    <!-- The site's background: launch screen and window behind the WebView. -->
+    <color name="launch_background">#FFFFFF</color>
 </resources>

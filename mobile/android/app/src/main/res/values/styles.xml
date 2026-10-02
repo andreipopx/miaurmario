@@ -1,22 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <!-- No title bar anywhere: some launchers (Huawei's among them) draw the
+         window's action bar, with the app name, for an instant at start. -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="colorPrimary">@color/stinky_pink</item>
+        <item name="colorPrimaryDark">@color/launch_background</item>
+        <item name="colorAccent">@color/stinky_pink</item>
+        <item name="android:windowBackground">@color/launch_background</item>
     </style>
 
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/launch_background</item>
     </style>
 
-
+    <!-- Launch: Stinky on the app background (white, or near-black in dark
+         mode), then straight into the app theme, never via a titled window. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <!-- windowBackground, not background: "background" is inherited by
+             every view, which is how a stretched Stinky ended up in a title bar. -->
+        <item name="android:windowBackground">@drawable/launch_screen</item>
+        <item name="windowSplashScreenBackground">@color/launch_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_android12</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

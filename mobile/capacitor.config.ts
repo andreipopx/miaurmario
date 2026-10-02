@@ -18,6 +18,10 @@ const config: CapacitorConfig = {
   backgroundColor: '#FFFFFF',
   server: {
     url: SERVER_URL,
+    // Open straight on the wardrobe (the dashboard sends anyone signed out to
+    // login), never via the landing page. Not a server redirect: Android's
+    // WebView proxy follows redirects itself and serves the wrong page for "/".
+    appStartPath: '/dashboard',
     cleartext: SERVER_URL.startsWith('http://'),
     // Shown (from the bundle, no network needed) when the site can't load.
     errorPath: 'offline.html',
@@ -49,9 +53,12 @@ const config: CapacitorConfig = {
       initialViewportFitValueHint: 'cover',
     },
     SplashScreen: {
-      // Hidden by the web app once the first screen has painted.
+      // Stays until the web app says its first real screen is ready
+      // (lib/native/launch.ts), so neither a blank WebView nor the landing
+      // page flashes by. 0 here would mean "no launch screen at all".
       launchAutoHide: false,
-      launchShowDuration: 0,
+      launchShowDuration: 6000,
+      launchFadeOutDuration: 200,
       backgroundColor: '#FFFFFF',
       showSpinner: false,
     },

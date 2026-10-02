@@ -86,6 +86,17 @@ The same workflow also builds the Android APK/AAB as a downloadable artifact.
 cd mobile && node scripts/source-assets.mjs && npm run assets
 ```
 
+Android's launch screen is drawn by hand, not from those images: a plain
+background (`@color/launch_background`, white / near-black at night) with
+`splash_icon` centred at its own size (`res/drawable/launch_screen.xml`), so it
+never stretches on odd screen shapes. `npm run assets` deletes the stretched
+`splash.png` files it would otherwise add back. No theme has a title bar: some
+launchers (Huawei's) draw it, app name included, for an instant at start.
+
+The app opens on `/dashboard` (`server.appStartPath`), never `/`: the server
+redirects signed-in browsers from `/` to `/dashboard`, but Android's WebView
+proxy follows redirects itself and would serve the wrong page.
+
 ## One-time setup (accounts and keys)
 
 Everything below is free except the two store accounts. Until a step is done

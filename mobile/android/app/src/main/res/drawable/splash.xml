@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same as launch_screen.xml, under the name the SplashScreen plugin looks up on
+     Android < 12. Launch screen: the app background with Stinky (120dp) centred at its own
+     size. A bitmap with a gravity never stretches, whatever the screen shape. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/launch_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_icon" />
+    </item>
+</layer-list>

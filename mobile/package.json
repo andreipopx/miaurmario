@@ -5,7 +5,7 @@
   "description": "Miaurmario for Android and iOS: a Capacitor shell around the web app.",
   "scripts": {
     "sync": "cap sync",
-    "assets": "capacitor-assets generate --android --ios --iconBackgroundColor '#FFFFFF' --splashBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#FFFFFF' --splashBackgroundColorDark '#0F0F0F'",
+    "assets": "capacitor-assets generate --android --ios --iconBackgroundColor '#FFFFFF' --splashBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#FFFFFF' --splashBackgroundColorDark '#0F0F0F' && find android/app/src/main/res -name splash.png -delete",
     "android:apk": "cap sync android && cd android && ./gradlew assembleDebug",
     "android:release": "cap sync android && cd android && ./gradlew bundleRelease assembleRelease"
   },

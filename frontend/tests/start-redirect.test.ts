@@ -8,7 +8,16 @@ const APP_UA = 'Mozilla/5.0 (Linux; Android 14; wv) Chrome/140.0 Mobile Safari/5
 const BROWSER_UA = 'Mozilla/5.0 (Linux; Android 14) Chrome/140.0 Mobile Safari/537.36';
 
 function hit(headers: Record<string, string>) {
-  return middleware(new NextRequest('http://frontend:3000/', { headers }));
+  return middleware(
+    new NextRequest('http://frontend:3000/', {
+      headers: {
+        host: 'miaurmario.andreipop.org',
+        'x-forwarded-proto': 'https',
+        'x-forwarded-host': 'miaurmario.andreipop.org',
+        ...headers,
+      },
+    })
+  );
 }
 
 describe('opening "/"', () => {
@@ -30,9 +39,19 @@ describe('opening "/"', () => {
     ]) {
       const res = hit({ 'user-agent': BROWSER_UA, cookie: `${name}=x` });
       expect(res.status).toBe(307);
-      // Relative, so the proxies' internal host never leaks into the redirect.
-      expect(res.headers.get('location')).toBe('/dashboard');
+      // The public origin, never the proxies' internal one (Next rejects a
+      // relative Location in middleware with a 500).
+      expect(res.headers.get('location')).toBe('https://miaurmario.andreipop.org/dashboard');
     }
+  });
+
+  it('without forwarded headers it falls back to the request itself', () => {
+    const res = middleware(
+      new NextRequest('http://localhost:3000/', {
+        headers: { cookie: 'next-auth.session-token=x' },
+      })
+    );
+    expect(res.headers.get('location')).toBe('http://localhost:3000/dashboard');
   });
 
   it('other next-auth cookies are not a session', () => {

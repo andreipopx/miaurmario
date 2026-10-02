@@ -16,6 +16,9 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { useAdminBadge, useIsSiteAdmin } from '@/lib/hooks/use-admin';
 import { openFeatureTour } from '@/lib/hooks/use-seen-tips';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import { forgetNativePushDevice } from '@/lib/native/push';
+import { clearOfflineData } from '@/lib/offline/persist';
 
 /**
  * The profile menu is deliberately short: your profile, Ajustes, Admin (site
@@ -43,6 +46,7 @@ interface MenuEntry {
 function useProfileMenu(openFeedback: () => void): { entries: MenuEntry[]; profile: { href: string; name: string; handle?: string } } {
   const t = useTranslations('nav');
   const tCommon = useTranslations('common');
+  const queryClient = useQueryClient();
   const pathname = usePathname();
   const { user } = useAuth();
   const isAdmin = useIsSiteAdmin();
@@ -69,7 +73,12 @@ function useProfileMenu(openFeedback: () => void): { entries: MenuEntry[]; profi
     key: 'signOut',
     icon: LogOut,
     label: tCommon('signOut'),
-    onSelect: () => signOut({ callbackUrl: '/login' }),
+    // Unregister this phone and drop the offline copy first, so the next
+    // person to sign in here gets neither this account's alerts nor its wardrobe.
+    onSelect: () =>
+      void Promise.allSettled([forgetNativePushDevice(), clearOfflineData(queryClient)]).finally(() =>
+        signOut({ callbackUrl: '/login' })
+      ),
     muted: true,
   });
 

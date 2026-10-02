@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { isStandalone } from '@/lib/pwa/platform';
 
 const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
 const CHECK_EVERY_MS = 30 * 60 * 1000;
@@ -51,10 +52,20 @@ export function ServiceWorkerRegister() {
     const check = () => { registration?.update().catch(() => {}); };
     const onVisible = () => { if (document.visibilityState === 'visible') check(); };
 
+    // Installed (home-screen PWA or the Android/iOS app): have the worker keep
+    // the whole app for offline use. A browser tab doesn't, so visitors don't
+    // download everything up front.
+    const warmOffline = () => {
+      if (!isStandalone()) return;
+      navigator.serviceWorker.ready
+        .then((reg) => reg.active?.postMessage({ type: 'WARM_OFFLINE' }))
+        .catch(() => {});
+    };
+
     const register = () => {
       navigator.serviceWorker
         .register(`/sw.js?v=${encodeURIComponent(BUILD_ID)}`, { updateViaCache: 'none' })
-        .then((reg) => { registration = reg; watch(reg); })
+        .then((reg) => { registration = reg; watch(reg); warmOffline(); })
         .catch(() => {});
     };
 

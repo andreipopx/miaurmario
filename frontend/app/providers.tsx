@@ -1,6 +1,13 @@
 'use client';
 
-import { QueryClient, QueryClientProvider, QueryCache, MutationCache, Query } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryCache,
+  MutationCache,
+  Query,
+  onlineManager,
+} from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { SessionProvider } from 'next-auth/react';
 import { useState } from 'react';
 import { toast, Toaster } from 'sonner';
@@ -15,6 +22,13 @@ import {
 import { ApiErrorMessages } from '@/components/api-error-messages';
 import { getAiAccessErrorCode } from '@/lib/ai-access';
 import { useCaptureInstallPrompt } from '@/lib/pwa/install-prompt';
+import { AppBridge } from '@/components/native/app-bridge';
+import {
+  OFFLINE_CACHE_VERSION,
+  OFFLINE_MAX_AGE_MS,
+  createOfflinePersister,
+  shouldPersistQuery,
+} from '@/lib/offline/persist';
 
 // Queries that expect a 404 as a legitimate "not configured yet" state
 // (e.g. user has no family, no location set) should tag themselves with
@@ -39,7 +53,9 @@ function handleQueryError(error: unknown, query: Query<unknown, unknown, unknown
     toast.error(toastText(error));
     return;
   }
-  if (error instanceof NetworkError) {
+  // Offline, the "Sin conexión" pill already says so: one toast per screen
+  // that tried to load would just pile up.
+  if (error instanceof NetworkError && navigator.onLine) {
     toast.error(toastText(error));
   }
 }
@@ -56,7 +72,8 @@ function handleMutationError(
   // feature lives, never as a red toast.
   if (getAiAccessErrorCode(error)) return;
   if (error instanceof NetworkError) {
-    toast.error(toastText(error));
+    // Offline, several taps in a row would stack identical toasts: keep one.
+    toast.error(toastText(error), navigator.onLine ? undefined : { id: 'offline' });
   } else if (error instanceof ApiError) {
     if (error.status === 401) return;
     if (error.status === 503) {
@@ -67,6 +84,11 @@ function handleMutationError(
   }
 }
 
+// React Query only learns about connectivity from online/offline events, so an
+// app opened with no connection would think it's online and turn every saved
+// screen into an error. Start from the real state; the events take it from there.
+if (typeof navigator !== 'undefined') onlineManager.setOnline(navigator.onLine);
+
 export function Providers({ children }: { children: React.ReactNode }) {
   // Android/desktop Chromium fire beforeinstallprompt once, early: keep it for the install guide.
   useCaptureInstallPrompt();
@@ -76,6 +98,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000,
+            // Kept in memory as long as the offline copy is valid, or they'd
+            // drop out of it after five idle minutes.
+            gcTime: OFFLINE_MAX_AGE_MS,
             retry: (failureCount, error) => {
               // Don't retry on auth errors or client errors
               if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
@@ -90,6 +115,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
           mutations: {
             retry: false,
+            // Offline, fail now with "Sin conexión" instead of quietly queueing
+            // a change that would fire whenever the phone reconnects.
+            networkMode: 'always',
           },
         },
         queryCache: new QueryCache({
@@ -100,11 +128,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
         }),
       })
   );
+  const [persister] = useState(createOfflinePersister);
 
   return (
     <SessionProvider>
       <AuthProvider>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister,
+            maxAge: OFFLINE_MAX_AGE_MS,
+            buster: OFFLINE_CACHE_VERSION,
+            dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+          }}
+        >
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -112,10 +149,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
             disableTransitionOnChange
           >
             <ApiErrorMessages />
+            <AppBridge />
             {children}
             <Toaster position="top-center" />
           </ThemeProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </AuthProvider>
     </SessionProvider>
   );

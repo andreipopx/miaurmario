@@ -196,3 +196,27 @@ class PushSubscription(Base):
     user_agent: Mapped[str | None] = mapped_column(String(300))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class NativePushToken(Base):
+    """One device of the native app (Capacitor shell), reached through FCM or APNs.
+
+    The browser's Web Push lives in :class:`PushSubscription`; the app's WebView
+    can't use it, so the shell registers the token its OS gave it here instead.
+    """
+
+    __tablename__ = "native_push_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # "android" (FCM registration token) or "ios" (APNs device token, hex).
+    platform: Mapped[str] = mapped_column(String(10), nullable=False)
+    token: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    app_version: Mapped[str | None] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

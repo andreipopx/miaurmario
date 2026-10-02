@@ -36,6 +36,7 @@
     "user": "Usuario",
     "friend": "amig@",
     "viewAll": "Ver todo",
+    "view": "Ver",
     "openMenu": "Abrir menú",
     "openSidebar": "Abrir barra lateral",
     "toggleTheme": "Cambiar tema",
@@ -43,6 +44,7 @@
     "darkMode": "Modo oscuro",
     "themeSystem": "Sistema",
     "offline": "Sin conexión",
+    "offlineHint": "Ves lo que tenías guardado. Stinky vuelve con internet.",
     "unknown": "Desconocido",
     "primary": "Principal",
     "optional": "Opcional",
@@ -533,6 +535,7 @@
       "removedToast": "Momento quitado",
       "removeError": "No hemos podido quitar el momento.",
       "loadError": "No hemos podido cargar tu día.",
+      "offline": "Sin conexión: tu look de hoy llegará cuando vuelva internet.",
       "retry": "Reintentar"
     }
   },
@@ -1603,7 +1606,10 @@
         "iosNeedsInstall": "En iPhone y iPad los avisos solo llegan si abres Miaurmario desde su icono en la pantalla de inicio. Instálala en un momento:",
         "iosTooOld": "Para recibir avisos en el iPhone necesitas iOS 16.4 o posterior. Mientras tanto te llegan por email.",
         "unsupported": "Este navegador no admite notificaciones. En Android usa Chrome; en iPhone, instala la app desde Safari.",
-        "installGuide": "Ver cómo instalarla"
+        "installGuide": "Ver cómo instalarla",
+        "appPending": "Los avisos de la app están a punto de llegar. Mientras tanto, Stinky te escribe por email.",
+        "deniedToastApp": "Has bloqueado los avisos. Puedes activarlos en los ajustes del móvil, dentro de Miaurmario.",
+        "blockedApp": "Los avisos de Miaurmario están desactivados en este móvil. Actívalos en Ajustes › Miaurmario › Notificaciones y vuelve aquí."
       }
     }
   },
@@ -3786,6 +3792,10 @@
         "install": {
           "title": "Instala y activa avisos",
           "body": "Ponme en tu pantalla de inicio y te aviso del look del día sin que abras nada. Siempre encuentro hueco."
+        },
+        "installApp": {
+          "title": "Activa los avisos",
+          "body": "Te aviso del look del día sin que tengas que abrir nada. Siempre encuentro hueco."
         }
       },
       "install": {
@@ -3794,6 +3804,7 @@
         "enablePush": "Activar avisos",
         "pushOn": "Avisos activados en este dispositivo",
         "pushBlocked": "Tienes los avisos bloqueados: puedes permitirlos en los ajustes del navegador.",
+        "pushBlockedApp": "Tienes los avisos bloqueados: puedes activarlos en los ajustes del móvil, dentro de Miaurmario.",
         "iosNeedsInstall": "En iPhone, primero instálala: los avisos llegan cuando la abres desde la pantalla de inicio.",
         "enabledToast": "¡Listo! Te avisaré por aquí.",
         "deniedToast": "Sin permiso no puedo avisarte. Puedes cambiarlo cuando quieras.",

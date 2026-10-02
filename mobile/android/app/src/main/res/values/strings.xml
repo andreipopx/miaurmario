@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Miaurmario</string>
+    <string name="title_activity_main">Miaurmario</string>
+    <string name="package_name">org.andreipop.miaurmario</string>
+    <string name="custom_url_scheme">org.andreipop.miaurmario</string>
+</resources>

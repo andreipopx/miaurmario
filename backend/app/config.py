@@ -150,6 +150,29 @@ class Settings(BaseSettings):
     def web_push_enabled(self) -> bool:
         return bool(self.vapid_public_key and self.vapid_private_key)
 
+    # Native app push: Android through FCM (HTTP v1), iPhone through APNs. Each
+    # half stays off until its credentials are set (docs/native-app.md). The two
+    # secrets accept either the file's contents or a path to the file.
+    fcm_service_account_json: str | None = Field(default=None)
+    apns_key_id: str | None = Field(default=None)
+    apns_team_id: str | None = Field(default=None)
+    apns_private_key: str | None = Field(default=None)
+    apns_bundle_id: str = Field(default="org.andreipop.miaurmario")
+    # Builds run from Xcode get sandbox tokens; TestFlight and the App Store don't.
+    apns_use_sandbox: bool = Field(default=False)
+
+    @property
+    def fcm_enabled(self) -> bool:
+        return bool(self.fcm_service_account_json)
+
+    @property
+    def apns_enabled(self) -> bool:
+        return bool(self.apns_key_id and self.apns_team_id and self.apns_private_key)
+
+    @property
+    def native_push_enabled(self) -> bool:
+        return self.fcm_enabled or self.apns_enabled
+
     # Storage
     storage_path: str = Field(default="/data/wardrobe")
     max_upload_size_mb: int = Field(default=10)

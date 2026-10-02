@@ -15,6 +15,7 @@ import { useNotificationPreferences } from '@/lib/hooks/use-notifications';
 import { readLocalSeen, useSeenTips, useTourRequests } from '@/lib/hooks/use-seen-tips';
 import { TOUR_KEY, shouldAutoOpenTour, skipAllKeys } from '@/lib/onboarding/first-run';
 import { useInstallPrompt } from '@/lib/pwa/install-prompt';
+import { isNativeApp } from '@/lib/native/app-shell';
 import { isStandalone } from '@/lib/pwa/platform';
 import { usePushDevice } from '@/lib/pwa/use-push-device';
 import { cn } from '@/lib/utils';
@@ -42,7 +43,7 @@ const INERT = { inert: '' } as unknown as React.HTMLAttributes<HTMLDivElement>;
 function InstallActions({ onLeave }: { onLeave: () => void }) {
   const t = useTranslations('firstRun.tour.install');
   const { data: prefs } = useNotificationPreferences();
-  const device = usePushDevice(prefs?.vapid_public_key);
+  const device = usePushDevice(prefs?.vapid_public_key, prefs?.native_push_platforms);
   const { canPrompt, promptInstall } = useInstallPrompt();
   const [standalone, setStandalone] = useState(false);
   useEffect(() => setStandalone(isStandalone()), []);
@@ -67,7 +68,10 @@ function InstallActions({ onLeave }: { onLeave: () => void }) {
   if (device.support === 'needs-install') {
     // iPhone/iPad in a Safari tab: push only works from the home-screen app.
     push = <p className="text-center text-[13px] text-muted-foreground">{t('iosNeedsInstall')}</p>;
-  } else if (device.support === 'supported' && prefs?.push_available && prefs.vapid_public_key) {
+  } else if (
+    device.support === 'supported' &&
+    (device.native || (prefs?.push_available && prefs.vapid_public_key))
+  ) {
     if (device.subscribed && device.permission === 'granted') {
       push = (
         <p className="flex items-center justify-center gap-2 text-center text-sm font-semibold">
@@ -76,7 +80,11 @@ function InstallActions({ onLeave }: { onLeave: () => void }) {
         </p>
       );
     } else if (device.permission === 'denied') {
-      push = <p className="text-center text-[13px] text-muted-foreground">{t('pushBlocked')}</p>;
+      push = (
+        <p className="text-center text-[13px] text-muted-foreground">
+          {t(device.native ? 'pushBlockedApp' : 'pushBlocked')}
+        </p>
+      );
     } else {
       push = (
         <Button variant="signature" className="w-full" onClick={enable} disabled={device.busy}>
@@ -112,6 +120,10 @@ function InstallActions({ onLeave }: { onLeave: () => void }) {
  */
 export function FeatureTour() {
   const t = useTranslations('firstRun.tour');
+  // Inside the Android/iOS app the last card is only about notifications.
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => setInApp(isNativeApp()), []);
+  const slideCopy = (key: TourSlide['key']) => (key === 'install' && inApp ? 'installApp' : key);
   const { user, local, markSeen } = useSeenTips();
   const requests = useTourRequests();
   const reducedMotion = usePrefersReducedMotion();
@@ -261,8 +273,8 @@ export function FeatureTour() {
                 aria-hidden={i !== index}
                 className="flex w-full shrink-0 snap-center flex-col items-center px-6 pb-2 pt-4 text-center"
               >
-                <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">{t(`slides.${s.key}.title`)}</h2>
-                <p className="mt-2 max-w-xs text-[15px] leading-snug text-muted-foreground">{t(`slides.${s.key}.body`)}</p>
+                <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">{t(`slides.${slideCopy(s.key)}.title`)}</h2>
+                <p className="mt-2 max-w-xs text-[15px] leading-snug text-muted-foreground">{t(`slides.${slideCopy(s.key)}.body`)}</p>
                 {s.key === 'install' && open && <InstallActions onLeave={finish} />}
               </div>
             ))}

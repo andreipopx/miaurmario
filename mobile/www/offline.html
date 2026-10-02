@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Miaurmario</title>
+<style>
+  :root { --bg: #FFFFFF; --fg: #111111; --muted: #6B6B6B; --signature: #FF7EB6; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0F0F0F; --fg: #F5F5F5; --muted: #A3A3A3; } }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center;
+    padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  }
+  img { width: 132px; height: 132px; }
+  .dark { display: none; }
+  @media (prefers-color-scheme: dark) { .light { display: none; } .dark { display: block; } }
+  h1 { margin: 6px 0 0; font-size: 22px; font-weight: 800; }
+  p { margin: 0; max-width: 300px; color: var(--muted); font-size: 15px; line-height: 1.45; }
+  button {
+    margin-top: 10px; border: 0; border-radius: 999px; padding: 13px 26px;
+    background: var(--signature); color: #111111; font: inherit; font-weight: 700; font-size: 16px;
+  }
+</style>
+</head>
+<body>
+  <img class="light" src="stinky.png" alt="">
+  <img class="dark" src="stinky-dark.png" alt="">
+  <h1>Sin conexión</h1>
+  <p>Stinky no llega al armario. Mira que tengas internet y vuelve a intentarlo.</p>
+  <button type="button" id="retry">Reintentar</button>
+<script>
+  var APP_URL = 'https://miaurmario.andreipop.org/dashboard';
+  function retry() { window.location.replace(APP_URL); }
+  document.getElementById('retry').addEventListener('click', retry);
+  window.addEventListener('online', retry);
+</script>
+</body>
+</html>

@@ -1,12 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Vibrate } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { STINKY_PET_VIBRATION } from '@/components/stinky/stinky-pet';
-import { haptic, prefersReducedMotion } from '@/lib/native/haptics';
+import { haptic, hapticSupport, prefersReducedMotion } from '@/lib/native/haptics';
 
 /**
  * "Vibración": fires Stinky's purr pattern so the owner can check whether this phone does anything.
@@ -14,6 +15,9 @@ import { haptic, prefersReducedMotion } from '@/lib/native/haptics';
  */
 export function HapticsCard() {
   const t = useTranslations('settings.haptics');
+  // The iPhone caveat is about Safari; the app has the real haptics engine.
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => setInApp(hapticSupport() === 'native'), []);
 
   const test = () => {
     if (prefersReducedMotion()) {
@@ -21,7 +25,7 @@ export function HapticsCard() {
       return;
     }
     const outcome = haptic(STINKY_PET_VIBRATION.purr);
-    if (outcome === 'vibrate') toast.success(t('resultVibrate'));
+    if (outcome === 'vibrate' || outcome === 'native') toast.success(t('resultVibrate'));
     else if (outcome === 'switch') toast(t('resultSwitch'));
     else toast(t('resultNone'));
   };
@@ -39,7 +43,7 @@ export function HapticsCard() {
         <Button variant="outline" onClick={test} className="w-full sm:w-auto">
           {t('test')}
         </Button>
-        <p className="text-sm text-muted-foreground">{t('note')}</p>
+        {!inApp && <p className="text-sm text-muted-foreground">{t('note')}</p>}
       </CardContent>
     </Card>
   );

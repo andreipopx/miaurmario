@@ -82,6 +82,13 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:hola@andreipop.org}
+      # Native app push (docs/native-app.md): Android through FCM, iPhone through APNs.
+      FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_PRIVATE_KEY: ${APNS_PRIVATE_KEY:-}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-org.andreipop.miaurmario}
+      APNS_USE_SANDBOX: ${APNS_USE_SANDBOX:-false}
       OIDC_SKIP_SSL_VERIFY: ${OIDC_SKIP_SSL_VERIFY:-false}
     volumes:
       - uploads_data:/data/uploads
@@ -142,6 +149,13 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:hola@andreipop.org}
+      # Native app push (docs/native-app.md): Android through FCM, iPhone through APNs.
+      FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_PRIVATE_KEY: ${APNS_PRIVATE_KEY:-}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-org.andreipop.miaurmario}
+      APNS_USE_SANDBOX: ${APNS_USE_SANDBOX:-false}
       # The worker runs the integration crons (Last.fm every 15 min, Spotify
       # twice an hour, Pinterest token refresh at 03:00) and reads OAuth tokens
       # that are Fernet-encrypted, so it needs the same secrets as the API.
@@ -189,6 +203,9 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NEXTAUTH_SECRET in .env}
       # Derive auth origin per request (multi-hostname setups); see .env.example.
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-}
+      # App Links / Universal Links for the Android/iOS app (docs/native-app.md).
+      ANDROID_APP_CERT_SHA256: ${ANDROID_APP_CERT_SHA256:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
       # NEXT_PUBLIC_API_URL is the pre-1.6 name, still honored so existing .env files keep working.
       BACKEND_URL: ${BACKEND_URL:-${NEXT_PUBLIC_API_URL:-http://backend:8000}}
       # OIDC

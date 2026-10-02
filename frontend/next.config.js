@@ -37,6 +37,16 @@ const nextConfig = {
       { source: '/splash/:file*', headers: [{ key: 'Cache-Control', value: 'public, max-age=604800' }] },
     ];
   },
+  // App Links (Android) and Universal Links (iOS): built per request from the runtime env.
+  async rewrites() {
+    return [
+      { source: '/.well-known/assetlinks.json', destination: '/app-links/assetlinks' },
+      {
+        source: '/.well-known/apple-app-site-association',
+        destination: '/app-links/apple-app-site-association',
+      },
+    ];
+  },
   // /api/v1/* is proxied by app/api/v1/[...path]/route.ts rather than a rewrite here, because
   // rewrites() is serialized into routes-manifest.json at build time and so cannot honor a
   // runtime BACKEND_URL in the prebuilt image.

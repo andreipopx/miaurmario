@@ -21,6 +21,7 @@ import { FlatLayBackToggle, OutfitFlatLay } from '@/components/outfits/outfit-fl
 import { lookHasABack } from '@/lib/outfit-flat-lay';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useDayPlan, useDeleteMoment, useSuggestMoment, useWearMomentLook } from '@/lib/hooks/use-day-moments';
+import { useOnline } from '@/lib/hooks/use-online';
 import {
   MOMENT_OCCASIONS,
   MOMENT_PRESETS,
@@ -357,11 +358,23 @@ function AddMomentForm({ moments, onDone }: { moments: DayMoment[]; onDone: () =
 
 // -- The day ---------------------------------------------------------------------------
 
+/** Today on this device, as YYYY-MM-DD (what the server returns in `DayPlan.date`). */
+function localISODate(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /** "Hoy": the day's moments (work in the morning, a date at night...), one look each. */
 export function DayMoments() {
   const t = useTranslations('dashboard.moments');
   const tToday = useTranslations('dashboard.today');
-  const { data: plan, isLoading, isError, refetch } = useDayPlan();
+  const { data: savedPlan, isLoading, isError, refetch } = useDayPlan();
+  const online = useOnline();
+  // Offline, the plan comes from the copy saved on the phone: only trust it if
+  // it is still today's (yesterday's look is not "your look of the day").
+  const plan = online || savedPlan?.date === localISODate() ? savedPlan : undefined;
+  const offlineWithoutPlan = !online && !plan;
   const [adding, setAdding] = useState(false);
   // After "Me lo pongo", offer to share that look with friends.
   const [justWorn, setJustWorn] = useState<{ id: string; shared: boolean } | null>(null);
@@ -394,7 +407,11 @@ export function DayMoments() {
         )}
       </div>
 
-      {isLoading ? (
+      {offlineWithoutPlan ? (
+        <div className="rounded-lg bg-panel p-4">
+          <p className="text-sm font-medium text-muted-foreground">{t('offline')}</p>
+        </div>
+      ) : isLoading ? (
         <Skeleton className="h-[300px] w-full rounded-lg" />
       ) : isError ? (
         <div className="flex items-center justify-between gap-4 rounded-lg bg-panel p-4">

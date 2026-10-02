@@ -36,6 +36,7 @@
     "user": "User",
     "friend": "friend",
     "viewAll": "View all",
+    "view": "View",
     "openMenu": "Open menu",
     "openSidebar": "Open sidebar",
     "toggleTheme": "Toggle theme",
@@ -43,6 +44,7 @@
     "darkMode": "Dark mode",
     "themeSystem": "System",
     "offline": "You're offline",
+    "offlineHint": "You can see what was saved. Stinky is back when you reconnect.",
     "unknown": "Unknown",
     "primary": "Primary",
     "optional": "Optional",
@@ -533,6 +535,7 @@
       "removedToast": "Moment removed",
       "removeError": "We couldn't remove the moment.",
       "loadError": "We couldn't load your day.",
+      "offline": "Offline: today's look will show up once you're back online.",
       "retry": "Retry"
     }
   },
@@ -1603,7 +1606,10 @@
         "iosNeedsInstall": "On iPhone and iPad notifications only arrive when you open Miaurmario from its home-screen icon. Install it in a moment:",
         "iosTooOld": "iPhone notifications need iOS 16.4 or later. Meanwhile you'll get them by email.",
         "unsupported": "This browser doesn't support notifications. On Android use Chrome; on iPhone, install the app from Safari.",
-        "installGuide": "See how to install it"
+        "installGuide": "See how to install it",
+        "appPending": "App notifications are almost here. Until then, Stinky will email you.",
+        "deniedToastApp": "You blocked notifications. You can turn them on in your phone's settings, under Miaurmario.",
+        "blockedApp": "Miaurmario's notifications are off on this phone. Turn them on in Settings › Miaurmario › Notifications and come back."
       }
     }
   },
@@ -3786,6 +3792,10 @@
         "install": {
           "title": "Install and turn on alerts",
           "body": "Put me on your home screen and I'll send you the look of the day without you opening anything. I always find a spot."
+        },
+        "installApp": {
+          "title": "Turn on notifications",
+          "body": "I'll tell you the look of the day without you opening anything. I always find a moment."
         }
       },
       "install": {
@@ -3794,6 +3804,7 @@
         "enablePush": "Turn on alerts",
         "pushOn": "Alerts are on for this device",
         "pushBlocked": "Alerts are blocked: you can allow them in your browser settings.",
+        "pushBlockedApp": "Notifications are blocked: you can turn them on in your phone's settings, under Miaurmario.",
         "iosNeedsInstall": "On iPhone, install it first: alerts arrive when you open it from the home screen.",
         "enabledToast": "Done! I'll ping you here.",
         "deniedToast": "Without permission I can't alert you. You can change it any time.",

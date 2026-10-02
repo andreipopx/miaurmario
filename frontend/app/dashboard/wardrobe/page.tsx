@@ -39,9 +39,12 @@ import { useColorLabel } from '@/lib/tag-labels';
 import { garmentTileTint } from '@/lib/garment-tint';
 import { readSharedIntake } from '@/lib/shared-intake';
 import type { AddItemInitial } from '@/components/add-item-dialog';
+import { WARDROBE_PAGE_SIZE } from '@/lib/offline/warmup';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
+// The first one is how the wardrobe opens; lib/offline/warmup.ts mirrors it
+// (WARDROBE_DEFAULT_FILTERS) to keep the wardrobe for offline use.
 const SORT_OPTIONS = [
   { labelKey: 'newestFirst', value: 'created_at', order: 'desc' as const },
   { labelKey: 'oldestFirst', value: 'created_at', order: 'asc' as const },
@@ -304,7 +307,7 @@ export default function WardrobePage() {
   const [favoriteFilter, setFavoriteFilter] = useState<boolean | undefined>(undefined);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(WARDROBE_PAGE_SIZE);
 
   // ?bulk=1 opens the add dialog on its "muchas prendas" tab, and ?bulk=review
   // opens that tab straight in the quick pass. The Hoy nudge, Stinky and the

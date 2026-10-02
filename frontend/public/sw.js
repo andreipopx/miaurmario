@@ -2,7 +2,26 @@
 // so every deploy installs a new worker and drops the previous cache.
 const VERSION = new URL(self.location.href).searchParams.get('v') || 'dev';
 const CACHE = `miaurmario-${VERSION}`;
-const CORE = ['/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png'];
+const OFFLINE_URL = '/offline.html';
+const CORE = ['/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png', OFFLINE_URL, '/brand/stinky/head/stinky-head-512.png', '/brand/stinky/head/stinky-head-dark-512.png'];
+
+// Offline wardrobe, for the installed app (home-screen PWA or Android/iOS):
+// the page asks with WARM_OFFLINE, and then the screens worth opening without
+// internet and every script/stylesheet of the build are kept, so they open
+// offline even if they were never visited. Their data comes from the copy
+// React Query keeps in IndexedDB (app/providers.tsx). A browser tab never asks,
+// so a visitor doesn't download the whole app.
+const OFFLINE_ROUTES = ['/dashboard', '/dashboard/wardrobe', '/dashboard/outfits', '/dashboard/history'];
+// /_next/static files are content-hashed, so they live in their own cache that
+// survives deploys: each new version only downloads what actually changed.
+const STATIC_CACHE = 'miaurmario-static';
+const PRECACHE_LIST = '/sw-precache.json';
+
+// Garment photos, kept across deploys (they don't change with the build) and
+// keyed by path: the ?expires=&sig= on them changes every few hours.
+const IMAGE_CACHE = 'miaurmario-images';
+const IMAGE_PREFIX = '/api/v1/images/';
+const IMAGE_CACHE_MAX = 800;
 
 // Web Share Target: the system share sheet POSTs here (Android/Chromium and an
 // installed desktop PWA; iOS has no share target). We stash the payload in its
@@ -48,15 +67,113 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('message', (e) => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
+  if (e.data && e.data.type === 'WARM_OFFLINE') e.waitUntil(warmOffline());
 });
+
+const KEEP_CACHES = [CACHE, SHARE_CACHE, IMAGE_CACHE, STATIC_CACHE];
+
+/** Keep a screen's HTML (by path) for offline opening. */
+async function warmRoute(cache, path) {
+  const res = await fetch(path, { credentials: 'same-origin', cache: 'no-store' });
+  const type = res.headers.get('content-type') || '';
+  if (res.ok && !res.redirected && type.includes('text/html')) await cache.put(path, res);
+}
+
+/** Download this build's scripts/styles not kept yet; drop the ones it no longer uses. */
+async function precacheStatic() {
+  const res = await fetch(PRECACHE_LIST, { cache: 'no-store' });
+  if (!res.ok) return;
+  const { files, posters } = await res.json();
+  if (Array.isArray(posters)) await precachePosters(posters);
+  if (!Array.isArray(files) || files.length === 0) return;
+  const cache = await caches.open(STATIC_CACHE);
+  const have = new Set((await cache.keys()).map((r) => new URL(r.url).pathname));
+  const todo = files.filter((f) => !have.has(f));
+  for (let i = 0; i < todo.length; i += 6) {
+    await Promise.all(
+      todo.slice(i, i + 6).map((f) =>
+        fetch(f)
+          .then((r) => (r.ok ? cache.put(f, r) : undefined))
+          .catch(() => {})
+      )
+    );
+  }
+  const keep = new Set(files);
+  for (const req of await cache.keys()) {
+    if (!keep.has(new URL(req.url).pathname)) await cache.delete(req);
+  }
+}
+
+/**
+ * Stinky's still frames, under the exact URL the page asks for (it adds
+ * ?v=<build id>, the same one this worker was registered with).
+ */
+async function precachePosters(paths) {
+  const cache = await caches.open(CACHE);
+  const suffix = VERSION === 'dev' ? '' : `?v=${encodeURIComponent(VERSION)}`;
+  for (let i = 0; i < paths.length; i += 6) {
+    await Promise.all(
+      paths.slice(i, i + 6).map(async (p) => {
+        const url = p + suffix;
+        if (await cache.match(url)) return;
+        const r = await fetch(url).catch(() => null);
+        if (r && r.ok) await cache.put(url, r);
+      })
+    );
+  }
+}
+
+let warming = null;
+function warmOffline() {
+  warming =
+    warming ||
+    caches
+      .open(CACHE)
+      .then((cache) => Promise.all(OFFLINE_ROUTES.map((r) => warmRoute(cache, r).catch(() => {}))))
+      .then(() => precacheStatic())
+      .catch(() => {})
+      .finally(() => {
+        warming = null;
+      });
+  return warming;
+}
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== SHARE_CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => !KEEP_CACHES.includes(k)).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
+
+/** Keep the photo cache bounded: drop the oldest entries past the cap. */
+async function trimImages() {
+  const cache = await caches.open(IMAGE_CACHE);
+  const keys = await cache.keys();
+  const extra = keys.length - IMAGE_CACHE_MAX;
+  for (let i = 0; i < extra; i++) await cache.delete(keys[i]);
+}
+
+/**
+ * Network first, so an edited photo (rotated, background removed) is never
+ * shown stale; the cached copy only answers when the network can't.
+ */
+function imageResponse(event, req, url) {
+  const key = url.origin + url.pathname;
+  return fetch(req)
+    .then((res) => {
+      if (res.ok) {
+        const copy = res.clone();
+        event.waitUntil(
+          caches.open(IMAGE_CACHE).then((c) => c.put(key, copy)).then(trimImages).catch(() => {})
+        );
+      }
+      return res;
+    })
+    .catch(() =>
+      caches.open(IMAGE_CACHE).then((c) => c.match(key)).then((hit) => hit || Response.error())
+    );
+}
 
 // ---- Web Push -------------------------------------------------------------
 // Payload (from the backend): { title, body, url, tag?, icon?, badge? }.
@@ -131,16 +248,21 @@ self.addEventListener('fetch', (event) => {
 
   if (req.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith(IMAGE_PREFIX)) {
+    event.respondWith(imageResponse(event, req, url));
+    return;
+  }
   // Never cache API or Next data — always network for freshness.
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/data/')) return;
 
   // Hashed build output never changes under the same URL: cache-first.
   if (url.pathname.startsWith('/_next/static/')) {
+    const key = url.origin + url.pathname;
     event.respondWith(
-      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+      caches.match(key).then((hit) => hit || fetch(req).then((res) => {
         if (res.ok) {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          event.waitUntil(caches.open(STATIC_CACHE).then((c) => c.put(key, copy)).catch(() => {}));
         }
         return res;
       }))
@@ -169,6 +291,36 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML/routes: network-first, cache only as offline fallback.
-  event.respondWith(fetch(req).catch(() => caches.match(req)));
+  // Opening a screen: network first. Each one opened is kept (by path) so it
+  // opens again offline; one never seen gets the offline page instead.
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const type = res.headers.get('content-type') || '';
+          if (res.ok && res.type === 'basic' && type.includes('text/html')) {
+            const copy = res.clone();
+            event.waitUntil(caches.open(CACHE).then((c) => c.put(url.pathname, copy)).catch(() => {}));
+          }
+          return res;
+        })
+        .catch(async () => {
+          const cache = await caches.open(CACHE);
+          // The installed app starts at "/" (the landing page): offline, go
+          // straight to the saved wardrobe instead.
+          if (url.pathname === '/' && (await cache.match('/dashboard'))) {
+            return Response.redirect('/dashboard', 302);
+          }
+          return (
+            (await cache.match(url.pathname)) ||
+            (await cache.match(OFFLINE_URL)) ||
+            Response.error()
+          );
+        })
+    );
+    return;
+  }
+
+  // Other same-origin GETs (RSC payloads…): network, with any cached copy as fallback.
+  event.respondWith(fetch(req).catch(() => caches.match(req).then((hit) => hit || Response.error())));
 });

@@ -227,14 +227,14 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
 /** Web Push state for this device, with the only permission prompt (on tap). */
 function ThisDevice({ prefs }: { prefs: NotificationPreferences }) {
   const t = useTranslations('notifications.defaults.device');
-  const device = usePushDevice(prefs.vapid_public_key);
+  const device = usePushDevice(prefs.vapid_public_key, prefs.native_push_platforms);
   const testPush = useTestPush();
   const [guideOpen, setGuideOpen] = useState(false);
 
   const handleEnable = async () => {
     const result = await device.enable();
     if (result === 'granted') toast.success(t('enabledToast'));
-    else if (result === 'denied') toast.error(t('deniedToast'));
+    else if (result === 'denied') toast.error(t(device.native ? 'deniedToastApp' : 'deniedToast'));
     else if (result === 'error') toast.error(t('errorToast'));
   };
 
@@ -267,6 +267,8 @@ function ThisDevice({ prefs }: { prefs: NotificationPreferences }) {
         <InstallGuideDialog open={guideOpen} onOpenChange={setGuideOpen} reason={t('iosNeedsInstall')} />
       </>
     );
+  } else if (device.support === 'app-pending') {
+    body = <p className="text-sm text-muted-foreground">{t('appPending')}</p>;
   } else if (device.support === 'ios-too-old') {
     body = <p className="text-sm text-muted-foreground">{t('iosTooOld')}</p>;
   } else if (device.support === 'unsupported') {
@@ -302,7 +304,9 @@ function ThisDevice({ prefs }: { prefs: NotificationPreferences }) {
       </>
     );
   } else if (device.permission === 'denied') {
-    body = <p className="text-sm text-muted-foreground">{t('blocked')}</p>;
+    body = (
+      <p className="text-sm text-muted-foreground">{t(device.native ? 'blockedApp' : 'blocked')}</p>
+    );
   } else {
     body = (
       <>

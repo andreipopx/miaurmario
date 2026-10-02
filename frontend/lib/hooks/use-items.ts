@@ -19,6 +19,30 @@ function useSetTokenIfAvailable() {
   }
 }
 
+/** Key and fetcher of a wardrobe page, shared by {@link useItems} and the offline warm-up. */
+export function itemsQueryOptions(filters: ItemFilter = {}, page = 1, pageSize = 20) {
+  return {
+    queryKey: ['items', filters, page, pageSize],
+    queryFn: async () => {
+      const params: Record<string, string> = {
+        page: String(page),
+        page_size: String(pageSize),
+      };
+      if (filters.type) params.type = filters.type;
+      if (filters.colors?.length) params.colors = filters.colors.join(',');
+      if (filters.search) params.search = filters.search;
+      if (filters.favorite !== undefined) params.favorite = String(filters.favorite);
+      if (filters.needs_wash !== undefined) params.needs_wash = String(filters.needs_wash);
+      if (filters.is_archived !== undefined) params.is_archived = String(filters.is_archived);
+      if (filters.sort_by) params.sort_by = filters.sort_by;
+      if (filters.sort_order) params.sort_order = filters.sort_order;
+      if (filters.ids) params.ids = filters.ids;
+
+      return api.get<ItemListResponse>('/items', { params });
+    },
+  };
+}
+
 /**
  * A page of the wardrobe.
  *
@@ -39,24 +63,7 @@ export function useItems(
   const wanted = options.enabled ?? true;
 
   return useQuery({
-    queryKey: ['items', filters, page, pageSize],
-    queryFn: async () => {
-      const params: Record<string, string> = {
-        page: String(page),
-        page_size: String(pageSize),
-      };
-      if (filters.type) params.type = filters.type;
-      if (filters.colors?.length) params.colors = filters.colors.join(',');
-      if (filters.search) params.search = filters.search;
-      if (filters.favorite !== undefined) params.favorite = String(filters.favorite);
-      if (filters.needs_wash !== undefined) params.needs_wash = String(filters.needs_wash);
-      if (filters.is_archived !== undefined) params.is_archived = String(filters.is_archived);
-      if (filters.sort_by) params.sort_by = filters.sort_by;
-      if (filters.sort_order) params.sort_order = filters.sort_order;
-      if (filters.ids) params.ids = filters.ids;
-
-      return api.get<ItemListResponse>('/items', { params });
-    },
+    ...itemsQueryOptions(filters, page, pageSize),
     enabled: wanted && status !== 'loading',
     // Poll more frequently when items are processing (every 5 seconds), otherwise every 30 seconds
     refetchInterval: (query) => {

@@ -12,6 +12,7 @@ import {
 } from '@/lib/hooks/use-location';
 import { geolocationPermissionState, readDevicePosition } from '@/lib/location-detect';
 import { getBrowserTimezone } from '@/lib/timezones';
+import { useOnline } from '@/lib/hooks/use-online';
 
 /**
  * The two things that happen by themselves when the app opens.
@@ -38,10 +39,12 @@ export function LocationSync() {
   const [travel, setTravel] = useState<DeviceLocationResult | null>(null);
   const syncedTimezone = useRef(false);
   const checkedTravel = useRef(false);
+  // Both checks talk to the server: offline they wait for the connection.
+  const online = useOnline();
 
   // The zone the device is in, saved unless the user picked one.
   useEffect(() => {
-    if (!isAuthenticated || !user || syncedTimezone.current) return;
+    if (!isAuthenticated || !user || !online || syncedTimezone.current) return;
     // Absent on an old backend: say nothing rather than risk clobbering a choice.
     if (user.timezone_source === undefined || user.timezone_source === 'manual') return;
     const browserTimezone = getBrowserTimezone();
@@ -50,11 +53,11 @@ export function LocationSync() {
     autoTimezone.mutate(browserTimezone, { onError: () => undefined });
     // autoTimezone is a stable mutation object; re-running on it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, online]);
 
   // "¿Estás en Lisboa?", but only on a permission the browser already granted.
   useEffect(() => {
-    if (!isAuthenticated || !user || checkedTravel.current) return;
+    if (!isAuthenticated || !user || !online || checkedTravel.current) return;
     // Nothing to travel away from yet, and no city is ever set from here.
     if (user.location_lat == null || user.location_lon == null) return;
     checkedTravel.current = true;
@@ -81,7 +84,7 @@ export function LocationSync() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user, locale]);
+  }, [isAuthenticated, user, locale, online]);
 
   if (!travel?.detected) return null;
 

@@ -22,6 +22,7 @@ import { AreaTip } from '@/components/onboarding/area-tip';
 import { LocationSync } from '@/components/settings/location-sync';
 import { BulkUploadProvider } from '@/lib/bulk-upload/bulk-upload-context';
 import { UploadStatusBar } from '@/components/bulk-upload/upload-status-bar';
+import { OfflineWarmup } from '@/components/offline/offline-warmup';
 
 /** Screens with pull-to-refresh (feeds and lists that change under you). */
 const PULL_TO_REFRESH = new Set(['/dashboard', '/dashboard/wardrobe', '/dashboard/friends', '/dashboard/music']);
@@ -92,6 +93,7 @@ export default function DashboardLayout({
           {pathname && PULL_TO_REFRESH.has(pathname) && <PullToRefresh key={pathname} />}
           <UploadStatusBar />
           <OfflineIndicator />
+          <OfflineWarmup signedIn={!!user} />
           <PushSync />
           <ImageLightbox />
           {user?.onboarding_completed && <FeatureTour />}

@@ -1,5 +1,8 @@
 'use client';
 
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { hasNativeBridge } from '@/lib/native/app-shell';
+
 /**
  * Haptics with an iOS fallback.
  *
@@ -16,8 +19,11 @@
 /** A `navigator.vibrate` pattern: one duration, or alternating on/off durations (ms). */
 export type HapticPattern = number | readonly number[];
 
-/** What actually happened (or would happen): the Vibration API, the iOS switch trick, or nothing. */
-export type HapticOutcome = 'vibrate' | 'switch' | 'none';
+/**
+ * What actually happened (or would happen): the Android/iOS app's own haptics engine, the
+ * Vibration API, the iOS switch trick, or nothing.
+ */
+export type HapticOutcome = 'native' | 'vibrate' | 'switch' | 'none';
 
 /** Most switch taps we fire for one pattern — the trick is a tap, not a rumble; more just annoys. */
 const MAX_TAPS = 4;
@@ -103,8 +109,41 @@ function clearPending() {
   timers = [];
 }
 
+/** Offsets and lengths of the "on" segments of a pattern, for the app's haptics engine. */
+export function nativePulses(pattern: HapticPattern): { at: number; ms: number }[] {
+  const segments = (typeof pattern === 'number' ? [pattern] : [...pattern]).map((n) =>
+    Number.isFinite(n) && n > 0 ? n : 0
+  );
+  const pulses: { at: number; ms: number }[] = [];
+  let at = 0;
+  for (let i = 0; i < segments.length; i += 2) {
+    if (segments[i] > 0) pulses.push({ at, ms: segments[i] });
+    at += segments[i] + (segments[i + 1] ?? 0);
+  }
+  return pulses;
+}
+
+/**
+ * Inside the app: a real Taptic Engine / vibrator tap per "on" segment, so the purr is a purr on
+ * iPhone too. Short segments are light taps, longer ones a firmer one.
+ */
+function nativeHaptic(pattern: HapticPattern): HapticOutcome {
+  clearPending();
+  for (const { at, ms } of nativePulses(pattern)) {
+    const fire = () => {
+      void Haptics.impact({ style: ms > 25 ? ImpactStyle.Medium : ImpactStyle.Light }).catch(
+        () => {}
+      );
+    };
+    if (at === 0) fire();
+    else timers.push(setTimeout(fire, at));
+  }
+  return 'native';
+}
+
 /** What a `haptic()` call would do right now, ignoring Reduce Motion. */
 export function hapticSupport(): HapticOutcome {
+  if (hasNativeBridge()) return 'native';
   if (canVibrate()) return 'vibrate';
   if (canSwitch()) return 'switch';
   return 'none';
@@ -118,6 +157,7 @@ export function hapticSupport(): HapticOutcome {
 export function haptic(pattern: HapticPattern): HapticOutcome {
   if (prefersReducedMotion()) return 'none';
   try {
+    if (hasNativeBridge()) return nativeHaptic(pattern);
     if (canVibrate()) {
       const ok = navigator.vibrate(typeof pattern === 'number' ? pattern : [...pattern]);
       return ok === false ? 'none' : 'vibrate';

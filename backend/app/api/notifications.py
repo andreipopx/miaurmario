@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ValidationError
-from sqlalchemy import and_, delete, func, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -15,6 +15,7 @@ from app.models.notification import (
     DEFAULT_CHANNELS,
     NOTIFICATION_EVENTS,
     TIMED_EVENTS,
+    NativePushToken,
     Notification,
     NotificationSettings,
     PushSubscription,
@@ -26,6 +27,8 @@ from app.schemas.notification import (
     ExpoPushConfig,
     MattermostConfig,
     MessageResponse,
+    NativePushRegisterRequest,
+    NativePushUnregisterRequest,
     NotificationPreferencesResponse,
     NotificationPreferencesUpdate,
     NotificationResponse,
@@ -44,8 +47,15 @@ from app.schemas.notification import (
     UnsubscribeResponse,
 )
 from app.services.event_notifications import get_or_create_preferences, get_preferences
+from app.services.native_push import platform_available
 from app.services.notification_service import NotificationService
-from app.services.web_push import PushPayload, push_available, send_web_push
+from app.services.push import (
+    any_push_available,
+    count_push_devices,
+    native_platforms_available,
+    send_push,
+)
+from app.services.web_push import PushPayload, push_available
 from app.utils.auth import get_current_user
 from app.utils.email import email_delivery_available
 from app.utils.rate_limit import rate_limit_by_ip, rate_limit_by_user
@@ -371,20 +381,15 @@ async def list_notification_history(
 
 async def _preferences_response(db: AsyncSession, user: User) -> NotificationPreferencesResponse:
     pref = await get_preferences(db, user.id)
-    devices = (
-        await db.execute(
-            select(func.count(PushSubscription.id)).where(PushSubscription.user_id == user.id)
-        )
-    ).scalar_one()
-    available = push_available()
     return NotificationPreferencesResponse(
         email=EventToggles(**{e: pref.enabled("email", e) for e in NOTIFICATION_EVENTS}),
         push=EventToggles(**{e: pref.enabled("push", e) for e in NOTIFICATION_EVENTS}),
         email_address=user.email,
         email_available=email_delivery_available(),
-        push_available=available,
-        vapid_public_key=get_settings().vapid_public_key if available else None,
-        push_devices=int(devices),
+        push_available=any_push_available(),
+        vapid_public_key=get_settings().vapid_public_key if push_available() else None,
+        push_devices=await count_push_devices(db, user.id),
+        native_push_platforms=native_platforms_available(),
         morning_look_time=pref.time_for("morning_look"),
         friend_activity_time=pref.time_for("friend_activity"),
     )
@@ -462,15 +467,57 @@ async def unsubscribe_push(
     return {"removed": result.rowcount or 0}
 
 
+@router.post("/push/native/register", status_code=201)
+async def register_native_push(
+    data: NativePushRegisterRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The Android/iOS app hands over the token its OS issued for this install.
+
+    Stored even while the platform's credentials aren't configured yet, so
+    installs that already exist start receiving as soon as they are.
+    """
+    await rate_limit_by_user(current_user.id, "push_native_register", 30, 3600)
+    device = (
+        await db.execute(select(NativePushToken).where(NativePushToken.token == data.token))
+    ).scalar_one_or_none()
+    if device is None:
+        device = NativePushToken(token=data.token, user_id=current_user.id, platform=data.platform)
+        db.add(device)
+    # A phone belongs to whoever signed in on it last.
+    device.user_id = current_user.id
+    device.platform = data.platform
+    device.app_version = data.app_version
+    await db.commit()
+    return {"registered": True, "delivering": platform_available(data.platform)}
+
+
+@router.post("/push/native/unregister")
+async def unregister_native_push(
+    data: NativePushUnregisterRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        delete(NativePushToken).where(
+            NativePushToken.token == data.token,
+            NativePushToken.user_id == current_user.id,
+        )
+    )
+    await db.commit()
+    return {"removed": result.rowcount or 0}
+
+
 @router.post("/push/test", response_model=PushTestResponse)
 async def test_push(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if not push_available():
+    if not any_push_available():
         raise HTTPException(status_code=503, detail="push_not_configured")
     await rate_limit_by_user(current_user.id, "push_test", 5, 60)
-    result = await send_web_push(
+    result = await send_push(
         db,
         current_user.id,
         PushPayload(

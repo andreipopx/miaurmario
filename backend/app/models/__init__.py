@@ -20,6 +20,7 @@ from app.models.learning import (
 from app.models.magic_link import MagicLinkToken
 from app.models.music import ListeningEvent, ListeningMood
 from app.models.notification import (
+    NativePushToken,
     Notification,
     NotificationPreference,
     NotificationSettings,
@@ -65,6 +66,7 @@ __all__ = [
     "MagicLinkToken",
     "NotificationSettings",
     "NotificationPreference",
+    "NativePushToken",
     "PushSubscription",
     "Schedule",
     "ClothingItem",

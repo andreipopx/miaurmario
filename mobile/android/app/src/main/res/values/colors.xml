@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand pink, the "signature" colour in frontend/app/globals.css. -->
+    <color name="stinky_pink">#FF7EB6</color>
+</resources>

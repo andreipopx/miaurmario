@@ -29,11 +29,15 @@ export function OfflineIndicator() {
       aria-live="polite"
       className="pointer-events-none fixed bottom-float-1 left-1/2 z-float -translate-x-1/2 lg:bottom-6"
     >
-      <div className="flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-primary-foreground shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-pop-amber text-pop-foreground">
+      <div className="flex w-max max-w-[calc(100vw-2rem)] items-center gap-2.5 rounded-full bg-primary py-2 pl-2 pr-4 text-primary-foreground shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pop-amber text-pop-foreground">
           <WifiOff className="h-3.5 w-3.5" strokeWidth={2} />
         </span>
-        <span className="text-sm font-bold">{t('offline')}</span>
+        <span className="min-w-0 leading-tight">
+          <span className="block text-sm font-bold">{t('offline')}</span>
+          {/* The wardrobe stays readable from the copy saved on the device. */}
+          <span className="block text-xs opacity-80">{t('offlineHint')}</span>
+        </span>
       </div>
     </div>
   );

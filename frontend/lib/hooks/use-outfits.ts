@@ -177,10 +177,8 @@ export function useRescueItem() {
   });
 }
 
-export function useOutfits(filters: OutfitFilters = {}, page = 1, pageSize = 20) {
-  const { status } = useSession();
-  useSetTokenIfAvailable();
-
+/** Key and fetcher of a page of looks, shared by {@link useOutfits} and the offline warm-up. */
+export function outfitsQueryOptions(filters: OutfitFilters = {}, page = 1, pageSize = 20) {
   const params: Record<string, string> = {
     page: String(page),
     page_size: String(pageSize),
@@ -201,9 +199,18 @@ export function useOutfits(filters: OutfitFilters = {}, page = 1, pageSize = 20)
     params.cloned_from_outfit_id = filters.cloned_from_outfit_id;
   if (filters.was_worn !== undefined) params.was_worn = String(filters.was_worn);
 
-  return useQuery({
+  return {
     queryKey: ['outfits', filters, page, pageSize],
     queryFn: () => api.get<OutfitListResponse>('/outfits', { params }),
+  };
+}
+
+export function useOutfits(filters: OutfitFilters = {}, page = 1, pageSize = 20) {
+  const { status } = useSession();
+  useSetTokenIfAvailable();
+
+  return useQuery({
+    ...outfitsQueryOptions(filters, page, pageSize),
     enabled: status !== 'loading',
   });
 }
@@ -279,11 +286,8 @@ export function useDeleteOutfit() {
   });
 }
 
-export function useCalendarOutfits(year: number, month: number, filters: OutfitFilters = {}) {
-  const { status } = useSession();
-  useSetTokenIfAvailable();
-
-  // Calculate date range for the month
+/** Key and fetcher of a month of looks (history, calendar), shared with the offline warm-up. */
+export function calendarOutfitsQueryOptions(year: number, month: number, filters: OutfitFilters = {}) {
   const date_from = `${year}-${String(month).padStart(2, '0')}-01`;
   const lastDay = new Date(year, month, 0).getDate();
   const date_to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -298,9 +302,18 @@ export function useCalendarOutfits(year: number, month: number, filters: OutfitF
   if (filters.status) params.status = filters.status;
   if (filters.occasion) params.occasion = filters.occasion;
 
-  return useQuery({
+  return {
     queryKey: ['calendarOutfits', year, month, filters],
     queryFn: () => api.get<OutfitListResponse>('/outfits', { params }),
+  };
+}
+
+export function useCalendarOutfits(year: number, month: number, filters: OutfitFilters = {}) {
+  const { status } = useSession();
+  useSetTokenIfAvailable();
+
+  return useQuery({
+    ...calendarOutfitsQueryOptions(year, month, filters),
     enabled: status !== 'loading',
   });
 }

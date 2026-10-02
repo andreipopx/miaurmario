@@ -71,6 +71,7 @@ import { OCCASIONS } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
 import { cn } from '@/lib/utils';
+import { isNativeApp } from '@/lib/native/app-shell';
 
 const DAYS = [
   { value: 0, labelKey: 'monday' as const },
@@ -657,6 +658,9 @@ export default function NotificationsPage() {
 
   const [testingId, setTestingId] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  // No "install the app" button inside the app itself.
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => setInApp(isNativeApp()), []);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'channel' | 'schedule'; id: string } | null>(null);
 
   const handleCreateChannel = async (data: ChannelFormData): Promise<void> => {
@@ -749,12 +753,14 @@ export default function NotificationsPage() {
         title={t('title')}
         description={t('pageSubtitle')}
         action={
-          <Button variant="outline" asChild>
-            <Link href="/dashboard/install">
-              <Smartphone className="h-4 w-4" strokeWidth={1.75} />
-              {t('installApp')}
-            </Link>
-          </Button>
+          inApp ? undefined : (
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/install">
+                <Smartphone className="h-4 w-4" strokeWidth={1.75} />
+                {t('installApp')}
+              </Link>
+            </Button>
+          )
         }
       />
 

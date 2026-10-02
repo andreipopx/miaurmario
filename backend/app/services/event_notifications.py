@@ -30,10 +30,10 @@ from app.models.notification import (
     Notification,
     NotificationPreference,
     NotificationStatus,
-    PushSubscription,
 )
 from app.models.user import User
-from app.services.web_push import PushPayload, push_available, send_web_push
+from app.services.push import any_push_available, has_push_device, send_push
+from app.services.web_push import PushPayload
 from app.utils.email import email_delivery_available, send_email
 from app.utils.email_templates import (
     RenderedEmail,
@@ -88,24 +88,13 @@ async def get_or_create_preferences(db: AsyncSession, user_id: UUID) -> Notifica
     return pref
 
 
-async def has_push_subscription(db: AsyncSession, user_id: UUID) -> bool:
-    result = await db.execute(
-        select(PushSubscription.id).where(PushSubscription.user_id == user_id).limit(1)
-    )
-    return result.first() is not None
-
-
 async def default_channels_for(db: AsyncSession, user: User, event: str) -> list[str]:
     """Default channels that would carry ``event`` for ``user`` right now."""
     pref = await get_preferences(db, user.id)
     channels: list[str] = []
     if user.email and pref.enabled("email", event) and email_delivery_available():
         channels.append(CHANNEL_ACCOUNT_EMAIL)
-    if (
-        pref.enabled("push", event)
-        and push_available()
-        and await has_push_subscription(db, user.id)
-    ):
+    if pref.enabled("push", event) and any_push_available() and await has_push_device(db, user.id):
         channels.append(CHANNEL_WEB_PUSH)
     return channels
 
@@ -151,7 +140,7 @@ async def send_default_channels(
 
     if CHANNEL_WEB_PUSH in wanted:
         try:
-            pushed = await send_web_push(db, user.id, push)
+            pushed = await send_push(db, user.id, push)
             if pushed.success:
                 results.append(DefaultChannelResult(CHANNEL_WEB_PUSH, True))
             elif pushed.failed:
@@ -321,12 +310,12 @@ async def notify_admins_of_waitlist_request(db: AsyncSession, request_id: UUID) 
         except Exception as exc:
             logger.warning("Waitlist admin email to %s failed: %s", address, exc)
 
-    if push_available():
+    if any_push_available():
         admin_users = (
             await db.execute(select(User).where(func.lower(User.email).in_(admins)))
         ).scalars()
         for admin in admin_users:
-            result = await send_web_push(
+            result = await send_push(
                 db,
                 admin.id,
                 PushPayload(
@@ -378,12 +367,12 @@ async def notify_admins_of_spotify_seat_request(
         except Exception as exc:
             logger.warning("Spotify seat admin email to %s failed: %s", address, exc)
 
-    if push_available():
+    if any_push_available():
         admin_users = (
             await db.execute(select(User).where(func.lower(User.email).in_(admins)))
         ).scalars()
         for admin in admin_users:
-            result = await send_web_push(
+            result = await send_push(
                 db,
                 admin.id,
                 PushPayload(

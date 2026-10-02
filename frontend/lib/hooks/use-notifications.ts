@@ -254,6 +254,8 @@ export interface NotificationPreferences {
   push_available: boolean;
   vapid_public_key: string | null;
   push_devices: number;
+  /** Platforms of the Android/iOS app the server can deliver to. */
+  native_push_platforms?: ('android' | 'ios')[];
   /** HH:MM in the user's own timezone. */
   morning_look_time: string;
   friend_activity_time: string;

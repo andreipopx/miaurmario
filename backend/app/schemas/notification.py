@@ -252,6 +252,8 @@ class NotificationPreferencesResponse(BaseModel):
     push_available: bool
     vapid_public_key: str | None = None
     push_devices: int = 0
+    # Native app platforms the server can deliver to ("android", "ios").
+    native_push_platforms: list[str] = Field(default_factory=list)
     # Local clock times (HH:MM) for the two once-a-day alerts.
     morning_look_time: str
     friend_activity_time: str
@@ -321,6 +323,17 @@ class PushSubscribeRequest(BaseModel):
 
 class PushUnsubscribeRequest(BaseModel):
     endpoint: str = Field(max_length=2048)
+
+
+class NativePushRegisterRequest(BaseModel):
+    platform: Literal["android", "ios"]
+    # FCM registration tokens run to ~200 chars, APNs device tokens are 64 hex.
+    token: str = Field(min_length=16, max_length=4096, pattern=r"^[A-Za-z0-9:_\-.]+$")
+    app_version: str | None = Field(default=None, max_length=40)
+
+
+class NativePushUnregisterRequest(BaseModel):
+    token: str = Field(min_length=16, max_length=4096)
 
 
 class PushTestResponse(BaseModel):

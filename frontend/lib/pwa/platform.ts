@@ -4,6 +4,8 @@
  * Pure functions over the user agent (unit-tested) plus thin browser wrappers.
  */
 
+import { isAppUserAgent } from '@/lib/native/app-shell';
+
 export type InstallPlatform = 'ios' | 'android-chrome' | 'huawei' | 'android-other' | 'desktop';
 
 export const INSTALL_PLATFORMS: InstallPlatform[] = [
@@ -61,6 +63,8 @@ export function iosSupportsWebPush(ua: string): boolean {
  * the UI says to paste the link or pick the photo instead.
  */
 export function supportsShareTarget(ua: string, maxTouchPoints = 0): boolean {
+  // The Android/iOS app isn't the PWA: the system sheet doesn't reach its service worker.
+  if (isAppUserAgent(ua)) return false;
   if (isIOSUserAgent(ua, maxTouchPoints)) return false;
   return !/Firefox|FxiOS/i.test(ua);
 }
@@ -72,9 +76,10 @@ export function currentPlatform(): InstallPlatform {
   return detectPlatform(navigator.userAgent, navigator.maxTouchPoints || 0);
 }
 
-/** Running as an installed app (home-screen icon / installed PWA window). */
+/** Running as an installed app (home-screen icon / installed PWA window, or the Android/iOS app). */
 export function isStandalone(): boolean {
   if (typeof window === 'undefined') return false;
+  if (isAppUserAgent(navigator.userAgent)) return true;
   const iosStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
   const mq = typeof window.matchMedia === 'function'
     ? window.matchMedia('(display-mode: standalone)').matches ||
@@ -91,7 +96,9 @@ export type PushSupport =
   /** iOS older than 16.4. */
   | 'ios-too-old'
   /** Browser without Push API (in-app browsers, old browsers...). */
-  | 'unsupported';
+  | 'unsupported'
+  /** The Android/iOS app, before the server has credentials for its platform. */
+  | 'app-pending';
 
 export function pushSupport(
   env: {

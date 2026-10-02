@@ -1071,7 +1071,8 @@ class TestTheMigrationGoesBothWays:
                 ("item_images", "image_view"),
             }
 
-            alembic("downgrade", "-1")
+            # To just before this revision, whatever has been stacked on top since.
+            alembic("downgrade", "wearusage2509")
             assert await columns() == set()
 
             # And straight back up, because that is what a redeploy does.

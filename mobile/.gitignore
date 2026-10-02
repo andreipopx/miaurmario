@@ -1,0 +1,10 @@
+node_modules/
+# Signing material never goes in the repo (see docs/native-app.md).
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+keystore.properties
+google-services.json
+GoogleService-Info.plist

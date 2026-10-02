@@ -88,7 +88,8 @@ describe('web share target', () => {
     expect(sw).toContain(`const SHARE_TARGET_PATH = '${manifest.share_target.action}'`)
     expect(sw).toContain("req.method === 'POST'")
     // The share stash must survive the per-version cache sweep in `activate`.
-    expect(sw).toContain('k !== CACHE && k !== SHARE_CACHE')
+    expect(sw).toMatch(/const KEEP_CACHES = \[[^\]]*\bSHARE_CACHE\b[^\]]*\]/)
+    expect(sw).toContain('!KEEP_CACHES.includes(k)')
     // And it must land in the add flow, never save anything on its own.
     expect(sw).toContain("SHARE_LANDING = '/dashboard/wardrobe?add=1&shared=1'")
   })

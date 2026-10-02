@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>Sin conexión · Miaurmario</title>
+<style>
+  :root { --bg: #FFFFFF; --fg: #111111; --muted: #6B6B6B; --panel: #F4F4F5; --signature: #FF7EB6; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0F0F0F; --fg: #F5F5F5; --muted: #A3A3A3; --panel: #1C1C1E; } }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center;
+    padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  img { width: 120px; height: 120px; }
+  .dark { display: none; }
+  @media (prefers-color-scheme: dark) { .light { display: none; } .dark { display: block; } }
+  h1 { margin: 4px 0 0; font-size: 22px; font-weight: 800; }
+  p { margin: 0; max-width: 320px; color: var(--muted); font-size: 15px; line-height: 1.45; }
+  nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+  a, button {
+    border: 0; border-radius: 999px; padding: 12px 20px; font: inherit; font-weight: 700; font-size: 15px;
+    text-decoration: none; cursor: pointer;
+  }
+  .primary { background: var(--signature); color: #111111; }
+  .secondary { background: var(--panel); color: var(--fg); }
+</style>
+</head>
+<body>
+  <img class="light" src="/brand/stinky/head/stinky-head-512.png" alt="">
+  <img class="dark" src="/brand/stinky/head/stinky-head-dark-512.png" alt="">
+  <h1>Sin conexión</h1>
+  <p>Esta pantalla aún no estaba guardada en el móvil. Tu armario y tus looks sí se pueden ver sin internet.</p>
+  <nav>
+    <a class="primary" href="/dashboard/wardrobe">Ver mi armario</a>
+    <a class="secondary" href="/dashboard/outfits">Mis looks</a>
+    <button class="secondary" type="button" onclick="location.reload()">Reintentar</button>
+  </nav>
+  <script>window.addEventListener('online', function () { location.reload(); });</script>
+</body>
+</html>

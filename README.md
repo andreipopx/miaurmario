@@ -144,9 +144,17 @@ size almost every user is on.
 
 ### Running it
 
-- **PWA.** Installable from the browser, standalone, with an app shell and static
-  assets cached per build, a share target, and an in-app update prompt. It is an
-  offline *shell*, not offline data.
+- **PWA.** Installable from the browser, standalone, with a share target and an
+  in-app update prompt.
+- **Android and iOS app.** A [Capacitor](https://capacitorjs.com/) shell around
+  the live site (`mobile/`), adding OS push (FCM / APNs), real haptics, the
+  Android back button and links that open in the app. Built on this machine for
+  Android and on GitHub's macOS runners for iOS; see
+  [docs/native-app.md](docs/native-app.md).
+- **Offline wardrobe.** Installed (PWA or app), the wardrobe, looks, history and
+  their photos stay readable without a connection: the service worker keeps the
+  app and the photos, React Query keeps a copy of the data in IndexedDB. Read
+  only; anything that needs the server waits for the connection.
 - **Sign-up gate.** Sign-up mode is an admin-panel setting (`open` or
   `invite_only`) that takes effect without a redeploy. Closed, the login page
   offers a waitlist that always answers 202 whether or not the address is known,
@@ -430,9 +438,9 @@ A few things that are easy to get wrong:
 - `SECRET_KEY`, `RESEND_*` and `MAGIC_LINK_BASE_URL` must be **identical on the
   backend and the worker** — the worker signs the one-click unsubscribe links in
   the emails it sends.
-- `docker-compose.prod.yml` does not pass the Last.fm, Spotify, Pinterest or
-  `INTEGRATIONS_TOKEN_ENCRYPTION_KEY` values to the worker, even though the
-  worker runs those cron jobs. Add them there if you use those integrations.
+- Push to the Android/iOS app (`FCM_SERVICE_ACCOUNT_JSON`, `APNS_*`) goes on the
+  backend **and** the worker, like VAPID; the App Links / Universal Links ids
+  (`ANDROID_APP_CERT_SHA256`, `APPLE_TEAM_ID`) on the frontend.
 - The frontend service sets `NODE_TLS_REJECT_UNAUTHORIZED=0`, which disables TLS
   verification for the whole Node process. It is there for internal OIDC
   providers with private certificates; prefer `OIDC_CA_BUNDLE` and remove it.

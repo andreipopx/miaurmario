@@ -62,3 +62,7 @@ screenshots/
 testing/
 .playwright-mcp
 *.review.yml
+
+# App builds handed around by hand (mobile/ builds land in android/app/build)
+*.apk
+*.aab

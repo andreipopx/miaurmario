@@ -1,7 +1,7 @@
 {
   "name": "miaurmario-frontend",
-  "version": "1.2.0",
-  "description": "Miaurmario — tu armario, curado por un gato con criterio.",
+  "version": "0.1.0",
+  "description": "Miaurmario \u2014 tu armario, curado por un gato con criterio.",
   "private": true,
   "scripts": {
     "dev": "next dev",

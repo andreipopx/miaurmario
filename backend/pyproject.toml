@@ -1,7 +1,7 @@
 [project]
-name = "wardrobe-ai-backend"
-version = "1.2.0"
-description = "Wardrobe AI - Backend API"
+name = "miaurmario-backend"
+version = "0.1.0"
+description = "Miaurmario — backend API"
 requires-python = ">=3.11"
 
 [tool.ruff]
@@ -32,13 +32,6 @@ line-ending = "auto"
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-]
 
 [tool.coverage.run]
 source = ["app"]

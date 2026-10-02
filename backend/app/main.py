@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title=settings.app_name,
     description="Miaurmario — tu armario, curado por un gato con criterio.",
-    version="1.0.0",
+    version="0.1.0",
     lifespan=lifespan,
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,

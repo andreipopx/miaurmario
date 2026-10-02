@@ -129,6 +129,19 @@ services:
       AI_VISION_ENABLED: ${AI_VISION_ENABLED:-}
       AI_TEXT_ENABLED: ${AI_TEXT_ENABLED:-}
       STORAGE_PATH: /data/wardrobe
+      # The worker runs the integration crons (Last.fm every 15 min, Spotify
+      # twice an hour, Pinterest token refresh at 03:00) and reads OAuth tokens
+      # that are Fernet-encrypted, so it needs the same secrets as the API.
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
+      LASTFM_API_SECRET: ${LASTFM_API_SECRET:-}
+      LASTFM_REQUESTS_PER_SECOND: ${LASTFM_REQUESTS_PER_SECOND:-4}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI:-}
+      PINTEREST_CLIENT_ID: ${PINTEREST_CLIENT_ID:-}
+      PINTEREST_CLIENT_SECRET: ${PINTEREST_CLIENT_SECRET:-}
+      PINTEREST_REDIRECT_URI: ${PINTEREST_REDIRECT_URI:-}
+      INTEGRATIONS_TOKEN_ENCRYPTION_KEY: ${INTEGRATIONS_TOKEN_ENCRYPTION_KEY:-}
     volumes:
       - wardrobe_data:/data/wardrobe
     depends_on:

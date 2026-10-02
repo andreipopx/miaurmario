@@ -160,12 +160,6 @@ jobs:
           cd frontend
           npm test -- --run
 
-      - name: Run tests with coverage
-        run: |
-          cd frontend
-          npm run test:coverage -- --run
-        continue-on-error: true
-
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest

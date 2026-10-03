@@ -22,6 +22,8 @@ import { STINKY_PET_VIBRATION, pickPetReaction, type StinkyPetReaction } from '.
 import { startPurrVibration } from './stinky-purr'
 import { PURR_FX_MS, StinkyPurrFx } from './stinky-purr-fx'
 import { currentStinkyVariant, prefersReducedMotionNow, usePrefersReducedMotion, useStinkyVariant } from './use-stinky-env'
+import { useStinkyPersona } from './stinky-persona'
+import { DEFAULT_STINKY_COAT, type StinkyCoat, type StinkyEyes } from '@/lib/stinky-persona'
 
 export interface StinkyProps {
   /** Animation state (aliases such as `working` or `celebrate` map onto a shipped state). */
@@ -42,6 +44,10 @@ export interface StinkyProps {
   label?: string
   /** Hold the still neutral head and release the animation (off screen, app in the background). */
   paused?: boolean
+  /** Which coat to draw. Default: the person's own Stinky (Ajustes → Tu Stinky). */
+  coat?: StinkyCoat
+  /** Eye colour; default: the person's choice (or the coat's own eyes when `coat` is forced). */
+  eyes?: StinkyEyes
   className?: string
 }
 
@@ -85,7 +91,6 @@ const PET_THROTTLE_MS = 1200
  * the clip that follows always come from the same file size.
  */
 const SMALL_MAX_SIZE = 85
-const PET_LABEL = 'Acariciar a Stinky'
 /** Reactions to a pet: they return to whatever Stinky should be doing when they finish. */
 const PET_STATES: ReadonlySet<StinkyState> = new Set<StinkyState>(['purr', 'bite'])
 const PET_FX_MS: Record<StinkyPetReaction, number> = { purr: PURR_FX_MS, bite: BITE_FX_MS }
@@ -119,8 +124,15 @@ const releaseClip = (clip: Clip) => {
 }
 
 /** Fetch and decode a clip before it is shown, so it appears whole on its first frame. */
-async function prepareClip(state: StinkyState, variant: StinkyVariant, small: boolean, still: boolean): Promise<Clip> {
-  const assets = stinkyAssets(state, variant, { small })
+async function prepareClip(
+  state: StinkyState,
+  variant: StinkyVariant,
+  small: boolean,
+  still: boolean,
+  coat: StinkyCoat,
+  eyes: StinkyEyes,
+): Promise<Clip> {
+  const assets = stinkyAssets(state, variant, { small, coat, eyes })
   const decode = async (src: string) => {
     const img = new Image()
     img.src = src
@@ -139,7 +151,7 @@ async function prepareClip(state: StinkyState, variant: StinkyVariant, small: bo
       /* offline or missing: the still frame below */
     }
   }
-  const src = state === 'idle' ? stinkyNeutralStill(variant, { small }) : assets.poster
+  const src = state === 'idle' ? stinkyNeutralStill(variant, { small, coat, eyes }) : assets.poster
   await decode(src)
   return { src, blob: false, still: true, variant }
 }
@@ -161,7 +173,20 @@ interface Playing {
   readonly startedAt: number
 }
 
-export function Stinky({
+/**
+ * Their own Stinky: his coat and name come from the person's choice unless forced. A new coat
+ * is a new set of clips, so the head starts over from that coat's neutral frame.
+ */
+export function Stinky({ coat: forcedCoat, eyes: forcedEyes, label, ...props }: StinkyProps) {
+  const persona = useStinkyPersona()
+  const coat = forcedCoat ?? persona.coat
+  const eyes = forcedEyes ?? (forcedCoat ? 'natural' : persona.eyes)
+  return (
+    <StinkyHead key={`${coat}/${eyes}`} {...props} coat={coat} eyes={eyes} name={persona.name} label={label ?? persona.name} />
+  )
+}
+
+function StinkyHead({
   state = 'idle',
   size = 128,
   settleTo = 'idle',
@@ -169,10 +194,13 @@ export function Stinky({
   onDone,
   interactive,
   onPet,
-  label = 'Stinky',
+  label,
   paused = false,
+  coat = DEFAULT_STINKY_COAT,
+  eyes = 'natural',
+  name,
   className,
-}: StinkyProps) {
+}: StinkyProps & { name: string }) {
   const reducedMotion = usePrefersReducedMotion()
   const variant = useStinkyVariant(forcedVariant)
   const requested = resolveStinkyState(state)
@@ -229,8 +257,8 @@ export function Stinky({
 
   const preload = useCallback((s: StinkyState) => {
     if (prefersReducedMotionNow()) return
-    void fetchClip(stinkyAssets(s, variantNow(), { small: smallNow() }).webp).catch(() => {})
-  }, [smallNow, variantNow])
+    void fetchClip(stinkyAssets(s, variantNow(), { small: smallNow(), coat, eyes }).webp).catch(() => {})
+  }, [smallNow, variantNow, coat, eyes])
 
   // Forward declaration: a finished clip starts the next switch.
   const goToRef = useRef<(next: StinkyState, opts?: { pet?: boolean; force?: boolean }) => void>(() => {})
@@ -352,7 +380,7 @@ export function Stinky({
     const my = ++gen.current
     target.current = next
     const still = prefersReducedMotionNow()
-    const preparing = prepareClip(next, variantNow(), smallNow(), still)
+    const preparing = prepareClip(next, variantNow(), smallNow(), still, coat, eyes)
     void preparing.then(clip => {
       if (my !== gen.current || !alive.current) return releaseClip(clip)
       const limit = opts.pet ? MAX_WAIT_PET_MS : MAX_WAIT_MS
@@ -377,7 +405,7 @@ export function Stinky({
         mount(again === 0 || (again != null && again < 40))
       }, wait)
     })
-  }, [later, smallNow, variantNow])
+  }, [later, smallNow, variantNow, coat, eyes])
   goToRef.current = goTo
 
   // Start (and stop) with the component; `paused` holds the still head instead.
@@ -466,12 +494,12 @@ export function Stinky({
   const imgClass = 'pointer-events-none absolute inset-0 block h-full w-full select-none'
   const small = size <= SMALL_MAX_SIZE
   const base = forcedVariant ? (
-    <img src={stinkyNeutralStill(forcedVariant, { small })} alt='' aria-hidden draggable={false} width={size} height={size} className={imgClass} />
+    <img src={stinkyNeutralStill(forcedVariant, { small, coat, eyes })} alt='' aria-hidden draggable={false} width={size} height={size} className={imgClass} />
   ) : (
     <>
       {/* Both looks, picked by the theme class before any script runs: no light flash in dark mode. */}
-      <img src={stinkyNeutralStill('light', { small })} alt='' aria-hidden draggable={false} width={size} height={size} className={cn(imgClass, 'dark:hidden')} />
-      <img src={stinkyNeutralStill('dark', { small })} alt='' aria-hidden draggable={false} width={size} height={size} className={cn(imgClass, 'hidden dark:block')} />
+      <img src={stinkyNeutralStill('light', { small, coat, eyes })} alt='' aria-hidden draggable={false} width={size} height={size} className={cn(imgClass, 'dark:hidden')} />
+      <img src={stinkyNeutralStill('dark', { small, coat, eyes })} alt='' aria-hidden draggable={false} width={size} height={size} className={cn(imgClass, 'hidden dark:block')} />
     </>
   )
 
@@ -524,7 +552,7 @@ export function Stinky({
         activate(layer)
       }}
       onError={e => {
-        const fallback = stinkyAssets(layer.state, variantNow()).posterPng
+        const fallback = stinkyAssets(layer.state, variantNow(), { coat, eyes }).posterPng
         if (e.currentTarget.src.endsWith(fallback)) return
         e.currentTarget.src = fallback
       }}
@@ -563,7 +591,7 @@ export function Stinky({
     return (
       <button
         type='button'
-        aria-label={PET_LABEL}
+        aria-label={`Acariciar a ${name}`}
         onClick={pet}
         {...common}
         className={cn(

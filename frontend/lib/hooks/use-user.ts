@@ -31,6 +31,10 @@ export interface UserProfile {
   password_updated_at?: string | null;
   /** First-run guidance already shown (welcome tour, area tips). Absent on old backends. */
   seen_tips?: string[];
+  /** Their own Stinky (Ajustes → Tu Stinky). Absent on old backends = Stinky the tuxedo. */
+  stinky_name?: string;
+  stinky_coat?: string;
+  stinky_eyes?: string;
 }
 
 export interface UserProfileUpdate {
@@ -42,6 +46,11 @@ export interface UserProfileUpdate {
   location_lon?: number;
   location_name?: string;
   body_measurements?: Record<string, number | string> | null;
+  /** null or "Stinky" / "esmoquin" go back to the default cat. */
+  stinky_name?: string | null;
+  stinky_coat?: string | null;
+  /** null or "natural" keep the coat's own eyes. */
+  stinky_eyes?: string | null;
 }
 
 function useSetTokenIfAvailable() {

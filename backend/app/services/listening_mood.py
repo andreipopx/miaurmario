@@ -32,6 +32,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.music import ListeningEvent, ListeningMood
+from app.utils.stinky_persona import personalize
 
 logger = logging.getLogger(__name__)
 
@@ -781,7 +782,9 @@ async def refine_moods_with_ai(db: AsyncSession, user: Any, zone: ZoneInfo) -> i
         tracks[row.day] = seen
 
     try:
-        answer = await ai.generate_text(_build_ai_prompt(rows, tracks), AI_SYSTEM_PROMPT)
+        answer = await ai.generate_text(
+            _build_ai_prompt(rows, tracks), personalize(AI_SYSTEM_PROMPT, user)
+        )
     except Exception as exc:
         logger.info("AI mood refinement failed for user %s: %s", user.id, exc)
         return 0

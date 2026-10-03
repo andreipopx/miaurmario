@@ -34,6 +34,8 @@ import { toF, toCelsius } from '@/lib/temperature';
 import { toast } from 'sonner';
 import { SecurityCard } from '@/components/settings/security-card';
 import { HapticsCard } from '@/components/settings/haptics-card';
+import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { useStinkyPersona } from '@/components/stinky/stinky-persona';
 import { AvatarSettings } from '@/components/settings/avatar-settings';
 import { PageHeader } from '@/components/page-header';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -490,6 +492,9 @@ export default function SettingsPage() {
         {/* Vibración: test button + the honest note about iPhone */}
         <HapticsCard />
 
+        {/* Tu Stinky: their own cat's name, coat and eyes */}
+        <TuStinkyCard />
+
         {/* Tu estilo con Stinky: the swipe-deck taste profile */}
         <Card>
           <CardHeader>
@@ -925,5 +930,26 @@ export default function SettingsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function TuStinkyCard() {
+  const t = useTranslations('stinkyCustomize');
+  const { name } = useStinkyPersona();
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-4 pt-6">
+        <StinkyAvatar size={56} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-lg font-extrabold leading-tight">{t('title')}</p>
+          <p className="truncate text-sm text-muted-foreground">
+            {name} · {t('settingsBody')}
+          </p>
+        </div>
+        <Button variant="outline" asChild>
+          <Link href="/dashboard/stinky/customize">{t('settingsAction')}</Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

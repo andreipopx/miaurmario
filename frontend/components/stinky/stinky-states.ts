@@ -8,6 +8,8 @@
  * finished one rests on that frame instead of starting over.
  */
 
+import { DEFAULT_STINKY_COAT, stinkyAssetSet, type StinkyCoat, type StinkyEyes } from '@/lib/stinky-persona'
+
 export const STINKY_STATES = ['idle', 'thinking', 'happy', 'wave', 'sleepy', 'sad', 'purr', 'bite'] as const
 export type StinkyState = (typeof STINKY_STATES)[number]
 
@@ -69,6 +71,18 @@ export const STINKY_LIKELY_NEXT: Readonly<Record<StinkyState, readonly StinkySta
 export type StinkyVariant = 'light' | 'dark'
 
 const BASE = '/brand/stinky/head'
+/**
+ * Where a coat's assets live. The tuxedo with his own eyes ships with the app; every other
+ * coat / eye colour is the same set of files (same names, timings and loop counts) rendered
+ * with that look, served from /brand/coats/<set>/head (kept out of git: see
+ * frontend/scripts/stinky-coats/README.md).
+ */
+export const stinkyAssetBase = (coat: StinkyCoat = DEFAULT_STINKY_COAT, eyes?: StinkyEyes) => {
+  const set = stinkyAssetSet(coat, eyes)
+  return set === DEFAULT_STINKY_COAT ? BASE : `/brand/coats/${set}/head`
+}
+/** Which look to draw: a coat and, optionally, other eyes. */
+type Look = { coat?: StinkyCoat; eyes?: StinkyEyes }
 const suffix = (variant: StinkyVariant) => (variant === 'dark' ? '-dark' : '')
 
 /**
@@ -83,29 +97,35 @@ export const withStinkyVersion = (url: string) =>
 export const stinkyAssets = (
   state: StinkyState,
   variant: StinkyVariant = 'light',
-  { small = false }: { small?: boolean } = {},
-) => ({
-  /**
-   * Animated WebP with alpha, 512px (256px with `small`, for heads drawn under ~300 device px).
-   * Loops repeat forever; one-shot clips play once and rest on their last (neutral) frame.
-   */
-  webp: withStinkyVersion(`${BASE}/${small ? 'anim-256' : 'anim'}/stinky-${state}${suffix(variant)}.webp`),
-  /** Representative still frame of the state (vector). */
-  poster: withStinkyVersion(`${BASE}/poster/stinky-${state}${suffix(variant)}.svg`),
-  /** Same still frame as PNG (512px) — fallback when animated WebP is unsupported. */
-  posterPng: withStinkyVersion(`${BASE}/poster/stinky-${state}${suffix(variant)}.png`),
-})
+  { small = false, coat, eyes }: { small?: boolean } & Look = {},
+) => {
+  const base = stinkyAssetBase(coat, eyes)
+  return {
+    /**
+     * Animated WebP with alpha, 512px (256px with `small`, for heads drawn under ~300 device px).
+     * Loops repeat forever; one-shot clips play once and rest on their last (neutral) frame.
+     */
+    webp: withStinkyVersion(`${base}/${small ? 'anim-256' : 'anim'}/stinky-${state}${suffix(variant)}.webp`),
+    /** Representative still frame of the state (vector). */
+    poster: withStinkyVersion(`${base}/poster/stinky-${state}${suffix(variant)}.svg`),
+    /** Same still frame as PNG (512px) — fallback when animated WebP is unsupported. */
+    posterPng: withStinkyVersion(`${base}/poster/stinky-${state}${suffix(variant)}.png`),
+  }
+}
 
 /**
  * The neutral frame as a still image, decoded from the clips themselves (idle frame 0, which is also
  * the first and last frame of every clip): pixel-identical to what an animation starts and ends on,
  * so the still under a starting clip, or left after one, never visibly redraws.
  */
-export const stinkyNeutralStill = (variant: StinkyVariant = 'light', { small = false }: { small?: boolean } = {}) =>
-  withStinkyVersion(`${BASE}/still/stinky-neutral${suffix(variant)}${small ? '-256' : ''}.png`)
+export const stinkyNeutralStill = (
+  variant: StinkyVariant = 'light',
+  { small = false, coat, eyes }: { small?: boolean } & Look = {},
+) => withStinkyVersion(`${stinkyAssetBase(coat, eyes)}/still/stinky-neutral${suffix(variant)}${small ? '-256' : ''}.png`)
 
 /** Neutral static head (vector) — the same pose as the first/last frame of every clip, for avatars. */
-export const stinkyStaticSvg = (variant: StinkyVariant = 'light') => withStinkyVersion(`${BASE}/stinky-head${suffix(variant)}.svg`)
+export const stinkyStaticSvg = (variant: StinkyVariant = 'light', { coat, eyes }: Look = {}) =>
+  withStinkyVersion(`${stinkyAssetBase(coat, eyes)}/stinky-head${suffix(variant)}.svg`)
 
 export type StinkyMouth = 'neutral' | 'open' | 'bite' | 'bite-half'
 

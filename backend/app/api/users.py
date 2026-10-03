@@ -35,6 +35,17 @@ from app.utils.passwords import (
     verify_password_async,
 )
 from app.utils.rate_limit import rate_limit_by_user
+from app.utils.stinky_persona import (
+    DEFAULT_COAT,
+    DEFAULT_EYES,
+    DEFAULT_NAME,
+    stinky_coat,
+    stinky_eyes,
+    stinky_name,
+)
+from app.utils.stinky_persona import clean_coat as clean_stinky_coat
+from app.utils.stinky_persona import clean_eyes as clean_stinky_eyes
+from app.utils.stinky_persona import clean_name as clean_stinky_name
 from app.utils.timezone import canonical_timezone, is_valid_timezone
 
 USERNAME_REGEX = re.compile(r"^[a-z0-9_]{3,20}$")
@@ -74,6 +85,10 @@ class UserProfileResponse(BaseModel):
     has_password: bool = False
     password_updated_at: datetime | None = None
     seen_tips: list[str] = Field(default_factory=list)
+    # Their own Stinky: always filled in ("Stinky" / "esmoquin" by default).
+    stinky_name: str = DEFAULT_NAME
+    stinky_coat: str = DEFAULT_COAT
+    stinky_eyes: str = DEFAULT_EYES
 
 
 class UserProfileUpdate(BaseModel):
@@ -85,6 +100,26 @@ class UserProfileUpdate(BaseModel):
     location_lon: Decimal | None = Field(default=None, ge=-180, le=180)
     location_name: str | None = Field(default=None, max_length=100)
     body_measurements: dict | None = None
+    # null or "Stinky" / "esmoquin" go back to the default cat.
+    stinky_name: str | None = Field(default=None, max_length=60)
+    stinky_coat: str | None = Field(default=None, max_length=32)
+    # null or "natural" keep the coat's own eyes.
+    stinky_eyes: str | None = Field(default=None, max_length=16)
+
+    @field_validator("stinky_name")
+    @classmethod
+    def _valid_stinky_name(cls, value: str | None) -> str | None:
+        return clean_stinky_name(value)
+
+    @field_validator("stinky_coat")
+    @classmethod
+    def _valid_stinky_coat(cls, value: str | None) -> str | None:
+        return clean_stinky_coat(value)
+
+    @field_validator("stinky_eyes")
+    @classmethod
+    def _valid_stinky_eyes(cls, value: str | None) -> str | None:
+        return clean_stinky_eyes(value)
 
     @field_validator("timezone")
     @classmethod
@@ -257,6 +292,9 @@ def _user_response(user: User) -> UserProfileResponse:
         has_password=bool(user.password_hash),
         password_updated_at=user.password_updated_at,
         seen_tips=list(user.seen_tips or []),
+        stinky_name=stinky_name(user),
+        stinky_coat=stinky_coat(user),
+        stinky_eyes=stinky_eyes(user),
     )
 
 

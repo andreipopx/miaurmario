@@ -384,7 +384,8 @@
     "chat": "Chat",
     "askLook": "Ask for a look",
     "inspiration": "Inspiration",
-    "yourStyle": "Your style"
+    "yourStyle": "Your style",
+    "customize": "Your Stinky"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
@@ -2962,6 +2963,20 @@
       "inviteOnlyHint": "Closed beta: new accounts need an invite link.",
       "modeOpenSaved": "Sign-ups are open.",
       "modeInviteSaved": "Sign-ups are now invite-only.",
+      "newUserAI": {
+        "title": "AI for new accounts",
+        "description": "Which AI accounts created from now on get. Existing accounts don't change.",
+        "gift": "Give it (monthly cap)",
+        "none": "No AI",
+        "giftHint": "Every new account gets Miaurmario's AI with {cap, plural, one {# request} other {# requests}} per month.",
+        "noneHint": "New accounts start without AI: they can use their own key or ask you for it.",
+        "cap": "Monthly cap per account",
+        "capHint": "Requests per month, between {min} and {max}. Only applies to accounts created from now on.",
+        "saveCap": "Save cap",
+        "capSaved": "Cap saved.",
+        "giftSaved": "New accounts will get AI as a gift.",
+        "noneSaved": "New accounts will start without AI."
+      },
       "create": {
         "title": "New invite",
         "description": "Creates a link like /login?invite=CODE.",
@@ -3094,7 +3109,8 @@
           },
           "settings": {
             "ai_pricing": "AI prices",
-            "signup_mode": "Sign-up mode"
+            "signup_mode": "Sign-up mode",
+            "new_user_ai": "AI for new accounts"
           },
           "invite": {
             "create": "Invite created",
@@ -4362,5 +4378,40 @@
       "title": "Your pins",
       "body": "Pinterest: the looks you save tell him what you like."
     }
+  },
+  "stinkyCustomize": {
+    "title": "Your Stinky",
+    "intro": "Give your cat a name and a coat. That is what they will be called in the chat, in notifications and across the app.",
+    "nameLabel": "What is their name?",
+    "nameHint": "Up to 20 letters. Leave it empty to go back to {defaultName}.",
+    "nameInvalid": "Letters, numbers and spaces only, up to 20.",
+    "coatLabel": "Coat",
+    "coats": {
+      "esmoquin": "Tuxedo",
+      "naranja-atigrado": "Orange tabby",
+      "naranja-blanco": "Orange and white",
+      "negro": "Black",
+      "blanco": "White",
+      "gris": "Grey",
+      "atigrado": "Brown tabby",
+      "atigrado-gris": "Grey tabby",
+      "siames": "Siamese",
+      "calico": "Calico"
+    },
+    "eyesLabel": "Eyes",
+    "eyes": {
+      "natural": "Their own",
+      "ambar": "Amber",
+      "verde": "Green",
+      "azul": "Blue",
+      "cobre": "Copper"
+    },
+    "save": "Save",
+    "saved": "Hello, {name}!",
+    "saveError": "Could not save. Try again.",
+    "reset": "Back to good old {defaultName}",
+    "previewLabel": "{name}, {coat} coat",
+    "settingsBody": "Their name and coat",
+    "settingsAction": "Customize"
   }
 }

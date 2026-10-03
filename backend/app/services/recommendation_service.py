@@ -43,6 +43,7 @@ from app.services.weather_service import (
 from app.utils.clothing import deduplicate_by_body_slot
 from app.utils.error_codes import CodedValueError
 from app.utils.prompts import load_prompt
+from app.utils.stinky_persona import personalize
 from app.utils.style_profile import (
     VARIETY_ES,
     color_label_es,
@@ -966,6 +967,8 @@ class RecommendationService:
         # For single_outfit mode (notifications), replace multi-outfit format
         if single_outfit:
             prompt = replace_response_format_with_single(prompt)
+
+        prompt = personalize(prompt, user)
 
         logger.info(
             f"Generating recommendation for user {user.id}, "

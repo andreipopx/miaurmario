@@ -384,7 +384,8 @@
     "chat": "Chat",
     "askLook": "Pedir look",
     "inspiration": "Inspiración",
-    "yourStyle": "Tu estilo"
+    "yourStyle": "Tu estilo",
+    "customize": "Tu Stinky"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -2962,6 +2963,20 @@
       "inviteOnlyHint": "Beta cerrada: las cuentas nuevas necesitan un enlace de invitación.",
       "modeOpenSaved": "Registro abierto.",
       "modeInviteSaved": "Ahora solo se entra con invitación.",
+      "newUserAI": {
+        "title": "IA para cuentas nuevas",
+        "description": "Qué IA reciben las cuentas que se creen a partir de ahora. Las cuentas que ya existen no cambian.",
+        "gift": "Regalar (con tope mensual)",
+        "none": "Sin IA",
+        "giftHint": "Cada cuenta nueva recibe la IA de Miaurmario con {cap, plural, one {# petición} other {# peticiones}} al mes.",
+        "noneHint": "Las cuentas nuevas empiezan sin IA: pueden usar su propia clave o pedírtela.",
+        "cap": "Tope mensual por cuenta",
+        "capHint": "Peticiones al mes, entre {min} y {max}. Solo se aplica a las cuentas que se creen desde ahora.",
+        "saveCap": "Guardar tope",
+        "capSaved": "Tope guardado.",
+        "giftSaved": "Las cuentas nuevas recibirán IA de regalo.",
+        "noneSaved": "Las cuentas nuevas empezarán sin IA."
+      },
       "create": {
         "title": "Nueva invitación",
         "description": "Genera un enlace del tipo /login?invite=CÓDIGO.",
@@ -3094,7 +3109,8 @@
           },
           "settings": {
             "ai_pricing": "Precios de IA",
-            "signup_mode": "Modo de registro"
+            "signup_mode": "Modo de registro",
+            "new_user_ai": "IA para cuentas nuevas"
           },
           "invite": {
             "create": "Invitación creada",
@@ -4362,5 +4378,40 @@
       "title": "Tus pins",
       "body": "Pinterest: los looks que guardas le dicen qué te gusta."
     }
+  },
+  "stinkyCustomize": {
+    "title": "Tu Stinky",
+    "intro": "Ponle nombre y elige su pelaje. Así se llamará en el chat, en los avisos y en toda la app.",
+    "nameLabel": "¿Cómo se llama?",
+    "nameHint": "Hasta 20 letras. Vacío, vuelve a llamarse {defaultName}.",
+    "nameInvalid": "Solo letras, números y espacios, hasta 20.",
+    "coatLabel": "Pelaje",
+    "coats": {
+      "esmoquin": "Esmoquin",
+      "naranja-atigrado": "Naranja atigrado",
+      "naranja-blanco": "Naranja y blanco",
+      "negro": "Negro",
+      "blanco": "Blanco",
+      "gris": "Gris",
+      "atigrado": "Atigrado",
+      "atigrado-gris": "Atigrado gris",
+      "siames": "Siamés",
+      "calico": "Calicó"
+    },
+    "eyesLabel": "Ojos",
+    "eyes": {
+      "natural": "De serie",
+      "ambar": "Ámbar",
+      "verde": "Verdes",
+      "azul": "Azules",
+      "cobre": "Cobre"
+    },
+    "save": "Guardar",
+    "saved": "¡Hola, {name}!",
+    "saveError": "No se ha podido guardar. Prueba otra vez.",
+    "reset": "Volver al {defaultName} de siempre",
+    "previewLabel": "{name}, pelaje {coat}",
+    "settingsBody": "Su nombre y su pelaje",
+    "settingsAction": "Personalizar"
   }
 }

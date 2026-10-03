@@ -2,6 +2,7 @@ import type { AbstractIntlMessages } from 'next-intl';
 import { cookies } from 'next/headers';
 import { getRequestConfig } from 'next-intl/server';
 import { TIME_ZONE_COOKIE, resolveTimeZone } from './time-zone';
+import { STINKY_PERSONA_COOKIE, parsePersonaCookie, personalizeMessages } from '@/lib/stinky-persona';
 
 export const SUPPORTED_LOCALES = ['en', 'es'] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -36,7 +37,10 @@ export default getRequestConfig(async () => {
   // Force Spanish across the whole app while SHOW_LANGUAGE_SWITCHER=false.
   // (Cookie is intentionally ignored — legacy 'en' cookies simply have no effect.)
   const locale: Locale = DEFAULT_LOCALE;
-  const messages = await loadMessages(locale);
-  const timeZone = resolveTimeZone(cookies().get(TIME_ZONE_COOKIE)?.value);
+  const jar = cookies();
+  // Their own Stinky's name in every text (see lib/stinky-persona.ts).
+  const { name } = parsePersonaCookie(jar.get(STINKY_PERSONA_COOKIE)?.value);
+  const messages = personalizeMessages(await loadMessages(locale), name);
+  const timeZone = resolveTimeZone(jar.get(TIME_ZONE_COOKIE)?.value);
   return { locale, messages, timeZone };
 });

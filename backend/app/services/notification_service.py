@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, time
 from enum import StrEnum
 from uuid import UUID
@@ -21,6 +21,7 @@ from app.services.event_notifications import (
 from app.services.web_push import PushPayload
 from app.utils.email_templates import render_outfit_email
 from app.utils.occasions import occasion_label_es
+from app.utils.stinky_persona import personalize, stinky_name
 
 logger = logging.getLogger(__name__)
 
@@ -167,13 +168,15 @@ class NotificationDispatcher:
 
         return await self._send_outfit_default_channels(outfit, user, for_tomorrow)
 
-    def _outfit_push(self, outfit: Outfit, for_tomorrow: bool) -> PushPayload:
+    def _outfit_push(
+        self, outfit: Outfit, for_tomorrow: bool, user: User | None = None
+    ) -> PushPayload:
         day = "de mañana" if for_tomorrow else "de hoy"
         occasion = occasion_label_es(outfit.occasion)
         weather = outfit.weather_data or {}
         temp = weather.get("temperature")
         title = f"Tu look {day} está listo"
-        body = outfit.reasoning or f"Stinky te ha preparado un look {occasion}."
+        body = outfit.reasoning or f"{stinky_name(user)} te ha preparado un look {occasion}."
         if temp is not None:
             body = f"{temp}°C · {body}"
         return PushPayload(
@@ -183,14 +186,16 @@ class NotificationDispatcher:
             tag=f"daily-outfit-{outfit.id}",
         )
 
-    def _render_outfit_email(self, outfit: Outfit, for_tomorrow: bool, unsubscribe_url: str):
+    def _render_outfit_email(
+        self, outfit: Outfit, for_tomorrow: bool, unsubscribe_url: str, user: User | None = None
+    ):
         weather = outfit.weather_data or {}
         highlights: list[str] = []
         if outfit.ai_raw_response and isinstance(outfit.ai_raw_response, dict):
             raw = outfit.ai_raw_response.get("highlights", [])
             if isinstance(raw, list):
                 highlights = [str(h) for h in raw]
-        return render_outfit_email(
+        email = render_outfit_email(
             occasion=outfit.occasion,
             reasoning=outfit.reasoning,
             highlights=highlights,
@@ -200,6 +205,13 @@ class NotificationDispatcher:
             for_tomorrow=for_tomorrow,
             cta_url=f"{self.app_url}/dashboard/history",
             unsubscribe_url=unsubscribe_url,
+        )
+        # Signed with their own cat's name (the picture stays Stinky's for now).
+        return replace(
+            email,
+            subject=personalize(email.subject, user),
+            html=personalize(email.html, user),
+            text=personalize(email.text, user),
         )
 
     async def _send_outfit_default_channels(
@@ -215,8 +227,8 @@ class NotificationDispatcher:
             self.db,
             user=user,
             event="daily_outfit",
-            render_email=lambda unsub: self._render_outfit_email(outfit, for_tomorrow, unsub),
-            push=self._outfit_push(outfit, for_tomorrow),
+            render_email=lambda unsub: self._render_outfit_email(outfit, for_tomorrow, unsub, user),
+            push=self._outfit_push(outfit, for_tomorrow, user),
             channels=only,
         )
         results: list[NotificationResult] = []

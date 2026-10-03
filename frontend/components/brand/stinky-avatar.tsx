@@ -4,6 +4,7 @@
 
 import { cn } from '@/lib/utils';
 import { stinkyStaticSvg } from '@/components/stinky/stinky-states';
+import { useStinkyPersona } from '@/components/stinky/stinky-persona';
 
 /**
  * Static Stinky head in a circle — used as the profile avatar in the header,
@@ -20,6 +21,8 @@ export function StinkyAvatar({
   /** Accessible name; empty (default) marks it decorative. */
   label?: string;
 }) {
+  // Their own Stinky (Ajustes → Tu Stinky).
+  const { coat, eyes } = useStinkyPersona();
   return (
     <span
       role={label ? 'img' : undefined}
@@ -32,7 +35,7 @@ export function StinkyAvatar({
       {(['light', 'dark'] as const).map((variant) => (
         <img
           key={variant}
-          src={stinkyStaticSvg(variant)}
+          src={stinkyStaticSvg(variant, { coat, eyes })}
           alt=""
           aria-hidden
           width={size}

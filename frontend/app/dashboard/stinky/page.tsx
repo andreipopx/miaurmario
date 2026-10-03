@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowUp, Camera, Compass, History, Loader2, NotebookPen, Sparkles, SquarePen, Square } from 'lucide-react';
+import { ArrowUp, Camera, Compass, History, Loader2, NotebookPen, Palette, Sparkles, SquarePen, Square } from 'lucide-react';
 
 import { Stinky } from '@/components/stinky/stinky';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
@@ -45,6 +45,8 @@ const STINKY_ACTIONS = [
   { key: 'askLook', href: '/dashboard/suggest', icon: Sparkles, tint: 'bg-pop-amber' },
   { key: 'selfie', href: '/dashboard/selfie', icon: Camera, tint: 'bg-pop-sky' },
   { key: 'inspiration', href: '/dashboard/inspiration', icon: Compass, tint: 'bg-pop-mint' },
+  // Their own Stinky: name and coat.
+  { key: 'customize', href: '/dashboard/stinky/customize', icon: Palette, tint: 'bg-pop-pink' },
 ] as const;
 
 type Mood = 'idle' | 'thinking' | 'happy';
@@ -528,7 +530,7 @@ function StinkyChat() {
             </p>
             <p className="mt-1.5 max-w-xs text-[15px] text-muted-foreground">{t('emptyBody')}</p>
             {/* The rest of what Stinky does, one tap away (it used to be other tabs). */}
-            <nav aria-label={tNav('stinky')} className="mt-5 grid w-full grid-cols-3 gap-2">
+            <nav aria-label={tNav('stinky')} className="mt-5 grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
               {STINKY_ACTIONS.map(({ key, href, icon: Icon, tint }) => (
                 <Link
                   key={key}

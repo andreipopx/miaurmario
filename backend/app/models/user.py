@@ -44,6 +44,12 @@ class User(Base):
     token_version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"
     )
+    # Their own Stinky (Ajustes → Tu Stinky): NULL = "Stinky", the tuxedo.
+    # Validated and used through app/utils/stinky_persona.py.
+    stinky_name: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    stinky_coat: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # NULL = the coat's own eyes.
+    stinky_eyes: Mapped[str | None] = mapped_column(String(16), nullable=True)
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")
     # Who chose the zone: "auto" (detected from the device or the chosen city)
     # or "manual" (the user picked it). Detection never overwrites "manual".

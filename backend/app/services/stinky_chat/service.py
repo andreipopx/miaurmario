@@ -57,6 +57,7 @@ from app.services.stinky_chat.tools import (
 )
 from app.services.stinky_memory import build_digest, get_call_name
 from app.utils.prompts import load_prompt
+from app.utils.stinky_persona import personalize
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +142,7 @@ def build_system_prompt(
     prompt = load_prompt("stinky_chat")
     for key, value in replacements.items():
         prompt = prompt.replace(key, value)
-    return prompt
+    return personalize(prompt, user)
 
 
 # --- Conversations ------------------------------------------------------------------------

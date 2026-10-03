@@ -18,6 +18,7 @@ from app.services.stinky_memory import stylist_memory_lines
 from app.utils.clothing import deduplicate_by_body_slot
 from app.utils.error_codes import CodedValueError
 from app.utils.prompts import load_prompt
+from app.utils.stinky_persona import personalize
 from app.utils.style_profile import format_style_profile_for_prompt
 from app.utils.timezone import get_user_today
 
@@ -215,6 +216,7 @@ class PairingService:
             items_text=items_text,
             num_pairings=num_pairings,
         )
+        prompt = personalize(prompt, user)
 
         logger.info(
             f"Generating {num_pairings} pairings for user {user.id}, "

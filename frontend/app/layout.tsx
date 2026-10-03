@@ -7,6 +7,9 @@ import { Providers } from './providers';
 import { ServiceWorkerRegister } from '@/components/sw-register';
 import { NativeShell } from '@/components/native/native-shell';
 import { TimeZoneCookie } from '@/components/time-zone-cookie';
+import { cookies } from 'next/headers';
+import { StinkyPersonaProvider, StinkyPersonaSync } from '@/components/stinky/stinky-persona';
+import { STINKY_PERSONA_COOKIE, parsePersonaCookie } from '@/lib/stinky-persona';
 import splashScreens from '@/public/splash/manifest.json';
 
 export const dynamic = 'force-dynamic';
@@ -85,6 +88,7 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
   const timeZone = await getTimeZone();
+  const persona = parsePersonaCookie(cookies().get(STINKY_PERSONA_COOKIE)?.value);
   return (
     <html
       lang={locale}
@@ -94,7 +98,12 @@ export default async function RootLayout({
       <body>
         <NextIntlClientProvider locale={locale} messages={messages} timeZone={timeZone}>
           <TimeZoneCookie />
-          <Providers>{children}</Providers>
+          <StinkyPersonaProvider initial={persona}>
+            <Providers>
+              <StinkyPersonaSync />
+              {children}
+            </Providers>
+          </StinkyPersonaProvider>
           <ServiceWorkerRegister />
           <NativeShell />
         </NextIntlClientProvider>

@@ -13,12 +13,15 @@ const [,, coatId, outRoot = 'coats', eyeId] = process.argv
 export const EYES = { ambar: '#e2b13a', verde: '#9fb446', azul: '#5fa9e6', cobre: '#e08a2e' }
 const base = PRESETS.find(x => x.id === coatId); if (!base) throw new Error('no preset ' + coatId)
 if (eyeId && !EYES[eyeId]) throw new Error('no eye ' + eyeId)
-const p = eyeId ? { ...base, eye: EYES[eyeId], eyeRight: undefined } : base
+// Copper barely shows on orange fur: a redder, deeper copper there.
+export const EYE_OVERRIDES = { 'naranja-atigrado': { cobre: '#b5441c' }, 'naranja-blanco': { cobre: '#b5441c' } }
+const eyeColor = eyeId ? EYE_OVERRIDES[coatId]?.[eyeId] ?? EYES[eyeId] : undefined
+const p = eyeId ? { ...base, eye: eyeColor, eyeRight: undefined } : base
 const id = eyeId ? `${coatId}--${eyeId}` : coatId
 // The tuxedo preset is "no changes"; with other eyes it only recolours the eyes.
 const recolourEyes = d => {
   if (!eyeId) return d
-  d.scene.entity.parts = d.scene.entity.parts.map(part => (part.face ? { ...part, foregroundColor: EYES[eyeId] } : part))
+  d.scene.entity.parts = d.scene.entity.parts.map(part => (part.face ? { ...part, foregroundColor: eyeColor } : part))
   return d
 }
 const CL = clipsFor(p, LIB)

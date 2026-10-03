@@ -26,6 +26,7 @@ import {
   STINKY_NAME_MAX_LENGTH,
   STINKY_NATURAL_EYES,
   cleanStinkyName,
+  stinkyEyeColor,
   isDefaultPersona,
   personaFromProfile,
   type StinkyCoat,
@@ -38,7 +39,7 @@ import { cn } from '@/lib/utils';
 function EyeSwatch({ eyes, coat }: { eyes: StinkyEyes; coat: StinkyCoat }) {
   const own = eyes === 'natural' ? STINKY_NATURAL_EYES[coat] : eyes;
   const [left, right] = own
-    ? [STINKY_EYE_COLORS[own], STINKY_EYE_COLORS[own]]
+    ? [stinkyEyeColor(coat, own), stinkyEyeColor(coat, own)]
     : [STINKY_EYE_COLORS.azul, STINKY_EYE_COLORS.ambar];
   return (
     <span aria-hidden className="flex gap-[3px] rounded-full bg-[#151515] px-1.5 py-1.5">

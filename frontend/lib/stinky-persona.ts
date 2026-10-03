@@ -39,6 +39,16 @@ export const STINKY_EYE_COLORS: Record<Exclude<StinkyEyes, 'natural'>, string> =
   cobre: '#e08a2e',
 };
 
+/** Copper barely shows on orange fur, so those coats get a redder, deeper copper. */
+const EYE_COLOR_OVERRIDES: Partial<Record<StinkyCoat, Partial<typeof STINKY_EYE_COLORS>>> = {
+  'naranja-atigrado': { cobre: '#b5441c' },
+  'naranja-blanco': { cobre: '#b5441c' },
+};
+
+/** The colour the eyes are drawn in on this coat (matches the renders). */
+export const stinkyEyeColor = (coat: StinkyCoat, eyes: Exclude<StinkyEyes, 'natural'>) =>
+  EYE_COLOR_OVERRIDES[coat]?.[eyes] ?? STINKY_EYE_COLORS[eyes];
+
 /** Each coat's own eyes, when they match one of the choices (white has one blue, one gold). */
 export const STINKY_NATURAL_EYES: Record<StinkyCoat, Exclude<StinkyEyes, 'natural'> | null> = {
   esmoquin: 'ambar',

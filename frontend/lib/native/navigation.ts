@@ -46,6 +46,11 @@ export function needsAppBack(pathname: string): boolean {
 
 const PARENT_OVERRIDES: Record<string, string> = {
   '/dashboard/family/feed': '/dashboard/friends',
+  // Screens reached from inside another one (see nav-items: hidden tabs).
+  '/dashboard/music': '/dashboard/inspiration',
+  '/dashboard/pins': '/dashboard/inspiration',
+  '/dashboard/history': '/dashboard/suggest',
+  '/dashboard/pairings': '/dashboard/outfits',
 };
 
 /** Where "back" goes when there is no in-app history. */

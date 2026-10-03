@@ -322,7 +322,7 @@ describe('rescátala', () => {
     })
     renderPanel()
     fireEvent.click(await screen.findByRole('button', { name: /Rescátala/ }))
-    expect(await screen.findByText('Montado por el Estilista')).toBeInTheDocument()
+    expect(await screen.findByText('Montado por Stinky')).toBeInTheDocument()
   })
 
   it('explains a refusal in plain Spanish, naming the colour it is alone in', async () => {

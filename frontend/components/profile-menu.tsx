@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { signOut } from 'next-auth/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { HelpCircle, LogOut, MessageSquareHeart, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { BarChart3, Brain, HelpCircle, LogOut, MessageSquareHeart, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
 
 import { AppFeedbackDialog } from '@/components/app-feedback-dialog';
 import { ProfileAvatar } from '@/components/profile-avatar';
@@ -53,7 +53,11 @@ function useProfileMenu(openFeedback: () => void): { entries: MenuEntry[]; profi
   const { data: adminBadge } = useAdminBadge();
   const adminCount = adminBadgeTotal(adminBadge);
 
+  // "Tu estilo": your numbers and what Stinky has learnt about you (they used to be
+  // Armario tabs; they're about you, so they live by your profile).
   const entries: MenuEntry[] = [
+    { key: 'analytics', icon: BarChart3, label: t('analytics'), href: '/dashboard/analytics', active: pathname === '/dashboard/analytics' },
+    { key: 'learning', icon: Brain, label: t('learning'), href: '/dashboard/learning', active: pathname === '/dashboard/learning' },
     { key: 'settings', icon: Settings, label: t('settings'), href: SETTINGS.href, active: isSectionActive(pathname, SETTINGS) },
   ];
   if (isAdmin) {

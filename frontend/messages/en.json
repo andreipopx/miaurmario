@@ -355,8 +355,8 @@
     "history": "History",
     "family": "Family",
     "notifications": "Notifications",
-    "analytics": "Analytics",
-    "learning": "Learning",
+    "analytics": "Stats",
+    "learning": "What Stinky knows about you",
     "settings": "Settings",
     "today": "Today",
     "stylist": "Stylist",
@@ -380,14 +380,18 @@
     "install": "Install app",
     "howItWorks": "How it works",
     "selfie": "What I'm wearing",
-    "inbox": "Inbox"
+    "inbox": "Inbox",
+    "chat": "Chat",
+    "askLook": "Ask for a look",
+    "inspiration": "Inspiration",
+    "yourStyle": "Your style"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
     "welcomeSubtitle": "Here's what's happening with your wardrobe",
     "editorial": {
       "outfitOfTheDay": "Outfit of the day",
-      "stylistWorking": "The stylist is at work…",
+      "stylistWorking": "Stinky is at work…",
       "stylistWorkingBody": "Give us a moment. A look, tailored for today, is being put together.",
       "sectionWardrobe": "Your wardrobe",
       "sectionOutfits": "Saved looks",
@@ -396,7 +400,7 @@
       "wardrobeEmpty": "Nothing to show — yet.",
       "wardrobeEmptyCta": "Add the first piece",
       "outfitsEmpty": "No looks saved.",
-      "outfitsEmptyCta": "Ask the stylist",
+      "outfitsEmptyCta": "Ask Stinky",
       "libraryEmpty": "The book is empty.",
       "libraryEmptyCta": "See history",
       "browseWardrobe": "Browse the wardrobe",
@@ -503,7 +507,8 @@
         "2": "comfy shoes make the day feel shorter. Cat's honour.",
         "3": "a layer you can take off and neither cold nor heat will catch you out.",
         "4": "if it makes you feel good, wear it. Nobody notices the rest."
-      }
+      },
+      "quickAsk": "Ask for a look"
     },
     "moments": {
       "title": "Your day",
@@ -717,7 +722,7 @@
         "goesWithEmpty": "It hasn't been out with anything you logged yet. Mark a look as worn and it'll show up here.",
         "goesWithBasis": "From {count, plural, one {# look you marked as worn} other {# looks you marked as worn}}",
         "prefTitle": "What to do with it",
-        "prefHelp": "This only changes the order the Stylist offers it in. It never hides it.",
+        "prefHelp": "This only changes the order Stinky offers it in. It never hides it.",
         "prefMore": "Bring it out more",
         "prefNormal": "Normal",
         "prefRest": "Leave it alone",
@@ -728,9 +733,9 @@
         "prefFailed": "Couldn't save that",
         "rescue": "Rescue it",
         "rescueBusy": "Putting a look together…",
-        "rescueHelp": "I'll ask the Stylist for a look with this piece in it.",
+        "rescueHelp": "I'll ask Stinky for a look with this piece in it.",
         "rescueTitle": "A look with this piece",
-        "rescueByAi": "Put together by the Stylist",
+        "rescueByAi": "Put together by Stinky",
         "rescueByHeuristic": "Put together without AI, from what you have",
         "rescueOpen": "See the look",
         "rescueFailed": "Couldn't put a look together. Try again.",
@@ -948,12 +953,12 @@
     "selectMode": "Select"
   },
   "suggest": {
-    "title": "The Stylist",
+    "title": "Ask me for a look",
     "editorialSubtitle": "One look, guided by Stinky.",
     "editorialSuggestFrame": "Today's proposal",
     "editorialWeather": "Weather",
     "editorialOccasion": "Occasion",
-    "editorialNotes": "Stylist's note",
+    "editorialNotes": "Stinky's note",
     "subtitle": "Tell us what you're up to and we'll put something together",
     "occasionLabel": "Occasion",
     "occasionPlaceholder": "Choose an occasion",
@@ -1025,7 +1030,7 @@
     "getSuggestion": "Get Suggestion",
     "songLabel": "What are you listening to today?",
     "songPlaceholder": "e.g. Mitski — My Love Mine All Mine, or paste a Spotify link",
-    "songHelp": "Optional. The Stylist will use the song's mood as an extra layer of inspiration.",
+    "songHelp": "Optional. Stinky will use the song's mood as an extra layer of inspiration.",
     "inspiredBy": "Inspired by",
     "songSpotifyHint": "Music connected: leave it empty and we'll use how your current music sounds.",
     "thinkingTitle": "Stinky is mulling it over… prrr",
@@ -1045,7 +1050,8 @@
     "songSuggestions": "Suggested songs",
     "songSearching": "Searching songs…",
     "songSource": "Results from {source}",
-    "songNowPlaying": "What's playing now"
+    "songNowPlaying": "What's playing now",
+    "pastSuggestions": "Past ones"
   },
   "settings": {
     "title": "Settings",
@@ -1295,7 +1301,7 @@
     },
     "integrations": {
       "title": "Integrations",
-      "description": "Pinterest for inspiration and Spotify as the Stylist's musical mood.",
+      "description": "Pinterest for inspiration and Spotify as Stinky's musical mood.",
       "cta": "Manage integrations"
     },
     "security": {
@@ -1647,12 +1653,12 @@
     "outfitCount": "{count, plural, one {# outfit} other {# outfits}}"
   },
   "outfits": {
-    "title": "Outfits",
-    "subtitle": "Your looks, worn outfits, and AI suggestions",
+    "title": "Looks",
+    "subtitle": "The ones you save, the ones you wore and the ones Stinky suggests.",
     "viewToggle": "View toggle",
     "viewList": "List",
     "viewCalendar": "Calendar",
-    "newOutfit": "New Outfit",
+    "newOutfit": "New look",
     "chips": {
       "all": "All",
       "myLooks": "My Looks",
@@ -1666,7 +1672,7 @@
     "loadError": "Failed to load outfits",
     "empty": {
       "all": "No outfits yet. Create your first look in the Studio!",
-      "myLooks": "No saved looks yet. Create one with the Studio editor.",
+      "myLooks": "No saved looks yet. Make one with \"New look\".",
       "worn": "No worn outfits recorded.",
       "pairings": "No pairing outfits generated.",
       "replacements": "No replacement outfits.",
@@ -1724,7 +1730,7 @@
     },
     "generateDialog": {
       "title": "Generate looks with this piece",
-      "description": "The Stylist will build outfits that include this piece.",
+      "description": "Stinky will build outfits that include this piece.",
       "occasion": "Occasion",
       "generate": "Generate looks",
       "generating": "Generating...",
@@ -1829,7 +1835,7 @@
     "commentsPlaceholder": "Any thoughts on this outfit?",
     "back": "Back",
     "whatWoreInsteadTitle": "What did you wear instead?",
-    "whatWoreInsteadDesc": "Pick the pieces you actually wore. This helps the Stylist learn your taste.",
+    "whatWoreInsteadDesc": "Pick the pieces you actually wore. This helps Stinky learn your taste.",
     "searchWardrobe": "Search your wardrobe...",
     "itemsSelected": "{count, plural, one {# piece selected} other {# pieces selected}}",
     "loadingMore": "Loading more...",
@@ -2096,7 +2102,7 @@
     "loading": "Loading feed...",
     "loadError": "Could not load the family feed",
     "empty": "No outfits from the family yet",
-    "openStylist": "Open the Stylist",
+    "openStylist": "Ask for a look",
     "ratingsCount": "{count, plural, one {# rating} other {# ratings}}",
     "byUser": "by {name}",
     "subtitle": "Browse and rate your family members' outfits",
@@ -2235,7 +2241,7 @@
       "tagline": "Your scrobbles, translated into style.",
       "manage": "Manage Last.fm",
       "connectTitle": "Connect your Last.fm username",
-      "connectDescription": "Type your Last.fm username. We'll read your public scrobbles every 15 minutes for your history, your tops and the Stylist's music mood. No password needed.",
+      "connectDescription": "Type your Last.fm username. We'll read your public scrobbles every 15 minutes for your history, your tops and Stinky's music mood. No password needed.",
       "usernameLabel": "Last.fm username",
       "usernamePlaceholder": "your_username",
       "usernameHelp": "You can also paste your profile link (last.fm/user/…).",
@@ -2250,7 +2256,7 @@
       "lastSync": "Last synced: {when}",
       "neverSynced": "Importing your plays…",
       "useForMood": "Use Last.fm for mood",
-      "useForMoodHelp": "If you don't type a song when asking for an outfit, the Stylist takes inspiration from how your latest music sounds.",
+      "useForMoodHelp": "If you don't type a song when asking for an outfit, Stinky takes inspiration from how your latest music sounds.",
       "settingsFailed": "Couldn't save the setting.",
       "disconnect": "Disconnect",
       "disconnectSuccess": "Last.fm disconnected.",
@@ -2274,7 +2280,7 @@
         "bad_key": "There's a problem with the server's Last.fm configuration.",
         "unavailable": "The last Last.fm sync failed; we'll retry on our own."
       },
-      "gives": "Your history, your artists of the moment and the Stylist's mood.",
+      "gives": "Your history, your artists of the moment and Stinky's mood.",
       "availability": "Open to everyone: no seats, no waiting list, just your username.",
       "availabilityBadge": "For everyone",
       "recommended": "Start here",
@@ -2302,11 +2308,11 @@
     "spotify": {
       "eyebrow": "Musical mood",
       "title": "Spotify",
-      "description": "Use what you listen to as mood inspiration for the Stylist.",
+      "description": "Use what you listen to as mood inspiration for Stinky.",
       "tagline": "What's in your headphones, translated into style.",
       "manage": "Manage Spotify",
       "connectTitle": "Connect your Spotify account",
-      "connectDescription": "Miaurmario will read what's playing now, what you played recently and your top artists to give the Stylist a mood. It never plays or changes anything.",
+      "connectDescription": "Miaurmario will read what's playing now, what you played recently and your top artists to give Stinky a mood. It never plays or changes anything.",
       "connectButton": "Connect Spotify",
       "connectedToast": "Spotify connected.",
       "notConfigured": "The Spotify integration is not configured on this server yet.",
@@ -2316,11 +2322,11 @@
       "disconnect": "Disconnect",
       "disconnectSuccess": "Spotify disconnected.",
       "useForMood": "Use Spotify as mood",
-      "useForMoodHelp": "When you ask for an outfit without typing a song, the Stylist takes inspiration from what you're listening to.",
+      "useForMoodHelp": "When you ask for an outfit without typing a song, Stinky takes inspiration from what you're listening to.",
       "settingsFailed": "Could not save the setting.",
       "moodEyebrow": "Right now",
       "moodTitle": "Current mood",
-      "moodDescription": "What the Stylist would use as musical context if you ask for an outfit without typing a song.",
+      "moodDescription": "What Stinky would use as musical context if you ask for an outfit without typing a song.",
       "moodLoading": "Checking Spotify…",
       "moodError": "We couldn't reach Spotify right now.",
       "currentSource": "Source",
@@ -2377,7 +2383,7 @@
       "eyebrow": "Inspiration",
       "title": "Pinterest",
       "description": "Import inspiration boards from Pinterest.",
-      "tagline": "Your boards, turned into references for the Stylist.",
+      "tagline": "Your boards, turned into references for Stinky.",
       "manage": "Manage Pinterest",
       "connectTitle": "Connect your Pinterest account",
       "connectDescription": "Authorize Miaurmario to read your boards and pins. You can disconnect at any time.",
@@ -2408,7 +2414,7 @@
         "access_denied": "You cancelled the authorization on Pinterest.",
         "exchange_failed": "Pinterest rejected the authorization. Please try again in a few minutes."
       },
-      "gives": "Your boards become visual references for the Stylist.",
+      "gives": "Your boards become visual references for Stinky.",
       "availability": "Waiting for Pinterest to approve the app."
     },
     "disconnectMusic": {
@@ -2722,7 +2728,7 @@
     "explainer": {
       "title": "What is AI used for here?",
       "tagging": "Automatically tagging the clothes you upload (type, colour, fabric, season...).",
-      "suggest": "The Stylist: outfit ideas based on the weather, the occasion and your taste.",
+      "suggest": "Stinky: outfit ideas based on the weather, the occasion and your taste.",
       "pairings": "Pairings: ideas for what to wear with a specific piece.",
       "withoutAi": "Without AI you can still use the whole app manually.",
       "privacy": "Your key is stored encrypted, never shown again (only its last 4 characters) and only used for your own requests."
@@ -2743,7 +2749,7 @@
       "visionModel": "Vision model",
       "textModel": "Text model",
       "visionHint": "For tagging photos. Leave empty if your model can't see images.",
-      "textHint": "For the Stylist and pairings.",
+      "textHint": "For Stinky and pairings.",
       "optional": "Optional",
       "test": "Test connection",
       "save": "Save and activate",
@@ -2790,7 +2796,7 @@
         "ai_provider_blocked": "Check your AI provider URL"
       },
       "feature": {
-        "suggest": "The Stylist needs AI to suggest looks. Meanwhile you can build and plan outfits by hand.",
+        "suggest": "Stinky needs AI to suggest looks. Meanwhile you can build and plan outfits by hand.",
         "tagging": "Without AI your clothes are saved untagged and you can fill in the details yourself.",
         "pairings": "Automatic pairings need AI. You can build outfits by hand any time.",
         "chat": "Chatting with Stinky needs AI. Turn it on and I'll help with your looks, the weather and what you're missing.",
@@ -3738,12 +3744,12 @@
           "body": "I look out of the window and suggest looks for the weather and your plans, for several moments of the day: office, gym, dinner…"
         },
         "stylist": {
-          "title": "Stylist and chat",
-          "body": "Ask me for a look for an occasion (a wedding, an interview) or just talk to me: I have your wardrobe in front of me, and plenty of opinions."
+          "title": "Stinky, your stylist",
+          "body": "In the Stinky tab: ask me for a look for an occasion (a wedding, an interview), show me what you are wearing or just talk to me. I have your wardrobe in front of me and opinions to spare."
         },
         "inspo": {
-          "title": "Inspiration",
-          "body": "Follow your friends (by @handle only), connect your music from Spotify or Last.fm and bring in your Pinterest boards."
+          "title": "Friends and inspiration",
+          "body": "In Friends you follow your people (just by their @username). And in Stinky → Inspiration you connect your Spotify or Last.fm music and your Pinterest boards."
         },
         "install": {
           "title": "Install and turn on alerts",
@@ -3768,12 +3774,13 @@
       }
     },
     "tips": {
-      "wardrobe": "this is where your clothes live. Tap an item to edit it, or check your looks and history in the tabs. I'm keeping watch from the top of the wardrobe.",
+      "wardrobe": "this is where your clothes live: your garments and your looks. Tap a garment to edit or pair it. I keep watch from on top of the wardrobe.",
       "stylist": "tell me the occasion and the plan, and I'll build a look from what you own. Prrr.",
-      "inspo": "find your friends by their @handle and connect Spotify, Last.fm or Pinterest to fine-tune your style.",
-      "stinky": "ask me anything: what to wear today, what goes with what, or what you're missing. I'm awake — make the most of it.",
+      "inspo": "find your friends by their @username and see the looks they share.",
+      "stinky": "this is me: talk to me, ask me for a look for an occasion or show me what you're wearing. I'm awake, make the most of it.",
       "settings": "your city, alert times and integrations. I take whatever you change here into account.",
-      "dismiss": "Close tip"
+      "dismiss": "Close tip",
+      "friends": "find your friends by their @username and see the looks they share."
     },
     "firstSteps": {
       "emptyTitle": "Upload a few items",
@@ -4343,5 +4350,17 @@
     "requests": "{count, plural, one {One friend request} other {# friend requests}}",
     "wantsToBeFriends": "Wants to be your friend",
     "activity": "Your looks"
+  },
+  "inspiration": {
+    "title": "Inspiration",
+    "description": "Besides your wardrobe, Stinky looks at what you listen to and what you save.",
+    "music": {
+      "title": "Your music",
+      "body": "Spotify or Last.fm: the mood of what is playing goes into your looks."
+    },
+    "pins": {
+      "title": "Your pins",
+      "body": "Pinterest: the looks you save tell him what you like."
+    }
   }
 }

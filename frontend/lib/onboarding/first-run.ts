@@ -15,10 +15,12 @@ export const TOUR_KEY = 'tour';
 export const STYLE_QUIZ_KEY = 'style-quiz';
 
 /** Areas with a one-time tip, keyed by nav section key (nav-items.ts). Hoy has the tour instead. */
+// Keyed by dock section. The stored ids stay as they were (seen_tips on the server):
+// Amigos keeps the old "Inspiración" tip id, and the old "Estilista" tip is gone
+// because Pedir look is part of Stinky now.
 export const AREA_TIPS = {
   wardrobe: 'tip.wardrobe',
-  stylist: 'tip.stylist',
-  inspo: 'tip.inspo',
+  friends: 'tip.inspo',
   stinky: 'tip.stinky',
   settings: 'tip.settings',
 } as const;

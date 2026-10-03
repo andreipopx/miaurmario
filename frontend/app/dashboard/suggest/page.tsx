@@ -5,29 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useWeatherConditionLabel } from '@/lib/weather-condition';
-import {
-  Sparkles,
-  RefreshCw,
-  ThumbsUp,
-  ThumbsDown,
-  Cloud,
-  Sun,
-  CloudRain,
-  Loader2,
-  AlertCircle,
-  Thermometer,
-  Droplets,
-  ChevronDown,
-  MapPin,
-  Wind,
-  Cloudy,
-  CloudSun,
-  Snowflake,
-  CalendarDays,
-  CloudLightning,
-  Music,
-  LayoutGrid,
-} from 'lucide-react';
+import { AlertCircle, CalendarDays, ChevronDown, Cloud, CloudLightning, CloudRain, CloudSun, Cloudy, Droplets, LayoutGrid, Loader2, MapPin, Music, RefreshCw, Snowflake, Sparkles, Sun, Thermometer, ThumbsDown, ThumbsUp, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -528,7 +506,18 @@ export default function SuggestPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader title={t('title')} />
+      <PageHeader
+        title={t('title')}
+        action={
+          <Link
+            href="/dashboard/history"
+            className="pressable inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+            {t('pastSuggestions')}
+          </Link>
+        }
+      />
 
       {outfit ? (
         <OutfitResult

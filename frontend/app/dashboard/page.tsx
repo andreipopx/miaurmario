@@ -9,7 +9,6 @@ import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
 import { addDays, isSameDay, startOfWeek } from 'date-fns';
 import {
-  BarChart3,
   CalendarDays,
   Camera,
   Check,
@@ -77,8 +76,8 @@ const QUICK_ACTIONS: { key: string; href: string; icon: LucideIcon; color: PopCo
   // wardrobe empty.
   { key: 'quickUpload', href: '/dashboard/wardrobe?bulk=1', icon: Camera, color: 'amber' },
   { key: 'quickCreate', href: '/dashboard/outfits/new', icon: Shirt, color: 'pink' },
-  { key: 'quickPlan', href: '/dashboard/history', icon: CalendarDays, color: 'sky' },
-  { key: 'quickStats', href: '/dashboard/analytics', icon: BarChart3, color: 'mint' },
+  { key: 'quickAsk', href: '/dashboard/suggest', icon: Sparkles, color: 'sky' },
+  { key: 'quickPlan', href: '/dashboard/outfits?view=calendar', icon: CalendarDays, color: 'mint' },
 ];
 
 function QuickActions() {
@@ -412,12 +411,13 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 lg:space-y-8">
       <InstallHint />
-      <QuickActions />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
+        {/* Today's look leads (the reason to open the app); shortcuts come after it. */}
         <div className="space-y-5">
           <WeekStrip />
           {showMoments && <DayMoments />}
           {stage !== 'ready' && <FirstStepsCard count={total} />}
+          <QuickActions />
         </div>
         <div className="space-y-6 lg:space-y-8">
           {stage !== 'empty' && <WardrobeSection />}

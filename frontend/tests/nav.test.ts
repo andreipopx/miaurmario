@@ -12,8 +12,9 @@ function where(pathname: string) {
 }
 
 describe('information architecture', () => {
-  it('keeps the dock/sidebar at five areas', () => {
-    expect(MAIN_SECTIONS.map((s) => s.key)).toEqual(['today', 'wardrobe', 'stylist', 'inspo', 'stinky']);
+  it('keeps the dock/sidebar at four areas', () => {
+    // Hoy · Armario · Stinky (the stylist: chat, Pedir look, Qué llevo, Inspiración) · Amigos.
+    expect(MAIN_SECTIONS.map((s) => s.key)).toEqual(['today', 'wardrobe', 'stinky', 'friends']);
     expect(MAIN_SECTIONS.length).toBeLessThanOrEqual(5);
     // News is counted on the bell (Avisos), not on the dock as well.
     expect(MAIN_SECTIONS.some((s) => s.socialBadge)).toBe(false);
@@ -49,11 +50,17 @@ describe('information architecture', () => {
     expect(where('/dashboard/outfits/abc')).toBe('wardrobe/looks');
     expect(where('/dashboard/outfits/new')).toBe('wardrobe/looks');
     expect(where('/dashboard/learning')).toBe('wardrobe/learning');
-    expect(where('/dashboard/suggest')).toBe('stylist/-');
-    expect(where('/dashboard/friends/ana')).toBe('inspo/friends');
-    expect(where('/dashboard/family/feed')).toBe('inspo/family');
-    expect(where('/dashboard/music')).toBe('inspo/music');
-    expect(where('/dashboard/stinky')).toBe('stinky/-');
+    expect(where('/dashboard/analytics')).toBe('wardrobe/analytics');
+    expect(where('/dashboard/pairings')).toBe('wardrobe/pairings');
+    expect(where('/dashboard/suggest')).toBe('stinky/askLook');
+    expect(where('/dashboard/selfie')).toBe('stinky/selfie');
+    expect(where('/dashboard/inspiration')).toBe('stinky/inspiration');
+    expect(where('/dashboard/history')).toBe('stinky/history');
+    expect(where('/dashboard/friends/ana')).toBe('friends/friends');
+    expect(where('/dashboard/family/feed')).toBe('friends/family');
+    expect(where('/dashboard/music')).toBe('stinky/music');
+    expect(where('/dashboard/pins')).toBe('stinky/pins');
+    expect(where('/dashboard/stinky')).toBe('stinky/chat');
     expect(where('/dashboard/family')).toBe('settings/familySettings');
     expect(where('/dashboard/settings/integrations/spotify')).toBe('settings/integrations');
     expect(where('/dashboard/settings/ai')).toBe('settings/general');

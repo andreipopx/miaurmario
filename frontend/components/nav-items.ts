@@ -22,7 +22,7 @@ import {
 import { FEATURES } from '@/lib/features';
 
 /**
- * Information architecture. Five areas live in the mobile dock and the desktop
+ * Information architecture. Four areas live in the mobile dock and the desktop
  * sidebar; every other screen is a tab *inside* one of them (segmented control
  * on mobile, expanded group in the sidebar on desktop). Ajustes is reached from
  * the profile menu only. URLs never changed: this file only decides where each
@@ -49,44 +49,56 @@ export interface NavSection extends NavItem {
 
 export const TODAY: NavSection = { key: 'today', href: '/dashboard', icon: Home, tabs: [] };
 
-/** "Tu estilo": the wardrobe and everything built on top of it. */
+/**
+ * What you own: garments and looks. Everything else that used to live here moved
+ * to where it belongs — the AI tools to Stinky, the numbers to "Tu estilo" in the
+ * profile menu — but keeps its route, so links and deep links still land.
+ */
 export const WARDROBE: NavSection = {
   key: 'wardrobe',
   href: '/dashboard/wardrobe',
   icon: Shirt,
   tabs: [
     { key: 'garments', href: '/dashboard/wardrobe', icon: Shirt },
-    { key: 'selfie', href: '/dashboard/selfie', icon: Camera },
     { key: 'looks', href: '/dashboard/outfits', icon: LayoutGrid },
-    { key: 'pairings', href: '/dashboard/pairings', icon: Layers },
-    { key: 'history', href: '/dashboard/history', icon: CalendarDays },
-    { key: 'analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { key: 'learning', href: '/dashboard/learning', icon: Brain },
+    // Reached from a garment ("Combinar") and the Looks filter.
+    { key: 'pairings', href: '/dashboard/pairings', icon: Layers, hidden: true },
+    // "Tu estilo", in the profile menu.
+    { key: 'analytics', href: '/dashboard/analytics', icon: BarChart3, hidden: true },
+    { key: 'learning', href: '/dashboard/learning', icon: Brain, hidden: true },
   ],
 };
 
-export const STYLIST: NavSection = { key: 'stylist', href: '/dashboard/suggest', icon: Sparkles, tabs: [] };
-
-/** "Inspiración": people and things outside your wardrobe. */
-export const INSPO: NavSection = {
-  key: 'inspo',
-  href: '/dashboard/friends',
-  icon: Compass,
-  // News (requests, reactions) is counted on the bell, not on the dock as well.
-  tabs: [
-    { key: 'friends', href: '/dashboard/friends', icon: UserRound, socialBadge: true },
-    { key: 'family', href: '/dashboard/family/feed', icon: Users, hidden: !FEATURES.families },
-    { key: 'music', href: '/dashboard/music', icon: Music },
-    { key: 'pins', href: '/dashboard/pins', icon: Pin },
-  ],
-};
-
+/**
+ * Stinky is the stylist: one home for everything AI. The chat opens first, with
+ * "pídeme un look", "qué llevo" and his inspiration as its first actions.
+ */
 export const STINKY: NavSection = {
   key: 'stinky',
   shortKey: 'stinkyShort',
   href: '/dashboard/stinky',
   icon: MessageCircle,
-  tabs: [],
+  tabs: [
+    { key: 'chat', href: '/dashboard/stinky', icon: MessageCircle },
+    { key: 'askLook', href: '/dashboard/suggest', icon: Sparkles },
+    { key: 'selfie', href: '/dashboard/selfie', icon: Camera },
+    { key: 'inspiration', href: '/dashboard/inspiration', icon: Compass },
+    // Linked from "Pedir look" (past suggestions) and from Inspiración.
+    { key: 'history', href: '/dashboard/history', icon: CalendarDays, hidden: true },
+    { key: 'music', href: '/dashboard/music', icon: Music, hidden: true },
+    { key: 'pins', href: '/dashboard/pins', icon: Pin, hidden: true },
+  ],
+};
+
+/** Friends' looks and your friends (groups may come later). */
+export const FRIENDS: NavSection = {
+  key: 'friends',
+  href: '/dashboard/friends',
+  icon: Users,
+  tabs: [
+    { key: 'friends', href: '/dashboard/friends', icon: UserRound, socialBadge: true },
+    { key: 'family', href: '/dashboard/family/feed', icon: Users, hidden: !FEATURES.families },
+  ],
 };
 
 /**
@@ -109,7 +121,7 @@ export const SETTINGS: NavSection = {
 };
 
 /** The dock (mobile) and the sidebar (desktop) show exactly these, in this order. */
-export const MAIN_SECTIONS: readonly NavSection[] = [TODAY, WARDROBE, STYLIST, INSPO, STINKY];
+export const MAIN_SECTIONS: readonly NavSection[] = [TODAY, WARDROBE, STINKY, FRIENDS];
 
 export const ALL_SECTIONS: readonly NavSection[] = [...MAIN_SECTIONS, SETTINGS];
 
@@ -126,7 +138,7 @@ export interface ResolvedNav {
 
 /**
  * Which section/tab owns `pathname`. Longest href wins, so /dashboard/family/feed
- * belongs to Inspiración while /dashboard/family belongs to Ajustes, and detail
+ * belongs to Amigos while /dashboard/family belongs to Ajustes, and detail
  * pages (/dashboard/outfits/abc, /dashboard/friends/ana) light up their parent.
  */
 export function resolveNav(pathname: string | null | undefined): ResolvedNav | null {
@@ -157,7 +169,11 @@ export function isTabRoot(pathname: string, section: NavSection): boolean {
   return section.tabs.some((t) => t.href === pathname);
 }
 
-/** Top-level screens of the dock sections: no in-app back button there. */
+/**
+ * Top-level screens of the dock sections: no in-app back button there. Hidden
+ * tabs (Combinaciones, Música, Tu estilo…) are reached from inside a screen, so
+ * they get one.
+ */
 export const TOP_LEVEL_PATHS: ReadonlySet<string> = new Set(
-  MAIN_SECTIONS.flatMap((s) => [s.href, ...s.tabs.map((t) => t.href)])
+  MAIN_SECTIONS.flatMap((s) => [s.href, ...s.tabs.filter((t) => !t.hidden).map((t) => t.href)])
 );

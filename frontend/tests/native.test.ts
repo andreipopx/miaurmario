@@ -11,12 +11,16 @@ describe('native navigation', () => {
     expect(needsAppBack('/dashboard/outfits/new')).toBe(false);
     // Sub-tabs of a dock section are top level too (reached from the section's tab strip).
     expect(needsAppBack('/dashboard/outfits')).toBe(false);
-    expect(needsAppBack('/dashboard/music')).toBe(false);
-    expect(needsAppBack('/dashboard/family/feed')).toBe(false);
+    expect(needsAppBack('/dashboard/selfie')).toBe(false);
+    expect(needsAppBack('/dashboard/inspiration')).toBe(false);
     // Ajustes and its pages come from the profile menu: they keep "back".
     expect(needsAppBack('/dashboard/settings')).toBe(true);
     expect(needsAppBack('/dashboard/notifications')).toBe(true);
     expect(needsAppBack('/dashboard/family')).toBe(true);
+    // Reached from inside another screen: they get a back button.
+    expect(needsAppBack('/dashboard/music')).toBe(true);
+    expect(needsAppBack('/dashboard/history')).toBe(true);
+    expect(needsAppBack('/dashboard/analytics')).toBe(true);
     expect(needsAppBack('/dashboard/outfits/abc')).toBe(true);
     expect(needsAppBack('/dashboard/friends/stinky')).toBe(true);
     expect(needsAppBack('/dashboard/settings/integrations/spotify')).toBe(true);
@@ -24,7 +28,9 @@ describe('native navigation', () => {
   });
 
   it('falls back to the parent route', () => {
-    expect(parentPath('/dashboard/music')).toBe('/dashboard');
+    expect(parentPath('/dashboard/music')).toBe('/dashboard/inspiration');
+    expect(parentPath('/dashboard/history')).toBe('/dashboard/suggest');
+    expect(parentPath('/dashboard/analytics')).toBe('/dashboard');
     expect(parentPath('/dashboard/outfits/abc')).toBe('/dashboard/outfits');
     expect(parentPath('/dashboard/settings/integrations/spotify')).toBe('/dashboard/settings/integrations');
     expect(parentPath('/dashboard/family/feed')).toBe('/dashboard/friends');

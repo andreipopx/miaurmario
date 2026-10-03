@@ -19,7 +19,12 @@ export function SectionTabs() {
   const t = useTranslations('nav');
   const resolved = resolveNav(pathname);
   const section = resolved?.section;
-  const show = !!section && section.tabs.length > 1 && isTabRoot(pathname, section);
+  // The chat draws its own fixed header and opens with links to its sibling tabs.
+  const show =
+    !!section &&
+    section.tabs.filter((tab) => !tab.hidden).length > 1 &&
+    isTabRoot(pathname, section) &&
+    pathname !== '/dashboard/stinky';
   const { data: summary } = useSocialSummary(show && !!section?.tabs.some((i) => i.socialBadge));
   const stripRef = useRef<HTMLElement>(null);
   const activeRef = useRef<HTMLAnchorElement>(null);

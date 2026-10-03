@@ -161,8 +161,8 @@ describe('Familia', () => {
     for (const on of [false, true]) {
       flags.families = on
       vi.resetModules()
-      const { INSPO, SETTINGS } = await import('@/components/nav-items')
-      const visible = [...INSPO.tabs, ...SETTINGS.tabs].filter((t) => !t.hidden).map((t) => t.key)
+      const { FRIENDS, SETTINGS } = await import('@/components/nav-items')
+      const visible = [...FRIENDS.tabs, ...SETTINGS.tabs].filter((t) => !t.hidden).map((t) => t.key)
       expect(visible.includes('family')).toBe(on)
       expect(visible.includes('familySettings')).toBe(on)
     }

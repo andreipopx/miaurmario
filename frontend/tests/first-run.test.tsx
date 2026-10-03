@@ -128,8 +128,10 @@ describe('first-run rules', () => {
     expect(tipKeyForPath('/dashboard')).toBeNull()
     expect(tipKeyForPath('/dashboard/wardrobe')).toBe('tip.wardrobe')
     expect(tipKeyForPath('/dashboard/outfits/abc')).toBe('tip.wardrobe')
-    expect(tipKeyForPath('/dashboard/suggest')).toBe('tip.stylist')
-    expect(tipKeyForPath('/dashboard/music')).toBe('tip.inspo')
+    // Pedir look, Qué llevo and Inspiración (music, pins) are Stinky's now.
+    expect(tipKeyForPath('/dashboard/suggest')).toBe('tip.stinky')
+    expect(tipKeyForPath('/dashboard/music')).toBe('tip.stinky')
+    expect(tipKeyForPath('/dashboard/friends')).toBe('tip.inspo')
     expect(tipKeyForPath('/dashboard/family/feed')).toBe('tip.inspo')
     expect(tipKeyForPath('/dashboard/stinky')).toBe('tip.stinky')
     expect(tipKeyForPath('/dashboard/family')).toBe('tip.settings')
@@ -149,7 +151,7 @@ describe('first-run rules', () => {
 
   it('"Saltar todo" covers the tour, the style quiz and every area tip', () => {
     expect(skipAllKeys()).toEqual([TOUR_KEY, STYLE_QUIZ_KEY, ...ALL_TIP_KEYS])
-    expect(ALL_TIP_KEYS).toHaveLength(5)
+    expect(ALL_TIP_KEYS).toHaveLength(4)
   })
 
   it('merges server and device state and finds what still needs syncing', () => {

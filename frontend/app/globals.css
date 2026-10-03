@@ -333,13 +333,15 @@ canvas,
    components layer so an element's own transition-* utilities still win. */
 @layer components {
   .pressable {
-    transition-property: transform, filter, background-color, color, box-shadow, opacity;
+    transition-property: transform, background-color, color, box-shadow, opacity;
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
   }
+  /* Scale and opacity only: both run on the compositor. A brightness filter over a
+     photo tile re-rasterised it on every press. */
   .pressable:active {
     transform: scale(0.97);
-    filter: brightness(0.95);
+    opacity: 0.92;
   }
   @media (prefers-reduced-motion: reduce) {
     .pressable:active {

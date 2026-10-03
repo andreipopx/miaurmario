@@ -58,7 +58,8 @@
     "greetingAnon": "¡Hola!",
     "loadingWardrobe": "Cargando tu armario…",
     "stinkySays": "Stinky:",
-    "undo": "Deshacer"
+    "undo": "Deshacer",
+    "done": "Listo"
   },
   "errors": {
     "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -942,7 +943,8 @@
       "iosHint": "En iPhone y iPad no existe el menú de compartir hacia apps web: pega el enlace o elige la foto desde aquí."
     },
     "filtersAndSort": "Filtros y orden",
-    "clearFiltersAndSort": "Quitar filtros y orden"
+    "clearFiltersAndSort": "Quitar filtros y orden",
+    "selectMode": "Seleccionar"
   },
   "suggest": {
     "title": "El Estilista",

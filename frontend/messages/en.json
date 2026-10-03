@@ -58,7 +58,8 @@
     "greetingAnon": "Hi!",
     "loadingWardrobe": "Loading your wardrobe…",
     "stinkySays": "Stinky:",
-    "undo": "Undo"
+    "undo": "Undo",
+    "done": "Done"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -942,7 +943,8 @@
       "iosHint": "iPhone and iPad cannot share into web apps: paste the link or pick the photo here instead."
     },
     "filtersAndSort": "Filters and sorting",
-    "clearFiltersAndSort": "Clear filters and sorting"
+    "clearFiltersAndSort": "Clear filters and sorting",
+    "selectMode": "Select"
   },
   "suggest": {
     "title": "The Stylist",

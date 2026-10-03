@@ -280,7 +280,7 @@ export function QuickReview({
                 </div>
 
                 {gained > 0 && (
-                  <p className="flex items-center gap-1.5 px-2 pb-2 text-[12px] font-semibold text-signature">
+                  <p className="flex items-center gap-1.5 px-2 pb-2 text-[12px] font-semibold text-foreground">
                     <Layers className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
                     <span className="min-w-0 truncate">{t('hasBack')}</span>
                   </p>

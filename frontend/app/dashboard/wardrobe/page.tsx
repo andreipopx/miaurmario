@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useState, useEffect } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -33,6 +33,7 @@ import { swatchHex } from '@/lib/colors';
 import { garmentFrameStyle } from '@/lib/garment-framing';
 import { toast } from 'sonner';
 import { cn, getDaysSinceDateInTimezone } from '@/lib/utils';
+import { haptic } from '@/lib/native/haptics';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useTranslations } from 'next-intl';
 import { useColorLabel } from '@/lib/tag-labels';
@@ -56,10 +57,15 @@ const SORT_OPTIONS = [
   { labelKey: 'nameDesc', value: 'name', order: 'desc' as const },
 ] as const;
 
+/** Press-and-hold time that starts selection mode on a tile. */
+const LONG_PRESS_MS = 450;
+
 const ItemCard = memo(function ItemCard({
   item,
   selected,
+  selecting,
   onSelect,
+  onLongPress,
   onRetry,
   onCancelAnalysis,
   onOpen,
@@ -67,13 +73,47 @@ const ItemCard = memo(function ItemCard({
 }: {
   item: Item;
   selected: boolean;
+  /** Selection mode: a tap ticks the garment instead of opening it. */
+  selecting: boolean;
   onSelect: (id: string, checked: boolean) => void;
+  /** Press and hold: starts selecting, with this garment ticked. */
+  onLongPress: (id: string) => void;
   onRetry?: (id: string) => void;
   onCancelAnalysis?: (id: string) => void;
   onOpen: (id: string) => void;
   userTimezone: string;
 }) {
-  const onClick = () => onOpen(item.id);
+  // Press and hold a tile to start selecting (as in Photos); a tap then ticks garments.
+  const holdTimer = useRef<number | undefined>(undefined);
+  const held = useRef(false);
+  const holdStart = useRef<{ x: number; y: number } | null>(null);
+  const cancelHold = () => {
+    window.clearTimeout(holdTimer.current);
+    holdStart.current = null;
+  };
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' || selecting) return;
+    held.current = false;
+    holdStart.current = { x: e.clientX, y: e.clientY };
+    holdTimer.current = window.setTimeout(() => {
+      held.current = true;
+      haptic(12);
+      onLongPress(item.id);
+    }, LONG_PRESS_MS);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const start = holdStart.current;
+    if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) cancelHold();
+  };
+  useEffect(() => () => window.clearTimeout(holdTimer.current), []);
+  const onClick = () => {
+    if (held.current) {
+      held.current = false;
+      return;
+    }
+    if (selecting) onSelect(item.id, !selected);
+    else onOpen(item.id);
+  };
   const t = useTranslations('wardrobe');
   const tCommon = useTranslations('common');
   const typeLabel = useClothingTypeLabel();
@@ -102,6 +142,15 @@ const ItemCard = memo(function ItemCard({
         <button
           type="button"
           onClick={onClick}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={cancelHold}
+          onPointerCancel={cancelHold}
+          onContextMenu={(e) => {
+            // The long press is ours: no "open image in new tab" menu over it.
+            if (!selecting) e.preventDefault();
+          }}
+          aria-pressed={selecting ? selected : undefined}
           // The line under the tile — "hace 3 días", "nunca puesta" — is the reason
           // half the grid gets read at all, and it used to be `aria-hidden` with no
           // replacement, so a screen reader heard a wardrobe of bare names.
@@ -158,11 +207,13 @@ const ItemCard = memo(function ItemCard({
             <span className="sr-only">{t('favorite')}</span>
           </span>
         )}
-        {/* Selection checkbox — visible on hover/focus or when selected */}
+        {/* Selection checkbox: while selecting (or ticked); on a computer also on hover/focus */}
         <div
           className={cn(
             'absolute bottom-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 transition-opacity',
-            selected ? 'opacity-100' : 'opacity-0 focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
+            selected || selecting
+              ? 'opacity-100'
+              : 'pointer-events-none opacity-0 focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100'
           )}
         >
           <Checkbox
@@ -292,6 +343,7 @@ export default function WardrobePage() {
   const [addTab, setAddTab] = useState<'single' | 'link' | 'bulk'>('single');
   const [bulkMode, setBulkMode] = useState<'batch' | 'untagged'>('batch');
   const [sharedIntake, setSharedIntake] = useState<AddItemInitial | null>(null);
+  const [selecting, setSelecting] = useState(false);
   const [selection, setSelection] = useState<BulkSelection>({
     mode: 'none',
     selectedIds: new Set(),
@@ -477,7 +529,16 @@ export default function WardrobePage() {
 
   const handleClearSelection = () => {
     setSelection({ mode: 'none', selectedIds: new Set(), excludedIds: new Set() });
+    setSelecting(false);
   };
+
+  const startSelectingWith = useCallback(
+    (id: string) => {
+      setSelecting(true);
+      handleSelect(id, true);
+    },
+    [handleSelect]
+  );
 
   // Build bulk operation params from selection state
   const getBulkParams = (): BulkOperationParams => {
@@ -546,6 +607,15 @@ export default function WardrobePage() {
         description={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>{t('itemCount', { count: total })}</span>
+            {total > 0 && (
+              <button
+                type="button"
+                onClick={() => (selecting ? handleClearSelection() : setSelecting(true))}
+                className="hit-44 relative font-bold text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                {selecting ? tCommon('done') : t('selectMode')}
+              </button>
+            )}
             {processingCount > 0 && (
               <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -807,6 +877,8 @@ export default function WardrobePage() {
                 item={item}
                 selected={isSelected}
                 onSelect={handleSelect}
+                selecting={selecting || selection.mode !== 'none'}
+                onLongPress={startSelectingWith}
                 onRetry={handleRetry}
                 onCancelAnalysis={handleCancelAnalysis}
                 onOpen={handleOpen}

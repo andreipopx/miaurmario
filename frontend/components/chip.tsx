@@ -38,13 +38,14 @@ export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
         type="button"
         aria-pressed={active}
         className={cn(
-          'inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm transition-[background-color,color,transform,filter] duration-150 active:scale-[0.97] active:brightness-95',
+          // One weight in every state, so ticking a chip never nudges the row sideways.
+          'inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-[background-color,color,transform] duration-150 active:scale-[0.97]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50',
           active
             ? popActive
-              ? cn(POP_BG[dot], 'font-bold text-pop-foreground')
-              : 'bg-primary font-semibold text-primary-foreground'
-            : 'border-[1.5px] border-border bg-background font-medium text-foreground hover:bg-accent',
+              ? cn(POP_BG[dot], 'text-pop-foreground')
+              : 'bg-primary text-primary-foreground'
+            : 'border-[1.5px] border-border bg-background text-foreground hover:bg-accent',
           className
         )}
         {...props}

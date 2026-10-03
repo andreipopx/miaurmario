@@ -5,19 +5,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.config import get_settings
-from app.services.notification_providers import (
-    build_family_invite_email,
-    build_notification_email,
-)
+from app.services.notification_providers import build_family_invite_email
 from app.utils import email as email_module
 from app.utils.email_templates import (
     STINKY_EMAIL_IMAGE_PATH,
     normalize_locale,
     render_family_invite_email,
     render_magic_link_email,
-    render_notification_email,
     render_outfit_email,
-    render_test_email,
 )
 
 LINK = "https://app.example.test/auth/callback?token=abc_DEF-123&x=1"
@@ -31,9 +26,6 @@ def _all_renders():
         render_family_invite_email(
             inviter_name="Ana", family_name="Casa", invite_url=LINK, origin=ORIGIN
         ),
-        render_notification_email(
-            subject="S", heading="H", body="B", cta_text="Go", cta_url=LINK, origin=ORIGIN
-        ),
         render_outfit_email(
             occasion="casual",
             reasoning="Hace sol",
@@ -45,7 +37,6 @@ def _all_renders():
             cta_url=LINK,
             origin=ORIGIN,
         ),
-        render_test_email(origin=ORIGIN),
     ]
 
 
@@ -106,22 +97,6 @@ def test_invite_escapes_user_supplied_names():
     assert "https://app.example.test/invite?token=tok123" in msg.html_body
     assert "https://app.example.test/invite?token=tok123" in msg.text_body
     assert "wardrowbe" not in msg.subject.lower()
-
-
-def test_notification_email_builder_keeps_signature():
-    msg = build_notification_email(
-        to="x@example.com",
-        subject="Colada",
-        heading="Hora de hacer la colada",
-        body="3 prendas",
-        cta_text="Ver",
-        cta_url="https://app.example.test/dashboard/wardrobe",
-        app_url="https://app.example.test",
-    )
-    assert msg.subject == "Colada"
-    assert "https://app.example.test/dashboard/wardrobe" in msg.html_body
-    assert "Gestionar notificaciones" in msg.html_body
-    assert msg.text_body
 
 
 async def test_send_magic_link_email_posts_both_parts(monkeypatch):

@@ -5,8 +5,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, ValidationError
-from sqlalchemy import and_, delete, select
+from pydantic import ValidationError
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -17,32 +17,23 @@ from app.models.notification import (
     TIMED_EVENTS,
     NativePushToken,
     Notification,
-    NotificationSettings,
     PushSubscription,
 )
 from app.models.user import User
 from app.schemas.notification import (
-    EmailConfig,
     EventToggles,
-    ExpoPushConfig,
-    MattermostConfig,
     MessageResponse,
     NativePushRegisterRequest,
     NativePushUnregisterRequest,
     NotificationPreferencesResponse,
     NotificationPreferencesUpdate,
     NotificationResponse,
-    NotificationSettingsCreate,
-    NotificationSettingsResponse,
-    NotificationSettingsUpdate,
-    NtfyConfig,
     PushSubscribeRequest,
     PushTestResponse,
     PushUnsubscribeRequest,
     ScheduleCreate,
     ScheduleResponse,
     ScheduleUpdate,
-    TestNotificationResponse,
     UnsubscribeRequest,
     UnsubscribeResponse,
 )
@@ -69,196 +60,6 @@ router = APIRouter()
 def _parse_local_time(time_str: str) -> time:
     hours, minutes = map(int, time_str.split(":"))
     return time(hours, minutes)
-
-
-@router.get("/defaults/ntfy")
-async def get_ntfy_defaults(
-    current_user: User = Depends(get_current_user),
-):
-    settings = get_settings()
-    has_token = bool(settings.ntfy_token)
-    return {
-        "server": settings.ntfy_server or "https://ntfy.sh",
-        "has_token": has_token,
-    }
-
-
-# ============= Notification Settings =============
-
-
-@router.get("/settings", response_model=list[NotificationSettingsResponse])
-async def list_notification_settings(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    service = NotificationService(db)
-    settings = await service.get_user_settings(current_user.id)
-    return settings
-
-
-@router.post("/settings", response_model=NotificationSettingsResponse, status_code=201)
-async def create_notification_setting(
-    data: NotificationSettingsCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    # Validate channel-specific config
-    try:
-        if data.channel == "ntfy":
-            NtfyConfig(**data.config)
-        elif data.channel == "mattermost":
-            MattermostConfig(**data.config)
-        elif data.channel == "email":
-            EmailConfig(**data.config)
-        elif data.channel == "expo_push":
-            from app.schemas.notification import ExpoPushConfig
-
-            ExpoPushConfig(**data.config)
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e.errors()[0]["msg"])) from None
-
-    service = NotificationService(db)
-    try:
-        setting = await service.create_setting(
-            user_id=current_user.id,
-            channel=data.channel,
-            enabled=data.enabled,
-            priority=data.priority,
-            config=data.config,
-        )
-        await db.commit()
-        return setting
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from None
-
-
-@router.get("/settings/{setting_id}", response_model=NotificationSettingsResponse)
-async def get_notification_setting(
-    setting_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    service = NotificationService(db)
-    setting = await service.get_setting_by_id(setting_id, current_user.id)
-    if not setting:
-        raise HTTPException(status_code=404, detail="Setting not found")
-    return setting
-
-
-@router.patch("/settings/{setting_id}", response_model=NotificationSettingsResponse)
-async def update_notification_setting(
-    setting_id: UUID,
-    data: NotificationSettingsUpdate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    service = NotificationService(db)
-
-    # If config is being updated, validate it against the channel type
-    if data.config is not None:
-        existing = await service.get_setting_by_id(setting_id, current_user.id)
-        if not existing:
-            raise HTTPException(status_code=404, detail="Setting not found")
-
-        # Validate channel-specific config
-        try:
-            if existing.channel == "ntfy":
-                NtfyConfig(**data.config)
-            elif existing.channel == "mattermost":
-                MattermostConfig(**data.config)
-            elif existing.channel == "email":
-                EmailConfig(**data.config)
-            elif existing.channel == "expo_push":
-                ExpoPushConfig(**data.config)
-        except ValidationError as e:
-            raise HTTPException(status_code=400, detail=str(e.errors()[0]["msg"])) from None
-
-    setting = await service.update_setting(
-        setting_id=setting_id,
-        user_id=current_user.id,
-        enabled=data.enabled,
-        priority=data.priority,
-        config=data.config,
-    )
-    if not setting:
-        raise HTTPException(status_code=404, detail="Setting not found")
-    await db.commit()
-    return setting
-
-
-@router.delete("/settings/{setting_id}", response_model=MessageResponse)
-async def delete_notification_setting(
-    setting_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    service = NotificationService(db)
-    success = await service.delete_setting(setting_id, current_user.id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Setting not found")
-    await db.commit()
-    return MessageResponse(message="Notification setting deleted")
-
-
-@router.post("/settings/{setting_id}/test", response_model=TestNotificationResponse)
-async def test_notification_setting(
-    setting_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    await rate_limit_by_user(current_user.id, "notification_test", 5, 600)
-    service = NotificationService(db)
-    success, message = await service.test_setting(setting_id, current_user.id)
-    if not success:
-        raise HTTPException(status_code=400, detail=message)
-    return TestNotificationResponse(success=True, message=message)
-
-
-# ============= Push Token Registration =============
-
-
-class PushTokenRequest(BaseModel):
-    push_token: str
-
-
-@router.post("/push-token", response_model=NotificationSettingsResponse)
-async def register_push_token(
-    data: PushTokenRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    try:
-        ExpoPushConfig(push_token=data.push_token)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid push token format") from None
-
-    # Check if expo_push channel already exists
-    existing = await db.execute(
-        select(NotificationSettings).where(
-            and_(
-                NotificationSettings.user_id == current_user.id,
-                NotificationSettings.channel == "expo_push",
-            )
-        )
-    )
-    setting = existing.scalar_one_or_none()
-
-    if setting:
-        setting.config = {"push_token": data.push_token}
-        setting.enabled = True
-    else:
-        setting = NotificationSettings(
-            user_id=current_user.id,
-            channel="expo_push",
-            enabled=True,
-            priority=0,  # Highest priority - push notifications preferred
-            config={"push_token": data.push_token},
-        )
-        db.add(setting)
-
-    await db.commit()
-    await db.refresh(setting)
-    return setting
 
 
 # ============= Schedules =============

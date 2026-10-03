@@ -128,12 +128,7 @@ class Settings(BaseSettings):
     # one small batched LLM call per day (counts towards their AI usage).
     music_mood_ai_enabled: bool = Field(default=True)
 
-    # Notifications - default ntfy channel (used when user has none configured)
-    ntfy_server: str | None = None
-    ntfy_topic: str | None = None
-    ntfy_token: str | None = None
-    # Legacy/other providers
-    mattermost_webhook_url: str | None = None
+    # SMTP transport for outgoing email when RESEND_API_KEY isn't set
     smtp_host: str | None = None
     smtp_port: int = 587
     smtp_user: str | None = None

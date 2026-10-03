@@ -63,9 +63,6 @@ services:
       AI_INTERNAL_ENABLED: ${AI_INTERNAL_ENABLED:-true}
       AI_VISION_ENABLED: ${AI_VISION_ENABLED:-}
       AI_TEXT_ENABLED: ${AI_TEXT_ENABLED:-}
-      NTFY_SERVER: ${NTFY_SERVER:-}
-      NTFY_TOKEN: ${NTFY_TOKEN:-}
-      MATTERMOST_WEBHOOK_URL: ${MATTERMOST_WEBHOOK_URL:-}
     volumes:
       - wardrobe_data:/data/wardrobe
     ports:

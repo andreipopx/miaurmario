@@ -148,22 +148,6 @@ spec:
                 configMapKeyRef:
                   name: wardrobe-config
                   key: APP_URL
-            - name: NTFY_SERVER
-              valueFrom:
-                configMapKeyRef:
-                  name: wardrobe-config
-                  key: NTFY_SERVER
-            - name: NTFY_TOPIC
-              valueFrom:
-                configMapKeyRef:
-                  name: wardrobe-config
-                  key: NTFY_TOPIC
-            - name: NTFY_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: wardrobe-notifications
-                  key: ntfy-token
-                  optional: true
             - name: SMTP_HOST
               valueFrom:
                 configMapKeyRef:

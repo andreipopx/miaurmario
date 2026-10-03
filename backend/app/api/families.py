@@ -24,7 +24,6 @@ from app.schemas.family import (
     PendingInvite,
     UpdateMemberRoleRequest,
 )
-from app.schemas.notification import EmailConfig
 from app.services.avatar_service import avatar_thumb_url
 from app.services.family_service import FamilyService
 from app.services.notification_providers import EmailProvider, build_family_invite_email
@@ -319,7 +318,7 @@ async def invite_member(
     await db.commit()
 
     app_url = os.getenv("APP_URL", "http://localhost:3000")
-    provider = EmailProvider(EmailConfig(address=invite.email))
+    provider = EmailProvider()
     if provider.is_configured():
         email = build_family_invite_email(
             to=invite.email,

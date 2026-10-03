@@ -11,8 +11,6 @@ both message files and in :data:`OCCASION_ES`.
 
 from __future__ import annotations
 
-import unicodedata
-
 VALID_OCCASIONS = {
     "casual",
     "office",
@@ -71,8 +69,3 @@ def occasion_label_es(occasion: str | None) -> str:
         return OCCASION_ES["casual"]
     slug = occasion.strip().lower()
     return OCCASION_ES.get(slug, slug.replace("_", " ").replace("-", " "))
-
-
-def ascii_fold(text: str) -> str:
-    """Drop accents so a string is safe in an HTTP header (ntfy titles)."""
-    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")

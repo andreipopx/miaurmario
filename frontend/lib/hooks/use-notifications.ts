@@ -11,17 +11,6 @@ function useSetTokenIfAvailable() {
   }
 }
 
-export interface NotificationSettings {
-  id: string;
-  user_id: string;
-  channel: 'ntfy' | 'mattermost' | 'email';
-  enabled: boolean;
-  priority: number;
-  config: Record<string, string>;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Schedule {
   id: string;
   user_id: string;
@@ -45,94 +34,6 @@ export interface NotificationHistory {
   delivered_at?: string;
   error_message?: string;
   created_at: string;
-}
-
-export function useNotificationSettings() {
-  const { status } = useSession();
-  useSetTokenIfAvailable();
-
-  return useQuery({
-    queryKey: ['notification-settings'],
-    queryFn: () => api.get<NotificationSettings[]>('/notifications/settings'),
-    enabled: status !== 'loading',
-  });
-}
-
-export function useCreateNotificationSetting() {
-  const queryClient = useQueryClient();
-  const { data: session } = useSession();
-
-  return useMutation({
-    mutationFn: async (data: {
-      channel: 'ntfy' | 'mattermost' | 'email';
-      enabled: boolean;
-      priority: number;
-      config: Record<string, string>;
-    }) => {
-      if (session?.accessToken) {
-        setAccessToken(session.accessToken as string);
-      }
-      return api.post<NotificationSettings>('/notifications/settings', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notification-settings'] });
-    },
-  });
-}
-
-export function useUpdateNotificationSetting() {
-  const queryClient = useQueryClient();
-  const { data: session } = useSession();
-
-  return useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Partial<{ enabled: boolean; priority: number; config: Record<string, string> }>;
-    }) => {
-      if (session?.accessToken) {
-        setAccessToken(session.accessToken as string);
-      }
-      return api.patch<NotificationSettings>(`/notifications/settings/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notification-settings'] });
-    },
-  });
-}
-
-export function useDeleteNotificationSetting() {
-  const queryClient = useQueryClient();
-  const { data: session } = useSession();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (session?.accessToken) {
-        setAccessToken(session.accessToken as string);
-      }
-      return api.delete(`/notifications/settings/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notification-settings'] });
-    },
-  });
-}
-
-export function useTestNotificationSetting() {
-  const { data: session } = useSession();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (session?.accessToken) {
-        setAccessToken(session.accessToken as string);
-      }
-      return api.post<{ success: boolean; message: string }>(
-        `/notifications/settings/${id}/test`
-      );
-    },
-  });
 }
 
 export function useSchedules() {

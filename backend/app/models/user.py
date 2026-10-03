@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from app.models.family import Family
     from app.models.item import ClothingItem
     from app.models.learning import UserLearningProfile
-    from app.models.notification import NotificationSettings
     from app.models.outfit import Outfit
     from app.models.preference import UserPreference
     from app.models.schedule import Schedule
@@ -92,9 +91,6 @@ class User(Base):
     )
     preferences: Mapped[Optional["UserPreference"]] = relationship(
         "UserPreference", back_populates="user", uselist=False, cascade="all, delete-orphan"
-    )
-    notification_settings: Mapped[list["NotificationSettings"]] = relationship(
-        "NotificationSettings", back_populates="user", cascade="all, delete-orphan"
     )
     schedules: Mapped[list["Schedule"]] = relationship(
         "Schedule", back_populates="user", cascade="all, delete-orphan"

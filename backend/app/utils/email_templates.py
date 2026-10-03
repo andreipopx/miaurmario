@@ -363,7 +363,7 @@ def render_family_invite_email(
 
 
 # --------------------------------------------------------------------------- #
-# Generic notification (wash reminders, etc.) and outfit of the day
+# Outfit of the day
 # --------------------------------------------------------------------------- #
 
 
@@ -387,32 +387,6 @@ def _text_unsubscribe(locale: str, unsubscribe_url: str | None) -> str:
     if not unsubscribe_url:
         return ""
     return f"{_CHROME[normalize_locale(locale)]['unsubscribe']}: {unsubscribe_url}"
-
-
-def render_notification_email(
-    *,
-    subject: str,
-    heading: str,
-    body: str,
-    cta_text: str,
-    cta_url: str,
-    locale: str | None = None,
-    origin: str | None = None,
-) -> RenderedEmail:
-    loc = normalize_locale(locale)
-    html = _layout(
-        locale=loc,
-        title=subject,
-        preheader=body[:120],
-        heading=heading,
-        body_html=_p(escape(body)),
-        cta_label=cta_text,
-        cta_url=cta_url,
-        footer_links_html=_manage_link(loc, origin),
-        origin=origin,
-    )
-    text = _text(heading, body, f"{cta_text}: {cta_url}", _text_footer(loc, origin))
-    return RenderedEmail(subject=subject, html=html, text=text)
 
 
 _OUTFIT = {
@@ -634,41 +608,6 @@ def render_friend_accepted_email(
         locale=locale,
         origin=origin,
         unsubscribe_url=unsubscribe_url,
-    )
-
-
-_TEST = {
-    "es": {
-        "subject": "Miaurmario: correo de prueba",
-        "heading": "¡Funciona!",
-        "body": "Si lees esto, las notificaciones por email de Miaurmario están bien "
-        "configuradas. Stinky lo aprueba con un ronroneo.",
-    },
-    "en": {
-        "subject": "Miaurmario: test email",
-        "heading": "It works!",
-        "body": "If you can read this, Miaurmario email notifications are set up correctly. "
-        "Stinky approves with a purr.",
-    },
-}
-
-
-def render_test_email(*, locale: str | None = None, origin: str | None = None) -> RenderedEmail:
-    loc = normalize_locale(locale)
-    c = _TEST[loc]
-    html = _layout(
-        locale=loc,
-        title=c["subject"],
-        preheader=c["body"][:120],
-        heading=c["heading"],
-        body_html=_p(escape(c["body"])),
-        footer_links_html=_manage_link(loc, origin),
-        origin=origin,
-    )
-    return RenderedEmail(
-        subject=c["subject"],
-        html=html,
-        text=_text(c["heading"], c["body"], _text_footer(loc, origin)),
     )
 
 

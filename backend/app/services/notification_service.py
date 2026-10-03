@@ -8,31 +8,19 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.notification import Notification, NotificationSettings, NotificationStatus
+from app.models.notification import Notification, NotificationStatus
 from app.models.outfit import Outfit, OutfitItem
 from app.models.schedule import Schedule
 from app.models.user import User
-from app.schemas.notification import EmailConfig, ExpoPushConfig, MattermostConfig, NtfyConfig
 from app.services.event_notifications import (
     CHANNEL_ACCOUNT_EMAIL,
     CHANNEL_WEB_PUSH,
     default_channels_for,
     send_default_channels,
 )
-from app.services.notification_providers import (
-    EmailMessage,
-    EmailProvider,
-    ExpoPushMessage,
-    ExpoPushProvider,
-    MattermostAttachment,
-    MattermostMessage,
-    MattermostProvider,
-    NtfyNotification,
-    NtfyProvider,
-)
 from app.services.web_push import PushPayload
 from app.utils.email_templates import render_outfit_email
-from app.utils.occasions import ascii_fold, occasion_label_es
+from app.utils.occasions import occasion_label_es
 
 logger = logging.getLogger(__name__)
 
@@ -56,117 +44,6 @@ class NotificationResult:
 class NotificationService:
     def __init__(self, db: AsyncSession):
         self.db = db
-
-    # Notification Settings CRUD
-    async def get_user_settings(self, user_id: UUID) -> list[NotificationSettings]:
-        result = await self.db.execute(
-            select(NotificationSettings)
-            .where(NotificationSettings.user_id == user_id)
-            .order_by(NotificationSettings.priority)
-        )
-        return list(result.scalars().all())
-
-    async def get_setting_by_id(
-        self, setting_id: UUID, user_id: UUID
-    ) -> NotificationSettings | None:
-        result = await self.db.execute(
-            select(NotificationSettings).where(
-                and_(
-                    NotificationSettings.id == setting_id,
-                    NotificationSettings.user_id == user_id,
-                )
-            )
-        )
-        return result.scalar_one_or_none()
-
-    async def create_setting(
-        self, user_id: UUID, channel: str, enabled: bool, priority: int, config: dict
-    ) -> NotificationSettings:
-        # Check if channel already exists
-        existing = await self.db.execute(
-            select(NotificationSettings).where(
-                and_(
-                    NotificationSettings.user_id == user_id,
-                    NotificationSettings.channel == channel,
-                )
-            )
-        )
-        if existing.scalar_one_or_none():
-            raise ValueError(f"Channel {channel} already configured")
-
-        setting = NotificationSettings(
-            user_id=user_id,
-            channel=channel,
-            enabled=enabled,
-            priority=priority,
-            config=config,
-        )
-        self.db.add(setting)
-        await self.db.flush()
-        await self.db.refresh(setting)
-        return setting
-
-    async def update_setting(
-        self,
-        setting_id: UUID,
-        user_id: UUID,
-        enabled: bool | None = None,
-        priority: int | None = None,
-        config: dict | None = None,
-    ) -> NotificationSettings | None:
-        setting = await self.get_setting_by_id(setting_id, user_id)
-        if not setting:
-            return None
-
-        if enabled is not None:
-            setting.enabled = enabled
-        if priority is not None:
-            setting.priority = priority
-        if config is not None:
-            setting.config = config
-
-        await self.db.flush()
-        await self.db.refresh(setting)
-        return setting
-
-    async def delete_setting(self, setting_id: UUID, user_id: UUID) -> bool:
-        setting = await self.get_setting_by_id(setting_id, user_id)
-        if not setting:
-            return False
-
-        await self.db.delete(setting)
-        await self.db.flush()
-        return True
-
-    async def test_setting(self, setting_id: UUID, user_id: UUID) -> tuple[bool, str]:
-        setting = await self.get_setting_by_id(setting_id, user_id)
-        if not setting:
-            return False, "Setting not found"
-
-        try:
-            if setting.channel == "ntfy":
-                success, message = await NtfyProvider(
-                    NtfyConfig(**setting.config)
-                ).test_connection()
-            elif setting.channel == "mattermost":
-                success, message = await MattermostProvider(
-                    MattermostConfig(**setting.config)
-                ).test_connection()
-            elif setting.channel == "email":
-                success, message = await EmailProvider(
-                    EmailConfig(**setting.config)
-                ).test_connection()
-            elif setting.channel == "expo_push":
-                success, message = await ExpoPushProvider(
-                    ExpoPushConfig(**setting.config)
-                ).test_connection()
-            else:
-                return False, f"Unknown channel: {setting.channel}"
-
-            return success, message
-        except Exception:
-            logger.exception("Notification test failed for setting %s", setting_id)
-            return False, "Could not send the test notification"
 
     async def get_user_schedules(self, user_id: UUID) -> list[Schedule]:
         result = await self.db.execute(select(Schedule).where(Schedule.user_id == user_id))
@@ -279,21 +156,7 @@ class NotificationDispatcher:
         if not outfit:
             raise ValueError("Outfit not found")
 
-        # Get enabled channels sorted by priority
-        channels_result = await self.db.execute(
-            select(NotificationSettings)
-            .where(
-                and_(
-                    NotificationSettings.user_id == user_id,
-                    NotificationSettings.enabled == True,  # noqa: E712
-                )
-            )
-            .order_by(NotificationSettings.priority)
-        )
-        channels = list(channels_result.scalars().all())
-        default_channels = await default_channels_for(self.db, user, "daily_outfit")
-
-        if not channels and not default_channels:
+        if not await default_channels_for(self.db, user, "daily_outfit"):
             return [
                 NotificationResult(
                     channel="none",
@@ -302,52 +165,7 @@ class NotificationDispatcher:
                 )
             ]
 
-        results = await self._send_outfit_default_channels(outfit, user, for_tomorrow)
-        success = False
-
-        for channel_config in channels:
-            if success:
-                break
-
-            result = await self._send_via_channel(channel_config, outfit, user, for_tomorrow)
-            results.append(result)
-
-            if result.status == DeliveryStatus.SENT:
-                success = True
-
-                # Record notification
-                notification = Notification(
-                    user_id=user_id,
-                    outfit_id=outfit_id,
-                    channel=channel_config.channel,
-                    status=NotificationStatus.sent,
-                    payload={"occasion": outfit.occasion},
-                    sent_at=datetime.now(UTC),
-                )
-                self.db.add(notification)
-
-                # Update outfit status
-                outfit.sent_at = datetime.now(UTC)
-                outfit.status = "sent"
-
-                await self.db.flush()
-
-        if channels and not success:
-            # Record failed notification for retry
-            notification = Notification(
-                user_id=user_id,
-                outfit_id=outfit_id,
-                channel=channels[0].channel,
-                status=NotificationStatus.retrying,
-                payload={"occasion": outfit.occasion},
-                attempts=1,
-                last_attempt_at=datetime.now(UTC),
-                error_message=results[-1].error if results else "Unknown error",
-            )
-            self.db.add(notification)
-            await self.db.flush()
-
-        return results
+        return await self._send_outfit_default_channels(outfit, user, for_tomorrow)
 
     def _outfit_push(self, outfit: Outfit, for_tomorrow: bool) -> PushPayload:
         day = "de mañana" if for_tomorrow else "de hoy"
@@ -458,259 +276,26 @@ class NotificationDispatcher:
                 error="Outfit not found",
             )
 
-        if notification.channel in (CHANNEL_ACCOUNT_EMAIL, CHANNEL_WEB_PUSH):
-            payload = notification.payload or {}
-            retried = await self._send_outfit_default_channels(
-                outfit,
-                user,
-                bool(payload.get("for_tomorrow")),
-                only=[notification.channel],
-                record=False,
-            )
-            if not retried:
-                return NotificationResult(
-                    channel=notification.channel,
-                    status=DeliveryStatus.FAILED,
-                    error=f"Channel {notification.channel} disabled or unavailable",
-                )
-            return retried[0]
-
-        # Get the channel config for this notification's channel
-        channel_result = await self.db.execute(
-            select(NotificationSettings).where(
-                and_(
-                    NotificationSettings.user_id == notification.user_id,
-                    NotificationSettings.channel == notification.channel,
-                    NotificationSettings.enabled == True,  # noqa: E712
-                )
-            )
-        )
-        channel_config = channel_result.scalar_one_or_none()
-        if not channel_config:
+        if notification.channel not in (CHANNEL_ACCOUNT_EMAIL, CHANNEL_WEB_PUSH):
+            # Rows from the old per-user channels (ntfy, Mattermost, ...) can't be resent.
             return NotificationResult(
                 channel=notification.channel,
                 status=DeliveryStatus.FAILED,
-                error=f"Channel {notification.channel} not configured or disabled",
+                error=f"Channel {notification.channel} is no longer supported",
             )
 
-        # Attempt to send
-        return await self._send_via_channel(channel_config, outfit, user)
-
-    async def _send_via_channel(
-        self,
-        channel_config: NotificationSettings,
-        outfit: Outfit,
-        user: User,
-        for_tomorrow: bool = False,
-    ) -> NotificationResult:
-        try:
-            if channel_config.channel == "ntfy":
-                provider = NtfyProvider(NtfyConfig(**channel_config.config))
-                message = self._build_ntfy_notification(outfit, user, for_tomorrow)
-                result = await provider.send(message)
-
-            elif channel_config.channel == "mattermost":
-                provider = MattermostProvider(MattermostConfig(**channel_config.config))
-                message = self._build_mattermost_message(outfit, user, for_tomorrow)
-                result = await provider.send(message)
-
-            elif channel_config.channel == "email":
-                provider = EmailProvider(EmailConfig(**channel_config.config))
-                message = self._build_email_message(outfit, user, provider.to_address, for_tomorrow)
-                result = await provider.send(message)
-
-            elif channel_config.channel == "expo_push":
-                provider = ExpoPushProvider(ExpoPushConfig(**channel_config.config))
-                message = self._build_expo_push_message(outfit, user, for_tomorrow)
-                result = await provider.send(message)
-
-            else:
-                return NotificationResult(
-                    channel=channel_config.channel,
-                    status=DeliveryStatus.FAILED,
-                    error=f"Unknown channel: {channel_config.channel}",
-                )
-
-            if result.get("success"):
-                return NotificationResult(
-                    channel=channel_config.channel,
-                    status=DeliveryStatus.SENT,
-                    response=result,
-                )
-            else:
-                return NotificationResult(
-                    channel=channel_config.channel,
-                    status=DeliveryStatus.FAILED,
-                    error=result.get("error"),
-                )
-
-        except Exception as e:
-            logger.exception(f"Failed to send via {channel_config.channel}")
+        payload = notification.payload or {}
+        retried = await self._send_outfit_default_channels(
+            outfit,
+            user,
+            bool(payload.get("for_tomorrow")),
+            only=[notification.channel],
+            record=False,
+        )
+        if not retried:
             return NotificationResult(
-                channel=channel_config.channel,
+                channel=notification.channel,
                 status=DeliveryStatus.FAILED,
-                error=str(e),
+                error=f"Channel {notification.channel} disabled or unavailable",
             )
-
-    def _build_ntfy_notification(
-        self, outfit: Outfit, user: User, for_tomorrow: bool = False
-    ) -> NtfyNotification:
-        # Weather info for title
-        weather = outfit.weather_data or {}
-        temp = weather.get("temperature")
-        condition = weather.get("condition", "").lower()
-
-        # Day prefix for messages
-        day_label = "manana" if for_tomorrow else "hoy"
-        occasion_es = ascii_fold(occasion_label_es(outfit.occasion))
-
-        # Build title with weather (ASCII-safe for HTTP headers, so no accents)
-        if temp is not None:
-            title = f"Tu look de {day_label}: {occasion_es} - {temp}C"
-        else:
-            title = f"Tu look de {day_label}: {occasion_es}"
-
-        # Build message body with structured data
-        parts = []
-
-        # Add headline if available (stored in reasoning field)
-        if outfit.reasoning:
-            parts.append(outfit.reasoning)
-
-        # Add highlights from ai_raw_response if available
-        highlights = []
-        if outfit.ai_raw_response and isinstance(outfit.ai_raw_response, dict):
-            highlights = outfit.ai_raw_response.get("highlights", [])
-
-        if highlights and isinstance(highlights, list):
-            # Format highlights as bullet points
-            highlight_lines = [f"* {h}" for h in highlights[:3]]  # Limit to 3
-            parts.append("\n".join(highlight_lines))
-
-        # Add styling tip if available
-        if outfit.style_notes:
-            parts.append(f"Truco: {outfit.style_notes}")
-
-        message = "\n\n".join(parts) if parts else "Stinky ya te ha dejado el look preparado."
-
-        # Choose a single contextual tag based on weather
-        tag = "shirt"  # default
-        if condition:
-            if any(w in condition for w in ["rain", "drizzle", "shower"]):
-                tag = "umbrella"
-            elif any(w in condition for w in ["sun", "clear"]):
-                tag = "sunny"
-            elif any(w in condition for w in ["cloud", "overcast"]):
-                tag = "cloud"
-            elif any(w in condition for w in ["snow", "sleet"]):
-                tag = "snowflake"
-            elif any(w in condition for w in ["wind"]):
-                tag = "wind_face"
-
-        return NtfyNotification(
-            topic="",  # Will be set by provider
-            title=title,
-            message=message,
-            tags=[tag],
-            priority=3,
-            click=f"{self.app_url}/dashboard/history",
-        )
-
-    def _build_mattermost_message(
-        self, outfit: Outfit, user: User, for_tomorrow: bool = False
-    ) -> MattermostMessage:
-        weather_text = ""
-        if outfit.weather_data:
-            weather = outfit.weather_data
-            weather_text = f" | {weather.get('temperature', '?')}C {weather.get('condition', '')}"
-
-        day_label = "Tomorrow" if for_tomorrow else "Today"
-        greeting = "Good evening" if for_tomorrow else "Good morning"
-
-        # Build message text with structured data
-        text_parts = []
-
-        # Add headline (stored in reasoning)
-        if outfit.reasoning:
-            text_parts.append(f"**{outfit.reasoning}**")
-
-        # Add highlights from ai_raw_response as markdown list
-        highlights = []
-        if outfit.ai_raw_response and isinstance(outfit.ai_raw_response, dict):
-            highlights = outfit.ai_raw_response.get("highlights", [])
-
-        if highlights and isinstance(highlights, list):
-            highlight_lines = [f"- {h}" for h in highlights[:3]]
-            text_parts.append("\n".join(highlight_lines))
-
-        # Add styling tip
-        if outfit.style_notes:
-            text_parts.append(f"_Tip: {outfit.style_notes}_")
-
-        attachment_text = "\n\n".join(text_parts) if text_parts else "Your outfit is ready!"
-
-        attachment = MattermostAttachment(
-            title=f"{day_label}'s Outfit: {outfit.occasion.title()}{weather_text}",
-            text=attachment_text,
-            color="#3B82F6",
-        )
-
-        return MattermostMessage(
-            text=f"{greeting}, {user.display_name}! Here's your outfit suggestion for {day_label.lower()}:",
-            attachments=[attachment],
-        )
-
-    def _build_email_message(
-        self, outfit: Outfit, user: User, to: str, for_tomorrow: bool = False
-    ) -> EmailMessage:
-        weather = outfit.weather_data or {}
-        highlights: list[str] = []
-        if outfit.ai_raw_response and isinstance(outfit.ai_raw_response, dict):
-            raw = outfit.ai_raw_response.get("highlights", [])
-            if isinstance(raw, list):
-                highlights = [str(h) for h in raw]
-
-        rendered = render_outfit_email(
-            occasion=outfit.occasion,
-            reasoning=outfit.reasoning,
-            highlights=highlights,
-            style_notes=outfit.style_notes,
-            temperature=weather.get("temperature") if weather else None,
-            condition=str(weather["condition"]) if weather.get("condition") else None,
-            for_tomorrow=for_tomorrow,
-            cta_url=f"{self.app_url}/dashboard/history",
-        )
-        return EmailMessage(
-            to=to,
-            subject=rendered.subject,
-            html_body=rendered.html,
-            text_body=rendered.text,
-        )
-
-    def _build_expo_push_message(
-        self, outfit: Outfit, user: User, for_tomorrow: bool = False
-    ) -> ExpoPushMessage:
-        weather = outfit.weather_data or {}
-        temp = weather.get("temperature")
-        day_label = "ma\u00f1ana" if for_tomorrow else "hoy"
-        occasion_es = occasion_label_es(outfit.occasion)
-
-        if temp is not None:
-            title = f"Tu look de {day_label}: {occasion_es} \u00b7 {temp}\u00b0C"
-        else:
-            title = f"Tu look de {day_label}: {occasion_es}"
-
-        parts = []
-        if outfit.reasoning:
-            parts.append(outfit.reasoning)
-        if outfit.style_notes:
-            parts.append(f"Truco: {outfit.style_notes}")
-
-        body = " \u2022 ".join(parts) if parts else "Stinky ya te ha dejado el look preparado."
-
-        return ExpoPushMessage(
-            to="",  # Provider uses its stored token
-            title=title,
-            body=body,
-            data={"outfit_id": str(outfit.id), "screen": "history"},
-        )
+        return retried[0]

@@ -4,8 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pydantic import ValidationError
 
-from app.config import get_settings
-from app.schemas.notification import NtfyConfig, ScheduleBase, ScheduleUpdate
+from app.schemas.notification import ScheduleBase, ScheduleUpdate
 
 
 class TestAIEndpointSchemeValidation:
@@ -116,34 +115,6 @@ class TestBulkUploadLimit:
             items_api.settings.max_bulk_upload_count = original
 
 
-class TestNtfyServerValidation:
-    def test_rejects_non_http(self):
-        with pytest.raises(ValidationError):
-            NtfyConfig(server="ftp://ntfy.example.com", topic="test-topic")
-
-    def test_rejects_long_url(self):
-        with pytest.raises(ValidationError):
-            NtfyConfig(server="https://" + "a" * 500, topic="test-topic")
-
-    def test_accepts_valid(self):
-        config = NtfyConfig(server="https://ntfy.sh", topic="test-topic")
-        assert config.server == "https://ntfy.sh"
-
-    def test_strips_trailing_slash(self):
-        config = NtfyConfig(server="https://ntfy.sh/", topic="test-topic")
-        assert config.server == "https://ntfy.sh"
-
-    def test_rejects_http_from_users(self):
-        # A user-typed http:// server could be anything on the LAN.
-        with pytest.raises(ValidationError):
-            NtfyConfig(server="http://ntfy.local:8080", topic="test-topic")
-
-    def test_accepts_the_operators_http_server(self, monkeypatch):
-        monkeypatch.setattr(get_settings(), "ntfy_server", "http://ntfy.local:8080")
-        config = NtfyConfig(server="http://ntfy.local:8080", topic="test-topic")
-        assert config.server == "http://ntfy.local:8080"
-
-
 class TestScheduleOccasionValidation:
     def test_rejects_invalid(self):
         with pytest.raises(ValidationError):
@@ -160,26 +131,6 @@ class TestScheduleOccasionValidation:
     def test_update_accepts_valid(self):
         update = ScheduleUpdate(occasion="formal")
         assert update.occasion == "formal"
-
-
-class TestMattermostWebhookValidation:
-    def test_rejects_non_https(self):
-        from app.schemas.notification import MattermostConfig
-
-        with pytest.raises(ValidationError):
-            MattermostConfig(webhook_url="http://mattermost.example.com/hooks/abc")
-
-    def test_rejects_missing_hooks(self):
-        from app.schemas.notification import MattermostConfig
-
-        with pytest.raises(ValidationError):
-            MattermostConfig(webhook_url="https://mattermost.example.com/api/abc")
-
-    def test_accepts_valid(self):
-        from app.schemas.notification import MattermostConfig
-
-        config = MattermostConfig(webhook_url="https://mattermost.example.com/hooks/abc123")
-        assert "hooks" in config.webhook_url
 
 
 class TestHealthEndpointInfoLeak:

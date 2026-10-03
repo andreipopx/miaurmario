@@ -45,7 +45,8 @@ def test_alembic_single_head_chain():
     cfg = Config(str(BACKEND_DIR / "alembic.ini"))
     cfg.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_heads() == ["tokenver0310"]
+    assert script.get_heads() == ["dropnotifsettings0310"]
+    assert script.get_revision("dropnotifsettings0310").down_revision == "tokenver0310"
     assert script.get_revision("tokenver0310").down_revision == "nativepush0210"
     assert script.get_revision("nativepush0210").down_revision == "imgview2609"
     assert script.get_revision("imgview2609").down_revision == "wearusage2509"

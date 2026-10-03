@@ -1,24 +1,13 @@
-"""Fixes from the October 2026 security review: token revocation, outbound URLs, input limits."""
+"""Fixes from the October 2026 security review: token revocation and input limits."""
 
 import uuid
 
-import pytest
 from httpx import AsyncClient
-from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth import create_access_token
 from app.models import User
 from app.models.item import ClothingItem
-from app.schemas.notification import MattermostConfig, NtfyConfig
-from app.services.notification_providers import (
-    BLOCKED_MESSAGE,
-    MattermostMessage,
-    MattermostProvider,
-    NtfyNotification,
-    NtfyProvider,
-)
-from app.utils.outbound import OutboundBlocked, guarded_post
 
 
 def _bearer(user: User) -> dict[str, str]:
@@ -70,37 +59,6 @@ class TestTokenRevocation:
         assert (await client.get("/api/v1/users/me", headers=old)).status_code == 401
         resp = await client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {fresh}"})
         assert resp.status_code == 200
-
-
-class TestOutboundUrls:
-    def test_ntfy_needs_https(self):
-        with pytest.raises(ValidationError):
-            NtfyConfig(server="http://wardrobe_redis:6379", topic="miau-topic")
-        assert NtfyConfig(server="https://ntfy.sh/", topic="miau-topic").server == "https://ntfy.sh"
-
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "https://127.0.0.1/x",
-            "https://10.0.0.5/hooks/abc",
-            "https://192.168.1.1/hooks/abc",
-            "https://169.254.169.254/latest",
-            "https://localhost/hooks/x",
-            "http://example.com/hooks/x",
-        ],
-    )
-    async def test_private_targets_are_refused(self, url: str):
-        with pytest.raises(OutboundBlocked):
-            await guarded_post(url, json={})
-
-    async def test_providers_never_echo_the_target(self):
-        ntfy = NtfyProvider(NtfyConfig(server="https://127.0.0.1", topic="miau-topic"))
-        result = await ntfy.send(NtfyNotification(topic="miau-topic", title="t", message="m"))
-        assert result == {"success": False, "error": BLOCKED_MESSAGE}
-
-        mm = MattermostProvider(MattermostConfig(webhook_url="https://10.1.2.3/hooks/abc"))
-        result = await mm.send(MattermostMessage(text="hola"))
-        assert result == {"success": False, "error": BLOCKED_MESSAGE}
 
 
 class TestInputLimits:

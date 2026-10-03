@@ -45,8 +45,9 @@ from app.utils.unsubscribe import make_unsubscribe_token
 
 logger = logging.getLogger(__name__)
 
-# Notification.channel values for the default channels (legacy rows use
-# "ntfy" / "mattermost" / "email" / "expo_push").
+# Notification.channel values for the default channels. Older rows may still
+# carry the removed per-user channels ("ntfy" / "mattermost" / "email" /
+# "expo_push"); they are only read back as history, never resent.
 CHANNEL_ACCOUNT_EMAIL = "account_email"
 CHANNEL_WEB_PUSH = "web_push"
 

@@ -19,14 +19,15 @@ Mostly untouched, and worth knowing about before you go looking for a bug:
 - **Pairings** — `backend/app/api/pairings.py` and the matching frontend route.
 - **Analytics** — `backend/app/api/analytics.py`.
 - **Wash tracking** — wear counters and wash intervals on the item model
-  (`backend/app/models/item.py`), and the laundry reminder in
-  `backend/app/workers/notifications.py`.
+  (`backend/app/models/item.py`). The upstream laundry reminder is gone: it
+  could only go out through the removed ntfy / Mattermost / SMTP / Expo
+  channels.
 - **Families** — `backend/app/api/families.py` and `frontend/app/dashboard/family/`.
   Still wired up, but hidden from the navigation since `Amigos` replaced it as
   the social layer.
-- **OIDC sign-in**, ntfy and Mattermost notification providers, and the
-  Kubernetes manifests in `k8s/`. All inherited; none of them are exercised by
-  this deployment, so treat them as unverified.
+- **OIDC sign-in** and the Kubernetes manifests in `k8s/`. Both inherited;
+  neither is exercised by this deployment, so treat them as unverified. (The
+  inherited ntfy and Mattermost notification providers were removed.)
 - **Nginx** config in `nginx/`, and the general FastAPI / SQLAlchemy / arq
   skeleton.
 

@@ -10,7 +10,6 @@ import pytest_asyncio
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.notification import NotificationSettings
 from app.models.schedule import Schedule
 from app.models.user import User
 from app.workers.notifications import check_scheduled_notifications, process_scheduled_notification
@@ -44,18 +43,12 @@ async def schedule_user(db_session: AsyncSession) -> User:
     return user
 
 
-@pytest_asyncio.fixture
-async def ntfy_channel(db_session: AsyncSession, schedule_user: User) -> NotificationSettings:
-    channel = NotificationSettings(
-        user_id=schedule_user.id,
-        channel="ntfy",
-        enabled=True,
-        config={"server": "https://ntfy.sh", "topic": "test-topic"},
-    )
-    db_session.add(channel)
-    await db_session.commit()
-    await db_session.refresh(channel)
-    return channel
+@pytest.fixture
+def email_channel(monkeypatch):
+    """The account email (a default channel) can go out, so schedules have a channel."""
+    from app.services import event_notifications
+
+    monkeypatch.setattr(event_notifications, "email_delivery_available", lambda: True)
 
 
 def _make_due_schedule(
@@ -209,7 +202,7 @@ class TestCheckScheduledNotifications:
 class TestProcessScheduledNotification:
     @pytest.mark.asyncio
     async def test_happy_path_generates_outfit_and_sends(
-        self, db_session: AsyncSession, schedule_user: User, ntfy_channel
+        self, db_session: AsyncSession, schedule_user: User, email_channel
     ):
         schedule = _make_due_schedule(schedule_user)
         db_session.add(schedule)
@@ -284,7 +277,7 @@ class TestProcessScheduledNotification:
     async def test_no_enabled_channels_returns_skipped(
         self, db_session: AsyncSession, schedule_user: User, monkeypatch
     ):
-        # No legacy channel and no email transport (the default channel) either.
+        # No email transport and no push device: no default channel at all.
         from app.services import event_notifications
 
         monkeypatch.setattr(event_notifications, "email_delivery_available", lambda: False)
@@ -304,7 +297,7 @@ class TestProcessScheduledNotification:
 
     @pytest.mark.asyncio
     async def test_value_error_from_ai_returns_skipped(
-        self, db_session: AsyncSession, schedule_user: User, ntfy_channel
+        self, db_session: AsyncSession, schedule_user: User, email_channel
     ):
         schedule = _make_due_schedule(schedule_user)
         db_session.add(schedule)
@@ -333,7 +326,7 @@ class TestProcessScheduledNotification:
 
     @pytest.mark.asyncio
     async def test_generic_exception_rolls_back_and_reraises(
-        self, db_session: AsyncSession, schedule_user: User, ntfy_channel
+        self, db_session: AsyncSession, schedule_user: User, email_channel
     ):
         schedule = _make_due_schedule(schedule_user)
         db_session.add(schedule)
@@ -375,7 +368,6 @@ class TestWorkerFunctionRegistry:
             "process_scheduled_notification",
             "retry_failed_notifications",
             "check_scheduled_notifications",
-            "check_wash_reminders",
             "update_learning_profiles",
         }
         missing = required - func_names

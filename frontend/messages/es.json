@@ -1461,59 +1461,14 @@
     "title": "Notificaciones",
     "subtitle": "Decide cómo y cuándo quieres que Miaurmario te avise",
     "pageSubtitle": "Elige qué te avisamos y por dónde",
-    "channelsTitle": "Canales",
-    "channelsSubtitle": "Dónde se entregan las notificaciones",
     "schedulesTitle": "Horarios",
     "schedulesSubtitle": "Cuándo recibes sugerencias de conjuntos",
     "empty": "Aún no has configurado notificaciones.",
-    "addChannelCta": "Añadir un canal",
     "addScheduleCta": "Añadir un horario",
-    "channelsCardTitle": "Canales avanzados",
-    "channelsCardDescription": "Añade canales para recibir tus recomendaciones diarias de conjuntos",
-    "channelsEmptyTitle": "No hay canales de notificación configurados",
-    "channelsEmptyHint": "Añade un canal para empezar a recibir sugerencias de conjuntos",
     "schedulesCardTitle": "Look del día",
     "schedulesCardDescription": "Cuándo te preparamos el look (te llega por los canales de arriba)",
     "schedulesEmptyTitle": "No hay horarios configurados",
     "schedulesEmptyHint": "Añade un horario para recibir sugerencias diarias",
-    "testButton": "Probar",
-    "priority": "Prioridad {n}",
-    "type": {
-      "email": "Email",
-      "ntfy": "ntfy.sh",
-      "webhook": "Webhook",
-      "push": "Push",
-      "mattermost": "Mattermost"
-    },
-    "channelLabels": {
-      "ntfy": "ntfy Push",
-      "mattermost": "Mattermost",
-      "email": "Email"
-    },
-    "channelSummary": {
-      "mattermostConfigured": "Webhook configurado"
-    },
-    "addChannel": {
-      "buttonLabel": "Añadir canal",
-      "adding": "Añadiendo...",
-      "dialogTitle": "Añadir canal de notificación",
-      "dialogDescription": "Configura una nueva forma de recibir recomendaciones de conjuntos.",
-      "channelType": "Tipo de canal",
-      "ntfyOption": "Notificaciones push de ntfy",
-      "mattermostOption": "Mattermost",
-      "emailOption": "Email",
-      "serverUrl": "URL del servidor",
-      "topic": "Tema *",
-      "topicPlaceholder": "mis-notificaciones-de-armario",
-      "topicHelp": "Suscríbete a este tema en tu app de ntfy",
-      "token": "Token de acceso",
-      "tokenHelp": "Necesario si tu servidor ntfy usa autenticación",
-      "webhookUrl": "URL del webhook *",
-      "webhookPlaceholder": "https://mattermost.ejemplo.com/hooks/xxx",
-      "webhookHelp": "Crea un webhook entrante en los ajustes de Mattermost",
-      "emailAddress": "Dirección de email *",
-      "emailPlaceholder": "tu@ejemplo.com"
-    },
     "addSchedule": {
       "buttonLabel": "Añadir horario",
       "adding": "Añadiendo...",
@@ -1531,42 +1486,23 @@
       "dayEvening": "{day} por la tarde"
     },
     "toasts": {
-      "channelAdded": "Canal de notificación añadido",
-      "channelAddError": "No se pudo añadir el canal",
       "scheduleAdded": "Horario añadido",
       "scheduleAddError": "No se pudo añadir el horario",
-      "testSent": "Notificación de prueba enviada",
-      "testFailed": "La prueba falló",
-      "channelEnabled": "Canal activado",
-      "channelDisabled": "Canal desactivado",
       "scheduleEnabled": "Horario activado",
       "scheduleDisabled": "Horario desactivado",
       "willNotifyDayBefore": "Se notificará el día anterior",
       "willNotifySameDay": "Se notificará el mismo día",
       "updateFailed": "No se pudo actualizar",
-      "channelDeleted": "Canal eliminado",
       "scheduleDeleted": "Horario eliminado",
       "deleteFailed": "No se pudo eliminar"
     },
-    "validation": {
-      "topicRequired": "El tema es obligatorio para ntfy",
-      "webhookRequired": "La URL del webhook es obligatoria para Mattermost",
-      "emailRequired": "La dirección de email es obligatoria"
-    },
     "delete": {
-      "channelTitle": "¿Eliminar canal de notificación?",
       "scheduleTitle": "¿Eliminar horario?",
-      "channelBody": "Esto quitará el canal de notificación. Podrás añadirlo de nuevo más tarde.",
       "scheduleBody": "Esto quitará el horario. Podrás crear uno nuevo más tarde.",
       "deleting": "Eliminando...",
       "delete": "Eliminar"
     },
     "installApp": "Instalar la app",
-    "advanced": {
-      "title": "Avanzado",
-      "description": "ntfy y Mattermost, para quien ya los usa",
-      "channelsHint": "Reciben el look del día y los avisos de colada, además del email y el dispositivo."
-    },
     "defaults": {
       "title": "Qué te avisamos",
       "description": "Por email sin configurar nada, y en tu móvil si activas este dispositivo.",

@@ -7,102 +7,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
-# Channel-specific configurations
-class NtfyConfig(BaseModel):
-    server: str = "https://ntfy.sh"
-    topic: str
-    token: str | None = None
-
-    @field_validator("server")
-    @classmethod
-    def validate_server(cls, v: str) -> str:
-        if len(v) > 500:
-            raise ValueError("Server URL must be 500 characters or fewer")
-        v = v.rstrip("/")
-        # Only the operator's own server (NTFY_SERVER) may be plain http or private;
-        # anything a user types must be public https (checked again when sending).
-        from app.config import get_settings
-
-        trusted = (get_settings().ntfy_server or "").rstrip("/")
-        if v != trusted and not v.startswith("https://"):
-            raise ValueError("Server URL must start with https://")
-        return v
-
-    @field_validator("topic")
-    @classmethod
-    def validate_topic(cls, v: str) -> str:
-        if not v or len(v) < 3:
-            raise ValueError("Topic must be at least 3 characters")
-        if not v.replace("-", "").replace("_", "").isalnum():
-            raise ValueError("Topic can only contain letters, numbers, - and _")
-        return v
-
-
-class MattermostConfig(BaseModel):
-    webhook_url: str
-
-    @field_validator("webhook_url")
-    @classmethod
-    def validate_webhook(cls, v: str) -> str:
-        if not v.startswith("https://"):
-            raise ValueError("Webhook URL must use HTTPS")
-        if "/hooks/" not in v:
-            raise ValueError("Invalid Mattermost webhook URL format")
-        return v
-
-
-class EmailConfig(BaseModel):
-    address: str
-
-    @field_validator("address")
-    @classmethod
-    def validate_email(cls, v: str) -> str:
-        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-        if not re.match(pattern, v):
-            raise ValueError("Invalid email address")
-        return v
-
-
-class ExpoPushConfig(BaseModel):
-    push_token: str
-
-    @field_validator("push_token")
-    @classmethod
-    def validate_token(cls, v: str) -> str:
-        if not v.startswith("ExponentPushToken[") and not v.startswith("ExpoPushToken["):
-            raise ValueError("Invalid Expo push token format")
-        return v
-
-
-# Notification settings schemas
-class NotificationSettingsBase(BaseModel):
-    channel: Literal["ntfy", "mattermost", "email", "expo_push"]
-    enabled: bool = True
-    priority: int = 1
-    config: dict
-
-
-class NotificationSettingsCreate(NotificationSettingsBase):
-    pass
-
-
-class NotificationSettingsUpdate(BaseModel):
-    enabled: bool | None = None
-    priority: int | None = None
-    config: dict | None = None
-
-
-class NotificationSettingsResponse(NotificationSettingsBase):
-    id: UUID
-    user_id: UUID
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
 VALID_OCCASIONS = {"casual", "office", "formal", "date", "sporty", "outdoor", "work", "party"}
 
 
@@ -213,15 +117,6 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class TestNotificationRequest(BaseModel):
-    pass
-
-
-class TestNotificationResponse(BaseModel):
-    success: bool
-    message: str
 
 
 class MessageResponse(BaseModel):

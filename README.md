@@ -133,8 +133,11 @@ size almost every user is on.
 - **Notifications.** Email is on by default for friend requests, accepted
   requests and the daily outfit; Web Push (VAPID) is on by default for those plus
   the friend-activity digest. The morning look is opt-in and fires at your own
-  local hour. ntfy and a Mattermost webhook survive from upstream under
-  "Avanzado", for people already using them.
+  local hour. The scheduled "Look del día" goes out the same way. Push reaches
+  both the browser and the Android/iOS app. The per-user channels inherited
+  from upstream (ntfy, a Mattermost webhook, a separate SMTP address, Expo
+  push) are gone; SMTP survives only as the operator's fallback transport when
+  Resend isn't configured.
 - **Música.** Connect [Last.fm](https://www.last.fm/api) (username only, no
   password) and a worker syncs your public scrobbles every 15 minutes. A
   deterministic heuristic turns artist genres, title keywords and release years
@@ -365,7 +368,7 @@ handled by Caddy and a Cloudflare Tunnel configured outside this repository.
 |---|---|
 | Frontend | Next.js 14 (App Router), React 18, TypeScript 5.7, TanStack Query v5, Tailwind 3 with all colours as CSS variables, Radix/shadcn primitives, `@dnd-kit` for the outfit canvas, next-intl v3, next-auth v4 |
 | Backend | FastAPI, SQLAlchemy 2 async + asyncpg, Pydantic v2, Alembic, Python 3.11 |
-| Worker | arq — 18 jobs and 8 cron schedules: tagging, notifications, the morning look, the friend digest, Last.fm and Spotify syncs, Pinterest refresh, wash reminders, learning-profile updates, stale-job recovery, account deletion |
+| Worker | arq — 17 jobs and 7 cron schedules: tagging, notifications, the morning look, the friend digest, Last.fm and Spotify syncs, Pinterest refresh, learning-profile updates, stale-job recovery, account deletion |
 | Data | PostgreSQL 15, Redis 7 (queue, rate limits, caches). Photos are plain files on a volume — there is no S3 |
 | Images | Pillow + pillow-heif, rembg (ONNX, CPU) |
 | Auth | next-auth v4 — magic link via Resend, optional argon2id password, OIDC, dev credentials. JWT sessions that slide on refresh |

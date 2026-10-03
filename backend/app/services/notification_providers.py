@@ -1,176 +1,14 @@
+"""SMTP transport for outgoing email, and the family invite message."""
+
 import logging
 import os
 from dataclasses import dataclass, field
 
-import httpx
-
-from app.schemas.notification import EmailConfig, ExpoPushConfig, MattermostConfig, NtfyConfig
-from app.utils.email_templates import (
-    render_family_invite_email,
-    render_notification_email,
-    render_test_email,
-)
-from app.utils.outbound import OutboundBlocked, guarded_post
+from app.utils.email_templates import render_family_invite_email
 
 logger = logging.getLogger(__name__)
 
-BLOCKED_MESSAGE = "That address is not allowed: use a public https URL"
-UNREACHABLE_MESSAGE = "Could not reach the server"
 
-
-# ntfy Provider
-@dataclass
-class NtfyNotification:
-    topic: str
-    title: str
-    message: str
-    tags: list[str] = field(default_factory=list)
-    priority: int = 3  # 1-5, 3 is default
-    click: str | None = None
-    attach: str | None = None
-    actions: list[dict] | None = None
-
-
-class NtfyProvider:
-    def __init__(self, config: NtfyConfig):
-        self.server = config.server.rstrip("/")
-        self.topic = config.topic
-        self.token = config.token
-
-    async def send(self, notification: NtfyNotification) -> dict:
-        headers = {
-            "Title": notification.title,
-            "Priority": str(notification.priority),
-        }
-
-        if notification.tags:
-            headers["Tags"] = ",".join(notification.tags)
-
-        if notification.click:
-            headers["Click"] = notification.click
-
-        if notification.attach:
-            headers["Attach"] = notification.attach
-
-        if self.token:
-            headers["Authorization"] = f"Bearer {self.token}"
-
-        if notification.actions:
-            actions = []
-            for action in notification.actions:
-                actions.append(f"{action['type']}, {action['label']}, {action['url']}")
-            headers["Actions"] = "; ".join(actions)
-
-        try:
-            response = await guarded_post(
-                f"{self.server}/{notification.topic or self.topic}",
-                headers=headers,
-                content=notification.message,
-            )
-        except OutboundBlocked as e:
-            logger.info("ntfy server refused (%s): %s", e, self.server)
-            return {"success": False, "error": BLOCKED_MESSAGE}
-        except Exception as e:
-            logger.warning("ntfy send failed: %s", type(e).__name__)
-            return {"success": False, "error": UNREACHABLE_MESSAGE}
-        if response.status_code == 200:
-            return {"success": True}
-        # The answer's body is never echoed back: it would turn this into a way to read
-        # whatever the URL points at.
-        logger.warning("ntfy request failed: HTTP %s", response.status_code)
-        return {"success": False, "error": f"HTTP {response.status_code}"}
-
-    async def test_connection(self) -> tuple[bool, str]:
-        try:
-            result = await self.send(
-                NtfyNotification(
-                    topic=self.topic,
-                    title="Miaurmario: prueba",
-                    message="Notificación de prueba de Miaurmario. Stinky dice hola.",
-                    tags=["white_check_mark", "shirt"],
-                    priority=2,
-                )
-            )
-            if result.get("success"):
-                return True, "Test notification sent successfully"
-            return False, result.get("error", "Unknown error")
-        except Exception:
-            logger.exception("Notification test failed")
-            return False, UNREACHABLE_MESSAGE
-
-
-# Mattermost Provider
-@dataclass
-class MattermostAttachment:
-    title: str
-    text: str = ""
-    color: str = "#3B82F6"
-    fields: list[dict] = field(default_factory=list)
-    thumb_url: str | None = None
-    image_url: str | None = None
-    actions: list[dict] = field(default_factory=list)
-
-
-@dataclass
-class MattermostMessage:
-    text: str
-    username: str = "Miaurmario"
-    icon_emoji: str = ":shirt:"
-    attachments: list[MattermostAttachment] = field(default_factory=list)
-
-
-class MattermostProvider:
-    def __init__(self, config: MattermostConfig):
-        self.webhook_url = config.webhook_url
-
-    async def send(self, message: MattermostMessage) -> dict:
-        payload = {
-            "text": message.text,
-            "username": message.username,
-            "icon_emoji": message.icon_emoji,
-        }
-
-        if message.attachments:
-            payload["attachments"] = [
-                {
-                    "title": a.title,
-                    "text": a.text,
-                    "color": a.color,
-                    "fields": a.fields,
-                    "thumb_url": a.thumb_url,
-                    "image_url": a.image_url,
-                    "actions": a.actions,
-                }
-                for a in message.attachments
-            ]
-
-        try:
-            response = await guarded_post(self.webhook_url, json=payload)
-        except OutboundBlocked as e:
-            logger.info("Mattermost webhook refused (%s)", e)
-            return {"success": False, "error": BLOCKED_MESSAGE}
-        except Exception as e:
-            logger.warning("Mattermost send failed: %s", type(e).__name__)
-            return {"success": False, "error": UNREACHABLE_MESSAGE}
-        if response.status_code == 200:
-            return {"success": True}
-        logger.warning("Mattermost request failed: HTTP %s", response.status_code)
-        return {"success": False, "error": f"HTTP {response.status_code}"}
-
-    async def test_connection(self) -> tuple[bool, str]:
-        try:
-            result = await self.send(
-                MattermostMessage(text="Mensaje de prueba de Miaurmario. Stinky dice hola.")
-            )
-            if result.get("success"):
-                return True, "Test notification sent successfully"
-            return False, result.get("error", "Unknown error")
-        except Exception:
-            logger.exception("Notification test failed")
-            return False, UNREACHABLE_MESSAGE
-
-
-# Email Provider
 @dataclass
 class EmailMessage:
     to: str
@@ -181,8 +19,9 @@ class EmailMessage:
 
 
 class EmailProvider:
-    def __init__(self, config: EmailConfig):
-        self.to_address = config.address
+    """SMTP transport configured by the operator (SMTP_* env vars)."""
+
+    def __init__(self):
         self.smtp_host = os.getenv("SMTP_HOST")
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
         self.smtp_user = os.getenv("SMTP_USER")
@@ -230,126 +69,6 @@ class EmailProvider:
         except Exception as e:
             logger.exception("Email send failed")
             return {"success": False, "error": str(e)}
-
-    async def test_connection(self) -> tuple[bool, str]:
-        if not self.is_configured():
-            return False, "SMTP not configured"
-
-        try:
-            rendered = render_test_email()
-            result = await self.send(
-                EmailMessage(
-                    to=self.to_address,
-                    subject=rendered.subject,
-                    html_body=rendered.html,
-                    text_body=rendered.text,
-                )
-            )
-            if result.get("success"):
-                return True, "Test email sent successfully"
-            return False, result.get("error", "Unknown error")
-        except Exception:
-            logger.exception("Notification test failed")
-            return False, UNREACHABLE_MESSAGE
-
-
-# Expo Push Provider
-EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
-
-
-@dataclass
-class ExpoPushMessage:
-    to: str
-    title: str
-    body: str
-    data: dict | None = None
-    sound: str = "default"
-    badge: int | None = None
-    channel_id: str = "outfit-suggestions"
-
-
-class ExpoPushProvider:
-    def __init__(self, config: ExpoPushConfig):
-        self.push_token = config.push_token
-
-    async def send(self, message: ExpoPushMessage) -> dict:
-        payload = {
-            "to": message.to or self.push_token,
-            "title": message.title,
-            "body": message.body,
-            "sound": message.sound,
-            "channelId": message.channel_id,
-        }
-        if message.data:
-            payload["data"] = message.data
-        if message.badge is not None:
-            payload["badge"] = message.badge
-
-        try:
-            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-                response = await client.post(
-                    EXPO_PUSH_URL,
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                )
-
-                if response.status_code == 200:
-                    result = response.json()
-                    ticket = result.get("data", {})
-                    if ticket.get("status") == "ok":
-                        return {"success": True, "ticket_id": ticket.get("id")}
-                    else:
-                        return {
-                            "success": False,
-                            "error": ticket.get("message", "Push send failed"),
-                        }
-                else:
-                    return {
-                        "success": False,
-                        "error": f"HTTP {response.status_code}: {response.text}",
-                    }
-        except Exception as e:
-            logger.exception("Expo push send failed")
-            return {"success": False, "error": str(e)}
-
-    async def test_connection(self) -> tuple[bool, str]:
-        try:
-            result = await self.send(
-                ExpoPushMessage(
-                    to=self.push_token,
-                    title="Miaurmario: prueba",
-                    body="¡Las notificaciones push funcionan! Stinky dice hola.",
-                )
-            )
-            if result.get("success"):
-                return True, "Test push notification sent successfully"
-            return False, result.get("error", "Unknown error")
-        except Exception:
-            logger.exception("Notification test failed")
-            return False, UNREACHABLE_MESSAGE
-
-
-def build_notification_email(
-    to: str,
-    subject: str,
-    heading: str,
-    body: str,
-    cta_text: str,
-    cta_url: str,
-    app_url: str | None = None,
-    locale: str | None = None,
-) -> EmailMessage:
-    rendered = render_notification_email(
-        subject=subject,
-        heading=heading,
-        body=body,
-        cta_text=cta_text,
-        cta_url=cta_url,
-        locale=locale,
-    )
-    return EmailMessage(
-        to=to, subject=rendered.subject, html_body=rendered.html, text_body=rendered.text
-    )
 
 
 def build_family_invite_email(

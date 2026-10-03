@@ -7,19 +7,16 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import selectinload
 
-from app.models.item import ClothingItem
 from app.models.learning import UserLearningProfile
 from app.models.notification import (
     TIMED_EVENTS,
     Notification,
     NotificationPreference,
-    NotificationSettings,
     NotificationStatus,
 )
 from app.models.outfit import Outfit, OutfitSource, OutfitStatus
 from app.models.schedule import Schedule
 from app.models.user import User
-from app.schemas.notification import EmailConfig, ExpoPushConfig, NtfyConfig
 from app.services import daily_alerts
 from app.services.ai_access import AIAccessError
 from app.services.ai_service import AIDisabledError
@@ -30,18 +27,9 @@ from app.services.event_notifications import (
     notify_friendship_event,
 )
 from app.services.learning_service import LearningService
-from app.services.notification_providers import (
-    EmailProvider,
-    ExpoPushMessage,
-    ExpoPushProvider,
-    NtfyNotification,
-    NtfyProvider,
-    build_notification_email,
-)
 from app.services.notification_service import DeliveryStatus, NotificationDispatcher
 from app.services.recommendation_service import RecommendationService
 from app.services.weather_service import WeatherService
-from app.utils.care import care_hint_text
 from app.utils.redis_lock import distributed_lock
 from app.workers.db import get_db_session
 
@@ -240,17 +228,7 @@ async def process_scheduled_notification(ctx: dict, schedule_id: str):
             logger.warning(f"User {schedule.user_id} not found or deleted, skipping")
             return {"status": "skipped", "reason": "user_not_found"}
 
-        channels_result = await db.execute(
-            select(NotificationSettings).where(
-                and_(
-                    NotificationSettings.user_id == schedule.user_id,
-                    NotificationSettings.enabled == True,  # noqa: E712
-                )
-            )
-        )
-        if not channels_result.scalars().first() and not await default_channels_for(
-            db, user, "daily_outfit"
-        ):
+        if not await default_channels_for(db, user, "daily_outfit"):
             logger.warning(f"No enabled channels for user {schedule.user_id}, skipping")
             return {"status": "skipped", "reason": "no_channels"}
 
@@ -529,183 +507,6 @@ async def check_scheduled_notifications(ctx: dict):
 
     except Exception as e:
         logger.exception("Error in check_scheduled_notifications")
-        return {"error": str(e)}
-    finally:
-        await db.close()
-
-
-async def check_wash_reminders(ctx: dict):
-    logger.info("Checking wash reminders...")
-
-    # Non-blocking global lock: if another worker already running this job, skip.
-    try:
-        async with distributed_lock("wash-reminders-cron", timeout=600, blocking_timeout=0):
-            return await _check_wash_reminders_inner(ctx)
-    except TimeoutError:
-        logger.debug("Skipping wash reminders — another worker holds the lock")
-        return {"notified": 0, "skipped": "lock_held"}
-
-
-async def _check_wash_reminders_inner(ctx: dict):
-    db = get_db_session(ctx)
-    try:
-        result = await db.execute(
-            select(ClothingItem).where(
-                and_(
-                    ClothingItem.needs_wash == True,  # noqa: E712
-                    ClothingItem.is_archived == False,  # noqa: E712
-                )
-            )
-        )
-        dirty_items = list(result.scalars().all())
-
-        if not dirty_items:
-            logger.info("No items need washing")
-            return {"notified": 0}
-
-        user_items: dict[str, list] = {}
-        for item in dirty_items:
-            uid = str(item.user_id)
-            if uid not in user_items:
-                user_items[uid] = []
-            user_items[uid].append(item)
-
-        app_url = os.getenv("APP_URL", "http://localhost:3000")
-        notified = 0
-
-        for user_id, items in user_items.items():
-            try:
-                # Check if user has notification channels
-                channels_result = await db.execute(
-                    select(NotificationSettings).where(
-                        and_(
-                            NotificationSettings.user_id == user_id,
-                            NotificationSettings.enabled == True,  # noqa: E712
-                        )
-                    )
-                )
-                channels = list(channels_result.scalars().all())
-                if not channels:
-                    continue
-
-                # Check deduplication: don't send more than once per day
-                one_day_ago = datetime.now(UTC) - timedelta(days=1)
-                existing = await db.execute(
-                    select(Notification).where(
-                        and_(
-                            Notification.user_id == user_id,
-                            Notification.payload["type"].astext == "wash_reminder",
-                            Notification.created_at >= one_day_ago,
-                        )
-                    )
-                )
-                if existing.scalars().first():
-                    continue
-
-                item_names = [i.name or i.type for i in items[:5]]
-                count = len(items)
-                summary = ", ".join(item_names)
-                if count > 5:
-                    summary += f" y {count - 5} más"
-
-                title = "Stinky huele colada pendiente"
-                body = (
-                    f"{count} {'prenda pide' if count == 1 else 'prendas piden'} lavado: {summary}"
-                )
-
-                # A read care label tells the user *how* to wash, not just when.
-                care_notes = []
-                for item in items[:5]:
-                    hint = care_hint_text(item.care, lang="es")
-                    if hint:
-                        care_notes.append(f"{item.name or item.type}: {hint}")
-                care_notes = care_notes[:3]
-                if care_notes:
-                    body += f" ({'; '.join(care_notes)})"
-
-                # Send via first enabled channel
-                sent = False
-                sent_channel = "unknown"
-                for channel in channels:
-                    try:
-                        if channel.channel == "ntfy":
-                            provider = NtfyProvider(NtfyConfig(**channel.config))
-                            send_result = await provider.send(
-                                NtfyNotification(
-                                    title=title,
-                                    message=body,
-                                    click=f"{app_url}/dashboard/wardrobe",
-                                    tags=["shirt", "droplet"],
-                                )
-                            )
-                            sent = send_result.get("success", False)
-                            sent_channel = "ntfy"
-                        elif channel.channel == "email":
-                            email_provider = EmailProvider(EmailConfig(**channel.config))
-                            send_result = await email_provider.send(
-                                build_notification_email(
-                                    to=email_provider.to_address,
-                                    subject="Stinky huele colada pendiente",
-                                    heading="Hora de hacer la colada",
-                                    body=(
-                                        f"{count} "
-                                        f"{'prenda necesita' if count == 1 else 'prendas necesitan'}"
-                                        f" un lavado: {', '.join(item_names)}"
-                                        + (f" y {count - 5} más." if count > 5 else ".")
-                                    ),
-                                    cta_text="Ver mi armario",
-                                    cta_url=f"{app_url}/dashboard/wardrobe",
-                                    app_url=app_url,
-                                )
-                            )
-                            sent = send_result.get("success", False)
-                            sent_channel = "email"
-                        elif channel.channel == "expo_push":
-                            provider = ExpoPushProvider(ExpoPushConfig(**channel.config))
-                            send_result = await provider.send(
-                                ExpoPushMessage(
-                                    title=title,
-                                    body=body,
-                                    data={"screen": "wardrobe"},
-                                )
-                            )
-                            sent = send_result.get("success", False)
-                            sent_channel = "expo_push"
-
-                        if sent:
-                            break
-                    except Exception as e:
-                        logger.warning(f"Failed to send wash reminder via {channel.channel}: {e}")
-
-                # Create notification record
-                notification = Notification(
-                    user_id=user_id,
-                    channel=sent_channel,
-                    status=NotificationStatus.sent if sent else NotificationStatus.failed,
-                    payload={
-                        "type": "wash_reminder",
-                        "item_count": count,
-                        "title": title,
-                        "body": body,
-                        "care": care_notes,
-                    },
-                    sent_at=datetime.now(UTC) if sent else None,
-                    error_message=None if sent else "All channels failed",
-                )
-                db.add(notification)
-                await db.commit()
-                if sent:
-                    notified += 1
-
-            except Exception as e:
-                logger.warning(f"Failed to send wash reminder for user {user_id}: {e}")
-                continue
-
-        logger.info(f"Sent wash reminders to {notified} users")
-        return {"notified": notified}
-
-    except Exception as e:
-        logger.exception("Error in check_wash_reminders")
         return {"error": str(e)}
     finally:
         await db.close()

@@ -23,7 +23,6 @@ from app.models.notification import (
     NativePushToken,
     Notification,
     NotificationPreference,
-    NotificationSettings,
     PushSubscription,
 )
 from app.models.outfit import (
@@ -64,7 +63,6 @@ __all__ = [
     "OutfitPerformance",
     "StyleInsight",
     "MagicLinkToken",
-    "NotificationSettings",
     "NotificationPreference",
     "NativePushToken",
     "PushSubscription",

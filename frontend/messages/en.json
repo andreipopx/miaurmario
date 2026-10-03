@@ -1461,59 +1461,14 @@
     "title": "Notifications",
     "subtitle": "Choose how and when Miaurmario should nudge you",
     "pageSubtitle": "Choose what we tell you about and where",
-    "channelsTitle": "Channels",
-    "channelsSubtitle": "Where notifications get delivered",
     "schedulesTitle": "Schedules",
     "schedulesSubtitle": "When you get outfit suggestions",
     "empty": "You haven't set up any notifications yet.",
-    "addChannelCta": "Add a channel",
     "addScheduleCta": "Add a schedule",
-    "channelsCardTitle": "Advanced channels",
-    "channelsCardDescription": "Add channels to receive your daily outfit recommendations",
-    "channelsEmptyTitle": "No notification channels configured",
-    "channelsEmptyHint": "Add a channel to start receiving outfit suggestions",
     "schedulesCardTitle": "Outfit of the day",
     "schedulesCardDescription": "When we prepare your look (sent through the channels above)",
     "schedulesEmptyTitle": "No schedules configured",
     "schedulesEmptyHint": "Add a schedule to receive daily outfit suggestions",
-    "testButton": "Test",
-    "priority": "Priority {n}",
-    "type": {
-      "email": "Email",
-      "ntfy": "ntfy.sh",
-      "webhook": "Webhook",
-      "push": "Push",
-      "mattermost": "Mattermost"
-    },
-    "channelLabels": {
-      "ntfy": "ntfy Push",
-      "mattermost": "Mattermost",
-      "email": "Email"
-    },
-    "channelSummary": {
-      "mattermostConfigured": "Webhook configured"
-    },
-    "addChannel": {
-      "buttonLabel": "Add Channel",
-      "adding": "Adding...",
-      "dialogTitle": "Add Notification Channel",
-      "dialogDescription": "Configure a new way to receive outfit recommendations.",
-      "channelType": "Channel Type",
-      "ntfyOption": "ntfy Push Notifications",
-      "mattermostOption": "Mattermost",
-      "emailOption": "Email",
-      "serverUrl": "Server URL",
-      "topic": "Topic *",
-      "topicPlaceholder": "my-wardrobe-notifications",
-      "topicHelp": "Subscribe to this topic in your ntfy app",
-      "token": "Access Token",
-      "tokenHelp": "Required if your ntfy server uses authentication",
-      "webhookUrl": "Webhook URL *",
-      "webhookPlaceholder": "https://mattermost.example.com/hooks/xxx",
-      "webhookHelp": "Create an incoming webhook in Mattermost settings",
-      "emailAddress": "Email Address *",
-      "emailPlaceholder": "you@example.com"
-    },
     "addSchedule": {
       "buttonLabel": "Add Schedule",
       "adding": "Adding...",
@@ -1531,42 +1486,23 @@
       "dayEvening": "{day} evening"
     },
     "toasts": {
-      "channelAdded": "Notification channel added",
-      "channelAddError": "Failed to add channel",
       "scheduleAdded": "Schedule added",
       "scheduleAddError": "Failed to add schedule",
-      "testSent": "Test notification sent",
-      "testFailed": "Test failed",
-      "channelEnabled": "Channel enabled",
-      "channelDisabled": "Channel disabled",
       "scheduleEnabled": "Schedule enabled",
       "scheduleDisabled": "Schedule disabled",
       "willNotifyDayBefore": "Will notify day before",
       "willNotifySameDay": "Will notify same day",
       "updateFailed": "Failed to update",
-      "channelDeleted": "Channel deleted",
       "scheduleDeleted": "Schedule deleted",
       "deleteFailed": "Failed to delete"
     },
-    "validation": {
-      "topicRequired": "Topic is required for ntfy",
-      "webhookRequired": "Webhook URL is required for Mattermost",
-      "emailRequired": "Email address is required"
-    },
     "delete": {
-      "channelTitle": "Delete Notification Channel?",
       "scheduleTitle": "Delete Schedule?",
-      "channelBody": "This will remove the notification channel. You can add it back later.",
       "scheduleBody": "This will remove the schedule. You can create a new one later.",
       "deleting": "Deleting...",
       "delete": "Delete"
     },
     "installApp": "Install the app",
-    "advanced": {
-      "title": "Advanced",
-      "description": "ntfy and Mattermost, for people who already use them",
-      "channelsHint": "They get the outfit of the day and laundry reminders, on top of email and device."
-    },
     "defaults": {
       "title": "What we notify you about",
       "description": "By email with zero setup, and on your phone once you enable this device.",

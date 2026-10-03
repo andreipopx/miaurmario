@@ -30,12 +30,11 @@ async def send_waitlist_approved_email(
     await _send(to, render_waitlist_approved_email(invite_url=invite_url, name=name, locale=locale))
 
 
-def _smtp_provider(to: str):
+def _smtp_provider():
     # Imported lazily: notification_providers pulls in the email templates too.
-    from app.schemas.notification import EmailConfig
     from app.services.notification_providers import EmailProvider
 
-    provider = EmailProvider(EmailConfig(address=to))
+    provider = EmailProvider()
     return provider if provider.is_configured() else None
 
 
@@ -44,7 +43,7 @@ def email_delivery_available() -> bool:
     if get_settings().resend_api_key:
         return True
     try:
-        return _smtp_provider("probe@example.com") is not None
+        return _smtp_provider() is not None
     except Exception:
         return False
 
@@ -61,7 +60,7 @@ async def send_email(
         await _send(to, email, headers=headers)
         return "resend"
 
-    provider = _smtp_provider(to)
+    provider = _smtp_provider()
     if provider is None:
         raise EmailNotConfiguredError("Neither RESEND_API_KEY nor SMTP is configured")
     from app.services.notification_providers import EmailMessage

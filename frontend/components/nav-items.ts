@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { FEATURES } from '@/lib/features';
+import { StinkyHeadIcon } from '@/components/brand/stinky-head-icon';
 
 /**
  * Information architecture. Four areas live in the mobile dock and the desktop
@@ -77,7 +78,7 @@ export const STINKY: NavSection = {
   key: 'stinky',
   shortKey: 'stinkyShort',
   href: '/dashboard/stinky',
-  icon: MessageCircle,
+  icon: StinkyHeadIcon,
   tabs: [
     { key: 'chat', href: '/dashboard/stinky', icon: MessageCircle },
     { key: 'askLook', href: '/dashboard/suggest', icon: Sparkles },

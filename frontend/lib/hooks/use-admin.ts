@@ -17,6 +17,7 @@ import type {
   FeedbackStatus,
   AdminBadge,
   Invite,
+  NewUserAI,
   SignupMode,
   SystemStatus,
   WaitlistDecisionResult,
@@ -57,6 +58,7 @@ export const adminKeys = {
   user: (id: string) => ['admin', 'user', id] as const,
   deletions: ['admin', 'deletions'] as const,
   signup: ['admin', 'signup'] as const,
+  newUserAI: ['admin', 'new-user-ai'] as const,
   invites: ['admin', 'invites'] as const,
   waitlist: (status: string) => ['admin', 'waitlist', status] as const,
   feedback: (status: string) => ['admin', 'feedback', status] as const,
@@ -78,6 +80,9 @@ export const useAdminDeletions = (enabled: boolean) =>
 
 export const useSignupMode = (enabled: boolean) =>
   useAdminQuery<{ mode: SignupMode }>(adminKeys.signup, '/admin/signup', enabled);
+
+export const useNewUserAI = (enabled: boolean) =>
+  useAdminQuery<NewUserAI>(adminKeys.newUserAI, '/admin/settings/new-user-ai', enabled);
 
 export const useInvites = (enabled: boolean) =>
   useAdminQuery<Invite[]>(adminKeys.invites, '/admin/invites', enabled);
@@ -159,6 +164,9 @@ export const useRetryDeletion = () =>
 
 export const useSetSignupMode = () =>
   useAdminMutation((mode: SignupMode) => api.put<{ mode: SignupMode }>('/admin/signup', { mode }));
+
+export const useSaveNewUserAI = () =>
+  useAdminMutation((data: NewUserAI) => api.put<NewUserAI>('/admin/settings/new-user-ai', data));
 
 export const useCreateInvite = () =>
   useAdminMutation(

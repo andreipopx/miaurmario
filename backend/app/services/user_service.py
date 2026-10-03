@@ -45,8 +45,15 @@ class UserService:
         )
         self.db.add(user)
         await self.db.flush()
+        await self._on_created(user)
         await self.db.refresh(user)
         return user
+
+    async def _on_created(self, user: User) -> None:
+        """Setup shared by every path that inserts a users row (same transaction)."""
+        from app.services.ai_access import grant_new_user_ai
+
+        await grant_new_user_ai(self.db, user.id)
 
     async def update(self, user: User, user_data: UserUpdate) -> User:
         update_data = user_data.model_dump(exclude_unset=True)
@@ -94,6 +101,7 @@ class UserService:
             )
             self.db.add(user)
             await self.db.flush()
+            await self._on_created(user)
             await self.db.refresh(user)
             return user, True
         else:
@@ -147,6 +155,7 @@ class UserService:
             )
             self.db.add(user)
             await self.db.flush()
+            await self._on_created(user)
             await self.db.refresh(user)
             return user
 

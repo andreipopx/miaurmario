@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Copy, Link2, Plus } from 'lucide-react';
@@ -12,8 +12,24 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PillGroup, SectionCard, useAdminErrorMessage } from '@/components/admin/shared';
 import { WaitlistSection } from '@/components/admin/waitlist-section';
-import type { Invite, SignupMode } from '@/lib/admin';
-import { useCreateInvite, useInvites, useRevokeInvite, useSetSignupMode, useSignupMode } from '@/lib/hooks/use-admin';
+import {
+  NEW_USER_AI_CAP_MAX,
+  NEW_USER_AI_CAP_MIN,
+  parseNewUserAICap,
+  type Invite,
+  type NewUserAI,
+  type NewUserAIAccess,
+  type SignupMode,
+} from '@/lib/admin';
+import {
+  useCreateInvite,
+  useInvites,
+  useNewUserAI,
+  useRevokeInvite,
+  useSaveNewUserAI,
+  useSetSignupMode,
+  useSignupMode,
+} from '@/lib/hooks/use-admin';
 
 const STATUS_VARIANT: Record<Invite['status'], 'mint' | 'outline' | 'secondary' | 'amber'> = {
   active: 'mint',
@@ -98,11 +114,87 @@ function CreateInviteForm() {
   );
 }
 
+function NewUserAIForm({ value }: { value: NewUserAI }) {
+  const t = useTranslations('admin.signup.newUserAI');
+  const errorMessage = useAdminErrorMessage();
+  const save = useSaveNewUserAI();
+  const [cap, setCap] = useState(String(value.monthly_cap));
+
+  useEffect(() => {
+    setCap(String(value.monthly_cap));
+  }, [value.monthly_cap]);
+
+  const parsedCap = parseNewUserAICap(cap);
+
+  const persist = async (next: NewUserAI, message: string) => {
+    try {
+      await save.mutateAsync(next);
+      toast.success(message);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
+
+  const submitCap = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (parsedCap == null) return;
+    void persist({ access: value.access, monthly_cap: parsedCap }, t('capSaved'));
+  };
+
+  return (
+    <div className="space-y-3">
+      <PillGroup<NewUserAIAccess>
+        label={t('title')}
+        value={value.access}
+        disabled={save.isPending}
+        onChange={(access) =>
+          persist({ access, monthly_cap: value.monthly_cap }, t(access === 'platform' ? 'giftSaved' : 'noneSaved'))
+        }
+        options={[
+          { value: 'platform', label: t('gift') },
+          { value: 'none', label: t('none') },
+        ]}
+      />
+      <p className="text-sm text-muted-foreground">
+        {value.access === 'platform' ? t('giftHint', { cap: value.monthly_cap }) : t('noneHint')}
+      </p>
+      {value.access === 'platform' && (
+        <form onSubmit={submitCap} className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="new-user-ai-cap" className="text-[13px]">{t('cap')}</Label>
+            <Input
+              id="new-user-ai-cap"
+              inputMode="numeric"
+              value={cap}
+              onChange={(e) => setCap(e.target.value)}
+              aria-invalid={parsedCap == null}
+              aria-describedby="new-user-ai-cap-hint"
+              className="h-11 w-32"
+            />
+          </div>
+          <Button
+            type="submit"
+            size="sm"
+            className="h-11"
+            disabled={parsedCap == null || parsedCap === value.monthly_cap || save.isPending}
+          >
+            {t('saveCap')}
+          </Button>
+          <p id="new-user-ai-cap-hint" className="w-full text-xs text-muted-foreground">
+            {t('capHint', { min: NEW_USER_AI_CAP_MIN, max: NEW_USER_AI_CAP_MAX })}
+          </p>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export function SignupSection() {
   const t = useTranslations('admin.signup');
   const format = useFormatter();
   const errorMessage = useAdminErrorMessage();
   const { data: mode } = useSignupMode(true);
+  const { data: newUserAI } = useNewUserAI(true);
   const setMode = useSetSignupMode();
   const { data: invites, isLoading } = useInvites(true);
   const revoke = useRevokeInvite();
@@ -136,6 +228,10 @@ export function SignupSection() {
         <p className="mt-3 text-sm text-muted-foreground">
           {mode?.mode === 'invite_only' ? t('inviteOnlyHint') : t('openHint')}
         </p>
+      </SectionCard>
+
+      <SectionCard title={t('newUserAI.title')} description={t('newUserAI.description')}>
+        {newUserAI ? <NewUserAIForm value={newUserAI} /> : <Skeleton className="h-11 w-72 rounded-full" />}
       </SectionCard>
 
       <WaitlistSection />

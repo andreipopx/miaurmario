@@ -19,6 +19,9 @@ Resolution order:
    * "byok": the user's own provider; the key is Fernet-decrypted in memory
      only, and the host is re-checked against private/loopback ranges.
 
+New accounts get a capped "platform" row at creation (``grant_new_user_ai``)
+while the admin setting ``new_user_ai_access`` is "platform" (the default).
+
 Usage (requests + provider-reported tokens) is recorded per user through an
 independent session bound to the caller's engine, so it survives a rollback
 of the caller's transaction and never touches its unit of work.
@@ -49,6 +52,7 @@ from app.models.user_ai_settings import (
     AI_ACCESS_PLATFORM,
     UserAISettings,
 )
+from app.services import app_settings as app_cfg
 from app.services.ai_service import (
     AIDisabledError,
     AIProviderConfig,
@@ -128,6 +132,26 @@ def is_site_admin(user: User) -> bool:
     """
     email = (user.email or "").strip().lower()
     return bool(email) and email in get_settings().admin_email_set()
+
+
+# --- New accounts ----------------------------------------------------------------
+
+
+async def grant_new_user_ai(db: AsyncSession, user_id: UUID) -> None:
+    """Give a just-created account the platform AI with the monthly cap, when the
+    admin setting ``new_user_ai_access`` says so ("platform" by default).
+
+    Called by every user-creation path, inside the caller's transaction. An
+    existing row is never touched (ON CONFLICT DO NOTHING).
+    """
+    if await app_cfg.get_new_user_ai_access(db) != AI_ACCESS_PLATFORM:
+        return
+    cap = await app_cfg.get_new_user_ai_monthly_cap(db)
+    table = UserAISettings.__table__
+    stmt = pg_insert(table).values(
+        user_id=user_id, ai_access=AI_ACCESS_PLATFORM, monthly_request_cap=cap
+    )
+    await db.execute(stmt.on_conflict_do_nothing(index_elements=[table.c.user_id]))
 
 
 # --- SSRF guard for BYOK base URLs ---------------------------------------------

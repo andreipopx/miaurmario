@@ -108,6 +108,7 @@ def test_admin_routes_are_discovered():
         "/api/v1/admin/users/{user_id}/delete",
         "/api/v1/admin/overview",
         "/api/v1/admin/settings/ai-pricing",
+        "/api/v1/admin/settings/new-user-ai",
         "/api/v1/admin/signup",
         "/api/v1/admin/invites",
         "/api/v1/admin/invites/{invite_id}/revoke",

@@ -3,6 +3,8 @@
 Env vars provide the defaults; a row in ``app_settings`` overrides them.
 Keys:
 * ``signup_mode``   -> "open" | "invite_only"   (default "open")
+* ``new_user_ai_access``      -> "platform" | "none"   (default "platform")
+* ``new_user_ai_monthly_cap`` -> int requests/month for that grant (default 150)
 * ``ai_pricing``    -> {input_usd_per_m, output_usd_per_m, usd_eur_rate, monthly_budget_eur}
 * ``announcement``  -> {id, text, level, expires_at} | null
 """
@@ -25,7 +27,16 @@ from app.models.admin import AppSetting
 SignupMode = Literal["open", "invite_only"]
 SIGNUP_MODES: tuple[str, ...] = ("open", "invite_only")
 
+NewUserAIAccess = Literal["platform", "none"]
+NEW_USER_AI_ACCESS_VALUES: tuple[str, ...] = ("platform", "none")
+# The gift is always capped: no "unlimited" value, so costs cannot run away.
+NEW_USER_AI_CAP_DEFAULT = 150
+NEW_USER_AI_CAP_MIN = 10
+NEW_USER_AI_CAP_MAX = 5000
+
 KEY_SIGNUP_MODE = "signup_mode"
+KEY_NEW_USER_AI_ACCESS = "new_user_ai_access"
+KEY_NEW_USER_AI_MONTHLY_CAP = "new_user_ai_monthly_cap"
 KEY_AI_PRICING = "ai_pricing"
 KEY_ANNOUNCEMENT = "announcement"
 
@@ -53,6 +64,25 @@ async def set_setting(db: AsyncSession, key: str, value: Any, updated_by: uuid.U
 async def get_signup_mode(db: AsyncSession) -> SignupMode:
     value = await get_setting(db, KEY_SIGNUP_MODE)
     return value if value in SIGNUP_MODES else "open"  # type: ignore[return-value]
+
+
+# --- AI for new accounts ----------------------------------------------------------
+
+
+async def get_new_user_ai_access(db: AsyncSession) -> NewUserAIAccess:
+    value = await get_setting(db, KEY_NEW_USER_AI_ACCESS)
+    return value if value in NEW_USER_AI_ACCESS_VALUES else "platform"  # type: ignore[return-value]
+
+
+async def get_new_user_ai_monthly_cap(db: AsyncSession) -> int:
+    value = await get_setting(db, KEY_NEW_USER_AI_MONTHLY_CAP)
+    if (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and NEW_USER_AI_CAP_MIN <= value <= NEW_USER_AI_CAP_MAX
+    ):
+        return value
+    return NEW_USER_AI_CAP_DEFAULT
 
 
 # --- AI pricing -------------------------------------------------------------------

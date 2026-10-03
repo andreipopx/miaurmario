@@ -1,5 +1,6 @@
-"""Site-admin panel: overview, AI cost settings, sign-up mode, invites and waitlist,
-feedback inbox, system status, global announcement and the audit log.
+"""Site-admin panel: overview, AI cost settings, sign-up mode, AI for new accounts,
+invites and waitlist, feedback inbox, system status, global announcement and the
+audit log.
 
 Every endpoint requires a site admin (ADMIN_EMAILS); every mutation writes an
 ``admin_audit_log`` row in the same transaction.
@@ -88,6 +89,36 @@ async def put_signup(data: SignupModePayload, db: DB, admin: AdminUser) -> dict[
         audit(db, admin, "settings.signup_mode", before=before, after=data.mode)
     await db.commit()
     return {"mode": data.mode}
+
+
+class NewUserAIPayload(BaseModel):
+    access: Literal["platform", "none"]
+    monthly_cap: int = Field(..., ge=app_cfg.NEW_USER_AI_CAP_MIN, le=app_cfg.NEW_USER_AI_CAP_MAX)
+
+
+async def _new_user_ai(db: AsyncSession) -> dict[str, Any]:
+    return {
+        "access": await app_cfg.get_new_user_ai_access(db),
+        "monthly_cap": await app_cfg.get_new_user_ai_monthly_cap(db),
+    }
+
+
+@router.get("/settings/new-user-ai")
+async def get_new_user_ai(db: DB, _admin: AdminUser) -> dict[str, Any]:
+    """AI given to accounts created from now on (existing accounts are untouched)."""
+    return await _new_user_ai(db)
+
+
+@router.put("/settings/new-user-ai")
+async def put_new_user_ai(data: NewUserAIPayload, db: DB, admin: AdminUser) -> dict[str, Any]:
+    before = await _new_user_ai(db)
+    await app_cfg.set_setting(db, app_cfg.KEY_NEW_USER_AI_ACCESS, data.access, admin.id)
+    await app_cfg.set_setting(db, app_cfg.KEY_NEW_USER_AI_MONTHLY_CAP, data.monthly_cap, admin.id)
+    after = data.model_dump()
+    if before != after:
+        audit(db, admin, "settings.new_user_ai", before=before, after=after)
+    await db.commit()
+    return after
 
 
 class InviteCreate(BaseModel):

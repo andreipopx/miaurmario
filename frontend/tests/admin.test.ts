@@ -12,6 +12,7 @@ import {
   parseAdminTab,
   parseCap,
   parseDecimal,
+  parseNewUserAICap,
   toDateTimeLocal,
 } from '@/lib/admin';
 import { buildFeedbackForm } from '@/lib/hooks/use-admin';
@@ -65,6 +66,18 @@ describe('number parsing', () => {
     expect(parseCap('')).toBeNull();
     expect(parseCap('50')).toBe(50);
     expect(parseCap('5.5')).toBe('invalid');
+  });
+
+  it('parseNewUserAICap only accepts whole numbers between 10 and 5000', () => {
+    expect(parseNewUserAICap('150')).toBe(150);
+    expect(parseNewUserAICap(' 10 ')).toBe(10);
+    expect(parseNewUserAICap('5000')).toBe(5000);
+    expect(parseNewUserAICap('')).toBeNull();
+    expect(parseNewUserAICap('0')).toBeNull();
+    expect(parseNewUserAICap('9')).toBeNull();
+    expect(parseNewUserAICap('5001')).toBeNull();
+    expect(parseNewUserAICap('12.5')).toBeNull();
+    expect(parseNewUserAICap('abc')).toBeNull();
   });
 });
 

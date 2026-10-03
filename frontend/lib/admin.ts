@@ -81,6 +81,24 @@ export interface AccountDeletion {
 
 export type SignupMode = 'open' | 'invite_only';
 
+/** AI given to accounts created from now on (always capped, never unlimited). */
+export type NewUserAIAccess = 'platform' | 'none';
+
+export interface NewUserAI {
+  access: NewUserAIAccess;
+  monthly_cap: number;
+}
+
+export const NEW_USER_AI_CAP_MIN = 10;
+export const NEW_USER_AI_CAP_MAX = 5000;
+
+/** Monthly cap typed by the admin: a whole number in range, else null. */
+export function parseNewUserAICap(value: string): number | null {
+  const cap = parseCap(value);
+  if (typeof cap !== 'number' || cap < NEW_USER_AI_CAP_MIN || cap > NEW_USER_AI_CAP_MAX) return null;
+  return cap;
+}
+
 export interface Invite {
   id: string;
   code: string;

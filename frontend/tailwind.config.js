@@ -1,3 +1,15 @@
+/**
+ * A colour token that also works with Tailwind's opacity modifier (bg-background/90).
+ * The tokens are plain hex variables, which Tailwind can't make translucent on its own,
+ * so those classes used to produce no CSS at all (the Stinky chat header was see-through).
+ * Plain classes stay exactly `var(--x)`; only `/NN` ones mix with transparent, and a
+ * browser without color-mix() simply ignores them, as before.
+ */
+const tok = (name) => ({ opacityValue }) =>
+  opacityValue === undefined || opacityValue === '1' || String(opacityValue).startsWith('var(')
+    ? `var(${name})`
+    : `color-mix(in srgb, var(${name}) calc(${opacityValue} * 100%), transparent)`;
+
 /** @type {import('tailwindcss').Config} */
 // Stinky pop — every colour/radius comes from CSS variables in app/globals.css.
 module.exports = {
@@ -21,57 +33,57 @@ module.exports = {
     },
     extend: {
       colors: {
-        border: 'var(--border)',
-        input: 'var(--input)',
-        ring: 'var(--ring)',
-        background: 'var(--background)',
-        foreground: 'var(--foreground)',
-        panel: 'var(--panel)',
+        border: tok('--border'),
+        input: tok('--input'),
+        ring: tok('--ring'),
+        background: tok('--background'),
+        foreground: tok('--foreground'),
+        panel: tok('--panel'),
         primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
+          DEFAULT: tok('--primary'),
+          foreground: tok('--primary-foreground'),
         },
         secondary: {
-          DEFAULT: 'var(--secondary)',
-          foreground: 'var(--secondary-foreground)',
+          DEFAULT: tok('--secondary'),
+          foreground: tok('--secondary-foreground'),
         },
         signature: {
-          DEFAULT: 'var(--signature)',
-          foreground: 'var(--signature-foreground)',
-          soft: 'var(--signature-soft)',
+          DEFAULT: tok('--signature'),
+          foreground: tok('--signature-foreground'),
+          soft: tok('--signature-soft'),
         },
         pop: {
-          amber: 'var(--pop-amber)',
-          pink: 'var(--pop-pink)',
-          sky: 'var(--pop-sky)',
-          mint: 'var(--pop-mint)',
-          foreground: 'var(--pop-foreground)',
+          amber: tok('--pop-amber'),
+          pink: tok('--pop-pink'),
+          sky: tok('--pop-sky'),
+          mint: tok('--pop-mint'),
+          foreground: tok('--pop-foreground'),
         },
         destructive: {
-          DEFAULT: 'var(--destructive)',
-          foreground: 'var(--destructive-foreground)',
+          DEFAULT: tok('--destructive'),
+          foreground: tok('--destructive-foreground'),
         },
         muted: {
-          DEFAULT: 'var(--muted)',
-          foreground: 'var(--muted-foreground)',
+          DEFAULT: tok('--muted'),
+          foreground: tok('--muted-foreground'),
         },
         accent: {
-          DEFAULT: 'var(--accent)',
-          foreground: 'var(--accent-foreground)',
+          DEFAULT: tok('--accent'),
+          foreground: tok('--accent-foreground'),
         },
         popover: {
-          DEFAULT: 'var(--popover)',
-          foreground: 'var(--popover-foreground)',
+          DEFAULT: tok('--popover'),
+          foreground: tok('--popover-foreground'),
         },
         card: {
-          DEFAULT: 'var(--card)',
-          foreground: 'var(--card-foreground)',
+          DEFAULT: tok('--card'),
+          foreground: tok('--card-foreground'),
         },
         success: {
-          DEFAULT: 'var(--success)',
+          DEFAULT: tok('--success'),
         },
         warning: {
-          DEFAULT: 'var(--warning)',
+          DEFAULT: tok('--warning'),
         },
       },
       fontFamily: {

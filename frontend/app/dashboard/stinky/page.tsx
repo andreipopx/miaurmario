@@ -269,7 +269,8 @@ function StinkyChat() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
   useLayoutEffect(() => {
-    if (following.current) bottomRef.current?.scrollIntoView({ block: 'end' });
+    // A new chat starts at the top: its greeting would otherwise slide under the header.
+    if (following.current && messages.length > 0) bottomRef.current?.scrollIntoView({ block: 'end' });
   }, [messages, statusLabel, keyboard.open, keyboard.inset]);
 
   const toolLabel = useCallback(
@@ -477,7 +478,7 @@ function StinkyChat() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
       {/* Chat header: fixed under the app header (<main> clips overflow, so sticky can't work). */}
-      <div className="fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-page bg-background/95 lg:left-64 lg:top-20">
+      <div className="fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-page bg-background lg:left-64 lg:top-20">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-0">
           <div className="no-callout flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-signature-soft">
             <Stinky

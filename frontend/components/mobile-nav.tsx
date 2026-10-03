@@ -10,9 +10,9 @@ import { useSocialSummary } from '@/lib/hooks/use-social';
 import { haptic } from '@/lib/native/haptics';
 
 /**
- * Floating glass dock (mobile). Active tab = pink pill with icon + label;
- * inactive tabs are icon-only with an aria-label. Page content reserves
- * space for it via the `pb-dock` utility in the dashboard layout.
+ * Floating glass dock (mobile): every tab shows its icon and its name; the
+ * current one has its icon in the pink pill. Page content reserves space for
+ * it via the `pb-dock` utility in the dashboard layout.
  *
  * The tapped tab lights up at once (with a haptic tick), before the new screen
  * has arrived, the way a native tab bar answers; the pathname takes over again
@@ -41,14 +41,14 @@ export function MobileNav() {
         data-dock
         data-dock-nav
         aria-label={t('primary')}
-        className="glass-dock fixed inset-x-4 z-dock mx-auto flex h-16 max-w-md items-center justify-between rounded-[32px] p-2 max-[359px]:inset-x-3 max-[359px]:p-1.5 lg:hidden"
-        style={{ bottom: 'calc(24px + env(safe-area-inset-bottom))' }}
+        className="glass-dock fixed inset-x-4 z-dock mx-auto flex h-[68px] max-w-md items-stretch justify-between rounded-[34px] px-1.5 py-1.5 max-[359px]:inset-x-3 max-[359px]:px-1 lg:hidden"
+        style={{ bottom: 'calc(20px + env(safe-area-inset-bottom))' }}
       >
         {MAIN_SECTIONS.map((item) => {
           const active = activeKey === item.key;
           const Icon = item.icon;
           const badge = item.socialBadge ? socialCount : 0;
-          const label = badge > 0 ? `${t(item.key)} · ${t('newActivity', { count: badge })}` : t(item.key);
+          const name = t(item.shortKey ?? item.key);
           return (
             <Link
               key={item.href}
@@ -60,33 +60,38 @@ export function MobileNav() {
                 haptic(6);
               }}
               aria-current={active ? 'page' : undefined}
-              aria-label={active ? undefined : label}
+              aria-label={badge > 0 ? `${name} · ${t('newActivity', { count: badge })}` : undefined}
               className={cn(
-                'pressable flex h-12 items-center justify-center rounded-full transition-[background-color,padding,width,transform] duration-200 ease-pop',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                // Narrow phones / big system font: inactive icons give up their
-                // spare width first, the active pill keeps its label (truncated
-                // only as a last resort) so all five always fit.
-                active
-                  ? 'min-w-0 max-w-[55%] shrink-0 gap-2 bg-signature px-4 text-signature-foreground max-[359px]:gap-1.5 max-[359px]:px-3'
-                  : 'w-12 min-w-0 shrink text-foreground hover:bg-accent'
+                'group flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[28px] active:scale-[0.96] transition-transform duration-150',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
               )}
             >
-              <span className="relative shrink-0">
-                <Icon className={active ? 'h-5 w-5' : 'h-[22px] w-[22px]'} strokeWidth={active ? 2 : 1.75} aria-hidden />
+              {/* Every tab names itself (Apple's tab bars always do); the current one
+                  sits in the pink pill. */}
+              <span
+                className={cn(
+                  'relative flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-200 ease-pop max-[359px]:w-12',
+                  active ? 'bg-signature text-signature-foreground' : 'text-foreground group-hover:bg-accent'
+                )}
+              >
+                <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.1 : 1.75} aria-hidden />
                 {badge > 0 && (
                   <span
                     aria-hidden
-                    className={cn(
-                      'absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none',
-                      active ? 'bg-foreground text-background' : 'bg-signature text-signature-foreground'
-                    )}
+                    className="absolute -right-0.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-signature px-1 text-[10px] font-bold leading-none text-signature-foreground ring-2 ring-[var(--dock)]"
                   >
                     {badge > 9 ? '9+' : badge}
                   </span>
                 )}
               </span>
-              {active && <span className="min-w-0 truncate text-sm font-bold">{t(item.shortKey ?? item.key)}</span>}
+              <span
+                className={cn(
+                  'max-w-full truncate px-0.5 text-[11px] leading-none',
+                  active ? 'font-bold text-foreground' : 'font-semibold text-muted-foreground'
+                )}
+              >
+                {name}
+              </span>
             </Link>
           );
         })}

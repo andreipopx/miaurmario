@@ -387,6 +387,35 @@ class TestSpotifyAPI:
         assert "miaurmario.home" not in location
         assert location.endswith("/dashboard/settings/integrations/spotify?error=invalid_state")
 
+    async def test_callback_needs_the_browser_that_asked(
+        self, client: AsyncClient, auth_headers, spotify_settings
+    ):
+        """An authorize URL forwarded to someone else must not link their Spotify to us."""
+        resp = await client.get("/api/v1/integrations/spotify/connect", headers=auth_headers)
+        assert resp.status_code == 200
+        assert "mm_oauth_spotify" in resp.headers["set-cookie"]
+        assert "HttpOnly" in resp.headers["set-cookie"]
+        state = parse_qs(urlparse(resp.json()["authorize_url"]).query)["state"][0]
+        client.cookies.clear()
+        resp = await client.get(
+            "/api/v1/integrations/spotify/callback",
+            params={"error": "access_denied", "state": state},
+        )
+        assert resp.status_code == 302
+        assert "error=invalid_state" in resp.headers["location"]
+
+    async def test_callback_accepts_the_bound_browser(
+        self, client: AsyncClient, auth_headers, spotify_settings
+    ):
+        resp = await client.get("/api/v1/integrations/spotify/connect", headers=auth_headers)
+        state = parse_qs(urlparse(resp.json()["authorize_url"]).query)["state"][0]
+        resp = await client.get(
+            "/api/v1/integrations/spotify/callback",
+            params={"error": "access_denied", "state": state},
+        )
+        # Past the state check: the user cancelled at Spotify.
+        assert "error=access_denied" in resp.headers["location"]
+
     async def test_callback_user_denied(self, client: AsyncClient, spotify_settings, test_user):
         state = await create_state(str(test_user.id))
         resp = await client.get(

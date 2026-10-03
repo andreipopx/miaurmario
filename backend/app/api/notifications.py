@@ -206,6 +206,7 @@ async def test_notification_setting(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await rate_limit_by_user(current_user.id, "notification_test", 5, 600)
     service = NotificationService(db)
     success, message = await service.test_setting(setting_id, current_user.id)
     if not success:

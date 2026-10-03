@@ -10,12 +10,13 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import update
+from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import DEFAULT_SECRET_KEY, get_settings
 from app.database import get_db
 from app.models.magic_link import MagicLinkToken
+from app.models.notification import NativePushToken, PushSubscription
 from app.models.user import User
 from app.schemas.user import (
     AuthConfigMagicLink,
@@ -57,11 +58,14 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 settings = get_settings()
 
 
-def create_access_token(external_id: str, expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    external_id: str, expires_delta: timedelta | None = None, token_version: int = 0
+) -> str:
     """Issue an API access token (HS256, signed with SECRET_KEY).
 
     Lifetime defaults to ACCESS_TOKEN_DAYS; clients slide it with POST
-    /auth/refresh. Rotating SECRET_KEY invalidates every outstanding token.
+    /auth/refresh. Rotating SECRET_KEY invalidates every outstanding token;
+    bumping ``User.token_version`` invalidates one user's.
     """
     now = datetime.now(UTC)
     if expires_delta:
@@ -72,6 +76,7 @@ def create_access_token(external_id: str, expires_delta: timedelta | None = None
         "sub": external_id,
         "exp": expire,
         "iat": now,
+        "tv": token_version,
     }
     return jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
 
@@ -243,7 +248,7 @@ async def sync_user(
             detail=str(e),
         ) from None
 
-    access_token = create_access_token(user.external_id)
+    access_token = create_access_token(user.external_id, token_version=user.token_version)
 
     return UserSyncResponse(
         id=user.id,
@@ -268,6 +273,23 @@ class RefreshResponse(BaseModel):
     expires_in: int
 
 
+@router.post("/logout-everywhere", status_code=status.HTTP_204_NO_CONTENT)
+async def logout_everywhere(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    """Invalidate every API token of the caller, this device's included.
+
+    Push subscriptions go too: a lost phone should stop showing notifications.
+    Each device registers again the next time someone signs in on it.
+    """
+    await rate_limit_by_user(current_user.id, "logout_everywhere", 5, 3600)
+    current_user.token_version = (current_user.token_version or 0) + 1
+    await db.execute(delete(PushSubscription).where(PushSubscription.user_id == current_user.id))
+    await db.execute(delete(NativePushToken).where(NativePushToken.user_id == current_user.id))
+    await db.commit()
+
+
 @router.post("/refresh", response_model=RefreshResponse)
 async def refresh_access_token(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -280,7 +302,9 @@ async def refresh_access_token(
     """
     await rate_limit_by_user(current_user.id, "auth_refresh", 30, 3600)
     return RefreshResponse(
-        access_token=create_access_token(current_user.external_id),
+        access_token=create_access_token(
+            current_user.external_id, token_version=current_user.token_version
+        ),
         expires_in=settings.access_token_days * 86400,
     )
 
@@ -410,7 +434,7 @@ def _login_response(user: User, *, is_new: bool) -> LoginResponse:
         is_new_user=is_new,
         onboarding_completed=user.onboarding_completed,
         needs_username=not user.username,
-        access_token=create_access_token(user.external_id),
+        access_token=create_access_token(user.external_id, token_version=user.token_version),
     )
 
 

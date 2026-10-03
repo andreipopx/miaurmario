@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.auth import create_access_token
 from app.database import get_db
 from app.models.user import User
 from app.services.avatar_service import (
@@ -76,7 +77,7 @@ class UserProfileResponse(BaseModel):
 
 
 class UserProfileUpdate(BaseModel):
-    display_name: str | None = None
+    display_name: str | None = Field(default=None, min_length=1, max_length=100)
     username: str | None = Field(default=None, min_length=3, max_length=20)
     bio: str | None = Field(default=None, max_length=280)
     timezone: str | None = Field(default=None, max_length=50)
@@ -335,6 +336,8 @@ class PasswordSetRequest(BaseModel):
 class PasswordStatusResponse(BaseModel):
     has_password: bool
     password_updated_at: datetime | None = None
+    # After a change every other device is signed out; this replaces the caller's token.
+    access_token: str | None = None
 
 
 @router.put("/password", response_model=PasswordStatusResponse)
@@ -374,11 +377,22 @@ async def set_password(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.code
         ) from None
 
+    changing = current_user.password_hash is not None
     current_user.password_hash = await hash_password_async(data.new_password)
     current_user.password_updated_at = datetime.now(UTC)
+    if changing:
+        # Whoever else is signed in (a lost phone, a stolen session) is signed out;
+        # this device carries on with the token returned below.
+        current_user.token_version = (current_user.token_version or 0) + 1
     await db.commit()
     return PasswordStatusResponse(
-        has_password=True, password_updated_at=current_user.password_updated_at
+        has_password=True,
+        password_updated_at=current_user.password_updated_at,
+        access_token=create_access_token(
+            current_user.external_id, token_version=current_user.token_version
+        )
+        if changing
+        else None,
     )
 
 

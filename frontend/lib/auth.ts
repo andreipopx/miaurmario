@@ -247,15 +247,22 @@ function getProviders() {
 export const authOptions: NextAuthOptions = {
   providers: getProviders(),
   callbacks: {
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, account, trigger, session }) {
       const apiUrl = backendUrl();
 
       // Session update triggered - refresh user data from backend
       if (trigger === 'update' && token.accessToken) {
+        // A password change signs every other device out and hands this one a new
+        // token (update({ accessToken })). It is only kept if the backend accepts it.
+        const offered =
+          typeof session?.accessToken === 'string' && session.accessToken !== token.accessToken
+            ? session.accessToken
+            : null;
+        const bearer = offered ?? token.accessToken;
         try {
           const response = await fetch(`${apiUrl}/api/v1/users/me`, {
             headers: {
-              'Authorization': `Bearer ${token.accessToken}`,
+              'Authorization': `Bearer ${bearer}`,
             },
           });
 
@@ -263,6 +270,7 @@ export const authOptions: NextAuthOptions = {
             const userData = await response.json();
             return {
               ...token,
+              ...(offered ? backendTokenFields(offered) : {}),
               onboardingCompleted: userData.onboarding_completed,
               needsUsername: !userData.username,
             };

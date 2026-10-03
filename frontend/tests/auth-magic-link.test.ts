@@ -160,6 +160,14 @@ describe('safeCallbackPath', () => {
     expect(safeCallbackPath(null)).toBe('/dashboard')
   })
 
+  it('rejects paths the URL parser would turn into another origin', () => {
+    expect(safeCallbackPath('/\t/evil.example')).toBe('/dashboard')
+    expect(safeCallbackPath('/\n/evil.example')).toBe('/dashboard')
+    expect(safeCallbackPath('/\r\n/evil.example/x')).toBe('/dashboard')
+    expect(safeCallbackPath('/%09/evil.example')).toBe('/%09/evil.example')
+    expect(safeCallbackPath('/dashboard\\..\\x')).toBe('/dashboard')
+  })
+
   it('never returns to the auth pages', () => {
     expect(safeCallbackPath('/login?error=x')).toBe('/dashboard')
     expect(safeCallbackPath('/auth/callback?token=abc')).toBe('/dashboard')

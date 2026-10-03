@@ -10,8 +10,12 @@ from app.utils.email_templates import (
     render_notification_email,
     render_test_email,
 )
+from app.utils.outbound import OutboundBlocked, guarded_post
 
 logger = logging.getLogger(__name__)
+
+BLOCKED_MESSAGE = "That address is not allowed: use a public https URL"
+UNREACHABLE_MESSAGE = "Could not reach the server"
 
 
 # ntfy Provider
@@ -58,22 +62,23 @@ class NtfyProvider:
             headers["Actions"] = "; ".join(actions)
 
         try:
-            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-                response = await client.post(
-                    f"{self.server}/{notification.topic or self.topic}",
-                    headers=headers,
-                    content=notification.message,
-                )
-
-                if response.status_code == 200:
-                    return {"success": True, "response": response.json()}
-                else:
-                    error = f"HTTP {response.status_code}: {response.text}"
-                    logger.warning("ntfy request failed: %s", error)
-                    return {"success": False, "error": error}
+            response = await guarded_post(
+                f"{self.server}/{notification.topic or self.topic}",
+                headers=headers,
+                content=notification.message,
+            )
+        except OutboundBlocked as e:
+            logger.info("ntfy server refused (%s): %s", e, self.server)
+            return {"success": False, "error": BLOCKED_MESSAGE}
         except Exception as e:
-            logger.exception("ntfy send failed")
-            return {"success": False, "error": str(e)}
+            logger.warning("ntfy send failed: %s", type(e).__name__)
+            return {"success": False, "error": UNREACHABLE_MESSAGE}
+        if response.status_code == 200:
+            return {"success": True}
+        # The answer's body is never echoed back: it would turn this into a way to read
+        # whatever the URL points at.
+        logger.warning("ntfy request failed: HTTP %s", response.status_code)
+        return {"success": False, "error": f"HTTP {response.status_code}"}
 
     async def test_connection(self) -> tuple[bool, str]:
         try:
@@ -89,8 +94,9 @@ class NtfyProvider:
             if result.get("success"):
                 return True, "Test notification sent successfully"
             return False, result.get("error", "Unknown error")
-        except Exception as e:
-            return False, str(e)
+        except Exception:
+            logger.exception("Notification test failed")
+            return False, UNREACHABLE_MESSAGE
 
 
 # Mattermost Provider
@@ -139,18 +145,17 @@ class MattermostProvider:
             ]
 
         try:
-            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-                response = await client.post(self.webhook_url, json=payload)
-
-                if response.status_code == 200:
-                    return {"success": True}
-                else:
-                    error = f"HTTP {response.status_code}: {response.text}"
-                    logger.warning("Mattermost request failed: %s", error)
-                    return {"success": False, "error": error}
+            response = await guarded_post(self.webhook_url, json=payload)
+        except OutboundBlocked as e:
+            logger.info("Mattermost webhook refused (%s)", e)
+            return {"success": False, "error": BLOCKED_MESSAGE}
         except Exception as e:
-            logger.exception("Mattermost send failed")
-            return {"success": False, "error": str(e)}
+            logger.warning("Mattermost send failed: %s", type(e).__name__)
+            return {"success": False, "error": UNREACHABLE_MESSAGE}
+        if response.status_code == 200:
+            return {"success": True}
+        logger.warning("Mattermost request failed: HTTP %s", response.status_code)
+        return {"success": False, "error": f"HTTP {response.status_code}"}
 
     async def test_connection(self) -> tuple[bool, str]:
         try:
@@ -160,8 +165,9 @@ class MattermostProvider:
             if result.get("success"):
                 return True, "Test notification sent successfully"
             return False, result.get("error", "Unknown error")
-        except Exception as e:
-            return False, str(e)
+        except Exception:
+            logger.exception("Notification test failed")
+            return False, UNREACHABLE_MESSAGE
 
 
 # Email Provider
@@ -242,8 +248,9 @@ class EmailProvider:
             if result.get("success"):
                 return True, "Test email sent successfully"
             return False, result.get("error", "Unknown error")
-        except Exception as e:
-            return False, str(e)
+        except Exception:
+            logger.exception("Notification test failed")
+            return False, UNREACHABLE_MESSAGE
 
 
 # Expo Push Provider
@@ -317,8 +324,9 @@ class ExpoPushProvider:
             if result.get("success"):
                 return True, "Test push notification sent successfully"
             return False, result.get("error", "Unknown error")
-        except Exception as e:
-            return False, str(e)
+        except Exception:
+            logger.exception("Notification test failed")
+            return False, UNREACHABLE_MESSAGE
 
 
 def build_notification_email(

@@ -49,9 +49,12 @@ async def get_current_user_optional(
     try:
         token_data = decode_token(credentials.credentials)
         user_service = UserService(db)
-        return await user_service.get_by_external_id(token_data.sub)
+        user = await user_service.get_by_external_id(token_data.sub)
     except HTTPException:
         return None
+    if user is not None and token_data.tv != user.token_version:
+        return None
+    return user
 
 
 async def get_current_user(
@@ -64,6 +67,9 @@ async def get_current_user(
     if credentials:
         token_data = decode_token(credentials.credentials)
         user = await user_service.get_by_external_id(token_data.sub)
+        if user is not None and token_data.tv != user.token_version:
+            # Signed out everywhere (or the password changed) after this token was issued.
+            user = None
 
     if not user:
         raise HTTPException(

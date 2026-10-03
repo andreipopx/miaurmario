@@ -27,6 +27,7 @@ from app.database import get_db
 from app.models.admin import FEEDBACK_KINDS, FeedbackReport
 from app.models.user import User
 from app.services.app_settings import get_active_announcement
+from app.services.image_service import strip_metadata
 from app.utils.auth import get_current_user
 from app.utils.rate_limit import rate_limit_by_user
 
@@ -78,7 +79,19 @@ async def _read_screenshot(upload: UploadFile) -> tuple[bytes, str]:
     ext = ALLOWED_SCREENSHOT_FORMATS.get(fmt or "")
     if ext is None:
         raise _bad_request("screenshot_invalid", "Only PNG, JPEG or WebP screenshots.")
-    return data, ext
+    return _without_metadata(data, fmt or "PNG"), ext
+
+
+def _without_metadata(data: bytes, fmt: str) -> bytes:
+    """Re-encode from raw pixels so a phone photo's EXIF (GPS included) is not kept."""
+    with Image.open(io.BytesIO(data)) as img:
+        clean = strip_metadata(img)
+    out = io.BytesIO()
+    if fmt == "JPEG":
+        clean.convert("RGB").save(out, "JPEG", quality=90)
+    else:
+        clean.save(out, fmt)
+    return out.getvalue()
 
 
 @router.post("/feedback", response_model=FeedbackCreated, status_code=status.HTTP_201_CREATED)

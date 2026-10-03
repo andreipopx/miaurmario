@@ -440,6 +440,7 @@ async def create_item(
         "coordinates of the upright, rotated photo. Red erases, green restores.",
     ),
 ) -> ItemResponse:
+    await _charge_bulk_upload(current_user.id, 1)
     # Validate and process image
     image_service = ImageService()
     item_service = ItemService(db)
@@ -568,6 +569,17 @@ async def create_item(
         item = await item_service.mark_pending(item, set_ready=True)
 
     return ItemResponse.model_validate(item)
+
+
+# Garment AI analyses per user per day (bulk + single re-analyze share it).
+AI_ANALYZE_PER_DAY = 300
+# Image edits (cut-out, rotate, replace) per user per 10 minutes.
+IMAGE_WORK_LIMIT = (60, 600)
+
+
+async def _charge_image_work(user_id: UUID) -> None:
+    """Cut-outs, rotations and photo swaps run rembg/Pillow in the request: cap them."""
+    await rate_limit_by_user(user_id, "item_image_work", *IMAGE_WORK_LIMIT)
 
 
 async def _charge_bulk_upload(user_id: UUID, photos: int) -> None:
@@ -963,6 +975,11 @@ async def bulk_analyze_items(
         logger.info(f"Bulk analyze select_all: {len(item_ids)} items to analyze")
     else:
         item_ids = request.item_ids or []
+
+    # Each garment is one AI call: share a daily budget with the single re-analyze.
+    await rate_limit_by_user(
+        current_user.id, "ai_analyze", AI_ANALYZE_PER_DAY, 86400, cost=max(len(item_ids), 1)
+    )
 
     # Collect valid items first
     items_to_process = []
@@ -1393,6 +1410,7 @@ async def trigger_ai_analysis(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
+    await rate_limit_by_user(current_user.id, "ai_analyze", AI_ANALYZE_PER_DAY, 86400)
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
 
@@ -1518,6 +1536,7 @@ async def rotate_item_image(
         "button collapse into one request and one re-encode",
     ),
 ) -> ItemResponse:
+    await _charge_image_work(current_user.id)
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
 
@@ -1567,6 +1586,7 @@ async def remove_item_background(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ItemResponse:
+    await _charge_image_work(current_user.id)
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
 
@@ -1705,6 +1725,7 @@ async def brush_item_cutout(
     on the stored alpha so that every screen shows the corrected cut-out
     afterwards, not just the one the user was looking at.
     """
+    await _charge_image_work(current_user.id)
     if space not in ("cutout", "original"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1839,6 +1860,7 @@ async def replace_item_image(
     current_user: Annotated[User, Depends(get_current_user)],
     image: UploadFile = File(...),
 ) -> ItemResponse:
+    await _charge_image_work(current_user.id)
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
 
@@ -1930,6 +1952,7 @@ async def add_item_image(
     a local matting pass — and it does run here, because a back photo that keeps its
     white box would stand out against the cut-outs in a flat lay.
     """
+    await _charge_bulk_upload(current_user.id, 1)
     item_service = ItemService(db)
     item = await item_service.get_by_id(item_id, current_user.id)
 
@@ -2194,6 +2217,7 @@ async def remove_item_image_background(
     to draw it as a white-backed tile among cut-outs. Uploading an extra photo
     already does this; this endpoint is for the ones uploaded before it did.
     """
+    await _charge_image_work(current_user.id)
     from sqlalchemy import select
 
     item_service = ItemService(db)
@@ -2383,6 +2407,7 @@ async def rotate_item_image_photo(
     no other photo to disturb — and turns its sidecar alpha with it, so a back shot
     that was erased by hand stays erased after being straightened.
     """
+    await _charge_image_work(current_user.id)
     item_service = ItemService(db)
     item_image = await _load_extra_image(db, item_service, item_id, image_id, current_user.id)
 
@@ -2427,6 +2452,7 @@ async def brush_item_image_cutout(
     strokes land on this photo's stored alpha and on nothing else — every size is
     re-rendered under this row's own stem, so the front keeps whatever it had.
     """
+    await _charge_image_work(current_user.id)
     if space not in ("cutout", "original"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -1320,7 +1320,15 @@
         "password_matches_identity": "Don't use your email or username as your password.",
         "rateLimited": "Too many attempts. Wait a few minutes.",
         "generic": "We couldn't save your password. Please try again."
-      }
+      },
+      "everywhereTitle": "Open sessions",
+      "everywhereBody": "Lost your phone or signed in on someone else's computer? Sign out of every device at once, this one included.",
+      "everywhereButton": "Sign out everywhere",
+      "everywhereConfirmTitle": "Sign out of every device?",
+      "everywhereConfirmBody": "You'll need to sign in again on each phone and computer, this one too. Notifications stop until you do.",
+      "everywhereConfirm": "Sign out everywhere",
+      "everywhereFailed": "We couldn't sign you out everywhere. Try again.",
+      "savedOthersOut": "Password saved. Your other devices have been signed out."
     },
     "notificationsCard": {
       "title": "Notifications & app",

@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import delete
@@ -26,6 +26,7 @@ from app.integrations.spotify import (
     exchange_code,
     is_configured,
 )
+from app.integrations.state import bind_browser, browser_nonce
 from app.models.spotify import SpotifyConnection
 from app.models.user import User
 from app.services import music_source, notification_queue, spotify_mood
@@ -88,11 +89,14 @@ async def get_status(
 
 @router.get("/connect")
 async def connect(
+    request: Request,
+    response: Response,
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict[str, str]:
     if not _configured():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Spotify not configured")
-    state = await create_state(str(current_user.id))
+    browser = bind_browser(request, response, "spotify")
+    state = await create_state(str(current_user.id), browser)
     return {"authorize_url": build_authorize_url(state)}
 
 
@@ -121,13 +125,14 @@ async def request_seat(
 
 @router.get("/callback")
 async def callback(
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
     code: Annotated[str | None, Query()] = None,
     state: Annotated[str | None, Query()] = None,
     error: Annotated[str | None, Query()] = None,
 ) -> RedirectResponse:
     try:
-        user_id = uuid.UUID(await consume_state(state))
+        user_id = uuid.UUID(await consume_state(state, browser_nonce(request, "spotify")))
     except (OAuthStateError, ValueError) as exc:
         logger.warning("Spotify OAuth state rejected: %s", exc)
         return frontend_redirect(SETTINGS_PATH, error="invalid_state")

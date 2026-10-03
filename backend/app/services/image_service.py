@@ -13,6 +13,25 @@ from app.config import get_settings
 from app.services import background_removal
 from app.utils.image_formats import CUTOUT_SUFFIX, is_cutout_path
 
+# A 20 MB upload can decode to gigabytes of pixels. 60 MP covers every phone camera
+# in its normal mode; anything bigger is refused before it is decoded. Pillow's own
+# bomb check (which raises at twice this) covers every other Image.open in the app.
+MAX_UPLOAD_PIXELS = 60_000_000
+Image.MAX_IMAGE_PIXELS = MAX_UPLOAD_PIXELS
+
+
+class ImageTooLargeError(ValueError):
+    """The photo has more pixels than we are willing to decode."""
+
+
+def check_pixels(image: Image.Image) -> Image.Image:
+    """Refuse an opened (not yet decoded) image above :data:`MAX_UPLOAD_PIXELS`."""
+    width, height = image.size
+    if width * height > MAX_UPLOAD_PIXELS:
+        raise ImageTooLargeError(f"{width}x{height} is too many pixels")
+    return image
+
+
 settings = get_settings()
 
 __all__ = [
@@ -279,7 +298,7 @@ class ImageService:
         except ImportError:
             pass
 
-        return Image.open(BytesIO(image_data))
+        return check_pixels(Image.open(BytesIO(image_data)))
 
     def load_upload(
         self,
@@ -319,7 +338,7 @@ class ImageService:
         if ext in (".heic", ".heif"):
             image = self._convert_heic(image_data)
         else:
-            image = Image.open(BytesIO(image_data))
+            image = check_pixels(Image.open(BytesIO(image_data)))
         turned = rotate_quarters(upright(image), rotate)
         return apply_crop(turned, crop), turned.size
 
@@ -490,7 +509,7 @@ class ImageService:
             if content_type in ("image/heic", "image/heif"):
                 self._convert_heic(image_data)
             else:
-                Image.open(BytesIO(image_data))
+                check_pixels(Image.open(BytesIO(image_data)))
             return True
         except Exception:
             return False

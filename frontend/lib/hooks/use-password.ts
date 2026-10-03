@@ -30,6 +30,8 @@ async function inline<T>(request: Promise<T>): Promise<T> {
 export interface PasswordStatus {
   has_password: boolean;
   password_updated_at?: string | null;
+  /** Set after a change: the other devices were signed out, this is ours. */
+  access_token?: string | null;
 }
 
 export interface SetPasswordInput {
@@ -47,14 +49,32 @@ function useInvalidateProfile() {
 
 /** PUT /users/me/password: set a first password, or change it (current required). */
 export function useSetPassword() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const invalidate = useInvalidateProfile();
   return useMutation({
     mutationFn: (data: SetPasswordInput) => {
       if (session?.accessToken) setAccessToken(session.accessToken as string);
       return inline(api.put<PasswordStatus>('/users/me/password', data));
     },
-    onSuccess: invalidate,
+    onSuccess: async (status) => {
+      // Every other device was just signed out; keep this one with its new token.
+      if (status.access_token) {
+        setAccessToken(status.access_token);
+        await update({ accessToken: status.access_token });
+      }
+      invalidate();
+    },
+  });
+}
+
+/** POST /auth/logout-everywhere: every device, this one included, signs in again. */
+export function useLogoutEverywhere() {
+  const { data: session } = useSession();
+  return useMutation({
+    mutationFn: () => {
+      if (session?.accessToken) setAccessToken(session.accessToken as string);
+      return inline(api.post<void>('/auth/logout-everywhere'));
+    },
   });
 }
 

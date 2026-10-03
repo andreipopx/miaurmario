@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pydantic import ValidationError
 
+from app.config import get_settings
 from app.schemas.notification import NtfyConfig, ScheduleBase, ScheduleUpdate
 
 
@@ -132,7 +133,13 @@ class TestNtfyServerValidation:
         config = NtfyConfig(server="https://ntfy.sh/", topic="test-topic")
         assert config.server == "https://ntfy.sh"
 
-    def test_accepts_http(self):
+    def test_rejects_http_from_users(self):
+        # A user-typed http:// server could be anything on the LAN.
+        with pytest.raises(ValidationError):
+            NtfyConfig(server="http://ntfy.local:8080", topic="test-topic")
+
+    def test_accepts_the_operators_http_server(self, monkeypatch):
+        monkeypatch.setattr(get_settings(), "ntfy_server", "http://ntfy.local:8080")
         config = NtfyConfig(server="http://ntfy.local:8080", topic="test-topic")
         assert config.server == "http://ntfy.local:8080"
 

@@ -1,9 +1,44 @@
 const createNextIntlPlugin = require('next-intl/plugin');
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+// Defence in depth for the session: even if some script got injected, it could only
+// talk to this origin (connect-src) and could not load more code from elsewhere.
+// Inline scripts stay allowed because Next's RSC payload and next-themes use them.
+// Images may come from any https host (music covers, Pinterest pins, avatars).
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  `connect-src 'self'${isDev ? ' ws: http://localhost:* http://127.0.0.1:*' : ''}`,
+  "media-src 'self' blob:",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "frame-src 'none'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+].join('; ');
+
+const securityHeaders = [
+  { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()',
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  poweredByHeader: false,
   // Baked into the client bundle; versions the service worker cache per build so
   // installed PWAs never keep stale same-name assets (e.g. Stinky clips).
   env: {
@@ -32,6 +67,7 @@ const nextConfig = {
       { key: 'CDN-Cache-Control', value: 'no-store' },
     ];
     return [
+      { source: '/:path*', headers: securityHeaders },
       { source: '/sw.js', headers: [...noCache, { key: 'Service-Worker-Allowed', value: '/' }] },
       { source: '/manifest.webmanifest', headers: noCache },
       { source: '/splash/:file*', headers: [{ key: 'Cache-Control', value: 'public, max-age=604800' }] },

@@ -190,6 +190,15 @@ class StudioService:
 
         effective_worn = scheduled_for if mark_worn else None
 
+        if source_item_id is not None:
+            owned = await self.db.scalar(
+                select(ClothingItem.id).where(
+                    ClothingItem.id == source_item_id, ClothingItem.user_id == user.id
+                )
+            )
+            if owned is None:
+                raise ItemOwnershipError("source item does not belong to the caller")
+
         outfit = Outfit(
             user_id=user.id,
             occasion=occasion,

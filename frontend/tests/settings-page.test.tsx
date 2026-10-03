@@ -74,6 +74,7 @@ vi.mock('@/lib/hooks/use-location', async (original) => ({
 vi.mock('@/lib/hooks/use-password', () => ({
   useSetPassword: mutation,
   useRemovePassword: mutation,
+  useLogoutEverywhere: mutation,
   PasswordRequestError: class extends Error {},
 }))
 vi.mock('@/lib/hooks/use-ai-access', () => ({

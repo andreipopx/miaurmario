@@ -29,14 +29,14 @@ __all__ = [
 ]
 
 
-async def create_state(user_id: str) -> str:
+async def create_state(user_id: str, browser: str | None = None) -> str:
     """Generate a fresh CSRF state token and stash it in Redis bound to user_id."""
-    return await state_store.create_state(PROVIDER, user_id)
+    return await state_store.create_state(PROVIDER, user_id, browser)
 
 
-async def consume_state(state: str | None) -> str:
+async def consume_state(state: str | None, browser: str | None = None) -> str:
     """Validate the state token, return the user_id it was created for, and delete it."""
-    return await state_store.consume_state(PROVIDER, state)
+    return await state_store.consume_state(PROVIDER, state, browser)
 
 
 def build_authorize_url(state: str, scopes: str = DEFAULT_SCOPES) -> str:

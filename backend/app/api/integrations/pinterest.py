@@ -5,7 +5,7 @@ import uuid
 from typing import Annotated, Any
 
 from arq import create_pool
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +24,7 @@ from app.integrations.pinterest import (
     exchange_code,
 )
 from app.integrations.redirects import frontend_redirect
+from app.integrations.state import bind_browser, browser_nonce
 from app.models.pinterest import PinterestConnection, PinterestPin
 from app.models.user import User
 from app.utils.auth import get_current_user
@@ -80,23 +81,27 @@ async def get_status(
 
 @router.get("/connect")
 async def connect(
+    request: Request,
+    response: Response,
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict[str, str]:
     if not _is_configured():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Pinterest not configured")
-    state = await create_state(str(current_user.id))
+    browser = bind_browser(request, response, "pinterest")
+    state = await create_state(str(current_user.id), browser)
     return {"authorize_url": build_authorize_url(state)}
 
 
 @router.get("/callback")
 async def callback(
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
     code: Annotated[str | None, Query()] = None,
     state: Annotated[str | None, Query()] = None,
     error: Annotated[str | None, Query()] = None,
 ) -> RedirectResponse:
     try:
-        user_id = uuid.UUID(await consume_state(state))
+        user_id = uuid.UUID(await consume_state(state, browser_nonce(request, "pinterest")))
     except (OAuthStateError, ValueError) as exc:
         logger.warning("Pinterest OAuth state rejected: %s", exc)
         return frontend_redirect(SETTINGS_PATH, error="invalid_state")

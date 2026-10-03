@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { KeyRound, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { KeyRound, Loader2, LogOut } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -20,7 +22,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { PasswordInput } from '@/components/auth/password-input';
 import { useFormatDate } from '@/lib/date-locale';
-import { PasswordRequestError, useSetPassword, useRemovePassword } from '@/lib/hooks/use-password';
+import {
+  PasswordRequestError,
+  useLogoutEverywhere,
+  useRemovePassword,
+  useSetPassword,
+} from '@/lib/hooks/use-password';
+import { forgetNativePushDevice } from '@/lib/native/push';
+import { clearOfflineData } from '@/lib/offline/persist';
 import type { UserProfile } from '@/lib/hooks/use-user';
 
 const KNOWN_ERRORS = [
@@ -97,7 +106,7 @@ export function SecurityCard({ user }: { user: UserProfile | undefined }) {
         ...(hasPassword ? { current_password: current } : {}),
       });
       reset();
-      toast.success(t('saved'));
+      toast.success(hasPassword ? t('savedOthersOut') : t('saved'));
     } catch (err) {
       setError(t(`errors.${passwordErrorKey(err)}`));
     }
@@ -234,7 +243,55 @@ export function SecurityCard({ user }: { user: UserProfile | undefined }) {
           </div>
           {hasPassword && <p className="text-xs text-muted-foreground">{t('forgotHint')}</p>}
         </form>
+        <LogoutEverywhere />
       </CardContent>
     </Card>
+  );
+}
+
+/** Revoke every session (a lost phone, a shared computer), this one included. */
+function LogoutEverywhere() {
+  const t = useTranslations('settings.security');
+  const queryClient = useQueryClient();
+  const logoutEverywhere = useLogoutEverywhere();
+
+  const run = async () => {
+    try {
+      await logoutEverywhere.mutateAsync();
+    } catch {
+      toast.error(t('everywhereFailed'));
+      return;
+    }
+    await Promise.allSettled([forgetNativePushDevice(), clearOfflineData(queryClient)]);
+    await signOut({ callbackUrl: '/login' });
+  };
+
+  return (
+    <div className="mt-6 space-y-2 border-t pt-5">
+      <p className="text-sm font-bold">{t('everywhereTitle')}</p>
+      <p className="text-sm text-muted-foreground">{t('everywhereBody')}</p>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button type="button" variant="outline" className="gap-2" disabled={logoutEverywhere.isPending}>
+            {logoutEverywhere.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
+            {t('everywhereButton')}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('everywhereConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('everywhereConfirmBody')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={run}>{t('everywhereConfirm')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

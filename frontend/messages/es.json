@@ -1320,7 +1320,15 @@
         "password_matches_identity": "No uses tu email ni tu nombre de usuario como contraseña.",
         "rateLimited": "Demasiados intentos. Espera unos minutos.",
         "generic": "No hemos podido guardar la contraseña. Inténtalo de nuevo."
-      }
+      },
+      "everywhereTitle": "Sesiones abiertas",
+      "everywhereBody": "¿Perdiste el móvil o entraste en un ordenador que no es tuyo? Cierra la sesión en todos los dispositivos a la vez, también en este.",
+      "everywhereButton": "Cerrar sesión en todos",
+      "everywhereConfirmTitle": "¿Cerrar sesión en todos los dispositivos?",
+      "everywhereConfirmBody": "Tendrás que volver a entrar en cada móvil y ordenador, también en este. Los avisos se apagan hasta que vuelvas a entrar.",
+      "everywhereConfirm": "Cerrar en todos",
+      "everywhereFailed": "No hemos podido cerrar las sesiones. Inténtalo de nuevo.",
+      "savedOthersOut": "Contraseña guardada. Hemos cerrado la sesión en tus otros dispositivos."
     },
     "notificationsCard": {
       "title": "Notificaciones y app",

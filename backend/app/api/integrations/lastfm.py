@@ -14,7 +14,7 @@ from typing import Annotated, Any
 from urllib.parse import quote
 
 from arq import create_pool
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import delete
@@ -31,7 +31,13 @@ from app.integrations.lastfm.client import (
     is_configured,
 )
 from app.integrations.redirects import frontend_redirect
-from app.integrations.state import OAuthStateError, consume_state, create_state
+from app.integrations.state import (
+    OAuthStateError,
+    bind_browser,
+    browser_nonce,
+    consume_state,
+    create_state,
+)
 from app.models.lastfm import LastfmConnection
 from app.models.user import User
 from app.services import lastfm_history, music_source
@@ -162,24 +168,28 @@ async def connect(
 
 @router.get("/auth-url")
 async def get_auth_url(
+    request: Request,
+    response: Response,
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict[str, str]:
     """Optional web auth (needs LASTFM_API_SECRET): "Iniciar sesión con Last.fm"."""
     if not (auth_configured() and encryption_configured()):
         raise _error(503, "lastfm_auth_not_configured", "Last.fm web auth is not configured")
-    state = await create_state(PROVIDER, str(current_user.id))
+    browser = bind_browser(request, response, PROVIDER)
+    state = await create_state(PROVIDER, str(current_user.id), browser)
     callback = f"{get_settings().lastfm_callback_url}?state={state}"
     return {"authorize_url": auth_url(callback)}
 
 
 @router.get("/callback")
 async def callback(
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
     state: Annotated[str | None, Query()] = None,
     token: Annotated[str | None, Query(max_length=128)] = None,
 ) -> RedirectResponse:
     try:
-        user_id = uuid.UUID(await consume_state(PROVIDER, state))
+        user_id = uuid.UUID(await consume_state(PROVIDER, state, browser_nonce(request, PROVIDER)))
     except (OAuthStateError, ValueError) as exc:
         logger.warning("Last.fm auth state rejected: %s", exc)
         return frontend_redirect(SETTINGS_PATH, error="invalid_state")

@@ -3,9 +3,11 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.item import ClothingItem
 from app.models.user import User
 from app.schemas.preference import (
     PreferenceResponse,
@@ -132,6 +134,13 @@ async def add_excluded_item(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
+    owned = await db.scalar(
+        select(ClothingItem.id).where(
+            ClothingItem.id == item_id, ClothingItem.user_id == current_user.id
+        )
+    )
+    if owned is None:
+        raise HTTPException(status_code=404, detail="Item not found")
     service = PreferenceService(db)
     preferences = await service.add_excluded_item(current_user.id, item_id)
     return {"excluded_item_ids": [str(i) for i in preferences.excluded_item_ids]}

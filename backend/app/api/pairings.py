@@ -21,6 +21,7 @@ from app.services.pairing_service import (
 )
 from app.utils.auth import get_current_user
 from app.utils.error_codes import code_of, error_detail
+from app.utils.rate_limit import rate_limit_by_user
 from app.utils.signed_urls import sign_image_url
 
 logger = logging.getLogger(__name__)
@@ -228,6 +229,7 @@ async def generate_pairings(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> GeneratePairingsResponse:
+    await rate_limit_by_user(current_user.id, "pairings_generate", 10, 60)
     service = PairingService(db)
 
     try:

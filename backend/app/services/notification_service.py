@@ -164,8 +164,9 @@ class NotificationService:
                 return False, f"Unknown channel: {setting.channel}"
 
             return success, message
-        except Exception as e:
-            return False, str(e)
+        except Exception:
+            logger.exception("Notification test failed for setting %s", setting_id)
+            return False, "Could not send the test notification"
 
     async def get_user_schedules(self, user_id: UUID) -> list[Schedule]:
         result = await self.db.execute(select(Schedule).where(Schedule.user_id == user_id))

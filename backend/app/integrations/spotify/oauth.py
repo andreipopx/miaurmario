@@ -33,12 +33,12 @@ class SpotifyTokenError(RuntimeError):
         self.body = body
 
 
-async def create_state(user_id: str) -> str:
-    return await state_store.create_state(PROVIDER, user_id)
+async def create_state(user_id: str, browser: str | None = None) -> str:
+    return await state_store.create_state(PROVIDER, user_id, browser)
 
 
-async def consume_state(state: str | None) -> str:
-    return await state_store.consume_state(PROVIDER, state)
+async def consume_state(state: str | None, browser: str | None = None) -> str:
+    return await state_store.consume_state(PROVIDER, state, browser)
 
 
 def is_configured() -> bool:

@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -7,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.database import get_db
 from app.services.ai_service import get_ai_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -50,8 +53,9 @@ async def readiness_check(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     try:
         await db.execute(text("SELECT 1"))
         checks["database"] = "healthy"
-    except Exception as e:
-        checks["database"] = f"unhealthy: {str(e)}"
+    except Exception:
+        # The exception text (host names, driver details) stays in the logs.
+        logger.exception("Readiness check: database unreachable")
 
     overall = "healthy" if all(v == "healthy" for v in checks.values()) else "unhealthy"
 

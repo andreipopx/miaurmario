@@ -19,7 +19,17 @@ export function safeCallbackPath(value: string | null | undefined, fallback = '/
       return fallback;
     }
   }
-  if (!path.startsWith('/') || path.startsWith('//') || path.startsWith('/\\')) {
+  // The URL parser drops tabs and newlines and reads a backslash as "/", so "/\t/evil.com"
+  // would pass a plain prefix check and still leave the site: resolve the path
+  // against a placeholder origin and insist it stays there.
+  if (/[\u0000-\u001f\u007f\\]/.test(path)) return fallback;
+  if (!path.startsWith('/') || path.startsWith('//')) {
+    return fallback;
+  }
+  try {
+    const probe = new URL(path, 'https://same-origin.invalid');
+    if (probe.origin !== 'https://same-origin.invalid') return fallback;
+  } catch {
     return fallback;
   }
   // Never "return" to the auth pages themselves (redirect loops / token reuse).

@@ -17,11 +17,17 @@ class NtfyConfig(BaseModel):
     @field_validator("server")
     @classmethod
     def validate_server(cls, v: str) -> str:
-        if not v.startswith("http://") and not v.startswith("https://"):
-            raise ValueError("Server URL must start with http:// or https://")
         if len(v) > 500:
             raise ValueError("Server URL must be 500 characters or fewer")
-        return v.rstrip("/")
+        v = v.rstrip("/")
+        # Only the operator's own server (NTFY_SERVER) may be plain http or private;
+        # anything a user types must be public https (checked again when sending).
+        from app.config import get_settings
+
+        trusted = (get_settings().ntfy_server or "").rstrip("/")
+        if v != trusted and not v.startswith("https://"):
+            raise ValueError("Server URL must start with https://")
+        return v
 
     @field_validator("topic")
     @classmethod

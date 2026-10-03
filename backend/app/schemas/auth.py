@@ -7,6 +7,7 @@ class TokenPayload(BaseModel):
     sub: str  # Subject (external_id from OIDC)
     exp: int  # Expiration timestamp
     iat: int | None = None  # Issued at timestamp (optional for forward auth tokens)
+    tv: int = 0  # User.token_version when issued; tokens from before it existed count as 0
     email: str | None = None
     name: str | None = None
 

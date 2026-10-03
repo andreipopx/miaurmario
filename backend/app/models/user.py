@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, func, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -40,6 +40,11 @@ class User(Base):
     avatar_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     avatar_thumb_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20), default="member")
+    # Bumped to sign every device out (password change, "sign out everywhere"):
+    # API tokens carry it as "tv" and stop working once it no longer matches.
+    token_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")
     # Who chose the zone: "auto" (detected from the device or the chosen city)
     # or "manual" (the user picked it). Detection never overwrites "manual".

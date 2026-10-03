@@ -418,6 +418,19 @@ html[data-keyboard='open'] [data-dock] {
   }
 }
 
+/* A finger needs about 44 pt (Apple's minimum). Small controls keep their look
+   and get an invisible tap area that big around their centre. The element must be
+   positioned (relative/absolute), and not sit in a scroller it would overflow. */
+.hit-44::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
 /* App chrome isn't text: long-pressing the dock, a chip or a button shouldn't
    select a word or pop the iOS callout. */
 nav,

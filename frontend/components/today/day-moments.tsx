@@ -21,7 +21,7 @@ import { ShareLookPrompt } from '@/components/social/share-look-prompt';
 import { FlatLayBackToggle, OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
 import { lookHasABack } from '@/lib/outfit-flat-lay';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
-import { useDayPlan, useDeleteMoment, useSuggestMoment, useWearMomentLook } from '@/lib/hooks/use-day-moments';
+import { useDayPlan, useRemoveMomentWithUndo, useSuggestMoment, useWearMomentLook } from '@/lib/hooks/use-day-moments';
 import { useOnline } from '@/lib/hooks/use-online';
 import {
   MOMENT_OCCASIONS,
@@ -33,6 +33,9 @@ import {
   type DayMoment,
   type MomentPresetKey,
 } from '@/lib/day-moments';
+
+/** Lines Stinky says under a look without notes of its own (dashboard.today.defaultTips). */
+const DEFAULT_TIP_COUNT = 5;
 
 function useOccasionLabel() {
   const tOcc = useTranslations('suggest.occasions');
@@ -59,7 +62,8 @@ function MomentCard({
   const occasionLabel = useOccasionLabel();
   const suggest = useSuggestMoment();
   const wear = useWearMomentLook();
-  const remove = useDeleteMoment();
+  const removeWithUndo = useRemoveMomentWithUndo();
+  const tCommon = useTranslations('common');
   const titleId = useId();
   /** "Ver por detrás" for this moment's look; see the switch below the header. */
   const [showBack, setShowBack] = useState(false);
@@ -76,7 +80,10 @@ function MomentCard({
   const tip =
     outfit?.style_notes ||
     outfit?.reasoning ||
-    (isTransition ? t('transitionTip') : tToday('defaultTip'));
+    (isTransition
+      ? t('transitionTip')
+      : // A different line per moment (and per day), not the same one on every card.
+        tToday(`defaultTips.${(moment.order + new Date().getDate()) % DEFAULT_TIP_COUNT}`));
 
   const anotherIdea = () =>
     suggest.mutate(
@@ -94,11 +101,14 @@ function MomentCard({
     });
   };
 
-  const removeIt = () =>
-    remove.mutate(moment.order, {
-      onSuccess: () => toast.success(t('removedToast')),
-      onError: (err) => toast.error(getErrorMessage(err, t('removeError'))),
+  const removeIt = () => {
+    haptic(8);
+    removeWithUndo(moment.order, {
+      removed: t('removedToast'),
+      undo: tCommon('undo'),
+      failed: t('removeError'),
     });
+  };
 
   return (
     <article aria-labelledby={titleId} className="rounded-lg bg-panel p-3.5 sm:p-5">
@@ -128,15 +138,10 @@ function MomentCard({
             <button
               type="button"
               onClick={removeIt}
-              disabled={remove.isPending}
               aria-label={t('remove', { name: title })}
               className="-mr-1.5 inline-flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
-              {remove.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <X className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-              )}
+              <X className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
             </button>
           )}
         </div>

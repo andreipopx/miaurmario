@@ -666,45 +666,6 @@ export function useMergeItemInto() {
   });
 }
 
-/** Put one extra photo's untouched original back — only that photo's. */
-export function useRestoreItemImageOriginal() {
-  const queryClient = useQueryClient();
-  const { data: session } = useSession();
-
-  return useMutation({
-    mutationFn: async ({ itemId, imageId }: { itemId: string; imageId: string }) => {
-      if (session?.accessToken) {
-        setAccessToken(session.accessToken as string);
-      }
-      return api.post<ItemImage>(`/items/${itemId}/images/${imageId}/restore-original`);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['item', variables.itemId] });
-    },
-  });
-}
-
-/** Cut the garment out of one extra photo — only that photo. */
-export function useRemoveItemImageBackground() {
-  const queryClient = useQueryClient();
-  const { data: session } = useSession();
-
-  return useMutation({
-    mutationFn: async ({ itemId, imageId }: { itemId: string; imageId: string }) => {
-      if (session?.accessToken) {
-        setAccessToken(session.accessToken as string);
-      }
-      return api.post<ItemImage>(`/items/${itemId}/images/${imageId}/remove-background`);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['item', variables.itemId] });
-      queryClient.invalidateQueries({ queryKey: ['outfits'] });
-    },
-  });
-}
-
 export function useSetPrimaryImage() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();

@@ -228,6 +228,9 @@ export function AddItemDialog({
     if (hasUnsavedFiles && !createItem.isPending) {
       setShowCloseConfirm(true);
     } else {
+      // Mid-upload the garment keeps uploading after the sheet is gone: say so, so
+      // the "added" toast that follows doesn't come out of nowhere.
+      if (createItem.isPending) toast.message(t('toast.keepsUploading'));
       handleClose();
     }
   };

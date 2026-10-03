@@ -247,10 +247,21 @@ function StinkyChat() {
 
   useEffect(() => setGreetingSeed(nextRotationSeed('stinky-chat:greeting')), []);
 
-  // Keep the newest message in view (also when the keyboard opens and the room shrinks).
+  // Follow the conversation while the reader is at the bottom of it; someone who has
+  // scrolled up to re-read something is not yanked down by every streamed word.
+  const following = useRef(true);
+  useEffect(() => {
+    const onScroll = () => {
+      const doc = document.scrollingElement ?? document.documentElement;
+      const viewport = window.visualViewport?.height ?? window.innerHeight;
+      following.current = doc.scrollHeight - doc.scrollTop - viewport < 160;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   useLayoutEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end' });
-  }, [messages, statusLabel, keyboard.open]);
+    if (following.current) bottomRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages, statusLabel, keyboard.open, keyboard.inset]);
 
   const toolLabel = useCallback(
     (tool?: string) => (tool && TOOL_KEYS.has(tool) ? t(`statusTool.${tool}` as never) : t('statusTool.default')),
@@ -270,6 +281,8 @@ function StinkyChat() {
         toast.error(t('tooLong', { max: MAX_MESSAGE_CHARS }));
         return;
       }
+      // Sending brings the conversation back into view.
+      following.current = true;
       const userMsg: ChatMessage = { id: localId('user'), role: 'user', content: text, cards: [] };
       const botId = localId('bot');
       let currentBotId = botId;
@@ -544,10 +557,11 @@ function StinkyChat() {
           <AIUnavailableNotice reason={unavailableReason} feature="chat" className="mt-2" />
         )}
 
-        {/* Room for the composer above the dock. */}
+        {/* Room for the composer above the dock, or above the keyboard while it's up. */}
         <div
           ref={bottomRef}
           className={cn(aiUnavailable ? 'h-4' : 'h-[calc(172px+env(safe-area-inset-bottom))] lg:h-24')}
+          style={!aiUnavailable && keyboard.open ? { height: keyboard.inset + 104 } : undefined}
         />
       </div>
 
@@ -587,7 +601,7 @@ function StinkyChat() {
                 type="button"
                 onClick={() => abortRef.current?.abort()}
                 aria-label={t('stop')}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="hit-44 relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <Square className="h-3.5 w-3.5 fill-current" aria-hidden />
               </button>
@@ -596,7 +610,7 @@ function StinkyChat() {
                 type="submit"
                 disabled={!input.trim()}
                 aria-label={t('send')}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:bg-panel disabled:text-muted-foreground"
+                className="hit-44 relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:bg-panel disabled:text-muted-foreground"
               >
                 <ArrowUp className="h-5 w-5" strokeWidth={2.25} aria-hidden />
               </button>

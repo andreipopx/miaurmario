@@ -57,7 +57,8 @@
     "greeting": "Hi, {name}!",
     "greetingAnon": "Hi!",
     "loadingWardrobe": "Loading your wardrobe…",
-    "stinkySays": "Stinky:"
+    "stinkySays": "Stinky:",
+    "undo": "Undo"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -491,10 +492,16 @@
       "askStinky": "Ask Stinky",
       "noLookTitle": "No look for today yet",
       "noLookBody": "Stinky will put one together in seconds from your wardrobe and the weather.",
-      "defaultTip": "when in doubt, a well-pressed basic never fails. Trust me, I'm a cat.",
       "chatWithStinky": "Ask Stinky",
       "chatWithStinkyBody": "Your feline stylist, with your wardrobe at hand.",
-      "openMusic": "See your music"
+      "openMusic": "See your music",
+      "defaultTips": {
+        "0": "when in doubt, a well-pressed basic never fails. Trust me, I'm a cat.",
+        "1": "one bold colour, everything else calm. Effortless.",
+        "2": "comfy shoes make the day feel shorter. Cat's honour.",
+        "3": "a layer you can take off and neither cold nor heat will catch you out.",
+        "4": "if it makes you feel good, wear it. Nobody notices the rest."
+      }
     },
     "moments": {
       "title": "Your day",
@@ -817,7 +824,8 @@
       "toast": {
         "singleSuccess": "Item added to your wardrobe",
         "singleFailed": "Could not add the item",
-        "processingBackground": "We're processing them in the background."
+        "processingBackground": "We're processing them in the background.",
+        "keepsUploading": "Still uploading your garment. We'll let you know when it's done."
       },
       "description": "Upload photos of your clothing items",
       "dragDropSingle": "Drag an image here",
@@ -4281,7 +4289,10 @@
       "uploading": "Uploading items · {done} of {total}",
       "failed": "{count, plural, one {# photo not uploaded} other {# photos not uploaded}}"
     },
-    "reviewTitle": "Name your garments"
+    "reviewTitle": "Name your garments",
+    "discardEditsTitle": "Upload more without saving?",
+    "discardEditsBody": "The photos are already in your wardrobe, but what you changed here (types, colours…) will be lost. To keep it, tap Save first.",
+    "discardEditsConfirm": "Discard changes"
   },
   "imageCrop": {
     "title": "Frame the garment",

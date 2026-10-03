@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { api, setAccessToken } from '@/lib/api';
 import type { DayPlan, MomentSuggestBody, MomentSuggestResult } from '@/lib/day-moments';
@@ -56,6 +57,54 @@ export function useDeleteMoment(day = 'today') {
     },
   });
 }
+
+/**
+ * Remove a moment the way a phone app does: it goes at once, with "Deshacer" on the
+ * toast for a few seconds, and is only deleted on the server once that has passed.
+ */
+export function useRemoveMomentWithUndo(day = 'today') {
+  const queryClient = useQueryClient();
+  const remove = useDeleteMoment(day);
+  return (order: number, copy: { removed: string; undo: string; failed: string }) => {
+    const key = dayPlanKey(day);
+    const before = queryClient.getQueryData<DayPlan>(key);
+    if (before) {
+      queryClient.setQueryData<DayPlan>(key, {
+        ...before,
+        moments: before.moments.filter((m) => m.order !== order),
+      });
+    }
+    let settled = false;
+    const restore = () => {
+      if (before) queryClient.setQueryData(key, before);
+    };
+    const commit = () => {
+      if (settled) return;
+      settled = true;
+      remove.mutate(order, {
+        onError: () => {
+          restore();
+          toast.error(copy.failed);
+        },
+      });
+    };
+    toast(copy.removed, {
+      duration: UNDO_MS,
+      action: {
+        label: copy.undo,
+        onClick: () => {
+          if (settled) return;
+          settled = true;
+          restore();
+        },
+      },
+      onAutoClose: commit,
+      onDismiss: commit,
+    });
+  };
+}
+
+const UNDO_MS = 5000;
 
 /** "Me lo pongo" for one moment: accept the look and log it as worn today. */
 export function useWearMomentLook(day = 'today') {

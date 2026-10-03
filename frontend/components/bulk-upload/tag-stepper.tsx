@@ -59,28 +59,36 @@ export function TagStepper({
 }: TagStepperProps) {
   const t = useTranslations('bulkUpload.stepper');
   const tagLabel = useTagLabel();
-  const [index, setIndex] = useState(() => Math.min(Math.max(0, startAt), Math.max(0, drafts.length - 1)));
+  // Which garment is open is remembered by its id, not its position: if the list
+  // changes underneath (a photo finishes uploading, one is removed), the stepper
+  // stays on the same garment instead of quietly editing its neighbour.
+  const [currentId, setCurrentId] = useState<string | undefined>(
+    () => drafts[Math.min(Math.max(0, startAt), Math.max(0, drafts.length - 1))]?.itemId
+  );
+  const lastIndex = useRef(0);
   /** Reset for every garment: see the auto-advance note above. */
   const detailsTouched = useRef(false);
 
+  const found = drafts.findIndex((d) => d.itemId === currentId);
+  // Gone from the list: the garment now in its place (or the last one).
+  const index = found >= 0 ? found : Math.min(lastIndex.current, Math.max(0, drafts.length - 1));
+  lastIndex.current = index;
   const current = drafts[index];
   const total = drafts.length;
 
   const goNext = useCallback(() => {
     detailsTouched.current = false;
-    setIndex((i) => {
-      if (i + 1 >= total) {
-        onDone();
-        return i;
-      }
-      return i + 1;
-    });
-  }, [onDone, total]);
+    if (index + 1 >= total) {
+      onDone();
+      return;
+    }
+    setCurrentId(drafts[index + 1]?.itemId);
+  }, [drafts, index, onDone, total]);
 
   const goBack = useCallback(() => {
     detailsTouched.current = false;
-    setIndex((i) => Math.max(0, i - 1));
-  }, []);
+    setCurrentId(drafts[Math.max(0, index - 1)]?.itemId);
+  }, [drafts, index]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

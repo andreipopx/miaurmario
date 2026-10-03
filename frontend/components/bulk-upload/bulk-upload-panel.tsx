@@ -7,6 +7,7 @@ import { ImagePlus, Loader2, RotateCcw } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useConfirm } from '@/components/confirm-provider';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useBatchItems, useBatchTagItems, useUntaggedItems } from '@/lib/hooks/use-wardrobe-stats';
 import { useMergeItemInto } from '@/lib/hooks/use-items';
@@ -62,6 +63,7 @@ export function BulkUploadPanel({
   mode?: 'batch' | 'untagged';
 }) {
   const t = useTranslations('bulkUpload');
+  const confirm = useConfirm();
   const {
     photos,
     counts,
@@ -287,14 +289,27 @@ export function BulkUploadPanel({
   }, [backPairings, batchTag, edits, mergeInto, onClose, reset, reviewingBacklog, t]);
 
   const resetTurns = rotation.reset;
-  const startOver = useCallback(() => {
+  const unsaved = Object.keys(edits).length > 0 || Object.keys(backPairings).length > 0;
+  const startOver = useCallback(async () => {
+    // The photos are already in the wardrobe; what would be lost is what was typed.
+    if (
+      unsaved &&
+      !(await confirm({
+        title: t('discardEditsTitle'),
+        description: t('discardEditsBody'),
+        confirmLabel: t('discardEditsConfirm'),
+        destructive: true,
+      }))
+    ) {
+      return;
+    }
     reset();
     setEdits({});
     setBackPairings({});
     setOpenTile(null);
     resetTurns();
     setPhase('pick');
-  }, [reset, resetTurns]);
+  }, [confirm, reset, resetTurns, t, unsaved]);
 
   const busy = counts.busy > 0;
   const pairCount = Object.keys(backPairings).length;

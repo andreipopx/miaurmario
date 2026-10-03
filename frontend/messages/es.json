@@ -57,7 +57,8 @@
     "greeting": "¡Hola, {name}!",
     "greetingAnon": "¡Hola!",
     "loadingWardrobe": "Cargando tu armario…",
-    "stinkySays": "Stinky:"
+    "stinkySays": "Stinky:",
+    "undo": "Deshacer"
   },
   "errors": {
     "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -491,10 +492,16 @@
       "askStinky": "Pídeselo a Stinky",
       "noLookTitle": "Aún no hay look para hoy",
       "noLookBody": "Stinky te propone uno en segundos con tu armario y el tiempo.",
-      "defaultTip": "si dudas, un básico bien planchado nunca falla. Confía en mí, soy un gato.",
       "chatWithStinky": "Pregúntale a Stinky",
       "chatWithStinkyBody": "Tu estilista gatuno, con tu armario delante.",
-      "openMusic": "Ver tu música"
+      "openMusic": "Ver tu música",
+      "defaultTips": {
+        "0": "si dudas, un básico bien planchado nunca falla. Confía en mí, soy un gato.",
+        "1": "un color fuerte y el resto en calma. Así se luce sin esfuerzo.",
+        "2": "unos zapatos cómodos y el día se te hace corto. Palabra de gato.",
+        "3": "una capa que puedas quitarte y no te pillará ni el frío ni el calor.",
+        "4": "si algo te hace sentir bien, póntelo. Lo demás se nota menos."
+      }
     },
     "moments": {
       "title": "Tu día",
@@ -817,7 +824,8 @@
       "toast": {
         "singleSuccess": "Prenda añadida al armario",
         "singleFailed": "No se pudo añadir la prenda",
-        "processingBackground": "Se están analizando en segundo plano."
+        "processingBackground": "Se están analizando en segundo plano.",
+        "keepsUploading": "Seguimos subiendo la prenda. Te avisamos al terminar."
       },
       "description": "Sube fotos de tus prendas",
       "dragDropSingle": "Arrastra una imagen aquí",
@@ -4281,7 +4289,10 @@
       "uploading": "Subiendo prendas · {done} de {total}",
       "failed": "{count, plural, one {# foto sin subir} other {# fotos sin subir}}"
     },
-    "reviewTitle": "Poner nombre a tus prendas"
+    "reviewTitle": "Poner nombre a tus prendas",
+    "discardEditsTitle": "¿Subir más sin guardar?",
+    "discardEditsBody": "Las fotos ya están en tu armario, pero lo que has cambiado aquí (tipos, colores…) se perderá. Si quieres conservarlo, dale antes a Guardar.",
+    "discardEditsConfirm": "Descartar cambios"
   },
   "imageCrop": {
     "title": "Encuadra la prenda",

@@ -425,12 +425,11 @@ describe('layering and “ver por detrás” in the same frame', () => {
     // which photo goes in each place. Same pieces, same z, either way round.
     const items = [piece('d', 'dress'), piece('j', 'jeans')]
     const { pieces } = buildFlatLay(items)
-    const zOf = (id: string) => pieces.find((p) => p.item.id === id)!.z
-    expect(zOf('d')).toBeGreaterThan(zOf('j'))
+    const geometry = pieces.map((p) => [p.item.id, p.x, p.y, p.width, p.z])
 
     const faces = pieces.map((p) => flatLayFace(p.item, true))
     expect(faces).toHaveLength(2)
-    expect(zOf('d')).toBeGreaterThan(zOf('j'))
+    expect(buildFlatLay(items).pieces.map((p) => [p.item.id, p.x, p.y, p.width, p.z])).toEqual(geometry)
   })
 
   it('keeps the dress over the trousers when the look is turned around', () => {

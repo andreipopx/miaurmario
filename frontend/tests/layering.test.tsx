@@ -113,50 +113,33 @@ const savedResponse = (profile: Partial<ReturnType<typeof emptyProfile>>, summar
 // ---- 1. The flat lay lays the dress over the trousers -----------------------------
 
 describe('flat lay: a dress worn over a bottom', () => {
-  const zOf = (pieces: ReturnType<typeof buildFlatLay>['pieces'], id: string) =>
-    pieces.find((p) => p.item.id === id)!.z
+  const at = (pieces: ReturnType<typeof buildFlatLay>['pieces'], id: string) =>
+    pieces.find((p) => p.item.id === id)!
 
-  it('paints the dress in front of the bottom', () => {
-    const { pieces } = buildFlatLay([item('d', 'dress'), item('j', 'jeans'), item('b', 'boots')])
-    expect(zOf(pieces, 'd')).toBeGreaterThan(zOf(pieces, 'j'))
-  })
-
-  it('still puts the bottom in its own band below, so neither hides the other', () => {
+  it('puts the bottom below the dress, so neither hides the other', () => {
     const { pieces } = buildFlatLay([item('d', 'dress'), item('j', 'jeans')])
-    const dress = pieces.find((p) => p.item.id === 'd')!
-    const jeans = pieces.find((p) => p.item.id === 'j')!
+    const dress = at(pieces, 'd')
+    const jeans = at(pieces, 'j')
     expect(jeans.y).toBeGreaterThan(dress.y)
+    expect(jeans.y - dress.y).toBeGreaterThanOrEqual(((dress.width + jeans.width) * 0.8) / 2 - 1e-6)
   })
 
-  it('leaves the coat behind both of them', () => {
+  it('keeps the coat beside both of them', () => {
     const { pieces } = buildFlatLay([item('c', 'coat'), item('d', 'dress'), item('j', 'jeans')])
-    expect(zOf(pieces, 'c')).toBeLessThan(zOf(pieces, 'j'))
-    expect(zOf(pieces, 'c')).toBeLessThan(zOf(pieces, 'd'))
+    expect(at(pieces, 'c').x).toBeGreaterThan(at(pieces, 'd').x)
+    expect(at(pieces, 'd').x).toBe(at(pieces, 'j').x)
   })
 
-  it('keeps a top layered over the dress in front of it', () => {
+  it('puts a top worn over the dress beside it rather than on it', () => {
     const { pieces } = buildFlatLay([item('d', 'dress'), item('j', 'jeans'), item('t', 'shirt')])
-    expect(zOf(pieces, 't')).toBeGreaterThan(zOf(pieces, 'd'))
+    expect(at(pieces, 't').x).not.toBe(at(pieces, 'd').x)
   })
 
-  it('changes nothing for a look with no dress', () => {
-    const items = [item('t', 'shirt'), item('j', 'jeans'), item('b', 'boots')]
-    const { pieces } = buildFlatLay(items)
-    expect(zOf(pieces, 't')).toBeGreaterThan(zOf(pieces, 'j'))
-    expect(zOf(pieces, 'b')).toBeGreaterThan(zOf(pieces, 't'))
-  })
-
-  it('changes nothing for a dress with no bottom', () => {
-    const { pieces } = buildFlatLay([item('d', 'dress'), item('t', 'shirt'), item('b', 'boots')])
-    // Without a bottom present the dress keeps its usual place under the top.
-    expect(zOf(pieces, 'd')).toBeLessThan(zOf(pieces, 't'))
-  })
-
-  it('treats a jumpsuit and a suit the same way', () => {
+  it('treats a jumpsuit and a suit as the body', () => {
     for (const type of ['jumpsuit', 'suit']) {
       expect(flatLayRole(type)).toBe('full_body')
       const { pieces } = buildFlatLay([item('f', type), item('j', 'pants')])
-      expect(zOf(pieces, 'f')).toBeGreaterThan(zOf(pieces, 'j'))
+      expect(at(pieces, 'f').y).toBeLessThan(at(pieces, 'j').y)
     }
   })
 

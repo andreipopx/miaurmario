@@ -125,20 +125,34 @@ describe('buildFlatLay', () => {
     expect(bottom.y).toBeLessThan(shoes.y)
   })
 
-  it('overlaps the top and the bottom instead of stacking them apart', () => {
-    const { pieces } = buildFlatLay([item('b', 't-shirt'), item('c', 'jeans')])
-    const top = roleOf(pieces, 'base_top')
-    const bottom = roleOf(pieces, 'bottom')
-    const topEdge = top.y + (top.width * FLAT_LAY_ASPECT) / 2
-    const bottomEdge = bottom.y - (bottom.width * FLAT_LAY_ASPECT) / 2
-    expect(topEdge).toBeGreaterThan(bottomEdge)
+  it('never lays one garment over another', () => {
+    for (const look of [
+      FULL_LOOK,
+      [item('b', 't-shirt'), item('c', 'jeans')],
+      [item('a', 'coat'), item('d', 'dress'), item('j', 'jeans'), item('h', 'boots'), item('g', 'bag')],
+      [item('a', 'shirt'), item('b', 'sweater'), item('c', 'jeans'), item('d', 'sneakers')],
+    ]) {
+      const { pieces } = buildFlatLay(look)
+      for (const a of pieces) {
+        for (const b of pieces) {
+          if (a === b) continue
+          const apart =
+            Math.abs(a.x - b.x) >= (a.width + b.width) / 2 - 1e-6 ||
+            Math.abs(a.y - b.y) >= ((a.width + b.width) * FLAT_LAY_ASPECT) / 2 - 1e-6
+          expect(apart, `${a.item.id} over ${b.item.id}`).toBe(true)
+        }
+      }
+    }
   })
 
-  it('paints the outer layer under the top and the bottom under it too', () => {
+  it('puts the coat, bag and shoes beside the body, shoes at the foot', () => {
     const { pieces } = buildFlatLay(FULL_LOOK)
-    expect(roleOf(pieces, 'outer_layer').z).toBeLessThan(roleOf(pieces, 'base_top').z)
-    expect(roleOf(pieces, 'bottom').z).toBeLessThan(roleOf(pieces, 'base_top').z)
-    expect(roleOf(pieces, 'accessory').z).toBeGreaterThan(roleOf(pieces, 'base_top').z)
+    const top = roleOf(pieces, 'base_top')
+    expect(roleOf(pieces, 'outer_layer').x).toBeGreaterThan(top.x)
+    expect(roleOf(pieces, 'footwear').x).toBeGreaterThan(top.x)
+    const side = pieces.filter((p) => p.x === roleOf(pieces, 'footwear').x)
+    expect(Math.max(...side.map((p) => p.y))).toBe(roleOf(pieces, 'footwear').y)
+    expect(new Set(pieces.map((p) => p.z)).size).toBe(pieces.length)
   })
 
   it('returns the pieces in canonical order whatever order they arrive in', () => {

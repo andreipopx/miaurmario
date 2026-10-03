@@ -70,6 +70,10 @@ function MomentCard({
 
   const outfit = moment.outfit;
   const title = moment.label ?? (single ? tToday('lookTitle') : t('defaultLabel'));
+  // A lone, unnamed look sits right under the «Tu look de hoy» heading: saying it
+  // again on the card is noise, so the card names the occasion instead.
+  const repeatsHeading = single && !moment.label;
+  const occasion = occasionLabel(moment.occasion);
   const time = shortTime(moment.time);
   const isTransition = moment.transition_from_order !== null;
   const summary = isTransition ? transitionSummary(moment) : null;
@@ -115,13 +119,15 @@ function MomentCard({
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 id={titleId} className="truncate text-[15px] font-bold first-letter:uppercase sm:text-lg">
-            {title}
+            {repeatsHeading ? occasion || title : title}
           </h3>
-          {(time || !single) && (
-            <p className="mt-0.5 text-[13px] font-medium text-muted-foreground">
-              {[time, occasionLabel(moment.occasion)].filter(Boolean).join(' · ')}
-            </p>
-          )}
+          {repeatsHeading
+            ? time && <p className="mt-0.5 text-[13px] font-medium text-muted-foreground">{time}</p>
+            : (time || !single) && (
+                <p className="mt-0.5 text-[13px] font-medium text-muted-foreground">
+                  {[time, occasion].filter(Boolean).join(' · ')}
+                </p>
+              )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {musicLabel && (

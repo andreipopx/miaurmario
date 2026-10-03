@@ -2,9 +2,9 @@ import { ITEM_ROLE, canonicalItemOrder } from '@/lib/studio/canonical-order';
 import { clothingColorHex, hexToRgb, rgbToHex } from '@/lib/colors';
 
 /**
- * Flat-lay layout maths: turn a look's garments into a composed arrangement —
- * top above the bottom, shoes below, accessories tucked beside — the way the
- * pieces would be laid out on a bed to be photographed.
+ * Flat-lay layout maths: turn a look's garments into a tidy board — the top
+ * above the bottom, the coat, bag and shoes beside them, nothing overlapping —
+ * the way a shop lays out a look to photograph it.
  *
  * Everything here is pure and deterministic (same items in, same layout out,
  * whatever order they arrive in): no randomness, no drag, no measuring of the
@@ -95,103 +95,6 @@ export function flatLayRole(type: string | null | undefined): FlatLayRole {
   return (role as FlatLayRole) ?? 'accessory';
 }
 
-/**
- * Where each role sits across the frame, and how big it is. The jacket lies
- * open on the left, the top on it and to the right, the bottom centred below,
- * shoes to one side at the foot. `x` and `width` are fractions of the frame's
- * width; the vertical position is packed, not fixed (see `BAND`).
- *
- * This is the flat lay's own answer to "how big is a garment", and it is the same
- * idea as `ROLE_FRAME_SHARE` in lib/garment-framing.ts, which does it for a single
- * tile: a hat must not be drawn the size of a coat. Two tables rather than one
- * because a flat lay also has to decide *where* across the frame each role goes, and
- * collapsing them would make one of the two lie. If you retune one, look at the other.
- */
-const BASE_SLOTS: Record<FlatLayRole, { x: number; width: number }> = {
-  outer_layer: { x: 0.31, width: 0.56 },
-  full_body: { x: 0.46, width: 0.56 },
-  mid_layer: { x: 0.35, width: 0.5 },
-  base_top: { x: 0.57, width: 0.46 },
-  bottom: { x: 0.44, width: 0.5 },
-  socks: { x: 0.64, width: 0.22 },
-  footwear: { x: 0.33, width: 0.34 },
-  neckwear: { x: 0.5, width: 0.22 },
-  accessory: { x: 0.8, width: 0.28 },
-};
-
-/**
- * The garments stack down the frame in bands — neck, torso, legs, feet — and
- * only the bands a look actually has take up room. This is what keeps a
- * two-piece look from leaving a hole where the trousers would have been: the
- * boots move up under the dress instead of waiting at the bottom of the frame.
- * Accessories sit beside the stack rather than in it.
- */
-const BAND: Record<FlatLayRole, number> = {
-  neckwear: 0,
-  full_body: 1,
-  outer_layer: 1,
-  mid_layer: 1,
-  base_top: 1,
-  bottom: 2,
-  socks: 3,
-  footwear: 3,
-  accessory: -1,
-};
-
-/** Within a band: the jacket sits a touch lower than the top laid on it. */
-const BAND_NUDGE: Record<FlatLayRole, number> = {
-  outer_layer: 0.06,
-  mid_layer: 0.03,
-  base_top: -0.06,
-  full_body: 0,
-  bottom: 0,
-  footwear: 0,
-  socks: -0.02,
-  neckwear: 0,
-  accessory: 0,
-};
-
-/** Bands overlap slightly, so a hem covers a waistband instead of hovering. */
-const BAND_OVERLAP = 0.2;
-
-/**
- * Paint order. The outer layer is the thing lying flat underneath; the top sits
- * on it; the bottom's waistband tucks under the top's hem; small things last.
- */
-const ROLE_Z: Record<FlatLayRole, number> = {
-  outer_layer: 1,
-  full_body: 2,
-  bottom: 3,
-  mid_layer: 4,
-  base_top: 5,
-  socks: 6,
-  footwear: 7,
-  neckwear: 8,
-  accessory: 9,
-};
-
-/**
- * Accessories are tucked around the look, never on it, in a fixed sequence.
- * `at` is how far down the garments' own stack the piece sits (0 = its top,
- * 1 = its bottom), so a bag hangs beside the trousers whatever the look is.
- */
-const ACCESSORY_SLOTS: ReadonlyArray<{ x: number; at: number; width: number }> = [
-  { x: 0.81, at: 0.42, width: 0.26 },
-  { x: 0.82, at: 0.76, width: 0.22 },
-  { x: 0.14, at: 0.72, width: 0.22 },
-  { x: 0.15, at: 0.16, width: 0.22 },
-  { x: 0.63, at: 0.06, width: 0.2 },
-  { x: 0.5, at: 1.02, width: 0.18 },
-];
-
-/** Two jumpers in one look: nudge the second so it reads as two garments. */
-const DUPLICATE_OFFSETS: ReadonlyArray<{ dx: number; dy: number; dw: number }> = [
-  { dx: 0, dy: 0, dw: 0 },
-  { dx: 0.15, dy: -0.04, dw: -0.06 },
-  { dx: -0.16, dy: 0.04, dw: -0.06 },
-  { dx: 0.09, dy: 0.08, dw: -0.1 },
-];
-
 export interface FitOptions {
   aspect?: number;
   /** Empty band kept around the composition, as a fraction of the frame. */
@@ -259,6 +162,102 @@ export interface BuildFlatLayOptions extends FitOptions {
 }
 
 /**
+ * The board. Garments never overlap: each one gets its own cell, the way a look
+ * is laid out to be photographed for a shop — tidy, every piece whole and
+ * readable — instead of piled on each other.
+ *
+ * Two columns. The body (the top, or a dress, and the bottom) stacks down the
+ * main column; everything that goes with it (the coat, a second top, the bag,
+ * the scarf, the shoes) stacks down the side column, shoes at its foot. A look
+ * with nothing on the side is centred and larger; a look with only the small
+ * things (a bag and a hat) stacks them down the middle.
+ */
+const MAIN_ROLES: ReadonlySet<FlatLayRole> = new Set<FlatLayRole>(['full_body', 'base_top', 'mid_layer', 'bottom']);
+
+/** How tall a cell is, in shares of the column: a coat is worth more than a belt. */
+const CELL_WEIGHT: Record<FlatLayRole, number> = {
+  full_body: 1.9,
+  outer_layer: 1.1,
+  mid_layer: 1,
+  base_top: 1,
+  bottom: 1.15,
+  footwear: 0.62,
+  socks: 0.42,
+  neckwear: 0.5,
+  accessory: 0.56,
+};
+
+/** Order down the side column: the coat at the top, the shoes at the foot. */
+const SIDE_ORDER: Record<FlatLayRole, number> = {
+  outer_layer: 0,
+  mid_layer: 1,
+  base_top: 1,
+  full_body: 1,
+  bottom: 1,
+  neckwear: 2,
+  accessory: 3,
+  socks: 4,
+  footwear: 5,
+};
+
+const BOARD_MARGIN = 0.045;
+const BOARD_GAP = 0.03;
+/** A garment fills this much of its cell: a little air between neighbours. */
+const CELL_FILL = 0.94;
+
+interface Cell<T extends FlatLayInput> {
+  item: T;
+  role: FlatLayRole;
+  weight: number;
+  z: number;
+}
+
+/**
+ * Lay one column of cells into [top, bottom] at column centre `x`, width `width`
+ * (fractions of the frame). Cell heights follow their weights with `unit` height
+ * per weight; when the column is shorter than the frame, the slack goes between
+ * the cells, and a lone piece sits at the foot if it is shoes, else in the middle.
+ */
+function layColumn<T extends FlatLayInput>(
+  cells: Cell<T>[],
+  x: number,
+  width: number,
+  unit: number,
+  aspect: number
+): FlatLayPiece<T>[] {
+  if (cells.length === 0) return [];
+  const top = BOARD_MARGIN;
+  const available = 1 - 2 * BOARD_MARGIN;
+  const heights = cells.map((c) => c.weight * unit);
+  const used = heights.reduce((sum, h) => sum + h, 0) + BOARD_GAP * (cells.length - 1);
+  const slack = Math.max(0, available - used);
+  let cursor: number;
+  let gap: number;
+  if (cells.length === 1) {
+    gap = 0;
+    cursor = cells[0].role === 'footwear' ? top + slack : top + slack / 2;
+  } else {
+    gap = BOARD_GAP + slack / (cells.length - 1);
+    cursor = top;
+  }
+  return cells.map((cell, i) => {
+    const h = heights[i];
+    // A square piece: as wide as the column allows, as tall as the cell allows.
+    const side = Math.min(width, h / aspect) * CELL_FILL;
+    const piece: FlatLayPiece<T> = {
+      item: cell.item,
+      role: cell.role,
+      x: round(x),
+      y: round(cursor + h / 2),
+      width: round(side),
+      z: cell.z,
+    };
+    cursor += h + gap;
+    return piece;
+  });
+}
+
+/**
  * The layout for a look. Items may arrive in any order and with any mix of
  * roles; the result is canonical (tops before bottoms before shoes, which is
  * also the reading and tab order) and stable.
@@ -274,71 +273,69 @@ export function buildFlatLay<T extends FlatLayInput>(
   const aspect = options.aspect ?? FLAT_LAY_ASPECT;
   const ordered = canonicalItemOrder(usable as T[]);
   const shown = ordered.slice(0, Math.max(0, max));
-  const roleCounts = new Map<FlatLayRole, number>();
 
-  // A dress worn over trousers is a layered look, not one piece hiding the
-  // other. The bottom keeps its own band below, and the dress is painted in
-  // front of it so its hem covers the waistband instead of the other way
-  // round. Paint order only, and only for a look that really has both.
-  const shownRoles = shown.map((item) => flatLayRole(item.type));
-  const layeredOverBottom = shownRoles.includes('full_body') && shownRoles.includes('bottom');
-  const zOf = (role: FlatLayRole): number =>
-    layeredOverBottom && role === 'full_body' ? ROLE_Z.bottom + 0.5 : ROLE_Z[role];
-
-  // 1. Across the frame: each garment's column and size come from its role.
-  const sized = shown.map((item) => {
+  // Which column: the first top (or the dress) and the first bottom make the body;
+  // anything else, including a second top, goes beside it.
+  let main: Cell<T>[] = [];
+  let side: Cell<T>[] = [];
+  let hasUpper = false;
+  let hasBottom = false;
+  shown.forEach((item, index) => {
     const role = flatLayRole(item.type);
-    const seen = roleCounts.get(role) ?? 0;
-    roleCounts.set(role, seen + 1);
-    const base = BASE_SLOTS[role];
-    const nudge = DUPLICATE_OFFSETS[Math.min(seen, DUPLICATE_OFFSETS.length - 1)];
-    const slot = role === 'accessory' ? ACCESSORY_SLOTS[seen % ACCESSORY_SLOTS.length] : null;
-    return {
-      item,
-      role,
-      seen,
-      x: (slot ? slot.x : base.x) + (slot ? 0 : nudge.dx),
-      width: Math.max(0.12, (slot ? slot.width : base.width) + (slot ? 0 : nudge.dw)),
-      dy: slot ? 0 : nudge.dy,
-      at: slot ? slot.at : 0,
-      z: zOf(role) * 10 + seen,
-    };
+    const cell: Cell<T> = { item, role, weight: CELL_WEIGHT[role], z: (index + 1) * 10 };
+    const upper = role === 'full_body' || role === 'base_top' || role === 'mid_layer';
+    if (MAIN_ROLES.has(role) && ((upper && !hasUpper) || (role === 'bottom' && !hasBottom))) {
+      if (upper) hasUpper = true;
+      else hasBottom = true;
+      main.push(cell);
+    } else {
+      side.push(cell);
+    }
   });
-
-  // 2. Down the frame: stack only the bands this look actually has.
-  const garments = sized.filter((p) => BAND[p.role] >= 0);
-  const bands = Array.from(new Set(garments.map((p) => BAND[p.role]))).sort((a, b) => a - b);
-  const centres = new Map<number, number>();
-  const heights = new Map<number, number>();
-  let cursor = 0;
-  let previousHeight = 0;
-  for (const band of bands) {
-    const height = Math.max(
-      ...garments.filter((p) => BAND[p.role] === band).map((p) => p.width * aspect)
-    );
-    if (previousHeight > 0) cursor -= BAND_OVERLAP * Math.min(height, previousHeight);
-    centres.set(band, cursor + height / 2);
-    heights.set(band, height);
-    cursor += height;
-    previousHeight = height;
+  // A coat with nothing under it is the body itself.
+  if (main.length === 0 && side.some((c) => c.role === 'outer_layer')) {
+    const coat = side.find((c) => c.role === 'outer_layer')!;
+    main = [coat];
+    side = side.filter((c) => c !== coat);
   }
-  const stackTop = garments.length > 0 ? centres.get(bands[0])! - heights.get(bands[0])! / 2 : 0;
-  const stackHeight = Math.max(cursor - stackTop, 1e-6);
+  // Only small things: they are the look, down the middle.
+  if (main.length === 0) {
+    main = side;
+    side = [];
+  }
+  main.sort((a, b) => (a.role === 'bottom' ? 1 : 0) - (b.role === 'bottom' ? 1 : 0));
+  side.sort((a, b) => SIDE_ORDER[a.role] - SIDE_ORDER[b.role] || a.z - b.z);
 
-  const placed: FlatLayPiece<T>[] = sized.map((p) => {
-    const band = BAND[p.role];
-    // An accessory hangs beside the garments, at a fixed depth down the stack.
-    const y =
-      band < 0
-        ? stackTop + p.at * stackHeight
-        : centres.get(band)! + p.dy + BAND_NUDGE[p.role] * heights.get(band)!;
-    return { item: p.item, role: p.role, x: p.x, y, width: p.width, z: p.z };
-  });
+  const available = 1 - 2 * BOARD_MARGIN;
+  // One height per weight for both columns, so a coat beside a T-shirt is drawn
+  // at the same scale as it: the taller column decides.
+  const mainNeed = main.reduce((s, c) => s + c.weight, 0);
+  const sideNeed = side.reduce((s, c) => s + c.weight, 0);
+  const gaps = (n: number) => BOARD_GAP * Math.max(0, n - 1);
+  const unit = Math.min(
+    (available - gaps(main.length)) / Math.max(mainNeed, 1e-6),
+    side.length ? (available - gaps(side.length)) / Math.max(sideNeed, 1e-6) : Infinity
+  );
 
-  return {
-    pieces: fitToFrame(placed, options),
-    overflow: Math.max(0, ordered.length - shown.length),
-  };
+  let pieces: FlatLayPiece<T>[];
+  if (side.length === 0) {
+    pieces = layColumn(main, 0.5, 0.72, unit, aspect);
+  } else {
+    const mainWidth = 0.56;
+    const sideWidth = 0.34;
+    const mainX = BOARD_MARGIN + mainWidth / 2;
+    const sideX = 1 - BOARD_MARGIN - sideWidth / 2;
+    pieces = [
+      ...layColumn(main, mainX, mainWidth, unit, aspect),
+      ...layColumn(side, sideX, sideWidth, unit, aspect),
+    ];
+  }
+
+  // Back in canonical order (also the reading and tab order).
+  const rank = new Map(shown.map((item, index) => [item.id, index]));
+  pieces.sort((a, b) => (rank.get(a.item.id) ?? 0) - (rank.get(b.item.id) ?? 0));
+
+  return { pieces, overflow: Math.max(0, ordered.length - shown.length) };
 }
 
 /**

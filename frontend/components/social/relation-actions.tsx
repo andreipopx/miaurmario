@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Check, Clock, Loader2, UserMinus, UserPlus, X } from 'lucide-react';
+import { useConfirm } from '@/components/confirm-provider';
 import { ApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
@@ -56,6 +57,7 @@ export function RelationActions({
   compact?: boolean;
 }) {
   const t = useTranslations('social.actions');
+  const confirm = useConfirm();
   const errorMessage = useFriendErrorMessage();
   const send = useSendFriendRequest();
   const accept = useAcceptFriend();
@@ -147,8 +149,8 @@ export function RelationActions({
         size={size}
         variant="outline"
         disabled={remove.isPending}
-        onClick={() => {
-          if (!confirm(t('confirmRemove'))) return;
+        onClick={async () => {
+          if (!(await confirm({ title: t('confirmRemove'), destructive: true }))) return;
           remove.mutate(friendshipId, { onSuccess: () => toast.success(t('removed')), onError });
         }}
       >

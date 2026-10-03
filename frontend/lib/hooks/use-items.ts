@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, getAccessToken, setAccessToken, ApiError, NetworkError } from '@/lib/api';
 import { CareInfo, ImageView, Item, ItemListResponse, ItemFilter, ItemUsage, WashHistoryEntry, ItemImage } from '@/lib/types';
@@ -65,11 +65,15 @@ export function useItems(
   return useQuery({
     ...itemsQueryOptions(filters, page, pageSize),
     enabled: wanted && status !== 'loading',
-    // Poll more frequently when items are processing (every 5 seconds), otherwise every 30 seconds
+    // A new search, filter or page keeps showing the garments already on screen until
+    // its answer arrives, instead of flashing the whole grid back to skeletons.
+    placeholderData: keepPreviousData,
+    // Poll only while something is being analysed; otherwise the list changes when
+    // the user changes it (mutations invalidate it) or on returning to the app.
     refetchInterval: (query) => {
       const data = query.state.data as ItemListResponse | undefined;
       const hasProcessing = data?.items?.some((item) => item.status === 'processing');
-      return hasProcessing ? 5000 : 30000;
+      return hasProcessing ? 5000 : false;
     },
   });
 }

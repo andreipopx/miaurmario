@@ -301,6 +301,12 @@ export default function WardrobePage() {
   /** The one selected garment being handed to another as its back photo, if any. */
   const [mergeBackId, setMergeBackId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  // The grid asks the server once typing pauses, not on every keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sortIndex, setSortIndex] = useState(0);
   const [needsWash, setNeedsWash] = useState<boolean | undefined>(undefined);
@@ -362,7 +368,7 @@ export default function WardrobePage() {
   const sortOption = SORT_OPTIONS[sortIndex];
 
   const filters = {
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     type: typeFilter !== 'all' ? typeFilter : undefined,
     needs_wash: needsWash,
     favorite: favoriteFilter,
@@ -397,8 +403,8 @@ export default function WardrobePage() {
     setPage(1);
   };
 
-  // Fetch items with automatic polling (faster when items are processing)
-  const { data, isLoading, error } = useItems(filters, page, pageSize);
+  // Fetch items (polled only while something is being analysed)
+  const { data, isLoading, error, refetch, isPlaceholderData } = useItems(filters, page, pageSize);
   const { data: itemTypes } = useItemTypes();
   const reanalyze = useReanalyzeItem();
   const cancelAnalysis = useCancelAnalysis();
@@ -421,7 +427,7 @@ export default function WardrobePage() {
   // Clear selection when filters change (but not page - allow cross-page selection)
   useEffect(() => {
     setSelection({ mode: 'none', selectedIds: new Set(), excludedIds: new Set() });
-  }, [search, typeFilter, needsWash, favoriteFilter, sortIndex]);
+  }, [debouncedSearch, typeFilter, needsWash, favoriteFilter, sortIndex]);
 
   const { mutate: reanalyzeItem } = reanalyze;
   const { mutate: cancelItemAnalysis } = cancelAnalysis;
@@ -481,7 +487,7 @@ export default function WardrobePage() {
         excluded_ids: Array.from(selection.excludedIds),
         filters: {
           type: typeFilter !== 'all' ? typeFilter : undefined,
-          search: search || undefined,
+          search: debouncedSearch || undefined,
           needs_wash: needsWash,
           favorite: favoriteFilter,
           is_archived: false,
@@ -734,12 +740,12 @@ export default function WardrobePage() {
         </div>
       )}
 
-      {error ? (
+      {error && !data ? (
         <EmptyState
           state="sad"
           title={t('loadError')}
           action={
-            <Button variant="secondary" onClick={() => window.location.reload()}>
+            <Button variant="secondary" onClick={() => void refetch()}>
               <RefreshCw className="h-4 w-4" aria-hidden />
               {tCommon('retry')}
             </Button>
@@ -782,9 +788,12 @@ export default function WardrobePage() {
         )
       ) : (
         <div
+          aria-busy={isPlaceholderData || undefined}
           className={cn(
-            'grid grid-cols-2 gap-x-2.5 gap-y-4 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4',
-            (selection.mode !== 'none' || total > pageSize) && 'pb-16'
+            'grid grid-cols-2 gap-x-2.5 gap-y-4 transition-opacity duration-200 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4',
+            (selection.mode !== 'none' || total > pageSize) && 'pb-16',
+            // The previous results stay put, faintly, while the new ones load.
+            isPlaceholderData && 'opacity-60'
           )}
         >
           {items.map((item) => {

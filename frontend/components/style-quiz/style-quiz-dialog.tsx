@@ -349,7 +349,7 @@ export function StyleQuizDialog() {
       }}
     >
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-modal bg-black/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-modal bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           onKeyDown={onKeyDown}

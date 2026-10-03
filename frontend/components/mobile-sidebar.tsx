@@ -43,7 +43,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
     <div className={cn('lg:hidden', !open && 'pointer-events-none')}>
       <div
         className={cn(
-          'fixed inset-0 z-drawer bg-black/40 backdrop-blur-[2px] transition-opacity duration-300',
+          'fixed inset-0 z-drawer bg-black/40 transition-opacity duration-300',
           open ? 'opacity-100' : 'opacity-0'
         )}
         onClick={onClose}
@@ -51,8 +51,13 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
 
       <div
         ref={setPanel}
-        role="dialog"
-        aria-modal="true"
+        // Only a dialog while open: a closed one still in the DOM made pull-to-refresh
+        // think a sheet was up (so it never started), and Android back looks for
+        // data-state="open" to know what to close.
+        role={open ? 'dialog' : undefined}
+        aria-modal={open ? 'true' : undefined}
+        aria-hidden={open ? undefined : true}
+        data-state={open ? 'open' : 'closed'}
         aria-label={tNav('profileMenu')}
         className={cn(
           'fixed inset-y-2 left-2 z-drawer w-80 max-w-[calc(100vw-1rem)] rounded-lg bg-popover shadow-[0_20px_60px_rgba(0,0,0,0.25)] transition-[transform,visibility] duration-300 ease-out',

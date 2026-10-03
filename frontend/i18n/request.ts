@@ -1,5 +1,7 @@
 import type { AbstractIntlMessages } from 'next-intl';
+import { cookies } from 'next/headers';
 import { getRequestConfig } from 'next-intl/server';
+import { TIME_ZONE_COOKIE, resolveTimeZone } from './time-zone';
 
 export const SUPPORTED_LOCALES = ['en', 'es'] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -35,5 +37,6 @@ export default getRequestConfig(async () => {
   // (Cookie is intentionally ignored — legacy 'en' cookies simply have no effect.)
   const locale: Locale = DEFAULT_LOCALE;
   const messages = await loadMessages(locale);
-  return { locale, messages };
+  const timeZone = resolveTimeZone(cookies().get(TIME_ZONE_COOKIE)?.value);
+  return { locale, messages, timeZone };
 });

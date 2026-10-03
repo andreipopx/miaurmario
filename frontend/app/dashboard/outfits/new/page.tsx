@@ -374,7 +374,7 @@ export default function StudioEditorPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="sticky top-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:mx-0 lg:px-0">
+      <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-10 -mx-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-background px-4 py-3 lg:top-20 lg:mx-0 lg:px-0">
         <div className="flex min-w-0 items-center gap-1">
           <Button variant="ghost" size="icon" asChild className="-ml-2 shrink-0">
             <Link href={cancelHref} aria-label={t('cancel')}>

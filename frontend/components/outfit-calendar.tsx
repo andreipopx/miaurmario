@@ -22,6 +22,9 @@ import {
 import type { Outfit, OutfitSource } from '@/lib/hooks/use-outfits';
 import { capitalizeFirst, useDateFnsLocale, useFormatDate } from '@/lib/date-locale';
 
+// Weeks start on Monday, as in Spain (and the week strip on Hoy).
+const WEEK_STARTS_ON = 1;
+
 interface OutfitCalendarProps {
   year: number;
   month: number;
@@ -62,8 +65,8 @@ export function OutfitCalendar({
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
-    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: WEEK_STARTS_ON });
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: WEEK_STARTS_ON });
 
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   }, [currentMonth]);
@@ -78,12 +81,11 @@ export function OutfitCalendar({
     onMonthChange(next.getFullYear(), next.getMonth() + 1);
   };
 
-  // Two-letter weekday headers ("Su".."Sa" / "Do".."Sá"), Sunday first to
-  // match the grid's weekStartsOn: 0.
+  // Two-letter weekday headers ("Lu".."Do"), in the same order as the grid.
   const weekDays = useMemo(() => {
-    const sunday = startOfWeek(new Date(), { weekStartsOn: 0 });
+    const first = startOfWeek(new Date(), { weekStartsOn: WEEK_STARTS_ON });
     return Array.from({ length: 7 }, (_, i) =>
-      capitalizeFirst(format(addDays(sunday, i), 'EEEEEE', { locale: dateFnsLocale }))
+      capitalizeFirst(format(addDays(first, i), 'EEEEEE', { locale: dateFnsLocale }))
     );
   }, [dateFnsLocale]);
 

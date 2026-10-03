@@ -41,8 +41,12 @@ export function ServiceWorkerRegister() {
       });
     };
 
+    // First visit: the new worker claiming this page changes nothing it shows, so
+    // don't reload (it blanked the screen and restarted Stinky's wave). Only swap
+    // when an older version was running.
+    const hadController = !!navigator.serviceWorker.controller;
     const onControllerChange = () => {
-      if (reloading) return;
+      if (reloading || !hadController) return;
       reloading = true;
       window.location.reload();
     };

@@ -64,7 +64,24 @@ export function useWearMomentLook(day = 'today') {
   return useMutation({
     mutationFn: (outfitId: string) =>
       api.post<unknown>(`/outfits/${outfitId}/feedback`, { accepted: true, worn: true }),
-    onSuccess: (_, outfitId) => {
+    // Shown as worn the moment it's tapped; put back if the server says no.
+    onMutate: async (outfitId) => {
+      await queryClient.cancelQueries({ queryKey: dayPlanKey(day) });
+      const before = queryClient.getQueryData<DayPlan>(dayPlanKey(day));
+      if (before) {
+        queryClient.setQueryData<DayPlan>(dayPlanKey(day), {
+          ...before,
+          moments: before.moments.map((m) =>
+            m.outfit?.id === outfitId ? { ...m, is_worn: true } : m
+          ),
+        });
+      }
+      return { before };
+    },
+    onError: (_err, _outfitId, context) => {
+      if (context?.before) queryClient.setQueryData(dayPlanKey(day), context.before);
+    },
+    onSettled: (_data, _err, outfitId) => {
       queryClient.invalidateQueries({ queryKey: dayPlanKey(day) });
       queryClient.invalidateQueries({ queryKey: ['outfit', outfitId] });
       invalidateOutfitViews(queryClient);

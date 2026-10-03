@@ -60,7 +60,8 @@
     --ring: #111111;
 
     /* Floating dock */
-    --dock: rgba(255, 255, 255, 0.78);
+    --dock: #FFFFFF;
+    --dock-glass: rgba(255, 255, 255, 0.78);
     --dock-border: rgba(0, 0, 0, 0.06);
     --dock-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
 
@@ -158,7 +159,8 @@
 
     --ring: #FF7EB6;
 
-    --dock: rgba(28, 28, 28, 0.78);
+    --dock: #1C1C1C;
+    --dock-glass: rgba(28, 28, 28, 0.78);
     --dock-border: rgba(255, 255, 255, 0.08);
     --dock-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   }
@@ -217,15 +219,36 @@
     color: var(--muted-foreground);
   }
 
-  /* Floating glass dock surface. */
+  /* Floating dock surface. Nearly opaque everywhere: a backdrop blur over a scrolling
+     photo grid repaints every frame, which Android WebViews can't keep up with. */
   .glass-dock {
     background: var(--dock);
     border: 1px solid var(--dock-border);
     box-shadow: var(--dock-shadow);
+  }
+
+  /* Sticky header: opaque (see the iOS glass below). */
+  .app-header {
+    background: var(--background);
+  }
+}
+
+/* iOS (WebKit composites backdrop filters cheaply): keep the real glass there.
+   -webkit-touch-callout only exists in iOS/iPadOS WebKit. */
+@supports (-webkit-touch-callout: none) {
+  .glass-dock {
+    background: var(--dock-glass);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
   }
+  .app-header {
+    background: color-mix(in srgb, var(--background) 80%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+  }
+}
 
+@layer utilities {
   /* Bottom padding so fixed dock never covers content (dock 64 + inset 24 + breathing room).
      --float-extra grows it by one slot while something floats in slot 2 (the
      upload status bar), so that bar can't sit on the last row either. */
@@ -384,6 +407,26 @@ html[data-keyboard='open'] [data-dock] {
   ::view-transition-new(*) {
     animation: none !important;
   }
+  /* Spinners, pulsing skeletons and entrance animations everywhere: still. A spinner
+     still reads as "busy" without turning. */
+  .animate-spin,
+  .animate-pulse,
+  .animate-bounce,
+  .animate-in,
+  .animate-out {
+    animation: none !important;
+  }
+}
+
+/* App chrome isn't text: long-pressing the dock, a chip or a button shouldn't
+   select a word or pop the iOS callout. */
+nav,
+button,
+[role='tab'],
+.pressable {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Sonner toasts — Stinky pop */

@@ -8,7 +8,7 @@ import { MobileSidebar } from '@/components/mobile-sidebar';
 import { MobileNav } from '@/components/mobile-nav';
 import { Header } from '@/components/header';
 import { OfflineIndicator } from '@/components/offline-indicator';
-import { ImageLightbox } from '@/components/image-lightbox';
+import { LazyImageLightbox } from '@/components/image-lightbox-lazy';
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { PushSync } from '@/components/install/push-sync';
 import { LightboxProvider } from '@/lib/lightbox-context';
@@ -16,8 +16,7 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { useTranslations } from 'next-intl';
 import { PullToRefresh } from '@/components/native/pull-to-refresh';
 import { SectionTabs } from '@/components/section-tabs';
-import { FeatureTour } from '@/components/onboarding/feature-tour';
-import { StyleQuizDialog } from '@/components/style-quiz/style-quiz-dialog';
+import { LazyFeatureTour, LazyStyleQuizDialog } from '@/components/onboarding/lazy-first-run';
 import { AreaTip } from '@/components/onboarding/area-tip';
 import { LocationSync } from '@/components/settings/location-sync';
 import { BulkUploadProvider } from '@/lib/bulk-upload/bulk-upload-context';
@@ -44,7 +43,7 @@ export default function DashboardLayout({
   useEffect(() => {
     // If auth check completed and user is not authenticated, redirect to login
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      router.replace('/login');
     }
     // In the Android/iOS app: who you are is known, so the launch screen can go.
     if (!isLoading && isAuthenticated) markAppReady();
@@ -53,7 +52,7 @@ export default function DashboardLayout({
   // Check onboarding status from API user
   useEffect(() => {
     if (user && user.onboarding_completed === false) {
-      router.push('/onboarding');
+      router.replace('/onboarding');
     }
   }, [user, router]);
 
@@ -83,7 +82,7 @@ export default function DashboardLayout({
           <div className="lg:pl-64">
             <Header onMenuClick={() => setSidebarOpen(true)} />
             {/* pb-dock reserves room for the floating mobile dock so it never covers content. */}
-            <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
+            <main className="mx-auto max-w-6xl overflow-x-clip px-4 pt-2 pb-dock sm:px-6 lg:px-10 lg:pb-12">
               <AnnouncementBanner />
               {/* Silent timezone detection, plus "¿Estás en Lisboa?" when it applies. */}
               <LocationSync />
@@ -98,10 +97,10 @@ export default function DashboardLayout({
           <OfflineIndicator />
           <OfflineWarmup signedIn={!!user} />
           <PushSync />
-          <ImageLightbox />
-          {user?.onboarding_completed && <FeatureTour />}
+          <LazyImageLightbox />
+          {user?.onboarding_completed && <LazyFeatureTour />}
           {/* Offered once the tour is done, and re-run from Ajustes → Tu estilo. */}
-          {user?.onboarding_completed && <StyleQuizDialog />}
+          {user?.onboarding_completed && <LazyStyleQuizDialog />}
         </div>
       </BulkUploadProvider>
     </LightboxProvider>

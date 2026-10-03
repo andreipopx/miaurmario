@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Ban, ChevronLeft, Loader2 } from 'lucide-react';
+import { useConfirm } from '@/components/confirm-provider';
 import { ApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +21,7 @@ import { useBlockUser, useProfile, useProfileOutfits } from '@/lib/hooks/use-soc
 
 export default function FriendProfilePage() {
   const t = useTranslations('social.profile');
+  const confirm = useConfirm();
   const router = useRouter();
   const params = useParams<{ username: string }>();
   const username = params?.username ? decodeURIComponent(params.username) : undefined;
@@ -65,8 +67,12 @@ export default function FriendProfilePage() {
   const { user, relation, friendship_id, is_me, friend_count } = profile.data;
   const list = outfits.data?.pages.flatMap((p) => p.items) ?? [];
 
-  const onBlock = () => {
-    if (!confirm(t('confirmBlock', { name: '@' + user.username }))) return;
+  const onBlock = async () => {
+    const ok = await confirm({
+      title: t('confirmBlock', { name: '@' + user.username }),
+      destructive: true,
+    });
+    if (!ok) return;
     block.mutate(user.username, {
       onSuccess: () => {
         toast.success(t('blocked'));

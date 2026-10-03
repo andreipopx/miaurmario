@@ -1,16 +1,22 @@
 'use client';
 
-import { TransitionLink } from '@/components/native/transition-link';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { MAIN_SECTIONS, resolveNav } from '@/components/nav-items';
 import { useSocialSummary } from '@/lib/hooks/use-social';
+import { haptic } from '@/lib/native/haptics';
 
 /**
  * Floating glass dock (mobile). Active tab = pink pill with icon + label;
  * inactive tabs are icon-only with an aria-label. Page content reserves
  * space for it via the `pb-dock` utility in the dashboard layout.
+ *
+ * The tapped tab lights up at once (with a haptic tick), before the new screen
+ * has arrived, the way a native tab bar answers; the pathname takes over again
+ * as soon as it changes. Tab switches don't cross-fade: they should feel instant.
  */
 export function MobileNav() {
   const pathname = usePathname();
@@ -18,7 +24,10 @@ export function MobileNav() {
   const { data: summary } = useSocialSummary();
   const socialCount = summary?.total ?? 0;
   // Sub-pages (Looks, Música, a friend's profile…) keep their section's tab lit.
-  const activeKey = resolveNav(pathname)?.section.key;
+  const routeKey = resolveNav(pathname)?.section.key;
+  const [tapped, setTapped] = useState<string | null>(null);
+  useEffect(() => setTapped(null), [pathname]);
+  const activeKey = tapped ?? routeKey;
 
   return (
     <>
@@ -41,9 +50,15 @@ export function MobileNav() {
           const badge = item.socialBadge ? socialCount : 0;
           const label = badge > 0 ? `${t(item.key)} · ${t('newActivity', { count: badge })}` : t(item.key);
           return (
-            <TransitionLink
+            <Link
               key={item.href}
               href={item.href}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                if (item.key === routeKey) return;
+                setTapped(item.key);
+                haptic(6);
+              }}
               aria-current={active ? 'page' : undefined}
               aria-label={active ? undefined : label}
               className={cn(
@@ -72,7 +87,7 @@ export function MobileNav() {
                 )}
               </span>
               {active && <span className="min-w-0 truncate text-sm font-bold">{t(item.shortKey ?? item.key)}</span>}
-            </TransitionLink>
+            </Link>
           );
         })}
       </nav>

@@ -3,6 +3,8 @@
 const VERSION = new URL(self.location.href).searchParams.get('v') || 'dev';
 const CACHE = `miaurmario-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
+// How long a navigation waits for the network before a saved copy of the screen is used.
+const NAVIGATION_TIMEOUT_MS = 3000;
 const CORE = ['/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png', OFFLINE_URL, '/brand/stinky/head/stinky-head-512.png', '/brand/stinky/head/stinky-head-dark-512.png'];
 
 // Offline wardrobe, for the installed app (home-screen PWA or Android/iOS):
@@ -292,31 +294,43 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Opening a screen: network first. Each one opened is kept (by path) so it
-  // opens again offline; one never seen gets the offline page instead.
+  // opens again offline; one never seen gets the offline page instead. On a weak
+  // signal the saved copy wins after NAVIGATION_TIMEOUT_MS (the network answer
+  // still refreshes it for next time), so the app never sits on a blank screen.
   if (req.mode === 'navigate') {
+    const offlineCopy = async () => {
+      const cache = await caches.open(CACHE);
+      // The installed app starts at "/" (the landing page): offline, go
+      // straight to the saved wardrobe instead.
+      if (url.pathname === '/' && (await cache.match('/dashboard'))) {
+        return Response.redirect('/dashboard', 302);
+      }
+      return (await cache.match(url.pathname)) || (await cache.match(OFFLINE_URL)) || Response.error();
+    };
+    const network = fetch(req).then((res) => {
+      const type = res.headers.get('content-type') || '';
+      if (res.ok && res.type === 'basic' && type.includes('text/html')) {
+        const copy = res.clone();
+        event.waitUntil(caches.open(CACHE).then((c) => c.put(url.pathname, copy)).catch(() => {}));
+      }
+      return res;
+    });
+    event.waitUntil(network.catch(() => {}));
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const type = res.headers.get('content-type') || '';
-          if (res.ok && res.type === 'basic' && type.includes('text/html')) {
-            const copy = res.clone();
-            event.waitUntil(caches.open(CACHE).then((c) => c.put(url.pathname, copy)).catch(() => {}));
-          }
-          return res;
-        })
-        .catch(async () => {
-          const cache = await caches.open(CACHE);
-          // The installed app starts at "/" (the landing page): offline, go
-          // straight to the saved wardrobe instead.
-          if (url.pathname === '/' && (await cache.match('/dashboard'))) {
-            return Response.redirect('/dashboard', 302);
-          }
-          return (
-            (await cache.match(url.pathname)) ||
-            (await cache.match(OFFLINE_URL)) ||
-            Response.error()
-          );
-        })
+      new Promise((resolve) => {
+        let done = false;
+        const settle = (res) => {
+          if (done) return;
+          done = true;
+          resolve(res);
+        };
+        network.then(settle, () => offlineCopy().then(settle));
+        setTimeout(async () => {
+          if (done) return;
+          const saved = await caches.open(CACHE).then((c) => c.match(url.pathname));
+          if (saved) settle(saved);
+        }, NAVIGATION_TIMEOUT_MS);
+      })
     );
     return;
   }

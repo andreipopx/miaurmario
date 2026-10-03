@@ -33,8 +33,36 @@ class NetworkError extends Error {
 
 let accessToken: string | null = null;
 
+// Cold start with a saved account: screens render from the offline copy while
+// NextAuth is still fetching the session. Requests made in that window wait for
+// the token instead of reaching the API anonymously (and failing with 401).
+let holding = false;
+let waiters: Array<() => void> = [];
+const HOLD_MAX_MS = 10_000;
+
+function release() {
+  const pending = waiters;
+  waiters = [];
+  pending.forEach((resolve) => resolve());
+}
+
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  if (token) release();
+}
+
+/** useAuth: a session is expected (or no longer is) and has not handed over its token yet. */
+export function holdRequestsForSession(hold: boolean) {
+  holding = hold;
+  if (!hold) release();
+}
+
+function tokenReady(): Promise<void> | null {
+  if (accessToken || !holding) return null;
+  return new Promise((resolve) => {
+    waiters.push(resolve);
+    setTimeout(resolve, HOLD_MAX_MS);
+  });
 }
 
 export function getAccessToken(): string | null {
@@ -43,6 +71,7 @@ export function getAccessToken(): string | null {
 
 async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
+  await tokenReady();
 
   let url = `${API_BASE_PATH}${endpoint}`;
   if (params) {

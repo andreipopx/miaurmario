@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useConfirm } from '@/components/confirm-provider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,7 @@ const KNOWN_ERRORS = ['invalid_state', 'access_denied', 'exchange_failed'] as co
 
 export default function PinterestIntegrationPage() {
   const t = useTranslations('integrations.pinterest');
+  const confirm = useConfirm();
   const tI = useTranslations('integrations');
   const params = useSearchParams();
   const router = useRouter();
@@ -127,8 +129,8 @@ export default function PinterestIntegrationPage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
-                  if (!window.confirm(t('disconnectConfirm'))) return;
+                onClick={async () => {
+                  if (!(await confirm({ title: t('disconnectConfirm'), destructive: true }))) return;
                   disconnect.mutate(undefined, {
                     onSuccess: () => toast.success(t('disconnectSuccess')),
                   });

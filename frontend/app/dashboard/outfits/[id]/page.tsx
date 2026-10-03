@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useConfirm } from '@/components/confirm-provider';
 import { useDateFnsLocale, useFormatDate } from '@/lib/date-locale';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -37,6 +38,7 @@ import { getErrorMessage } from '@/lib/api';
 
 export default function OutfitDetailPage() {
   const t = useTranslations('outfitDetail');
+  const confirm = useConfirm();
   const tOccasions = useTranslations('suggest.occasions');
   const dateFnsLocale = useDateFnsLocale();
   const formatDate = useFormatDate();
@@ -82,7 +84,7 @@ export default function OutfitDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm(t('confirmDelete'))) return;
+    if (!(await confirm({ title: t('confirmDelete'), destructive: true }))) return;
     try {
       await deleteMutation.mutateAsync(outfit.id);
       toast.success(t('toast.deleted'));

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useIsRestoring, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSession, useSession, signOut } from 'next-auth/react';
-import { api, setAccessToken, ApiError } from '@/lib/api';
+import { api, holdRequestsForSession, setAccessToken, ApiError } from '@/lib/api';
 import { clearOfflineData } from '@/lib/offline/persist';
 import { useOnline } from './use-online';
 import type { UserProfile } from './use-user';
@@ -111,11 +111,20 @@ export function useAuth() {
   // you can look at your wardrobe, and the server checks again on reconnect.
   const offlineUser =
     (!online || reconnecting) && status !== 'authenticated' ? userQuery.data : undefined;
+  // Cold start with a saved account: open on it straight away instead of a spinner
+  // while NextAuth asks for the session; API calls wait for its token meanwhile.
+  // If the session turns out to be gone, the layout sends the user to /login.
+  const startingUp = status === 'loading' && !!userQuery.data;
+  holdRequestsForSession(startingUp);
   const isAuthenticated =
-    (status === 'authenticated' && userQuery.isSuccess && !!userQuery.data) || !!offlineUser;
+    (status === 'authenticated' && userQuery.isSuccess && !!userQuery.data) ||
+    !!offlineUser ||
+    startingUp;
 
   const isLoading =
-    restoring || status === 'loading' || (status === 'authenticated' && userQuery.isPending);
+    restoring ||
+    (status === 'loading' && !userQuery.data) ||
+    (status === 'authenticated' && userQuery.isPending);
 
   return {
     user: userQuery.data,

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, setAccessToken } from '@/lib/api';
 import { FamilyRating, MusicInspiration } from '@/lib/types';
@@ -212,6 +212,8 @@ export function useOutfits(filters: OutfitFilters = {}, page = 1, pageSize = 20)
   return useQuery({
     ...outfitsQueryOptions(filters, page, pageSize),
     enabled: status !== 'loading',
+    // Changing a filter or page keeps the current looks on screen until the new ones arrive.
+    placeholderData: keepPreviousData,
   });
 }
 

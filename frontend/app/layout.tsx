@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Figtree, Bagel_Fat_One } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
+import { getLocale, getMessages, getTimeZone } from 'next-intl/server';
 import './globals.css';
 import { Providers } from './providers';
 import { ServiceWorkerRegister } from '@/components/sw-register';
 import { NativeShell } from '@/components/native/native-shell';
+import { TimeZoneCookie } from '@/components/time-zone-cookie';
 import splashScreens from '@/public/splash/manifest.json';
 
 export const dynamic = 'force-dynamic';
@@ -83,6 +84,7 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const timeZone = await getTimeZone();
   return (
     <html
       lang={locale}
@@ -90,7 +92,8 @@ export default async function RootLayout({
       className={`${figtree.variable} ${bagel.variable}`}
     >
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages} timeZone={timeZone}>
+          <TimeZoneCookie />
           <Providers>{children}</Providers>
           <ServiceWorkerRegister />
           <NativeShell />

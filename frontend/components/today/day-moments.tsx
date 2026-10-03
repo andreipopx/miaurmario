@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { ArrowRightLeft, Check, Loader2, MessageCircle, Music, Plus, RefreshCw, Sparkles, X } from 'lucide-react';
 import { TransitionLink } from '@/components/native/transition-link';
+import { haptic } from '@/lib/native/haptics';
 import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -85,11 +86,10 @@ function MomentCard({
 
   const wearIt = () => {
     if (!outfit) return;
+    // The card flips to "puesto" straight away (optimistic); a tap of the phone says so.
+    haptic([12, 60, 18]);
     wear.mutate(outfit.id, {
-      onSuccess: () => {
-        toast.success(t('wornToast'));
-        onWorn(outfit.id, !!outfit.visibility && outfit.visibility !== 'private');
-      },
+      onSuccess: () => onWorn(outfit.id, !!outfit.visibility && outfit.visibility !== 'private'),
       onError: (err) => toast.error(getErrorMessage(err, t('wearError'))),
     });
   };
@@ -185,7 +185,7 @@ function MomentCard({
 
       <div className="mt-3 flex flex-wrap gap-2.5">
         {moment.is_worn ? (
-          <p className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-background text-sm font-bold">
+          <p className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-background text-sm font-bold duration-300 animate-in fade-in zoom-in-95 motion-reduce:animate-none">
             <Check className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
             {t('worn')}
           </p>

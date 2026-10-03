@@ -47,6 +47,10 @@ const nextConfig = {
   experimental: {
     // Disable automatic static optimization for pages using client-side context
     missingSuspenseWithCSRBailout: false,
+    // Keep visited screens in the client router cache for a few minutes, so switching
+    // tabs back and forth is instant instead of a server round-trip each time. The
+    // pages are client shells: their data lives in React Query, which refetches.
+    staleTimes: { dynamic: 300, static: 600 },
   },
   images: {
     unoptimized: true,

@@ -66,6 +66,7 @@ import { Progress } from '@/components/ui/progress';
 import { Stinky } from '@/components/stinky/stinky';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
+import { haptic } from '@/lib/native/haptics';
 import { useUpdateItem, useDeleteItem, useReanalyzeItem, useBrushCutout, useResetCutout, useRemoveBackground, useRestoreOriginal, useReplaceItemImage, useLogWash, useWashHistory, useItemWearStats, useItemWearHistory, useAddItemImage, useDeleteItemImage, useSetItemImageView, useSetPrimaryImage } from '@/lib/hooks/use-items';
 import { useRotationQueue } from '@/lib/hooks/use-rotation-queue';
 import { AlphaBrush } from '@/components/shared/alpha-brush';
@@ -298,6 +299,10 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
     }
   }, [item?.id]);
 
+  // Favorite, shown optimistically (see handleToggleFavorite).
+  const [favorite, setFavorite] = useState(!!item?.favorite);
+  useEffect(() => setFavorite(!!item?.favorite), [item?.id, item?.favorite]);
+
   if (!item) return null;
 
   /**
@@ -421,13 +426,16 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
     }
   };
 
+  // The heart answers the tap at once; the server catches up (or it flips back).
   const handleToggleFavorite = async () => {
+    const next = !favorite;
+    setFavorite(next);
+    haptic(next ? [10, 50, 14] : 8);
     try {
-      await updateItem.mutateAsync({
-        id: item.id,
-        data: { favorite: !item.favorite },
-      });
+      await updateItem.mutateAsync({ id: item.id, data: { favorite: next } });
     } catch (error) {
+      setFavorite(!next);
+      toast.error(t('toast.favoriteFailed'));
       console.error('Failed to toggle favorite:', error);
     }
   };
@@ -742,19 +750,19 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                     variant="secondary"
                     className="min-w-0 flex-1 basis-[8.5rem]"
                     onClick={handleToggleFavorite}
-                    disabled={updateItem.isPending}
-                    aria-pressed={!!item.favorite}
+                    aria-pressed={favorite}
                   >
                     <Heart
+                      key={favorite ? 'on' : 'off'}
                       strokeWidth={1.75}
                       aria-hidden
                       className={cn(
                         'h-[18px] w-[18px] shrink-0',
-                        item.favorite && 'fill-signature'
+                        favorite && 'fill-signature duration-300 animate-in zoom-in-50 motion-reduce:animate-none'
                       )}
                     />
                     <span className="min-w-0 truncate">
-                      {item.favorite ? t('toolbar.favoriteRemove') : t('toolbar.favoriteAdd')}
+                      {favorite ? t('toolbar.favoriteRemove') : t('toolbar.favoriteAdd')}
                     </span>
                   </Button>
                   <Button

@@ -2,6 +2,9 @@
 // Stinky pop — every colour/radius comes from CSS variables in app/globals.css.
 module.exports = {
   darkMode: ['class'],
+  // hover: styles only where a real pointer can hover, so a tapped tile or button
+  // doesn't stay lifted/highlighted on phones after the finger leaves.
+  future: { hoverOnlyWhenSupported: true },
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',

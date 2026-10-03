@@ -774,7 +774,8 @@
         "imageReplaceFailed": "Could not replace the image",
         "saveFailed": "I couldn't save your changes. Try again.",
         "reanalyzeQueued": "Queued — the AI will look at this garment again",
-        "reanalyzeFailed": "I couldn't re-analyse it"
+        "reanalyzeFailed": "I couldn't re-analyse it",
+        "favoriteFailed": "Couldn't update favourite"
       },
       "wornAgo": "{days, plural, =0 {Worn today} =1 {Worn yesterday} other {Worn # days ago}}",
       "imageN": "Image {n}",

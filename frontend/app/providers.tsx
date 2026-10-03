@@ -11,6 +11,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { SessionProvider } from 'next-auth/react';
 import { useState } from 'react';
 import { toast, Toaster } from 'sonner';
+import { ConfirmProvider } from '@/components/confirm-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/auth-provider';
 import {
@@ -150,8 +151,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           >
             <ApiErrorMessages />
             <AppBridge />
-            {children}
-            <Toaster position="top-center" />
+            <ConfirmProvider>{children}</ConfirmProvider>
+            {/* Below the status bar / Dynamic Island: the app draws under it. */}
+            <Toaster position="top-center" offset="calc(env(safe-area-inset-top) + 12px)" />
           </ThemeProvider>
         </PersistQueryClientProvider>
       </AuthProvider>

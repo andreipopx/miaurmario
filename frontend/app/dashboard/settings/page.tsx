@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { Loader2, Save, RotateCcw, MapPin, Ruler, Sun, Moon, Monitor, Palette, Trash2 } from 'lucide-react';
+import { useConfirm } from '@/components/confirm-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -145,6 +146,7 @@ export default function SettingsPage() {
   const autoTimezone = useAutoTimezone();
 
   const t = useTranslations('settings');
+  const confirm = useConfirm();
   const tCommon = useTranslations('common');
   const tLocation = useTranslations('settings.location');
   const tMeasurements = useTranslations('settings.measurements');
@@ -255,7 +257,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteLocation = async () => {
-    if (!window.confirm(tLocation('deleteConfirm'))) return;
+    if (!(await confirm({ title: tLocation('deleteConfirm'), destructive: true }))) return;
     try {
       await deleteLocation.mutateAsync();
       setLocation({ name: '', lat: null, lon: null });
@@ -405,7 +407,7 @@ export default function SettingsPage() {
   };
 
   const handleReset = async () => {
-    if (confirm(t('header.resetConfirm'))) {
+    if (await confirm({ title: t('header.resetConfirm'), destructive: true })) {
       try {
         await resetPreferences.mutateAsync();
       } catch (error) {

@@ -1,25 +1,19 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element -- tiny static SVG poster */
-
 import { useEffect, useRef, useState } from 'react';
 import { Stinky, type StinkyProps } from '@/components/stinky/stinky';
-import { resolveStinkyState, stinkyAssets } from '@/components/stinky/stinky-states';
-import { useStinkyVariant } from '@/components/stinky/use-stinky-env';
 import { cn } from '@/lib/utils';
 
 /**
- * <Stinky> that only exists (fetches + decodes its ~300KB animated WebP) while it is on
- * or near the screen, and while the tab is visible. Off-screen it is the static SVG
- * poster of the same state at the same size, so nothing shifts. Wraps components/stinky
- * from the outside; the mascot itself is untouched.
+ * <Stinky> that only animates (fetches + decodes its animated WebP) while it is on or
+ * near the screen, and while the tab is visible. Otherwise it holds the still neutral
+ * head, which is frame 0 of every clip, so starting again is a clean cut.
  */
 export function LazyStinky({ className, ...props }: StinkyProps) {
   const size = props.size ?? 128;
   const hostRef = useRef<HTMLSpanElement>(null);
   const [near, setNear] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
-  const variant = useStinkyVariant(props.variant);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -40,25 +34,13 @@ export function LazyStinky({ className, ...props }: StinkyProps) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
-  const live = near && pageVisible;
   return (
     <span
       ref={hostRef}
       className={cn('inline-flex shrink-0', className)}
       style={{ width: size, height: size }}
     >
-      {live ? (
-        <Stinky {...props} size={size} />
-      ) : (
-        <img
-          src={stinkyAssets(resolveStinkyState(props.state ?? 'idle'), variant).poster}
-          alt={props.label ?? ''}
-          width={size}
-          height={size}
-          draggable={false}
-          className="h-full w-full"
-        />
-      )}
+      <Stinky {...props} size={size} paused={!(near && pageVisible)} />
     </span>
   );
 }

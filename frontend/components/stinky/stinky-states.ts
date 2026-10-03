@@ -4,7 +4,8 @@
  * Assets live in /public/brand/stinky/head/ and were produced with the OneWorks Avatar SDK (MIT):
  * clips are the editor's built-in presets baked for Stinky plus custom "wave" and "purr" clips.
  * Every clip starts and ends on the exact same neutral frame (idle frame 0), so any clip can follow
- * any other without a visible jump.
+ * any other without a visible jump. One-shot clips are encoded to play once (loop count 1), so a
+ * finished one rests on that frame instead of starting over.
  */
 
 export const STINKY_STATES = ['idle', 'thinking', 'happy', 'wave', 'sleepy', 'sad', 'purr', 'bite'] as const
@@ -79,16 +80,31 @@ export const STINKY_ASSET_VERSION = process.env.NEXT_PUBLIC_BUILD_ID || ''
 export const withStinkyVersion = (url: string) =>
   STINKY_ASSET_VERSION ? `${url}${url.includes('?') ? '&' : '?'}v=${encodeURIComponent(STINKY_ASSET_VERSION)}` : url
 
-export const stinkyAssets = (state: StinkyState, variant: StinkyVariant = 'light') => ({
-  /** Animated WebP with alpha, 512px, infinite loop. */
-  webp: withStinkyVersion(`${BASE}/anim/stinky-${state}${suffix(variant)}.webp`),
+export const stinkyAssets = (
+  state: StinkyState,
+  variant: StinkyVariant = 'light',
+  { small = false }: { small?: boolean } = {},
+) => ({
+  /**
+   * Animated WebP with alpha, 512px (256px with `small`, for heads drawn under ~300 device px).
+   * Loops repeat forever; one-shot clips play once and rest on their last (neutral) frame.
+   */
+  webp: withStinkyVersion(`${BASE}/${small ? 'anim-256' : 'anim'}/stinky-${state}${suffix(variant)}.webp`),
   /** Representative still frame of the state (vector). */
   poster: withStinkyVersion(`${BASE}/poster/stinky-${state}${suffix(variant)}.svg`),
   /** Same still frame as PNG (512px) — fallback when animated WebP is unsupported. */
   posterPng: withStinkyVersion(`${BASE}/poster/stinky-${state}${suffix(variant)}.png`),
 })
 
-/** Neutral static head (vector) — identical to the first/last frame of every clip. */
+/**
+ * The neutral frame as a still image, decoded from the clips themselves (idle frame 0, which is also
+ * the first and last frame of every clip): pixel-identical to what an animation starts and ends on,
+ * so the still under a starting clip, or left after one, never visibly redraws.
+ */
+export const stinkyNeutralStill = (variant: StinkyVariant = 'light', { small = false }: { small?: boolean } = {}) =>
+  withStinkyVersion(`${BASE}/still/stinky-neutral${suffix(variant)}${small ? '-256' : ''}.png`)
+
+/** Neutral static head (vector) — the same pose as the first/last frame of every clip, for avatars. */
 export const stinkyStaticSvg = (variant: StinkyVariant = 'light') => withStinkyVersion(`${BASE}/stinky-head${suffix(variant)}.svg`)
 
 export type StinkyMouth = 'neutral' | 'open' | 'bite' | 'bite-half'

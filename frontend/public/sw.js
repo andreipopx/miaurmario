@@ -273,11 +273,15 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Other static files keep their name across versions (icons, Stinky clips):
-  // stale-while-revalidate so a changed file shows up on the next view.
+  // stale-while-revalidate so a changed file shows up on the next view. A URL
+  // stamped with the build (?v=, all Stinky assets) can't change under it, so
+  // a cached copy is simply used, without downloading it again in the background.
   if (/\.(png|jpg|jpeg|svg|webp|gif|ico|webmanifest|woff2?)$/.test(url.pathname)) {
+    const versioned = url.searchParams.has('v');
     event.respondWith(
       caches.open(CACHE).then((cache) =>
         cache.match(req).then((hit) => {
+          if (hit && versioned) return hit;
           const refresh = fetch(req).then((res) => {
             if (res.ok) cache.put(req, res.clone()).catch(() => {});
             return res;

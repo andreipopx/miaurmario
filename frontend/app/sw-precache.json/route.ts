@@ -24,7 +24,8 @@ async function walk(dir: string, prefix = ''): Promise<string[]> {
 
 // Stinky's still frames: the empty states show them, and they're the fallback
 // when an animation isn't on the phone (the animations themselves are 5 MB).
-const POSTER_DIR = 'brand/stinky/head/poster';
+// Plus the neutral still every Stinky starts from (still/), so he's never an empty circle.
+const POSTER_DIRS = ['brand/stinky/head/poster', 'brand/stinky/head/still'];
 
 export async function GET() {
   if (!files) {
@@ -36,12 +37,16 @@ export async function GET() {
     }
   }
   if (!posters) {
-    try {
-      const all = await walk(path.join(process.cwd(), 'public', POSTER_DIR));
-      posters = all.filter((f) => /\.(svg|png)$/.test(f)).map((f) => `/${POSTER_DIR}/${f}`).sort();
-    } catch {
-      posters = [];
+    posters = [];
+    for (const dir of POSTER_DIRS) {
+      try {
+        const all = await walk(path.join(process.cwd(), 'public', dir));
+        posters.push(...all.filter((f) => /\.(svg|png)$/.test(f)).map((f) => `/${dir}/${f}`));
+      } catch {
+        /* missing directory: nothing to keep from it */
+      }
     }
+    posters.sort();
   }
   return NextResponse.json({ files, posters }, { headers: { 'Cache-Control': 'no-store' } });
 }

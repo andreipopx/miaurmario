@@ -1,30 +1,46 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useTheme } from 'next-themes'
+import { useSyncExternalStore } from 'react'
 
 import type { StinkyVariant } from './stinky-states'
 
-/** `true` when the user asked the OS to reduce motion. SSR-safe (false on the server). */
-export function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setReduced(media.matches)
-    update()
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
-  return reduced
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
+
+/** Reduce Motion right now (false on the server). */
+export function prefersReducedMotionNow(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(REDUCED_MOTION).matches
 }
 
-/** Light/dark asset variant following next-themes (dark variant has a cream outline). */
+function subscribeReducedMotion(onChange: () => void) {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {}
+  const media = window.matchMedia(REDUCED_MOTION)
+  media.addEventListener('change', onChange)
+  return () => media.removeEventListener('change', onChange)
+}
+
+/** `true` when the user asked the OS to reduce motion. SSR-safe (false on the server). */
+export function usePrefersReducedMotion(): boolean {
+  return useSyncExternalStore(subscribeReducedMotion, prefersReducedMotionNow, () => false)
+}
+
+/**
+ * The page's theme as next-themes applies it: the `dark` class on <html>, which its
+ * inline script sets before the first paint. Read straight from the DOM so a dark
+ * page never starts with the light Stinky (the theme hook only knows after mount).
+ */
+export function currentStinkyVariant(): StinkyVariant {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+}
+
+function subscribeTheme(onChange: () => void) {
+  if (typeof MutationObserver === 'undefined') return () => {}
+  const observer = new MutationObserver(onChange)
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+  return () => observer.disconnect()
+}
+
+/** Light/dark asset variant following the page's theme (dark variant has a cream outline). */
 export function useStinkyVariant(forced?: StinkyVariant): StinkyVariant {
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  if (forced) return forced
-  // Before hydration we cannot know the theme; light is the safe default.
-  return mounted && resolvedTheme === 'dark' ? 'dark' : 'light'
+  const live = useSyncExternalStore(subscribeTheme, currentStinkyVariant, () => 'light' as StinkyVariant)
+  return forced ?? live
 }

@@ -4,7 +4,6 @@
 
 import { cn } from '@/lib/utils';
 import { stinkyStaticSvg } from '@/components/stinky/stinky-states';
-import { useStinkyVariant } from '@/components/stinky/use-stinky-env';
 
 /**
  * Static Stinky head in a circle — used as the profile avatar in the header,
@@ -21,21 +20,30 @@ export function StinkyAvatar({
   /** Accessible name; empty (default) marks it decorative. */
   label?: string;
 }) {
-  const variant = useStinkyVariant();
   return (
     <span
+      role={label ? 'img' : undefined}
+      aria-label={label || undefined}
+      aria-hidden={label ? undefined : true}
       className={cn('inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-panel', className)}
       style={{ width: size, height: size }}
     >
-      <img
-        src={stinkyStaticSvg(variant)}
-        alt={label}
-        aria-hidden={label === '' || undefined}
-        width={size}
-        height={size}
-        draggable={false}
-        className="block h-[112%] w-[112%] max-w-none translate-y-[4%] select-none object-contain"
-      />
+      {/* Both looks, chosen by the theme class before any script runs (no light flash). */}
+      {(['light', 'dark'] as const).map((variant) => (
+        <img
+          key={variant}
+          src={stinkyStaticSvg(variant)}
+          alt=""
+          aria-hidden
+          width={size}
+          height={size}
+          draggable={false}
+          className={cn(
+            'h-[112%] w-[112%] max-w-none translate-y-[4%] select-none object-contain',
+            variant === 'light' ? 'block dark:hidden' : 'hidden dark:block'
+          )}
+        />
+      ))}
     </span>
   );
 }

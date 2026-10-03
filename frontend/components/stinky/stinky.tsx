@@ -12,6 +12,7 @@ import {
   STINKY_STATE_META,
   resolveStinkyState,
   stinkyAssets,
+  stinkyNeutralStill,
   type StinkyState,
   type StinkyStateInput,
   type StinkyVariant,
@@ -20,16 +21,16 @@ import { BITE_FX_MS, StinkyBiteFx } from './stinky-bite-fx'
 import { STINKY_PET_VIBRATION, pickPetReaction, type StinkyPetReaction } from './stinky-pet'
 import { startPurrVibration } from './stinky-purr'
 import { PURR_FX_MS, StinkyPurrFx } from './stinky-purr-fx'
-import { usePrefersReducedMotion, useStinkyVariant } from './use-stinky-env'
+import { currentStinkyVariant, prefersReducedMotionNow, usePrefersReducedMotion, useStinkyVariant } from './use-stinky-env'
 
 export interface StinkyProps {
   /** Animation state (aliases such as `working` or `celebrate` map onto a shipped state). */
   state?: StinkyStateInput
-  /** Rendered size in CSS px (square). Assets are 512px: crisp up to ~170px @3x / ~256px @2x. */
+  /** Rendered size in CSS px (square). Assets are 512px (256px for small sizes). */
   size?: number
-  /** State to show after a `once` state finishes. Pass `null` to keep the finished state looping. */
+  /** State to show after a `once` state finishes. Pass `null` to keep the finished state on screen. */
   settleTo?: StinkyStateInput | null
-  /** Force a variant; defaults to the next-themes resolved theme. */
+  /** Force a variant; defaults to the page's theme (the `dark` class on <html>). */
   variant?: StinkyVariant
   /** Called when a requested `once` state has played through. */
   onDone?: () => void
@@ -39,41 +40,125 @@ export interface StinkyProps {
   onPet?: (reaction: StinkyPetReaction) => void
   /** Accessible label when not interactive; pass `''` to mark Stinky as decorative. */
   label?: string
+  /** Hold the still neutral head and release the animation (off screen, app in the background). */
+  paused?: boolean
   className?: string
 }
 
-/** Crossfade length when a switch cannot wait for a clean clip boundary. */
-const CROSSFADE_MS = 150
-/** A loop that ends within this window finishes its cycle before switching (perfect splice). */
-const MAX_BOUNDARY_WAIT_MS = 700
+/*
+ * How clips hand over (see README.md, "Seamless splicing").
+ *
+ * Every clip starts and ends on the same neutral frame, and the one-shot clips are
+ * encoded to play once, so they rest on it when they finish. A switch therefore waits
+ * for the playing clip to reach that frame and then *cuts*: the next clip, already
+ * fetched and decoded, goes on top in the same frame and the old one is dropped.
+ * Nothing moves, nothing fades. Only when that frame is too far away (a tap mid-way
+ * through a loop) does it cross-fade: the new clip fades in over the old one, then
+ * the old one fades out, so no outline is left behind to pop.
+ *
+ * Every timer belongs to one switch (`gen`) and is ignored once another switch has
+ * started, and the clock of a clip starts on the frame it is first shown.
+ */
+
+const FADE_IN_MS = 140
+const FADE_OUT_MS = 110
+/** The neutral end of every clip lasts 133–600 ms; cut this long before the nominal end. */
+const CUT_LEAD_MS = 70
+/** Within this much of a clip's start or end it is on (or next to) the neutral frame. */
+const NEUTRAL_HEAD_MS = 30
+const NEUTRAL_TAIL_MS = 130
+/**
+ * A one-shot clip is over this long after its nominal end. It then rests on its last frame,
+ * or, should a decoder read "loop once" as "repeat once", is on frame 0 of a replay, which
+ * is the same picture: either way the still neutral head can take over.
+ */
+const ONCE_SLACK_MS = 40
+/** Longest wait for a neutral frame instead of cross-fading: a state change… */
+const MAX_WAIT_MS = 900
+/** …and a pet, which has to answer the tap. */
+const MAX_WAIT_PET_MS = 350
 /** Minimum time between two pets. */
 const PET_THROTTLE_MS = 1200
+/**
+ * Heads drawn this small or smaller use the 256 px clips (sharp up to 3x screens, a quarter of
+ * the decoding). Decided from the size prop, not measured, so the still drawn on the server and
+ * the clip that follows always come from the same file size.
+ */
+const SMALL_MAX_SIZE = 85
 const PET_LABEL = 'Acariciar a Stinky'
-/** Reactions to a pet: they return to the previous state when they finish. */
+/** Reactions to a pet: they return to whatever Stinky should be doing when they finish. */
 const PET_STATES: ReadonlySet<StinkyState> = new Set<StinkyState>(['purr', 'bite'])
 const PET_FX_MS: Record<StinkyPetReaction, number> = { purr: PURR_FX_MS, bite: BITE_FX_MS }
 
-// ---- clip cache: one fetch per clip; each play gets a fresh object URL so the animation restarts at frame 0
-const blobCache = new Map<string, Promise<Blob | null>>()
-const fetchClip = (url: string) => {
+const isLoop = (s: StinkyState) => STINKY_STATE_META[s].playback === 'loop'
+
+// ---- clip cache: one fetch per clip; each play gets a fresh object URL so the animation restarts at frame 0.
+// Failed fetches are forgotten, so a clip that failed offline is fetched again later.
+const blobCache = new Map<string, Promise<Blob>>()
+function fetchClip(url: string): Promise<Blob> {
   let pending = blobCache.get(url)
   if (!pending) {
-    pending = fetch(url)
-      .then(r => (r.ok ? r.blob() : null))
-      .catch(() => null)
+    pending = fetch(url).then(r => (r.ok ? r.blob() : Promise.reject(new Error(`${r.status} ${url}`))))
+    pending.catch(() => blobCache.delete(url))
     blobCache.set(url, pending)
   }
   return pending
 }
-const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T) =>
-  Promise.race([promise, new Promise<T>(resolve => setTimeout(() => resolve(fallback), ms))])
+
+interface Clip {
+  readonly src: string
+  /** An object URL this component must revoke. */
+  readonly blob: boolean
+  /** A still image (reduced motion, or the clip could not be fetched). */
+  readonly still: boolean
+  readonly variant: StinkyVariant
+}
+
+const releaseClip = (clip: Clip) => {
+  if (clip.blob) URL.revokeObjectURL(clip.src)
+}
+
+/** Fetch and decode a clip before it is shown, so it appears whole on its first frame. */
+async function prepareClip(state: StinkyState, variant: StinkyVariant, small: boolean, still: boolean): Promise<Clip> {
+  const assets = stinkyAssets(state, variant, { small })
+  const decode = async (src: string) => {
+    const img = new Image()
+    img.src = src
+    try {
+      await img.decode()
+    } catch {
+      /* shown anyway; onError swaps in the PNG */
+    }
+  }
+  if (!still) {
+    try {
+      const src = URL.createObjectURL(await fetchClip(assets.webp))
+      await decode(src)
+      return { src, blob: true, still: false, variant }
+    } catch {
+      /* offline or missing: the still frame below */
+    }
+  }
+  const src = state === 'idle' ? stinkyNeutralStill(variant, { small }) : assets.poster
+  await decode(src)
+  return { src, blob: false, still: true, variant }
+}
 
 interface Layer {
   readonly key: number
   readonly state: StinkyState
-  readonly src: string
-  readonly blob: boolean
-  shown: boolean
+  readonly clip: Clip
+  /** cut: visible at once · in: fading in · on: visible · out: fading out, then removed. */
+  readonly phase: 'cut' | 'in' | 'on' | 'out'
+}
+
+interface Playing {
+  readonly key: number
+  readonly state: StinkyState
+  readonly still: boolean
+  readonly variant: StinkyVariant
+  /** performance.now() of the frame it was first shown on (its frame 0). */
+  readonly startedAt: number
 }
 
 export function Stinky({
@@ -85,6 +170,7 @@ export function Stinky({
   interactive,
   onPet,
   label = 'Stinky',
+  paused = false,
   className,
 }: StinkyProps) {
   const reducedMotion = usePrefersReducedMotion()
@@ -93,24 +179,31 @@ export function Stinky({
   const settle = settleTo == null ? null : resolveStinkyState(settleTo)
   const isInteractive = interactive ?? size >= 48
 
-  const initial = stinkyAssets(requested, variant).webp
-  // Pet overlay: hearts + "prrr" for purr, "¡ñam!" + bite marks for bite; a new key restarts the animation.
+  const [layers, setLayers] = useState<Layer[]>([])
+  // The still neutral head under everything until the first clip is on screen.
+  const [baseVisible, setBaseVisible] = useState(true)
+  // Pet overlay: hearts + "prrr" for purr, "¡ñam!" + bite marks for bite; a new key restarts it.
   const [petFx, setPetFx] = useState<{ kind: StinkyPetReaction; key: number } | null>(null)
-  const petFxTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const petHistory = useRef<StinkyPetReaction[]>([])
-  const [layers, setLayers] = useState<Layer[]>(() => [{ key: 0, state: requested, src: initial, blob: false, shown: true }])
 
-  // Mutable playback bookkeeping (not render state).
-  const current = useRef<{ state: StinkyState; startedAt: number | null }>({ state: requested, startedAt: null })
+  const playing = useRef<Playing | null>(null)
+  /** State of the switch in progress (fetched, waiting for its frame, or mounting). */
+  const target = useRef<StinkyState | null>(null)
+  const gen = useRef(0)
   const keyRef = useRef(1)
-  const rootRef = useRef<HTMLElement | null>(null)
+  const shakeRef = useRef<HTMLSpanElement | null>(null)
   const vibration = useRef<Animation | null>(null)
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>())
-  const switchToken = useRef(0)
-  const returnTo = useRef<StinkyState | null>(null)
+  const frames = useRef(new Set<number>())
+  const petHistory = useRef<StinkyPetReaction[]>([])
   const lastPet = useRef(-Infinity)
-  const latest = useRef({ requested, settle, variant, reducedMotion, onDone, onPet })
-  latest.current = { requested, settle, variant, reducedMotion, onDone, onPet }
+  const alive = useRef(true)
+  // Each change of the `state` prop is a request; a one-shot request is owed until it
+  // has played (or was shown and cut short by a pet), so a pet can't swallow it.
+  const requestSeq = useRef(0)
+  const shownSeq = useRef(-1)
+  const doneSeq = useRef(-1)
+  const latest = useRef({ requested, settle, onDone, onPet, size, forcedVariant, paused })
+  latest.current = { requested, settle, onDone, onPet, size, forcedVariant, paused }
 
   const later = useCallback((fn: () => void, ms: number) => {
     const id = setTimeout(() => {
@@ -120,186 +213,346 @@ export function Stinky({
     timers.current.add(id)
   }, [])
 
-  const urlFor = useCallback((s: StinkyState, v: StinkyVariant, still: boolean) => {
-    const assets = stinkyAssets(s, v)
-    return still ? assets.poster : assets.webp
+  const nextFrame = useCallback((fn: (now: number) => void) => {
+    const id = requestAnimationFrame(now => {
+      frames.current.delete(id)
+      fn(now)
+    })
+    frames.current.add(id)
   }, [])
+
+  const variantNow = useCallback(
+    () => latest.current.forcedVariant ?? currentStinkyVariant(),
+    [],
+  )
+  const smallNow = useCallback(() => latest.current.size <= SMALL_MAX_SIZE, [])
 
   const preload = useCallback((s: StinkyState) => {
-    const { variant: v, reducedMotion: still } = latest.current
-    if (still) {
-      const img = new Image()
-      img.src = urlFor(s, v, true)
-    } else {
-      void fetchClip(urlFor(s, v, false))
-    }
-  }, [urlFor])
+    if (prefersReducedMotionNow()) return
+    void fetchClip(stinkyAssets(s, variantNow(), { small: smallNow() }).webp).catch(() => {})
+  }, [smallNow, variantNow])
 
-  // Forward declaration so onClipEnd and show can reference each other.
-  const showRef = useRef<(next: StinkyState, opts?: { immediate?: boolean }) => void>(() => {})
+  // Forward declaration: a finished clip starts the next switch.
+  const goToRef = useRef<(next: StinkyState, opts?: { pet?: boolean; force?: boolean }) => void>(() => {})
 
-  /** Called when a `once` clip reaches its last frame (== neutral frame). */
-  const onClipEnd = useCallback((ended: StinkyState) => {
+  /** A one-shot clip has played through (it now rests on the neutral frame). */
+  const onOnceEnd = useCallback((ended: StinkyState) => {
     const { requested: req, settle: st, onDone: done } = latest.current
+    const owed = !isLoop(req) && doneSeq.current !== requestSeq.current
+    let next: StinkyState | null
     if (PET_STATES.has(ended)) {
-      const back = returnTo.current ?? req
-      returnTo.current = null
-      showRef.current(STINKY_STATE_META[back].playback === 'loop' ? back : st ?? 'idle')
-      return
+      if (owed && shownSeq.current === requestSeq.current) {
+        // The pet interrupted it: it counts as played, and settles from here.
+        doneSeq.current = requestSeq.current
+        done?.()
+        next = st ?? 'idle'
+      } else if (owed) {
+        // Asked for while he was being petted: play it now.
+        next = req
+      } else {
+        next = isLoop(req) ? req : st ?? 'idle'
+      }
+    } else {
+      if (ended === req && owed) {
+        doneSeq.current = requestSeq.current
+        done?.()
+      }
+      // A loop asked for meanwhile (e.g. "thinking" during a wave) wins over settling.
+      next = req !== ended && isLoop(req) ? req : st != null && st !== ended ? st : null
     }
-    if (ended === req) done?.()
-    if (st != null && st !== ended) showRef.current(st)
+    if (next) {
+      goToRef.current(next)
+    } else {
+      // Staying on the finished one-shot: hand over to the still neutral head (the same
+      // picture), so nothing depends on how a decoder treats the end of a clip.
+      gen.current++
+      target.current = null
+      vibration.current?.cancel()
+      setBaseVisible(true)
+      setLayers(prev => {
+        prev.forEach(l => releaseClip(l.clip))
+        return []
+      })
+    }
   }, [])
 
-  /** Mark a freshly loaded layer as playing, fade it in and retire the layers below it. */
-  const activate = useCallback((layerKey: number, s: StinkyState) => {
-    const now = performance.now()
-    current.current = { state: s, startedAt: now }
-    setLayers(prev => prev.map(l => (l.key === layerKey ? { ...l, shown: true } : l)))
-    later(() => {
-      // Retire only layers older than this one (a newer switch may already be on top).
-      setLayers(prev => {
-        prev.filter(l => l.key < layerKey && l.blob).forEach(l => URL.revokeObjectURL(l.src))
-        return prev.filter(l => l.key >= layerKey)
-      })
-    }, CROSSFADE_MS + 40)
-    const meta = STINKY_STATE_META[s]
-    vibration.current?.cancel()
-    vibration.current = s === 'purr' && !latest.current.reducedMotion ? startPurrVibration(rootRef.current) : null
-    if (meta.playback === 'once') later(() => onClipEnd(s), meta.durationMs)
-    STINKY_LIKELY_NEXT[s].forEach(preload)
-  }, [later, onClipEnd, preload])
-
-  const show = useCallback((next: StinkyState, opts: { immediate?: boolean } = {}) => {
-    const token = ++switchToken.current
-    const { state: cur, startedAt } = current.current
-    let wait = 0
-    if (!opts.immediate && startedAt != null && STINKY_STATE_META[cur].playback === 'loop') {
-      const dur = STINKY_STATE_META[cur].durationMs
-      const remain = dur - ((performance.now() - startedAt) % dur)
-      if (remain <= MAX_BOUNDARY_WAIT_MS) wait = remain
-    }
-    later(async () => {
-      if (token !== switchToken.current) return
-      const { variant: v, reducedMotion: still } = latest.current
-      const url = urlFor(next, v, still)
-      let src = url
-      let blob = false
-      if (!still) {
-        const data = await withTimeout(fetchClip(url), 400, null)
-        if (token !== switchToken.current) return
-        if (data) {
-          src = URL.createObjectURL(data)
-          blob = true
-        }
+  /** The frame a mounted layer is first painted on: it becomes the playing clip. */
+  const activate = useCallback((layer: Layer) => {
+    nextFrame(now => {
+      if (!alive.current) return
+      const started: Playing = {
+        key: layer.key,
+        state: layer.state,
+        still: layer.clip.still,
+        variant: layer.clip.variant,
+        startedAt: now,
       }
-      const key = keyRef.current++
-      setLayers(prev => [...prev, { key, state: next, src, blob, shown: false }])
-    }, wait)
-  }, [later, urlFor])
-  showRef.current = show
+      playing.current = started
+      if (target.current === layer.state) target.current = null
+      if (layer.state === latest.current.requested) shownSeq.current = requestSeq.current
+      setBaseVisible(false)
 
-  // Follow the `state` prop (a purr in progress finishes first, then returns to the new state).
-  const lastRequested = useRef(requested)
+      if (layer.phase === 'cut') {
+        // The old layers were hidden as this one went up; drop them now it's painted.
+        nextFrame(() =>
+          setLayers(prev => {
+            prev.filter(l => l.key < layer.key).forEach(l => releaseClip(l.clip))
+            return prev.filter(l => l.key >= layer.key)
+          }),
+        )
+      } else {
+        setLayers(prev => prev.map(l => (l.key === layer.key ? { ...l, phase: 'on' } : l)))
+        later(() => {
+          setLayers(prev => prev.map(l => (l.key < layer.key ? { ...l, phase: 'out' } : l)))
+          later(() =>
+            setLayers(prev => {
+              prev.filter(l => l.key < layer.key).forEach(l => releaseClip(l.clip))
+              return prev.filter(l => l.key >= layer.key)
+            }),
+          FADE_OUT_MS + 30)
+        }, FADE_IN_MS)
+      }
+
+      vibration.current?.cancel()
+      vibration.current =
+        layer.state === 'purr' && !layer.clip.still ? startPurrVibration(shakeRef.current) : null
+      if (PET_STATES.has(layer.state)) {
+        const kind = layer.state as StinkyPetReaction
+        setPetFx({ kind, key: now })
+        later(() => setPetFx(fx => (fx?.key === now ? null : fx)), PET_FX_MS[kind])
+      }
+      if (!isLoop(layer.state)) {
+        const meta = STINKY_STATE_META[layer.state]
+        later(() => {
+          if (playing.current?.key === layer.key) onOnceEnd(layer.state)
+        }, (layer.clip.still ? Math.min(meta.durationMs, 1200) : meta.durationMs) + ONCE_SLACK_MS)
+      }
+      STINKY_LIKELY_NEXT[layer.state].forEach(preload)
+    })
+  }, [later, nextFrame, onOnceEnd, preload])
+
+  /** How long until the playing clip is on its neutral frame, or null if that is too far off. */
+  const waitForNeutral = (limit: number): number | null => {
+    const cur = playing.current
+    if (!cur || cur.still) return 0
+    const dur = STINKY_STATE_META[cur.state].durationMs
+    const elapsed = performance.now() - cur.startedAt
+    if (!isLoop(cur.state) && elapsed >= dur - NEUTRAL_TAIL_MS) return 0 // finished, or on its last frame
+    const into = isLoop(cur.state) ? elapsed % dur : elapsed
+    if (into <= NEUTRAL_HEAD_MS || into >= dur - NEUTRAL_TAIL_MS) return 0
+    const wait = dur - CUT_LEAD_MS - into
+    return wait <= limit ? wait : null
+  }
+
+  const goTo = useCallback((next: StinkyState, opts: { pet?: boolean; force?: boolean } = {}) => {
+    if (!opts.force) {
+      if (target.current === next) return
+      if (target.current == null && playing.current?.state === next && isLoop(next)) return
+    }
+    const my = ++gen.current
+    target.current = next
+    const still = prefersReducedMotionNow()
+    const preparing = prepareClip(next, variantNow(), smallNow(), still)
+    void preparing.then(clip => {
+      if (my !== gen.current || !alive.current) return releaseClip(clip)
+      const limit = opts.pet ? MAX_WAIT_PET_MS : MAX_WAIT_MS
+      const mount = (cut: boolean) => {
+        if (my !== gen.current || !alive.current) return releaseClip(clip)
+        // Changing look (light ↔ dark) is never "the same picture": fade, don't cut.
+        const sameLook = !playing.current || playing.current.variant === clip.variant
+        const layer: Layer = {
+          key: keyRef.current++,
+          state: next,
+          clip,
+          phase: still || (cut && sameLook) ? 'cut' : 'in',
+        }
+        setLayers(prev => [...prev, layer])
+      }
+      const wait = waitForNeutral(limit)
+      if (wait == null) return mount(false)
+      if (wait <= 0) return mount(true)
+      later(() => {
+        // The clock may have slipped while waiting (a busy main thread): check again.
+        const again = waitForNeutral(limit)
+        mount(again === 0 || (again != null && again < 40))
+      }, wait)
+    })
+  }, [later, smallNow, variantNow])
+  goToRef.current = goTo
+
+  // Start (and stop) with the component; `paused` holds the still head instead.
   useEffect(() => {
-    if (requested === lastRequested.current) return
-    lastRequested.current = requested
-    if (PET_STATES.has(current.current.state) && !PET_STATES.has(requested)) {
-      returnTo.current = requested
+    alive.current = true
+    const pendingTimers = timers.current
+    const pendingFrames = frames.current
+    return () => {
+      alive.current = false
+      gen.current++
+      pendingTimers.forEach(clearTimeout)
+      pendingTimers.clear()
+      pendingFrames.forEach(cancelAnimationFrame)
+      pendingFrames.clear()
+      vibration.current?.cancel()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (paused) {
+      gen.current++
+      target.current = null
+      playing.current = null
+      vibration.current?.cancel()
+      setBaseVisible(true)
+      setLayers(prev => {
+        prev.forEach(l => releaseClip(l.clip))
+        return []
+      })
       return
     }
-    if (requested === current.current.state && STINKY_STATE_META[requested].playback === 'loop') return
-    show(requested)
-  }, [requested, show])
+    // From the still neutral head (== frame 0 of every clip): a clean cut.
+    goTo(latest.current.requested, { force: true })
+  }, [paused, goTo])
 
-  // Theme or reduced-motion change: swap the current clip immediately.
-  const firstEnv = useRef(true)
+  // Follow the `state` prop. A pet in progress finishes first and then goes there.
+  const firstRequest = useRef(true)
   useEffect(() => {
-    if (firstEnv.current) {
-      firstEnv.current = false
-      if (!reducedMotion) return
-    }
-    show(current.current.state, { immediate: true })
-  }, [variant, reducedMotion, show])
+    if (firstRequest.current) firstRequest.current = false
+    else requestSeq.current++
+    if (latest.current.paused) return
+    const cur = playing.current
+    if ((cur && PET_STATES.has(cur.state)) || (target.current && PET_STATES.has(target.current))) return
+    goTo(requested)
+  }, [requested, goTo])
 
-  // Preload what is likely next (+ purr when petting is possible).
+  // Theme or reduced-motion change: the same state in the other look (only if what
+  // is playing doesn't already match, e.g. it started after the theme was known).
   useEffect(() => {
+    const cur = playing.current
+    if (latest.current.paused || !cur) return
+    // A switch on its way was prepared in the old look: prepare it again.
+    if (target.current) return goTo(target.current, { force: true })
+    if (cur.variant === variant && cur.still === reducedMotion) return
+    // A one-shot finishes in the look it started in; whatever follows uses the new one.
+    if (!isLoop(cur.state)) return
+    goTo(cur.state, { force: true })
+  }, [variant, reducedMotion, goTo])
+
+  // Warm up what is likely next (+ the pet reactions when petting is possible).
+  useEffect(() => {
+    if (paused) return
     STINKY_LIKELY_NEXT[requested].forEach(preload)
     if (isInteractive) {
       preload('purr')
       preload('bite')
     }
-  }, [requested, isInteractive, preload, variant])
-
-  useEffect(() => {
-    const pending = timers.current
-    return () => {
-      pending.forEach(clearTimeout)
-      pending.clear()
-      vibration.current?.cancel()
-      if (petFxTimer.current) clearTimeout(petFxTimer.current)
-    }
-  }, [])
+  }, [requested, isInteractive, preload, variant, paused])
 
   const pet = useCallback(() => {
     const now = performance.now()
-    if (now - lastPet.current < PET_THROTTLE_MS || PET_STATES.has(current.current.state)) return
+    if (now - lastPet.current < PET_THROTTLE_MS) return
+    const cur = playing.current
+    if ((cur && PET_STATES.has(cur.state)) || (target.current && PET_STATES.has(target.current))) return
     lastPet.current = now
-    const prev = current.current.state
-    returnTo.current = STINKY_STATE_META[prev].playback === 'loop' ? prev : latest.current.settle ?? 'idle'
     // ~65% purr / ~35% playful bite, never three bites in a row.
     const reaction = pickPetReaction(petHistory.current)
     petHistory.current = [...petHistory.current, reaction].slice(-4)
-    show(reaction, { immediate: true })
-    setPetFx({ kind: reaction, key: now })
-    if (petFxTimer.current) clearTimeout(petFxTimer.current)
-    petFxTimer.current = setTimeout(() => setPetFx(null), PET_FX_MS[reaction])
-    // `haptic` covers Android (Vibration API) and iOS 17.4+ (hidden switch tap); it checks Reduce Motion itself.
-    if (!latest.current.reducedMotion) haptic(STINKY_PET_VIBRATION[reaction])
+    // The tap is answered at once by the phone; Stinky reacts on his next neutral frame.
+    if (!prefersReducedMotionNow()) haptic(STINKY_PET_VIBRATION[reaction])
     latest.current.onPet?.(reaction)
-  }, [show])
-
-  const onLayerLoad = (layer: Layer) => {
-    if (layer.shown && current.current.startedAt != null) return
-    activate(layer.key, layer.state)
-  }
+    if (!latest.current.paused) goTo(reaction, { pet: true })
+  }, [goTo])
 
   const decorative = !isInteractive && label === ''
-  const images = layers.map((layer, i) => (
+  const imgClass = 'pointer-events-none absolute inset-0 block h-full w-full select-none'
+  const small = size <= SMALL_MAX_SIZE
+  const base = forcedVariant ? (
+    <img src={stinkyNeutralStill(forcedVariant, { small })} alt='' aria-hidden draggable={false} width={size} height={size} className={imgClass} />
+  ) : (
+    <>
+      {/* Both looks, picked by the theme class before any script runs: no light flash in dark mode. */}
+      <img src={stinkyNeutralStill('light', { small })} alt='' aria-hidden draggable={false} width={size} height={size} className={cn(imgClass, 'dark:hidden')} />
+      <img src={stinkyNeutralStill('dark', { small })} alt='' aria-hidden draggable={false} width={size} height={size} className={cn(imgClass, 'hidden dark:block')} />
+    </>
+  )
+
+  /**
+   * A cut layer is the same picture as what's under it, so it must replace it in one
+   * frame: shown together they draw the soft edges twice (a bolder outline), and hiding
+   * the old one first risks an empty frame. So the new <img> goes in hidden, is decoded
+   * as an element, and then — in one task, so one frame — it's shown and everything
+   * below it hidden. React removes the hidden ones on the next frames.
+   */
+  const revealCut = (el: HTMLImageElement, layer: Layer) => {
+    el.style.visibility = 'hidden'
+    void el
+      .decode()
+      .catch(() => {})
+      .then(() => {
+        if (!alive.current || !el.isConnected) return
+        el.style.visibility = ''
+        for (let sib = el.previousElementSibling; sib; sib = sib.previousElementSibling) {
+          ;(sib as HTMLElement).style.visibility = 'hidden'
+        }
+        activate(layer)
+      })
+  }
+
+  const images = layers.map(layer => (
     <img
       key={layer.key}
-      src={layer.src}
+      src={layer.clip.src}
       alt=''
       width={size}
       height={size}
       draggable={false}
+      decoding='sync'
       aria-hidden
       ref={el => {
-        // Cached images may finish loading before React attaches onLoad.
-        if (el?.complete && el.naturalWidth > 0 && !el.dataset.started) {
+        if (!el || el.dataset.started) return
+        if (layer.phase === 'cut') {
           el.dataset.started = '1'
-          onLayerLoad(layer)
+          revealCut(el, layer)
+        } else if (el.complete && el.naturalWidth > 0) {
+          // Decoded beforehand, so usually complete before React could attach onLoad.
+          el.dataset.started = '1'
+          activate(layer)
         }
       }}
       onLoad={e => {
         if (e.currentTarget.dataset.started) return
         e.currentTarget.dataset.started = '1'
-        onLayerLoad(layer)
+        activate(layer)
       }}
       onError={e => {
-        const fallback = stinkyAssets(layer.state, variant).posterPng
+        const fallback = stinkyAssets(layer.state, variantNow()).posterPng
         if (e.currentTarget.src.endsWith(fallback)) return
         e.currentTarget.src = fallback
       }}
-      className='pointer-events-none absolute inset-0 block h-full w-full select-none'
+      className={imgClass}
       style={{
-        opacity: layer.shown || i === 0 ? 1 : 0,
-        transition: reducedMotion ? undefined : `opacity ${CROSSFADE_MS}ms linear`,
+        opacity: layer.phase === 'in' || layer.phase === 'out' ? 0 : 1,
+        transition:
+          layer.phase === 'out'
+            ? `opacity ${FADE_OUT_MS}ms linear`
+            : layer.phase === 'on'
+              ? `opacity ${FADE_IN_MS}ms linear`
+              : undefined,
       }}
     />
   ))
 
-  const displayed = [...layers].reverse().find(l => l.shown)?.state ?? requested
+  const displayed = playing.current?.state ?? requested
+  const body = (
+    <>
+      {/* The purr rumble moves the head only, not the hearts around it. */}
+      <span ref={shakeRef} className='absolute inset-0 block' aria-hidden>
+        {baseVisible && base}
+        {images}
+      </span>
+      {petFx?.kind === 'purr' && <StinkyPurrFx key={petFx.key} size={size} reducedMotion={reducedMotion} />}
+      {petFx?.kind === 'bite' && <StinkyBiteFx key={petFx.key} size={size} reducedMotion={reducedMotion} />}
+    </>
+  )
   const common = {
     className: cn('relative inline-block shrink-0', className),
     style: { width: size, height: size },
@@ -309,7 +562,6 @@ export function Stinky({
   if (isInteractive) {
     return (
       <button
-        ref={el => { rootRef.current = el }}
         type='button'
         aria-label={PET_LABEL}
         onClick={pet}
@@ -319,16 +571,14 @@ export function Stinky({
           'cursor-pointer rounded-full p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [-webkit-tap-highlight-color:transparent]',
         )}
       >
-        {images}
-        {petFx?.kind === 'purr' && <StinkyPurrFx key={petFx.key} size={size} reducedMotion={reducedMotion} />}
-        {petFx?.kind === 'bite' && <StinkyBiteFx key={petFx.key} size={size} reducedMotion={reducedMotion} />}
+        {body}
       </button>
     )
   }
 
   return (
-    <span ref={el => { rootRef.current = el }} {...common} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : label} aria-hidden={decorative || undefined}>
-      {images}
+    <span {...common} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : label} aria-hidden={decorative || undefined}>
+      {body}
     </span>
   )
 }

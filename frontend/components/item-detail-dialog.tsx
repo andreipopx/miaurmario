@@ -92,6 +92,7 @@ import { CareLabelField } from '@/components/add-item/care-label-field';
 import { CareDraft } from '@/lib/hooks/use-intake';
 import { cn } from '@/lib/utils';
 import { garmentTileTint } from '@/lib/garment-tint';
+import { FEATURES } from '@/lib/features';
 
 /** "https://www.zara.com/es/…" -> "zara.com" */
 function sourceHost(url: string): string {
@@ -1343,20 +1344,22 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       rows={3}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="font-bold">{t('form.washInterval')}</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={100}
-                      value={editForm.wash_interval ?? ''}
-                      onChange={(e) => setEditForm({ ...editForm, wash_interval: e.target.value ? parseInt(e.target.value) : undefined })}
-                      placeholder={t('form.washIntervalDefault', { days: item.effective_wash_interval })}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {t('form.washIntervalHelp')}
-                    </p>
-                  </div>
+                  {FEATURES.laundry && (
+                    <div className="space-y-2">
+                      <Label className="font-bold">{t('form.washInterval')}</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={editForm.wash_interval ?? ''}
+                        onChange={(e) => setEditForm({ ...editForm, wash_interval: e.target.value ? parseInt(e.target.value) : undefined })}
+                        placeholder={t('form.washIntervalDefault', { days: item.effective_wash_interval })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('form.washIntervalHelp')}
+                      </p>
+                    </div>
+                  )}
                   <CareLabelField
                     key={item.id}
                     initialValue={item.care}
@@ -1431,66 +1434,68 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                       count that used to sit in the info rows above. */}
                   <ItemUsagePanel item={item} />
 
-                  {/* Wash Status */}
-                  <div className="space-y-2.5 rounded-lg bg-panel p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-[15px] font-bold">
-                        <span className={`flex h-7 w-7 items-center justify-center rounded-full ${item.needs_wash ? 'bg-pop-sky text-pop-foreground' : 'bg-background text-muted-foreground'}`}>
-                          <Droplets className="h-3.5 w-3.5" strokeWidth={1.75} />
-                        </span>
-                        {t('wash.sectionTitle')}
+                  {/* Wash Status — hidden with laundry tracking (FEATURES.laundry) */}
+                  {FEATURES.laundry && (
+                    <div className="space-y-2.5 rounded-lg bg-panel p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-[15px] font-bold">
+                          <span className={`flex h-7 w-7 items-center justify-center rounded-full ${item.needs_wash ? 'bg-pop-sky text-pop-foreground' : 'bg-background text-muted-foreground'}`}>
+                            <Droplets className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          </span>
+                          {t('wash.sectionTitle')}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleMarkWashed}
+                          disabled={logWash.isPending}
+                        >
+                          {logWash.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Droplets className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          )}
+                          {t('wash.markWashed')}
+                        </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleMarkWashed}
-                        disabled={logWash.isPending}
-                      >
-                        {logWash.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Droplets className="h-3.5 w-3.5" strokeWidth={1.75} />
-                        )}
-                        {t('wash.markWashed')}
-                      </Button>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{t('wash.wearsSinceWash', { count: item.wears_since_wash, max: item.effective_wash_interval })}</span>
-                        {item.needs_wash && (
-                          <Badge variant="sky">{t('wash.needsWashing')}</Badge>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>{t('wash.wearsSinceWash', { count: item.wears_since_wash, max: item.effective_wash_interval })}</span>
+                          {item.needs_wash && (
+                            <Badge variant="sky">{t('wash.needsWashing')}</Badge>
+                          )}
+                        </div>
+                        <Progress
+                          value={Math.min((item.wears_since_wash / item.effective_wash_interval) * 100, 100)}
+                          className={`h-2 bg-background ${item.needs_wash ? '[&>div]:bg-pop-sky' : ''}`}
+                        />
+                        {item.last_washed_at && (
+                          <p className="text-xs text-muted-foreground">
+                            {t('wash.lastWashed', { date: new Date(item.last_washed_at).toLocaleDateString(locale) })}
+                          </p>
                         )}
                       </div>
-                      <Progress
-                        value={Math.min((item.wears_since_wash / item.effective_wash_interval) * 100, 100)}
-                        className={`h-2 bg-background ${item.needs_wash ? '[&>div]:bg-pop-sky' : ''}`}
-                      />
-                      {item.last_washed_at && (
-                        <p className="text-xs text-muted-foreground">
-                          {t('wash.lastWashed', { date: new Date(item.last_washed_at).toLocaleDateString(locale) })}
-                        </p>
+
+                      {/* Wash History */}
+                      {washHistory && washHistory.length > 0 && (
+                        <Collapsible open={showWashHistory} onOpenChange={setShowWashHistory}>
+                          <CollapsibleTrigger className="flex min-h-[32px] items-center gap-1 rounded-full text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showWashHistory ? 'rotate-180' : ''}`} />
+                            {t('wash.historyToggle', { count: washHistory.length })}
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="mt-1.5 space-y-1">
+                            {washHistory.map((wash) => (
+                              <div key={wash.id} className="text-xs text-muted-foreground flex items-center gap-2">
+                                <span>{new Date(wash.washed_at).toLocaleDateString(locale)}</span>
+                                {wash.method && <Badge variant="outline" className="text-[11px]">{wash.method}</Badge>}
+                                {wash.notes && <span className="truncate">{wash.notes}</span>}
+                              </div>
+                            ))}
+                          </CollapsibleContent>
+                        </Collapsible>
                       )}
                     </div>
-
-                    {/* Wash History */}
-                    {washHistory && washHistory.length > 0 && (
-                      <Collapsible open={showWashHistory} onOpenChange={setShowWashHistory}>
-                        <CollapsibleTrigger className="flex min-h-[32px] items-center gap-1 rounded-full text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showWashHistory ? 'rotate-180' : ''}`} />
-                          {t('wash.historyToggle', { count: washHistory.length })}
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-1.5 space-y-1">
-                          {washHistory.map((wash) => (
-                            <div key={wash.id} className="text-xs text-muted-foreground flex items-center gap-2">
-                              <span>{new Date(wash.washed_at).toLocaleDateString(locale)}</span>
-                              {wash.method && <Badge variant="outline" className="text-[11px]">{wash.method}</Badge>}
-                              {wash.notes && <span className="truncate">{wash.notes}</span>}
-                            </div>
-                          ))}
-                        </CollapsibleContent>
-                      </Collapsible>
-                    )}
-                  </div>
+                  )}
 
                   {/* Wear History */}
                   {item.wear_count > 0 && wearStats && (

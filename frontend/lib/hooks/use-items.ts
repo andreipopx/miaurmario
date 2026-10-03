@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { api, getAccessToken, setAccessToken, ApiError, NetworkError } from '@/lib/api';
 import { CareInfo, ImageView, Item, ItemListResponse, ItemFilter, ItemUsage, WashHistoryEntry, ItemImage } from '@/lib/types';
 import { CareDraft } from '@/lib/hooks/use-intake';
+import { FEATURES } from '@/lib/features';
 
 /** PATCH body: an item's fields, with care accepted as a draft too. */
 export type ItemUpdatePayload = Partial<Omit<Item, 'care'>> & {
@@ -453,7 +454,8 @@ export function useWashHistory(itemId: string) {
   return useQuery({
     queryKey: ['wash-history', itemId],
     queryFn: () => api.get<WashHistoryEntry[]>(`/items/${itemId}/wash-history`),
-    enabled: !!itemId && status !== 'loading',
+    // Laundry tracking is hidden (FEATURES.laundry): never ask for the history.
+    enabled: FEATURES.laundry && !!itemId && status !== 'loading',
   });
 }
 

@@ -12,6 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useJoinFamilyByToken } from '@/lib/hooks/use-family';
 import { ApiError } from '@/lib/api';
 import { Stinky } from '@/components/stinky/stinky';
+import { FEATURES } from '@/lib/features';
+import { FeatureOffRedirect } from '@/components/feature-off-redirect';
 
 function useErrorMessage() {
   const t = useTranslations('invite');
@@ -97,7 +99,12 @@ function InviteContent() {
   );
 }
 
+/**
+ * Family invite links (/invite?token=…). Friend invites are /u/{username}, not this.
+ * Hidden with the rest of Familia (FEATURES.families): the link lands on Amigos.
+ */
 export default function InvitePage() {
+  if (!FEATURES.families) return <FeatureOffRedirect to="/dashboard/friends" />;
   return (
     <Suspense
       fallback={

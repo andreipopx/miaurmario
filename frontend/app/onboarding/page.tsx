@@ -47,14 +47,18 @@ import { Wordmark } from '@/components/brand/wordmark';
 import { Stinky } from '@/components/stinky/stinky';
 import type { StinkyStateInput } from '@/components/stinky/stinky-states';
 import { cn } from '@/lib/utils';
+import { FEATURES } from '@/lib/features';
 
-const STEPS = [
+const ALL_STEPS = [
   { id: 'welcome', icon: Shirt },
   { id: 'family', icon: Users },
   { id: 'location', icon: MapPin },
   { id: 'preferences', icon: Palette },
   { id: 'upload', icon: Camera },
 ] as const;
+
+/** The family step only exists while Familia is on (FEATURES.families). */
+const STEPS = ALL_STEPS.filter((step) => step.id !== 'family' || FEATURES.families);
 
 /** Stinky in a soft-pink circle — the friendly header used across onboarding. */
 function StinkyHeader({ state = 'wave', size = 128 }: { state?: StinkyStateInput; size?: number }) {
@@ -138,7 +142,10 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
   const features = [
     { icon: Camera, color: 'bg-pop-amber', title: t('step1Title'), desc: t('step1Desc') },
     { icon: Palette, color: 'bg-pop-sky', title: t('step2Title'), desc: t('step2Desc') },
-    { icon: Users, color: 'bg-pop-mint', title: t('step3Title'), desc: t('step3Desc') },
+    // «Compártelo en familia» only while Familia is on (FEATURES.families).
+    ...(FEATURES.families
+      ? [{ icon: Users, color: 'bg-pop-mint', title: t('step3Title'), desc: t('step3Desc') }]
+      : []),
   ];
 
   return (
@@ -688,6 +695,7 @@ export default function OnboardingPage() {
     }
   }, [isLoading, isAuthenticated, user, router]);
 
+  const stepId = STEPS[currentStep]?.id;
   const nextStep = () => setCurrentStep((s) => Math.min(s + 1, STEPS.length));
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
@@ -745,16 +753,16 @@ export default function OnboardingPage() {
         {currentStep < STEPS.length && <StepIndicator currentStep={currentStep} />}
 
         <div className="py-4 sm:py-8">
-          {currentStep === 0 && <WelcomeStep onNext={nextStep} />}
-          {currentStep === 1 && <FamilyStep onNext={nextStep} onSkip={nextStep} />}
-          {currentStep === 2 && (
+          {stepId === 'welcome' && <WelcomeStep onNext={nextStep} />}
+          {stepId === 'family' && <FamilyStep onNext={nextStep} onSkip={nextStep} />}
+          {stepId === 'location' && (
             <LocationStep
               onNext={nextStep}
               onSkip={nextStep}
             />
           )}
-          {currentStep === 3 && <PreferencesStep onNext={nextStep} onSkip={nextStep} />}
-          {currentStep === 4 && <UploadStep onNext={nextStep} onSkip={nextStep} />}
+          {stepId === 'preferences' && <PreferencesStep onNext={nextStep} onSkip={nextStep} />}
+          {stepId === 'upload' && <UploadStep onNext={nextStep} onSkip={nextStep} />}
           {currentStep === STEPS.length && <CompleteStep onFinish={handleFinish} completing={completing} />}
         </div>
 

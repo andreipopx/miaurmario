@@ -8,6 +8,7 @@ from sqlalchemy import delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import get_settings
 from app.models.item import ClothingItem, ItemStatus
 from app.models.outfit import (
     FamilyOutfitRating,
@@ -113,26 +114,28 @@ class StudioService:
         )
         items = list(result.scalars().all())
 
+        laundry_tracking = get_settings().laundry_tracking
         for item in items:
-            effective_interval = (
-                item.wash_interval
-                if item.wash_interval is not None
-                else DEFAULT_WASH_INTERVALS.get(item.type, 3)
-            )
             new_wears_since_wash = (item.wears_since_wash or 0) + 1
+            values: dict = {
+                "wear_count": (item.wear_count or 0) + 1,
+                "last_worn_at": func.greatest(
+                    func.coalesce(ClothingItem.last_worn_at, worn_at),
+                    worn_at,
+                ),
+                "wears_since_wash": new_wears_since_wash,
+            }
+            # Laundry tracking off: count the wear, never flag "para lavar".
+            if laundry_tracking:
+                effective_interval = (
+                    item.wash_interval
+                    if item.wash_interval is not None
+                    else DEFAULT_WASH_INTERVALS.get(item.type, 3)
+                )
+                values["needs_wash"] = new_wears_since_wash >= effective_interval
 
             await self.db.execute(
-                update(ClothingItem)
-                .where(ClothingItem.id == item.id)
-                .values(
-                    wear_count=(item.wear_count or 0) + 1,
-                    last_worn_at=func.greatest(
-                        func.coalesce(ClothingItem.last_worn_at, worn_at),
-                        worn_at,
-                    ),
-                    wears_since_wash=new_wears_since_wash,
-                    needs_wash=new_wears_since_wash >= effective_interval,
-                )
+                update(ClothingItem).where(ClothingItem.id == item.id).values(**values)
             )
             self.db.expire(item)
 

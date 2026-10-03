@@ -10,6 +10,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import get_settings
 from app.models.item import ClothingItem, ItemStatus
 from app.models.learning import ItemPairScore, UserLearningProfile
 from app.models.outfit import (
@@ -212,7 +213,10 @@ class RecommendationService:
         if not items:
             return []
 
-        items = [i for i in items if not i.needs_wash]
+        # Garments flagged "para lavar" sit out, but only while laundry tracking is
+        # on: with it off the flag is never set, and a stale one must not hide a garment.
+        if get_settings().laundry_tracking:
+            items = [i for i in items if not i.needs_wash]
         items = [i for i in items if i.type and i.type != "unknown"]
 
         if exclude_items:

@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     debug: bool = False
     secret_key: str = Field(default=DEFAULT_SECRET_KEY)
     studio_disabled: bool = False
+    # Laundry tracking ("para lavar"): wearing a garment flags it as needing a
+    # wash after its interval, and the stylist skips flagged garments. Hidden on
+    # purpose for now (frontend FEATURES.laundry); the columns, wash history and
+    # /items/{id}/wash endpoints are kept, so flipping this back is enough.
+    laundry_tracking: bool = False
 
     # CORS
     cors_origins: list[str] = Field(

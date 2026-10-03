@@ -29,6 +29,8 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
 import { cn } from '@/lib/utils';
+import { FEATURES } from '@/lib/features';
+import { FeatureOffRedirect } from '@/components/feature-off-redirect';
 
 function getInitials(name: string) {
   return name
@@ -413,6 +415,8 @@ function FeedContent() {
   );
 }
 
+/** Hidden on purpose (FEATURES.families): Amigos replaces it. */
 export default function FamilyFeedPage() {
+  if (!FEATURES.families) return <FeatureOffRedirect to="/dashboard/friends" />;
   return <FeedContent />;
 }

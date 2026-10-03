@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { useAcceptOutfit, useRejectOutfit, type Outfit, type OutfitSource, type WoreInsteadItem } from '@/lib/hooks/use-outfits';
 import { cn } from '@/lib/utils';
+import { FEATURES } from '@/lib/features';
 import Image from 'next/image';
 
 type StatusKey = 'accepted' | 'rejected' | 'viewed' | 'sent' | 'pending' | 'expired';
@@ -215,8 +216,8 @@ export function OutfitHistoryCard({ outfit, onFeedback, onPreview }: OutfitHisto
           </div>
         )}
 
-        {/* Family ratings summary */}
-        {outfit.family_rating_count != null && outfit.family_rating_count > 0 && (
+        {/* Family ratings summary (hidden with Familia, FEATURES.families) */}
+        {FEATURES.families && outfit.family_rating_count != null && outfit.family_rating_count > 0 && (
           <div className="mt-3 border-t border-border pt-3">
             <div className="flex items-center gap-2 text-xs">
               <Users className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />

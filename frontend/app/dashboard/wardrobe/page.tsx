@@ -41,6 +41,7 @@ import { garmentTileTint } from '@/lib/garment-tint';
 import { readSharedIntake } from '@/lib/shared-intake';
 import type { AddItemInitial } from '@/components/add-item-dialog';
 import { WARDROBE_PAGE_SIZE } from '@/lib/offline/warmup';
+import { FEATURES } from '@/lib/features';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -189,7 +190,7 @@ const ItemCard = memo(function ItemCard({
           )}
         </button>
 
-        {item.needs_wash && (
+        {FEATURES.laundry && item.needs_wash && (
           <span
             className="pointer-events-none absolute left-2.5 top-2.5 z-10 inline-flex h-6 items-center gap-1 rounded-full bg-pop-sky px-2.5 text-xs font-bold text-pop-foreground"
             title={t('needsWashingTooltip')}
@@ -765,17 +766,21 @@ export default function WardrobePage() {
             </SelectContent>
           </Select>
 
-          <Chip
-            active={needsWash === true}
-            dot="sky"
-            activeStyle="pop"
-            onClick={() => {
-              setNeedsWash(needsWash === true ? undefined : true);
-              setPage(1);
-            }}
-          >
-            {t('needsWashFilter')}
-          </Chip>
+          {/* «Para lavar» is hidden with laundry tracking (FEATURES.laundry), so
+              needsWash stays undefined and the query key matches the offline one. */}
+          {FEATURES.laundry && (
+            <Chip
+              active={needsWash === true}
+              dot="sky"
+              activeStyle="pop"
+              onClick={() => {
+                setNeedsWash(needsWash === true ? undefined : true);
+                setPage(1);
+              }}
+            >
+              {t('needsWashFilter')}
+            </Chip>
+          )}
 
           <Chip
             active={favoriteFilter === true}

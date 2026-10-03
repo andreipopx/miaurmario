@@ -919,24 +919,27 @@ async def submit_feedback(
             .scalars()
             .all()
         )
+        laundry_tracking = get_settings().laundry_tracking
         for outfit_item in outfit.items:
             item = outfit_item.item
             if item.id in already_worn_today:
                 continue
-            effective_interval = (
-                item.wash_interval
-                if item.wash_interval is not None
-                else DEFAULT_WASH_INTERVALS.get(item.type, 3)
-            )
-            await db.execute(
-                update(ClothingItem)
-                .where(ClothingItem.id == item.id)
-                .values(
-                    wear_count=ClothingItem.wear_count + 1,
-                    last_worn_at=user_today,
-                    wears_since_wash=ClothingItem.wears_since_wash + 1,
-                    needs_wash=ClothingItem.wears_since_wash + 1 >= effective_interval,
+            values: dict = {
+                "wear_count": ClothingItem.wear_count + 1,
+                "last_worn_at": user_today,
+                "wears_since_wash": ClothingItem.wears_since_wash + 1,
+            }
+            # With laundry tracking off a wear is only counted: nothing gets
+            # flagged "para lavar", so nothing drops out of the suggestions.
+            if laundry_tracking:
+                effective_interval = (
+                    item.wash_interval
+                    if item.wash_interval is not None
+                    else DEFAULT_WASH_INTERVALS.get(item.type, 3)
                 )
+                values["needs_wash"] = ClothingItem.wears_since_wash + 1 >= effective_interval
+            await db.execute(
+                update(ClothingItem).where(ClothingItem.id == item.id).values(**values)
             )
     if request.worn_with_modifications is not None:
         feedback.worn_with_modifications = request.worn_with_modifications

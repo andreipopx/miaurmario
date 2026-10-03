@@ -13,6 +13,7 @@ to treat it strictly as data.
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import re
@@ -26,6 +27,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import get_settings
 from app.models.item import ClothingItem, ItemStatus
 from app.models.outfit import Outfit, OutfitItem, OutfitSource
 from app.models.preference import UserPreference
@@ -337,6 +339,30 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
 TOOL_NAMES = {t["function"]["name"] for t in TOOL_DEFINITIONS}
 
 
+def _without_laundry(definitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The same tools with every mention of washing taken out."""
+    defs = copy.deepcopy(definitions)
+    for d in defs:
+        fn = d["function"]
+        if fn["name"] == "get_wardrobe":
+            desc = fn["description"].replace(", last_worn and needs_wash.", " and last_worn.")
+            assert desc != fn["description"], "get_wardrobe description changed"
+            fn["description"] = desc
+            fn["parameters"]["properties"].pop("include_needs_wash")
+    return defs
+
+
+_TOOL_DEFINITIONS_NO_LAUNDRY = _without_laundry(TOOL_DEFINITIONS)
+
+
+def tool_definitions() -> list[dict[str, Any]]:
+    """The tools as the model sees them. With laundry tracking off (LAUNDRY_TRACKING)
+    the model is never told about "needs washing", so it never brings it up."""
+    if get_settings().laundry_tracking:
+        return TOOL_DEFINITIONS
+    return _TOOL_DEFINITIONS_NO_LAUNDRY
+
+
 # --- Helpers ---------------------------------------------------------------------------
 
 
@@ -378,7 +404,7 @@ def normalize_occasion(value: Any) -> str:
 
 
 def _item_brief(item: ClothingItem) -> dict[str, Any]:
-    return {
+    brief = {
         "id": str(item.id),
         "name": clean_text(item.name) or clean_text(item.subtype) or item.type,
         "type": item.type,
@@ -394,6 +420,9 @@ def _item_brief(item: ClothingItem) -> dict[str, Any]:
         "needs_wash": bool(item.needs_wash),
         "favorite": bool(item.favorite),
     }
+    if not get_settings().laundry_tracking:
+        del brief["needs_wash"]
+    return brief
 
 
 def card_item(item: ClothingItem) -> dict[str, Any]:
@@ -489,7 +518,7 @@ async def get_wardrobe(ctx: ToolContext, args: dict[str, Any]) -> dict[str, Any]
         clauses.append(ClothingItem.style.any(st.lower()))
     if q := clean_text(args.get("search"), 60):
         clauses.append(ClothingItem.name.ilike(f"%{q}%"))
-    if args.get("include_needs_wash") is False:
+    if args.get("include_needs_wash") is False and get_settings().laundry_tracking:
         clauses.append(ClothingItem.needs_wash.is_(False))
 
     total = (

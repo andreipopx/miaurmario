@@ -17,6 +17,7 @@ import { type Outfit } from '@/lib/hooks/use-outfits';
 import { useFamily } from '@/lib/hooks/use-family';
 import { useRotateImage } from '@/lib/hooks/use-items';
 import { FamilyRatingForm, FamilyRatingsDisplay } from '@/components/family-ratings';
+import { FEATURES } from '@/lib/features';
 import { toast } from 'sonner';
 import { useFormatter, useTranslations } from 'next-intl';
 import Image from 'next/image';
@@ -46,7 +47,8 @@ export function OutfitPreviewDialog({ outfit, open, onClose, isOwner = true }: O
 
   const currentEmail = session?.user?.email;
   const currentMember = family?.members.find((m) => m.email === currentEmail);
-  const isInFamily = !!family && !!currentMember;
+  // Familia is hidden (FEATURES.families): no family ratings section at all.
+  const isInFamily = FEATURES.families && !!family && !!currentMember;
   const canRate = isInFamily && !isOwner;
   const myRating = outfit.family_ratings?.find((r) => r.user_id === currentMember?.id);
 

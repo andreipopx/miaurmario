@@ -34,6 +34,7 @@ import { usePreferences } from '@/lib/hooks/use-preferences';
 import { useItems } from '@/lib/hooks/use-items';
 import { useOutfits } from '@/lib/hooks/use-outfits';
 import { useFamily } from '@/lib/hooks/use-family';
+import { FEATURES } from '@/lib/features';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { displayValue, tempSymbol, TempUnit } from '@/lib/temperature';
 import { cn } from '@/lib/utils';
@@ -420,7 +421,8 @@ export default function DashboardPage() {
         </div>
         <div className="space-y-6 lg:space-y-8">
           {stage !== 'empty' && <WardrobeSection />}
-          <FamilyAside />
+          {/* Not rendered at all while Familia is hidden, so its query never runs. */}
+          {FEATURES.families && <FamilyAside />}
         </div>
       </div>
       <OutfitsSection />

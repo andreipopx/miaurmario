@@ -17,6 +17,7 @@ from uuid import uuid4
 
 import pytest
 
+from app.config import get_settings
 from app.models.item import ClothingItem, ItemHistory, ItemStatus
 from app.models.outfit import Outfit, OutfitItem, OutfitStatus, UserFeedback
 from app.models.preference import UserPreference
@@ -618,7 +619,11 @@ class TestRescue:
         hints = await ItemRescueService(db_session).diagnose(test_user, shirt)
         assert ("missing_role", "bottom") in [(h.code, h.value) for h in hints]
 
-    async def test_everything_in_the_laundry_basket_says_so(self, db_session, test_user):
+    async def test_everything_in_the_laundry_basket_says_so(
+        self, db_session, test_user, monkeypatch
+    ):
+        # Only with laundry tracking on (LAUNDRY_TRACKING); see test_laundry_flag.py.
+        monkeypatch.setattr(get_settings(), "laundry_tracking", True)
         shirt = await _add_item(db_session, test_user, type="shirt")
         await _add_item(db_session, test_user, type="jeans", needs_wash=True)
         await _add_item(db_session, test_user, type="sneakers", needs_wash=True)

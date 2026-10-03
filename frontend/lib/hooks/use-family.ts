@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, setAccessToken } from '@/lib/api';
+import { FEATURES } from '@/lib/features';
 import { Family, FamilyCreateResponse, JoinFamilyResponse, FamilyMember } from '@/lib/types';
 
 // Helper to set token if available (for NextAuth mode)
@@ -20,7 +21,8 @@ export function useFamily() {
   return useQuery({
     queryKey: ['family'],
     queryFn: () => api.get<Family>('/families/me'),
-    enabled: status !== 'loading',
+    // Familia is hidden (FEATURES.families): never ask for it, so it costs nothing.
+    enabled: FEATURES.families && status !== 'loading',
     retry: false, // Don't retry on 404 (user not in family)
     // No-family is a legitimate first-login state — surface in-place, not as a toast.
     meta: { silent404: true },

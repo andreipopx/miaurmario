@@ -9,6 +9,7 @@ import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { Input } from '@/components/ui/input';
 import { useItems } from '@/lib/hooks/use-items';
 import { cn } from '@/lib/utils';
+import { FEATURES } from '@/lib/features';
 import type { Item } from '@/lib/types';
 
 const PAGE_SIZE = 24;
@@ -16,6 +17,7 @@ const PAGE_SIZE = 24;
 interface ItemPickerProps {
   selectedIds: Set<string>;
   onToggle: (item: Item) => void;
+  /** Leave out garments flagged «para lavar». No effect while FEATURES.laundry is off. */
   hideNeedsWash?: boolean;
   filterType?: string;
   emptyMessage?: string;
@@ -54,7 +56,8 @@ export function ItemPicker({
       search: debouncedSearch || undefined,
       is_archived: false,
       type: filterType,
-      needs_wash: hideNeedsWash ? false : undefined,
+      // With laundry tracking hidden (FEATURES.laundry) nothing is ever left out for being dirty.
+      needs_wash: FEATURES.laundry && hideNeedsWash ? false : undefined,
     },
     page,
     PAGE_SIZE

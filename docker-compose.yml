@@ -63,6 +63,8 @@ services:
       AI_INTERNAL_ENABLED: ${AI_INTERNAL_ENABLED:-true}
       AI_VISION_ENABLED: ${AI_VISION_ENABLED:-}
       AI_TEXT_ENABLED: ${AI_TEXT_ENABLED:-}
+      # Laundry tracking ("para lavar"), hidden on purpose; true brings it back.
+      LAUNDRY_TRACKING: ${LAUNDRY_TRACKING:-false}
     volumes:
       - wardrobe_data:/data/wardrobe
     ports:
@@ -125,6 +127,8 @@ services:
       AI_INTERNAL_ENABLED: ${AI_INTERNAL_ENABLED:-true}
       AI_VISION_ENABLED: ${AI_VISION_ENABLED:-}
       AI_TEXT_ENABLED: ${AI_TEXT_ENABLED:-}
+      # Laundry tracking ("para lavar"), hidden on purpose; true brings it back.
+      LAUNDRY_TRACKING: ${LAUNDRY_TRACKING:-false}
       STORAGE_PATH: /data/wardrobe
       # The worker runs the integration crons (Last.fm every 15 min, Spotify
       # twice an hour, Pinterest token refresh at 03:00) and reads OAuth tokens

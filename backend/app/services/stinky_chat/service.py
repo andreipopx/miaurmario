@@ -50,10 +50,10 @@ from app.services.stinky_chat.provider import (
     stream_completion,
 )
 from app.services.stinky_chat.tools import (
-    TOOL_DEFINITIONS,
     ToolContext,
     clean_text,
     run_tool,
+    tool_definitions,
 )
 from app.services.stinky_memory import build_digest, get_call_name
 from app.utils.prompts import load_prompt
@@ -331,7 +331,7 @@ async def run_turn(
             async for ev in stream_fn(
                 ai,
                 messages,
-                tools=TOOL_DEFINITIONS,
+                tools=tool_definitions(),
                 tool_choice=None if tools_allowed else "none",
             ):
                 if ev.kind == "content":

@@ -19,6 +19,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import get_settings
 from app.models.item import ClothingItem, ItemStatus
 from app.models.outfit import (
     FamilyOutfitRating,
@@ -228,7 +229,8 @@ class ItemRescueService:
             hints.append(RescueHint(code="too_few_items", value=str(len(typed))))
             return hints
 
-        wearable = [o for o in typed if not o.needs_wash]
+        laundry = get_settings().laundry_tracking
+        wearable = [o for o in typed if not (laundry and o.needs_wash)]
         if not wearable:
             hints.append(RescueHint(code="all_need_wash"))
             return hints

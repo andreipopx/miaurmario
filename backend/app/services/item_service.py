@@ -7,6 +7,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import attributes, selectinload
 
+from app.config import get_settings
 from app.models.item import ClothingItem, ItemHistory, ItemStatus, TaggingStatus, WashHistory
 from app.schemas.item import DEFAULT_WASH_INTERVALS, ItemCreate, ItemFilter, ItemUpdate
 
@@ -344,12 +345,14 @@ class ItemService:
 
         # Update wash tracking
         item.wears_since_wash += 1
-        effective_interval = (
-            item.wash_interval
-            if item.wash_interval is not None
-            else DEFAULT_WASH_INTERVALS.get(item.type, 3)
-        )
-        item.needs_wash = item.wears_since_wash >= effective_interval
+        # Laundry tracking off: count the wear, never flag "para lavar".
+        if get_settings().laundry_tracking:
+            effective_interval = (
+                item.wash_interval
+                if item.wash_interval is not None
+                else DEFAULT_WASH_INTERVALS.get(item.type, 3)
+            )
+            item.needs_wash = item.wears_since_wash >= effective_interval
 
         await self.db.flush()
         await self.db.refresh(history)

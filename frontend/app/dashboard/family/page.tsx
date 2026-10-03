@@ -59,6 +59,8 @@ import {
 import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
+import { FEATURES } from '@/lib/features';
+import { FeatureOffRedirect } from '@/components/feature-off-redirect';
 
 function NoFamilyView() {
   const t = useTranslations('family');
@@ -601,7 +603,13 @@ function FamilyView() {
   );
 }
 
+/** Hidden on purpose (FEATURES.families): Amigos replaces it. */
 export default function FamilyPage() {
+  if (!FEATURES.families) return <FeatureOffRedirect to="/dashboard/friends" />;
+  return <FamilyPageContent />;
+}
+
+function FamilyPageContent() {
   const { data: family, isLoading, isError } = useFamily();
 
   if (isLoading) {

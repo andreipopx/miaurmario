@@ -19,6 +19,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import { FEATURES } from '@/lib/features';
 
 /**
  * Information architecture. Five areas live in the mobile dock and the desktop
@@ -74,7 +75,7 @@ export const INSPO: NavSection = {
   socialBadge: true,
   tabs: [
     { key: 'friends', href: '/dashboard/friends', icon: UserRound, socialBadge: true },
-    { key: 'family', href: '/dashboard/family/feed', icon: Users, hidden: true },
+    { key: 'family', href: '/dashboard/family/feed', icon: Users, hidden: !FEATURES.families },
     { key: 'music', href: '/dashboard/music', icon: Music },
     { key: 'pins', href: '/dashboard/pins', icon: Pin },
   ],
@@ -91,9 +92,9 @@ export const STINKY: NavSection = {
 /**
  * Ajustes: reached from the profile menu, never from the dock/sidebar. Admin lives in the profile menu.
  *
- * «Familia» (its feed and its settings) is hidden from the nav on purpose: it
- * overlaps with Amigos and confused people. The routes still work for anyone
- * already in a family or holding an invite link; nothing was deleted.
+ * «Familia» (its feed and its settings) is hidden on purpose (FEATURES.families in
+ * lib/features.ts): it overlaps with Amigos and confused people. Its pages send
+ * you to Amigos while the flag is off; nothing was deleted.
  */
 export const SETTINGS: NavSection = {
   key: 'settings',
@@ -102,7 +103,7 @@ export const SETTINGS: NavSection = {
   tabs: [
     { key: 'general', href: '/dashboard/settings', icon: Settings },
     { key: 'notifications', href: '/dashboard/notifications', icon: Bell },
-    { key: 'familySettings', href: '/dashboard/family', icon: Users, hidden: true },
+    { key: 'familySettings', href: '/dashboard/family', icon: Users, hidden: !FEATURES.families },
     { key: 'integrations', href: '/dashboard/settings/integrations', icon: Plug },
   ],
 };

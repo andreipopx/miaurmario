@@ -492,13 +492,13 @@ def render_outfit_email(
 
 _FRIEND_REQUEST = {
     "es": {
-        "subject": "@{username} quiere ser tu amigo en Miaurmario",
+        "subject": "@{username} te ha enviado una solicitud de amistad en Miaurmario",
         "preheader": "Acepta y veréis los looks que compartís.",
         "heading": "¡Tienes una solicitud de amistad!",
-        "intro": "<strong>@{username}</strong> quiere añadirte como amigo en Miaurmario. "
+        "intro": "<strong>@{username}</strong> quiere añadirte a sus amistades en Miaurmario. "
         "Si aceptas, podréis ver los looks que compartís y reaccionar a ellos.",
         "cta": "Ver solicitud",
-        "note": "¿No conoces a @{username}? Puedes rechazarla o bloquearle desde Amigos: "
+        "note": "¿No conoces a @{username}? Puedes rechazarla o bloquear la cuenta desde Avisos: "
         "no se enterará.",
     },
     "en": {

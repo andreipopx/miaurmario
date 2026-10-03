@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useSocialSummary } from '@/lib/hooks/use-social';
 import { cn } from '@/lib/utils';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { Wordmark } from '@/components/brand/wordmark';
@@ -33,6 +34,8 @@ export function Header({ onMenuClick }: HeaderProps) {
   const firstName = user?.display_name?.trim().split(/\s+/)[0];
   const greeting = firstName ? t('greeting', { name: firstName }) : t('greetingAnon');
   const isHome = pathname === '/dashboard';
+  const { data: summary } = useSocialSummary();
+  const news = summary?.total ?? 0;
   // Screens outside the dock tabs get an in-app back button (iOS standalone has none).
   const showBack = needsAppBack(pathname ?? '/dashboard');
 
@@ -66,8 +69,21 @@ export function Header({ onMenuClick }: HeaderProps) {
           )}
         </div>
 
-        <Link href="/dashboard/notifications" aria-label={tNav('notifications')} className={cn(iconButton, 'pressable')}>
+        {/* Avisos: requests and what friends did with your looks, counted on the bell. */}
+        <Link
+          href="/dashboard/inbox"
+          aria-label={news > 0 ? `${tNav('inbox')} · ${tNav('newActivity', { count: news })}` : tNav('inbox')}
+          className={cn(iconButton, 'pressable relative')}
+        >
           <Bell className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
+          {news > 0 && (
+            <span
+              aria-hidden
+              className="absolute right-1.5 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-signature px-1 text-[11px] font-bold leading-none text-signature-foreground"
+            >
+              {news > 9 ? '9+' : news}
+            </span>
+          )}
         </Link>
 
         {/* Desktop: avatar opens the profile menu (perfil, ajustes, admin, cerrar sesión) */}

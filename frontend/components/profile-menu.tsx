@@ -165,7 +165,7 @@ export function ProfileMenuSheetContent({
           onClick={onNavigate}
           className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <ProfileAvatar size={52} className="bg-background" />
+          <ProfileAvatar size={52} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-base font-bold">{profile.name}</span>
             <span className="block truncate text-sm text-muted-foreground">{profile.handle}</span>
@@ -211,7 +211,7 @@ export function ProfileDropdown() {
                 href={profile.href}
                 className="mb-1 flex items-center gap-3 rounded-2xl bg-panel p-3 outline-none data-[highlighted]:bg-accent"
               >
-                <ProfileAvatar size={40} className="bg-background" />
+                <ProfileAvatar size={40} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-bold">{profile.name}</span>
                   <span className="block truncate text-[13px] text-muted-foreground">{profile.handle}</span>

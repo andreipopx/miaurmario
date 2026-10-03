@@ -166,8 +166,9 @@ def _social_push(event: str, username: str) -> PushPayload:
     if event == "friend_request":
         return PushPayload(
             title="Nueva solicitud de amistad",
-            body=f"@{username} quiere ser tu amigo en Miaurmario",
-            url="/dashboard/friends",
+            body=f"@{username} te ha enviado una solicitud de amistad en Miaurmario",
+            # Avisos, where it can be accepted on the spot.
+            url="/dashboard/inbox",
             tag=f"friend-request-{username}",
         )
     return PushPayload(
@@ -233,7 +234,7 @@ async def notify_friendship_event(db: AsyncSession, event: str, friendship_id: U
     username = actor.username
     origin = public_origin()
     if event == "friend_request":
-        cta_url = f"{origin}/dashboard/friends"
+        cta_url = f"{origin}/dashboard/inbox"
 
         def render(unsub: str) -> RenderedEmail:
             return render_friend_request_email(

@@ -412,7 +412,7 @@ class TestFriendEventDispatch:
         assert f"/unsubscribe?token={token}" in mail["email"].html
 
         (sub, data) = push_statuses["_calls"][0]
-        assert '"url": "/dashboard/friends"' in data
+        assert '"url": "/dashboard/inbox"' in data
         assert requester.username in data
 
         rows = (

@@ -46,7 +46,8 @@ export function SectionTabs() {
       <ul className="flex w-max gap-2 py-1">
         {tabs.map((tab) => {
           const active = resolved?.tab?.href === tab.href;
-          const badge = tab.socialBadge ? summary?.total ?? 0 : 0;
+          // Amigos counts the requests waiting there; reactions are counted on the bell.
+          const badge = tab.socialBadge ? summary?.pending_requests ?? 0 : 0;
           return (
             <li key={tab.href}>
               <Link

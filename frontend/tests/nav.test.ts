@@ -15,7 +15,8 @@ describe('information architecture', () => {
   it('keeps the dock/sidebar at five areas', () => {
     expect(MAIN_SECTIONS.map((s) => s.key)).toEqual(['today', 'wardrobe', 'stylist', 'inspo', 'stinky']);
     expect(MAIN_SECTIONS.length).toBeLessThanOrEqual(5);
-    expect(MAIN_SECTIONS.find((s) => s.key === 'inspo')?.socialBadge).toBe(true);
+    // News is counted on the bell (Avisos), not on the dock as well.
+    expect(MAIN_SECTIONS.some((s) => s.socialBadge)).toBe(false);
   });
 
   it('never lists a page twice across areas', () => {
@@ -36,8 +37,8 @@ describe('information architecture', () => {
     walk(root, '/dashboard');
     // Detail pages ([id], new, integration sub-pages, AI setup) are reached from their parent screen;
     // Admin is in the profile menu; the install guide is linked from Hoy and Notificaciones;
-    // Familia is hidden from the nav for now but its routes still work.
-    const top = pages.filter((p) => !/\[|\/new$|\/integrations\/|\/settings\/ai$|\/admin$|\/install$|\/family(\/|$)/.test(p));
+    // Familia is hidden from the nav for now but its routes still work; Avisos is the header's bell.
+    const top = pages.filter((p) => !/\[|\/new$|\/integrations\/|\/settings\/ai$|\/admin$|\/install$|\/family(\/|$)|\/inbox$/.test(p));
     for (const p of top) expect(where(p), p).not.toBeNull();
   });
 

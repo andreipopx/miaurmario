@@ -1,39 +1,39 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element -- signed API URL, already sized server-side */
-
-import { useEffect, useState } from 'react';
+import { UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { PersonAvatar } from '@/components/social/person-avatar';
 
 /**
- * The signed-in user's avatar for the app chrome (header, profile menu):
- * their profile photo when they uploaded one, otherwise Stinky as before.
+ * The signed-in user's avatar for the app chrome (header, profile menu): their
+ * profile photo, or without one their initial on their colour, exactly as their
+ * friends see them. Stinky is the stylist, not the user, so he doesn't stand in.
  */
 export function ProfileAvatar({ size = 44, className }: { size?: number; className?: string }) {
   const { user } = useAuth();
-  const src = user?.avatar_thumb_url || user?.avatar_url || null;
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
-
-  if (!src || failed) return <StinkyAvatar size={size} className={className} />;
-  return (
-    <span
-      className={cn('inline-flex shrink-0 overflow-hidden rounded-full bg-panel', className)}
-      style={{ width: size, height: size }}
-    >
-      <img
-        src={src}
-        alt=""
+  if (!user) {
+    // Not loaded yet: a neutral "no photo" circle of the same size.
+    return (
+      <span
         aria-hidden
-        width={size}
-        height={size}
-        draggable={false}
-        onError={() => setFailed(true)}
-        className="h-full w-full select-none object-cover"
-        referrerPolicy="no-referrer"
-      />
-    </span>
+        className={cn('inline-flex shrink-0 items-center justify-center rounded-full bg-panel text-muted-foreground', className)}
+        style={{ width: size, height: size }}
+      >
+        <UserRound style={{ width: size * 0.5, height: size * 0.5 }} strokeWidth={1.75} />
+      </span>
+    );
+  }
+  return (
+    <PersonAvatar
+      user={{
+        username: user.username ?? '',
+        display_name: user.display_name,
+        avatar_url: user.avatar_url ?? null,
+        avatar_thumb_url: user.avatar_thumb_url ?? null,
+      }}
+      size={size}
+      className={className}
+    />
   );
 }

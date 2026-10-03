@@ -379,7 +379,8 @@
     "general": "General",
     "install": "Install app",
     "howItWorks": "How it works",
-    "selfie": "What I'm wearing"
+    "selfie": "What I'm wearing",
+    "inbox": "Inbox"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
@@ -4335,5 +4336,12 @@
     "openFromItem": "It's the back of another garment…",
     "openFromSelection": "It's the back of another garment",
     "loadMore": "Show {count, plural, one {the other garment} other {the other # garments}}"
+  },
+  "inbox": {
+    "title": "Inbox",
+    "settings": "Settings",
+    "requests": "{count, plural, one {One friend request} other {# friend requests}}",
+    "wantsToBeFriends": "Wants to be your friend",
+    "activity": "Your looks"
   }
 }

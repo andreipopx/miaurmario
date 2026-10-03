@@ -379,7 +379,8 @@
     "general": "General",
     "install": "Instalar app",
     "howItWorks": "Cómo funciona",
-    "selfie": "Qué llevo"
+    "selfie": "Qué llevo",
+    "inbox": "Avisos"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -4335,5 +4336,12 @@
     "openFromItem": "Es la espalda de otra prenda…",
     "openFromSelection": "Es la espalda de otra prenda",
     "loadMore": "Ver {count, plural, one {la otra prenda} other {las otras # prendas}}"
+  },
+  "inbox": {
+    "title": "Avisos",
+    "settings": "Ajustes",
+    "requests": "{count, plural, one {Una solicitud de amistad} other {# solicitudes de amistad}}",
+    "wantsToBeFriends": "Te ha enviado una solicitud",
+    "activity": "Tus looks"
   }
 }

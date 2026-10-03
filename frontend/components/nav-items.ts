@@ -72,7 +72,7 @@ export const INSPO: NavSection = {
   key: 'inspo',
   href: '/dashboard/friends',
   icon: Compass,
-  socialBadge: true,
+  // News (requests, reactions) is counted on the bell, not on the dock as well.
   tabs: [
     { key: 'friends', href: '/dashboard/friends', icon: UserRound, socialBadge: true },
     { key: 'family', href: '/dashboard/family/feed', icon: Users, hidden: !FEATURES.families },

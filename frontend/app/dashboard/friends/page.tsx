@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { ChevronRight, Heart, Loader2, MessageCircle, Search, ShieldOff } from 'lucide-react';
+import { ChevronRight, Loader2, Search, ShieldOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
@@ -24,17 +23,15 @@ import {
   normalizeUsernameQuery,
   useFriendsFeed,
   useFriendsOverview,
-  useMarkActivitySeen,
   useRemoveFriendship,
-  useSocialActivity,
   useSocialSummary,
   useUserSearch,
   type Friendship,
   type PublicUser,
 } from '@/lib/hooks/use-social';
 
-type Tab = 'feed' | 'friends' | 'activity';
-const TABS: Tab[] = ['feed', 'friends', 'activity'];
+type Tab = 'feed' | 'friends';
+const TABS: Tab[] = ['feed', 'friends'];
 
 function CountDot({ count, label }: { count: number; label: string }) {
   if (count <= 0) return null;
@@ -292,80 +289,6 @@ function FriendsTab({ onAccepted }: { onAccepted: (name: string) => void }) {
   );
 }
 
-// -- Activity tab ------------------------------------------------------------------------------
-
-function ActivityTab({ active }: { active: boolean }) {
-  const t = useTranslations('social.activity');
-  const tOccasions = useTranslations('suggest.occasions');
-  const format = useFormatter();
-  const { data, isLoading } = useSocialActivity();
-  const markSeen = useMarkActivitySeen();
-  const hasNew = !!data?.some((a) => a.is_new);
-
-  useEffect(() => {
-    if (active && hasNew && !markSeen.isPending) markSeen.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, hasNew]);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />
-        ))}
-      </div>
-    );
-  }
-  if (!data || data.length === 0) {
-    return <EmptyState state="sleepy" size="sm" title={t('emptyTitle')} description={t('emptyBody')} />;
-  }
-  return (
-    <ul className="space-y-2">
-      {data.map((a) => {
-        const occasion = tOccasions.has(a.outfit_occasion as never) ? tOccasions(a.outfit_occasion as never) : a.outfit_occasion;
-        return (
-          <li key={a.id}>
-            <Link
-              href={`/dashboard/outfits/${a.outfit_id}`}
-              className={cn(
-                'flex min-h-[72px] items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                a.is_new ? 'bg-signature-soft' : 'bg-panel'
-              )}
-            >
-              <PersonAvatar user={a.user} size={40} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm">
-                  <strong className="font-bold">@{a.user.username}</strong>{' '}
-                  {a.comment ? t('commented') : t('loved')}{' '}
-                  <span className="font-semibold first-letter:uppercase">{a.outfit_name || occasion}</span>
-                </span>
-                {a.comment && (
-                  <span className="mt-0.5 flex items-start gap-1.5 text-sm text-foreground/80">
-                    <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-                    <span className="line-clamp-2 break-words">{a.comment}</span>
-                  </span>
-                )}
-                {a.updated_at && (
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {format.relativeTime(new Date(a.updated_at))}
-                  </span>
-                )}
-              </span>
-              <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-background">
-                {a.outfit_thumbnail_url ? (
-                  <Image src={a.outfit_thumbnail_url} alt="" fill className="object-contain p-1" sizes="48px" />
-                ) : (
-                  <Heart className="m-3.5 h-5 w-5 fill-signature text-signature" aria-hidden />
-                )}
-              </span>
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 // -- Page ------------------------------------------------------------------------------------------
 
 export default function FriendsPage() {
@@ -374,6 +297,10 @@ export default function FriendsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const initial = searchParams.get('tab');
+  // What friends do with your looks now lives in Avisos (the bell).
+  useEffect(() => {
+    if (initial === 'activity') router.replace('/dashboard/inbox');
+  }, [initial, router]);
   const [tab, setTab] = useState<Tab>(TABS.includes(initial as Tab) ? (initial as Tab) : 'feed');
   const [celebrating, setCelebrating] = useState<string | null>(null);
   const { data: summary } = useSocialSummary();
@@ -398,15 +325,11 @@ export default function FriendsPage() {
       {celebrating && <Celebration name={celebrating} onDone={() => setCelebrating(null)} />}
 
       <Tabs value={tab} onValueChange={changeTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="feed">{t('tabs.feed')}</TabsTrigger>
           <TabsTrigger value="friends">
             {t('tabs.friends')}
             <CountDot count={summary?.pending_requests ?? 0} label={t('tabs.pendingLabel', { count: summary?.pending_requests ?? 0 })} />
-          </TabsTrigger>
-          <TabsTrigger value="activity">
-            {t('tabs.activity')}
-            <CountDot count={summary?.new_reactions ?? 0} label={t('tabs.newLabel', { count: summary?.new_reactions ?? 0 })} />
           </TabsTrigger>
         </TabsList>
         <TabsContent value="feed" className="mt-4">
@@ -414,9 +337,6 @@ export default function FriendsPage() {
         </TabsContent>
         <TabsContent value="friends" className="mt-4">
           <FriendsTab onAccepted={setCelebrating} />
-        </TabsContent>
-        <TabsContent value="activity" className="mt-4">
-          <ActivityTab active={tab === 'activity'} />
         </TabsContent>
       </Tabs>
     </div>

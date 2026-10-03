@@ -1526,7 +1526,7 @@
         },
         "friend_request": {
           "title": "Solicitudes de amistad",
-          "description": "Alguien quiere ser tu amigo"
+          "description": "Alguien te envía una solicitud de amistad"
         },
         "friend_accepted": {
           "title": "Amistad aceptada",

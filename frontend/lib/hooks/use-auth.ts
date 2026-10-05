@@ -58,8 +58,11 @@ export function useAuth() {
     // Only fetch when session is loaded AND we have an access token
     enabled: status === 'authenticated' && hasToken,
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
+    // Checked again whenever the app comes back to the front (and at most every
+    // 30 s otherwise), in the background: a change made on another device (their
+    // cat, their photo, their city) shows up without a reload.
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {

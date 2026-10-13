@@ -23,6 +23,7 @@ from app.integrations.pinterest import (
     encrypt_token,
     exchange_code,
 )
+from app.integrations.pinterest.oauth import DEFAULT_SCOPES
 from app.integrations.redirects import frontend_redirect
 from app.integrations.state import bind_browser, browser_nonce
 from app.models.pinterest import PinterestConnection, PinterestPin
@@ -36,6 +37,8 @@ router = APIRouter(prefix="/integrations/pinterest", tags=["integrations"])
 pins_router = APIRouter(prefix="/pins", tags=["pins"])
 
 SETTINGS_PATH = "/dashboard/settings/integrations/pinterest"
+# Placeholders saved when the profile could not be read: never shown as a name.
+UNKNOWN_ACCOUNT = {"unknown", "pending"}
 
 
 def _is_configured() -> bool:
@@ -70,7 +73,10 @@ async def get_status(
     return {
         "configured": _is_configured(),
         "connected": connection is not None,
-        "pinterest_user_id": connection.pinterest_user_id if connection else None,
+        # The account's @username for display; "unknown" (no profile scope) shows nothing.
+        "pinterest_user_id": connection.pinterest_user_id
+        if connection and connection.pinterest_user_id not in UNKNOWN_ACCOUNT
+        else None,
         "connected_at": connection.connected_at.isoformat()
         if connection and connection.connected_at
         else None,
@@ -116,9 +122,9 @@ async def callback(
 
     access_ct = encrypt_token(tokens["access_token"])
     refresh_ct = encrypt_token(tokens["refresh_token"])
-    scopes = tokens.get("scope") or "boards:read,pins:read"
+    scopes = tokens.get("scope") or DEFAULT_SCOPES
 
-    # Best-effort: fetch the account id with a transient (unsaved) connection.
+    # Best-effort: fetch the account's username with a transient (unsaved) connection.
     pinterest_user_id = "unknown"
     try:
         probe = PinterestConnection(
@@ -131,7 +137,8 @@ async def callback(
             scopes=scopes,
         )
         account = await PinterestClient(probe, db).get_user_account()
-        pinterest_user_id = str(account.get("id") or account.get("username") or "unknown")
+        username = account.get("username")
+        pinterest_user_id = f"@{username}" if username else str(account.get("id") or "unknown")
     except PinterestAPIError as exc:
         logger.warning("Could not fetch Pinterest user_account: %s", exc)
 

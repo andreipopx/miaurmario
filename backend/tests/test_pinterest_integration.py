@@ -77,7 +77,7 @@ def test_alembic_single_head_chain():
 def test_authorize_url(pinterest_settings):
     qs = parse_qs(urlparse(build_authorize_url("s")).query)
     assert qs["client_id"] == ["pid"]
-    assert qs["scope"] == ["boards:read,pins:read"]
+    assert qs["scope"] == ["boards:read,pins:read,user_accounts:read"]
     assert qs["state"] == ["s"]
 
 
@@ -161,9 +161,34 @@ class TestPinterestAPI:
                 select(PinterestConnection).where(PinterestConnection.user_id == test_user.id)
             )
         ).scalar_one()
-        assert row.pinterest_user_id == "42"
+        assert row.pinterest_user_id == "@pinner"
         assert decrypt_token(row.access_token_ct) == "pacc"
         assert decrypt_token(row.refresh_token_ct) == "pref"
+
+    async def test_status_hides_placeholder_account(
+        self, client: AsyncClient, auth_headers, test_user, db_session, pinterest_settings
+    ):
+        """A connection made without the profile scope must not show «unknown» as a name."""
+        from datetime import UTC, datetime, timedelta
+
+        from app.integrations.crypto import encrypt_token
+
+        now = datetime.now(UTC)
+        db_session.add(
+            PinterestConnection(
+                user_id=test_user.id,
+                pinterest_user_id="unknown",
+                access_token_ct=encrypt_token("a"),
+                refresh_token_ct=encrypt_token("r"),
+                access_token_expires_at=now + timedelta(hours=1),
+                refresh_token_expires_at=now + timedelta(days=60),
+                scopes="boards:read,pins:read",
+            )
+        )
+        await db_session.commit()
+        resp = await client.get("/api/v1/integrations/pinterest/status", headers=auth_headers)
+        assert resp.json()["connected"] is True
+        assert resp.json()["pinterest_user_id"] is None
 
     async def test_disconnect_is_idempotent(self, client: AsyncClient, auth_headers):
         resp = await client.delete("/api/v1/integrations/pinterest", headers=auth_headers)

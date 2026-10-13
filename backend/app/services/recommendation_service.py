@@ -32,6 +32,7 @@ from app.services.music_service import (
     format_song_context_for_prompt,
     resolve_music_context,
 )
+from app.services.pinterest_inspiration import pinterest_inspiration_lines
 from app.services.stinky_memory import stylist_memory_lines
 from app.services.suggestion_cache import pop_suggestion, push_suggestions
 from app.services.weather_service import (
@@ -944,6 +945,7 @@ class RecommendationService:
             learned_prefs,
             body_measurements=getattr(user, "body_measurements", None),
             memory_text=await stylist_memory_lines(self.db, user.id),
+            inspiration_text=await pinterest_inspiration_lines(self.db, user.id),
         )
 
         song_context_text = format_song_context_for_prompt(song_context) if song_context else ""

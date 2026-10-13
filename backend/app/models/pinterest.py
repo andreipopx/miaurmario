@@ -4,8 +4,10 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
+    Integer,
     LargeBinary,
     String,
     Text,
@@ -70,4 +72,41 @@ class PinterestPin(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "pinterest_pin_id", name="uq_pinterest_pins_user_pin"),
+    )
+
+
+class PinterestBoard(Base):
+    """A board the user chose to share with Stinky, and what he made of it.
+
+    Only boards the person imports get a row: listing their boards costs nothing
+    and reads nothing. The import keeps the board's latest pins (their taste now,
+    not years ago) and one vision call turns a mosaic of them into ``summary``,
+    a single Spanish sentence that the stylist prompts read. Boards that are not
+    about clothes are kept (``is_fashion`` false) but never reach a prompt.
+
+    ``status``: importing → analyzing → ready, or no_ai (imported, no AI access
+    to summarise it) / error.
+    """
+
+    __tablename__ = "pinterest_boards"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    board_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str | None] = mapped_column(String(255))
+    privacy: Mapped[str | None] = mapped_column(String(16))
+    pin_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="importing", nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text)
+    is_fashion: Mapped[bool | None] = mapped_column(Boolean)
+    imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    analyzed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "board_id", name="uq_pinterest_boards_user_board"),
     )

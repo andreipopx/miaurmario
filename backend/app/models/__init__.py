@@ -34,7 +34,7 @@ from app.models.outfit import (
     RatingScope,
     UserFeedback,
 )
-from app.models.pinterest import PinterestConnection, PinterestPin
+from app.models.pinterest import PinterestBoard, PinterestConnection, PinterestPin
 from app.models.preference import UserPreference
 from app.models.schedule import Schedule
 from app.models.spotify import SpotifyConnection
@@ -82,6 +82,7 @@ __all__ = [
     "LastfmConnection",
     "ListeningEvent",
     "ListeningMood",
+    "PinterestBoard",
     "PinterestConnection",
     "PinterestPin",
     "SpotifyConnection",

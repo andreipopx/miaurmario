@@ -14,6 +14,7 @@ from app.models.user import User
 from app.services.ai_access import require_ai_client
 from app.services.ai_service import AIResponseError
 from app.services.layering import layering_context
+from app.services.pinterest_inspiration import pinterest_inspiration_lines
 from app.services.stinky_memory import stylist_memory_lines
 from app.utils.clothing import deduplicate_by_body_slot
 from app.utils.error_codes import CodedValueError
@@ -65,6 +66,7 @@ class PairingService:
             preferences,
             body_measurements=getattr(user, "body_measurements", None),
             memory_text=await stylist_memory_lines(self.db, user.id),
+            inspiration_text=await pinterest_inspiration_lines(self.db, user.id),
         )
 
     def _format_item_description(self, item: ClothingItem) -> str:

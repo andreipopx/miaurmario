@@ -11,12 +11,27 @@ function useSetTokenIfAvailable() {
   }
 }
 
+/** What Stinky made of a board the user shared (null: not shared). */
+export interface PinterestBoardStinky {
+  status: 'importing' | 'analyzing' | 'ready' | 'no_ai' | 'error';
+  summary: string | null;
+  is_fashion: boolean | null;
+  pin_count: number;
+  imported_at: string | null;
+}
+
 export interface PinterestBoard {
   id: string;
   name: string;
+  privacy?: string;
   pin_count?: number;
   media?: { image_cover_url?: string };
+  stinky?: PinterestBoardStinky | null;
 }
+
+const READING: PinterestBoardStinky['status'][] = ['importing', 'analyzing'];
+export const isReadingBoard = (board: PinterestBoard) =>
+  !!board.stinky && READING.includes(board.stinky.status);
 
 export interface PinterestBoardList {
   items: PinterestBoard[];
@@ -71,6 +86,9 @@ export function usePinterestBoards(enabled = true) {
     getNextPageParam: (last) => last.bookmark || null,
     enabled,
     retry: false,
+    // While Stinky reads a board, check back until he has written its summary.
+    refetchInterval: (query) =>
+      query.state.data?.pages.some((p) => p.items.some(isReadingBoard)) ? 3000 : false,
   });
 }
 
@@ -95,7 +113,16 @@ export function usePinterestImportBoard() {
         `/integrations/pinterest/boards/${boardId}/import`,
         {},
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['pinterest', 'pins'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pinterest'] }),
+  });
+}
+
+export function usePinterestRemoveBoard() {
+  const qc = useQueryClient();
+  useSetTokenIfAvailable();
+  return useMutation({
+    mutationFn: (boardId: string) => api.delete(`/integrations/pinterest/boards/${boardId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pinterest'] }),
   });
 }
 

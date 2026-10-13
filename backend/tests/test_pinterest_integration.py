@@ -16,6 +16,7 @@ from app.config import get_settings
 from app.integrations import crypto
 from app.integrations.crypto import decrypt_token
 from app.integrations.pinterest import build_authorize_url, create_state
+from app.integrations.pinterest.oauth import DEFAULT_SCOPES
 from app.models.pinterest import PinterestConnection
 
 _RealAsyncClient = httpx.AsyncClient
@@ -45,7 +46,8 @@ def test_alembic_single_head_chain():
     cfg = Config(str(BACKEND_DIR / "alembic.ini"))
     cfg.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_heads() == ["stinkycoat0310"]
+    assert script.get_heads() == ["pinboards1310"]
+    assert script.get_revision("pinboards1310").down_revision == "stinkycoat0310"
     assert script.get_revision("stinkycoat0310").down_revision == "dropnotifsettings0310"
     assert script.get_revision("dropnotifsettings0310").down_revision == "tokenver0310"
     assert script.get_revision("tokenver0310").down_revision == "nativepush0210"
@@ -77,7 +79,8 @@ def test_alembic_single_head_chain():
 def test_authorize_url(pinterest_settings):
     qs = parse_qs(urlparse(build_authorize_url("s")).query)
     assert qs["client_id"] == ["pid"]
-    assert qs["scope"] == ["boards:read,pins:read,user_accounts:read"]
+    assert qs["scope"] == [DEFAULT_SCOPES]
+    assert "boards:read_secret" in DEFAULT_SCOPES and "user_accounts:read" in DEFAULT_SCOPES
     assert qs["state"] == ["s"]
 
 

@@ -133,6 +133,7 @@ def format_style_profile_for_prompt(
     learned_prefs: Mapping[str, Any] | None = None,
     body_measurements: Mapping[str, Any] | None = None,
     memory_text: str | None = None,
+    inspiration_text: str | None = None,
 ) -> str:
     """Spanish, gender-neutral bullet list of the user's taste.
 
@@ -140,7 +141,9 @@ def format_style_profile_for_prompt(
     attribute names). ``memory_text`` is the already-capped subset of «Stinky
     recuerda» (see ``app.services.stinky_memory.stylist_memory_lines``) — what
     Stinky wrote down while chatting, which counts as the person telling us
-    directly. Always returns text: an explicit "not set yet" line when the user
+    directly. ``inspiration_text`` is one line per Pinterest board they shared
+    (see ``app.services.pinterest_inspiration``): where they want their style to
+    go, not clothes they own. Always returns text: an explicit "not set yet" line when the user
     has told us nothing, so the prompt never falls back to anybody else's taste.
     """
     # Imported here, not at module level: style_quiz reads COLOR_NAMES_ES from
@@ -204,6 +207,13 @@ def format_style_profile_for_prompt(
     if memory_text:
         lines.append("- Lo que le ha contado a Stinky hablando con él:")
         lines.extend(f"  {line}" for line in memory_text.splitlines() if line.strip())
+
+    if inspiration_text:
+        lines.append(
+            "- Lo que guarda en Pinterest como inspiración (hacia dónde quiere ir su estilo; "
+            "acércale a eso con prendas que SÍ tiene, nunca des por hecho que tiene lo de las fotos):"
+        )
+        lines.extend(f"  {line}" for line in inspiration_text.splitlines() if line.strip())
 
     body = _body_notes(body_measurements)
     if body:

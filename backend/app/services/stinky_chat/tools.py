@@ -35,6 +35,7 @@ from app.models.stinky_memory import MAX_MEMORIES_PER_USER, MEMORY_KINDS
 from app.models.user import User
 from app.services import stinky_memory
 from app.services.ai_service import AIDisabledError
+from app.services.pinterest_inspiration import pinterest_inspiration_lines
 from app.services.studio_service import ItemOwnershipError, StudioService
 from app.services.weather_service import (
     GeocodingServiceError,
@@ -186,7 +187,8 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "description": (
                 "The user's style preferences: favourite/avoided colors, style profile, "
                 "default occasion, temperature sensitivity, location name, plus "
-                "style_summary (a ready-to-use Spanish summary of their taste)."
+                "style_summary (a ready-to-use Spanish summary of their taste, including "
+                "the style of the Pinterest boards they shared as inspiration)."
             ),
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
@@ -692,7 +694,9 @@ async def get_user_preferences(ctx: ToolContext, args: dict[str, Any]) -> dict[s
     }
     # Same Spanish taste summary the Stylist and pairing prompts get.
     data["style_summary"] = format_style_profile_for_prompt(
-        prefs, body_measurements=getattr(ctx.user, "body_measurements", None)
+        prefs,
+        body_measurements=getattr(ctx.user, "body_measurements", None),
+        inspiration_text=await pinterest_inspiration_lines(ctx.db, ctx.user.id),
     )
     if prefs is None:
         data["preferences_set"] = False

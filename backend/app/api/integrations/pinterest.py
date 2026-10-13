@@ -1,6 +1,7 @@
 """Pinterest integration API — OAuth connect, board browse, pin import."""
 
 import logging
+import re
 import uuid
 from typing import Annotated, Any
 
@@ -26,9 +27,10 @@ from app.integrations.pinterest import (
 from app.integrations.pinterest.oauth import DEFAULT_SCOPES
 from app.integrations.redirects import frontend_redirect
 from app.integrations.state import bind_browser, browser_nonce
-from app.models.pinterest import PinterestConnection, PinterestPin
+from app.models.pinterest import PinterestBoard, PinterestConnection, PinterestPin
 from app.models.user import User
 from app.utils.auth import get_current_user
+from app.utils.rate_limit import rate_limit_by_user
 from app.workers.settings import get_redis_settings
 
 logger = logging.getLogger(__name__)
@@ -39,6 +41,9 @@ pins_router = APIRouter(prefix="/pins", tags=["pins"])
 SETTINGS_PATH = "/dashboard/settings/integrations/pinterest"
 # Placeholders saved when the profile could not be read: never shown as a name.
 UNKNOWN_ACCOUNT = {"unknown", "pending"}
+# Board imports per user per day (each one is a vision call).
+BOARD_IMPORT_LIMIT = (20, 24 * 3600)
+BOARD_ID_RE = re.compile(r"[0-9A-Za-z_-]{1,64}")
 
 
 def _is_configured() -> bool:
@@ -156,6 +161,17 @@ async def callback(
     return frontend_redirect(SETTINGS_PATH, connected="1")
 
 
+def _board_state(row: PinterestBoard) -> dict[str, Any]:
+    """What Stinky made of an imported board, for the settings page."""
+    return {
+        "status": row.status,
+        "summary": row.summary,
+        "is_fashion": row.is_fashion,
+        "pin_count": row.pin_count,
+        "imported_at": row.imported_at.isoformat() if row.imported_at else None,
+    }
+
+
 @router.get("/boards")
 async def list_boards(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -166,9 +182,20 @@ async def list_boards(
     if not connection:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pinterest not connected")
     try:
-        return await PinterestClient(connection, db).list_boards(bookmark=bookmark)
+        page = await PinterestClient(connection, db).list_boards(bookmark=bookmark)
     except PinterestAPIError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Pinterest API error") from exc
+    # Pinterest's own board list, plus whether each one is shared with Stinky.
+    rows = (
+        (await db.execute(select(PinterestBoard).where(PinterestBoard.user_id == current_user.id)))
+        .scalars()
+        .all()
+    )
+    ours = {row.board_id: row for row in rows}
+    for item in page.get("items", []):
+        row = ours.get(str(item.get("id")))
+        item["stinky"] = _board_state(row) if row else None
+    return page
 
 
 @router.post("/boards/{board_id}/import", status_code=status.HTTP_202_ACCEPTED)
@@ -177,9 +204,25 @@ async def import_board(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, str]:
+    if not BOARD_ID_RE.fullmatch(board_id):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid board id")
     connection = await _get_connection(current_user.id, db)
     if not connection:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pinterest not connected")
+    # Each import reads the board once with a vision call: a few a day is plenty.
+    await rate_limit_by_user(current_user.id, "pinterest_board_import", *BOARD_IMPORT_LIMIT)
+    row = (
+        await db.execute(
+            select(PinterestBoard).where(
+                PinterestBoard.user_id == current_user.id, PinterestBoard.board_id == board_id
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        row = PinterestBoard(user_id=current_user.id, board_id=board_id)
+        db.add(row)
+    row.status = "importing"
+    await db.commit()
     redis = await create_pool(get_redis_settings())
     try:
         job = await redis.enqueue_job(
@@ -195,12 +238,33 @@ async def import_board(
     return {"job_id": job.job_id}
 
 
+@router.delete("/boards/{board_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_board(
+    board_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    """Stop sharing a board with Stinky: its pins and its summary go."""
+    await db.execute(
+        delete(PinterestPin).where(
+            PinterestPin.user_id == current_user.id, PinterestPin.board_id == board_id
+        )
+    )
+    await db.execute(
+        delete(PinterestBoard).where(
+            PinterestBoard.user_id == current_user.id, PinterestBoard.board_id == board_id
+        )
+    )
+    await db.commit()
+
+
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 async def disconnect(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     await db.execute(delete(PinterestPin).where(PinterestPin.user_id == current_user.id))
+    await db.execute(delete(PinterestBoard).where(PinterestBoard.user_id == current_user.id))
     await db.execute(
         delete(PinterestConnection).where(PinterestConnection.user_id == current_user.id)
     )

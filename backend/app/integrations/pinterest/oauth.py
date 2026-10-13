@@ -18,7 +18,9 @@ from app.integrations.state import OAuthStateError
 AUTHORIZE_URL = "https://www.pinterest.com/oauth/"
 TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 # user_accounts:read: without it /user_account is a 401 and the account shows no name.
-DEFAULT_SCOPES = "boards:read,pins:read,user_accounts:read"
+# *_read_secret: secret boards are where people keep their clothes inspiration; listing
+# them reads nothing, only the boards the person imports are fetched.
+DEFAULT_SCOPES = "boards:read,pins:read,boards:read_secret,pins:read_secret,user_accounts:read"
 PROVIDER = "pinterest"
 
 __all__ = [

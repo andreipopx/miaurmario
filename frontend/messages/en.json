@@ -509,7 +509,17 @@
         "3": "a layer you can take off and neither cold nor heat will catch you out.",
         "4": "if it makes you feel good, wear it. Nobody notices the rest."
       },
-      "quickAsk": "Ask for a look"
+      "quickAsk": "Ask for a look",
+      "lookTitleTomorrow": "Your look for tomorrow",
+      "days": {
+        "label": "Which day",
+        "today": "Today",
+        "tomorrow": "Tomorrow"
+      },
+      "tomorrowEmptyTitle": "And what will you wear tomorrow?",
+      "tomorrowEmptyBody": "Stinky puts it together with tomorrow's forecast, and you can swap it until you wear it.",
+      "tomorrowPrepare": "Prepare tomorrow's",
+      "tomorrowEveryEvening": "Get it every evening"
     },
     "moments": {
       "title": "Your day",
@@ -1524,6 +1534,12 @@
           "description": "Today's look, at the time you pick",
           "timeHint": "It arrives at this time, in your own timezone. If you already accepted a look for today, we leave you alone.",
           "offHint": "Off. Turn it on and we'll send it at 7:30."
+        },
+        "tomorrow_look": {
+          "title": "Your look for tomorrow",
+          "description": "The evening before, tomorrow's look with its forecast",
+          "timeHint": "It arrives at this time, in your timezone, dressed for tomorrow's weather. If you've already picked tomorrow's look, we won't bother you.",
+          "offHint": "Off. Turn it on and we'll send it at 9 pm."
         },
         "friend_activity": {
           "title": "Friend activity",
@@ -3749,6 +3765,7 @@
     "pushNote": "This only affects email: notifications on your devices stay as they are.",
     "scopes": {
       "morning_look": "your morning look",
+      "tomorrow_look": "your look for tomorrow",
       "friend_activity": "friend activity",
       "friend_request": "friend requests",
       "friend_accepted": "accepted friend requests",

@@ -193,6 +193,7 @@ async def _preferences_response(db: AsyncSession, user: User) -> NotificationPre
         push_devices=await count_push_devices(db, user.id),
         native_push_platforms=native_platforms_available(),
         morning_look_time=pref.time_for("morning_look"),
+        tomorrow_look_time=pref.time_for("tomorrow_look"),
         friend_activity_time=pref.time_for("friend_activity"),
     )
 

@@ -323,6 +323,7 @@ def local_time_matches(target: time, now_local: datetime) -> bool:
 
 DAILY_ALERT_JOBS = {
     "morning_look": "send_morning_look",
+    "tomorrow_look": "send_tomorrow_look",
     "friend_activity": "send_friend_activity",
 }
 
@@ -345,6 +346,8 @@ async def due_daily_alerts(db, now_utc: datetime) -> list[tuple[str, uuid.UUID, 
                     NotificationPreference.user_id.is_(None),
                     NotificationPreference.email_morning_look.is_(True),
                     NotificationPreference.push_morning_look.is_(True),
+                    NotificationPreference.email_tomorrow_look.is_(True),
+                    NotificationPreference.push_tomorrow_look.is_(True),
                     NotificationPreference.email_friend_activity.is_(True),
                     NotificationPreference.push_friend_activity.is_(True),
                 ),
@@ -405,6 +408,24 @@ async def send_morning_look(ctx: dict, user_id: str, day: str) -> dict:
         return result
     except Exception:
         logger.exception("Failed to send the morning look to user %s", user_id)
+        await db.rollback()
+        raise
+    finally:
+        await db.close()
+
+
+async def send_tomorrow_look(ctx: dict, user_id: str, day: str) -> dict:
+    """«Tu look de mañana»: tomorrow's suggestion, the evening before, at the user's hour."""
+    db = get_db_session(ctx)
+    try:
+        result = await daily_alerts.send_tomorrow_look(
+            db, uuid.UUID(user_id), date.fromisoformat(day)
+        )
+        await db.commit()
+        logger.info("Tomorrow's look for user %s (sent on %s): %s", user_id, day, result)
+        return result
+    except Exception:
+        logger.exception("Failed to send tomorrow's look to user %s", user_id)
         await db.rollback()
         raise
     finally:

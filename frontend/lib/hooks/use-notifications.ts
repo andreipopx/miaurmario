@@ -125,22 +125,25 @@ export function useNotificationHistory(limit = 20) {
 
 export type NotificationEvent =
   | 'morning_look'
+  | 'tomorrow_look'
   | 'friend_activity'
   | 'friend_request'
   | 'friend_accepted'
   | 'daily_outfit';
 export const NOTIFICATION_EVENTS: NotificationEvent[] = [
   'morning_look',
+  'tomorrow_look',
   'friend_activity',
   'friend_request',
   'friend_accepted',
   'daily_outfit',
 ];
 /** The events that go out once a day, at a local time the user picks. */
-export type TimedEvent = 'morning_look' | 'friend_activity';
-export const TIMED_EVENTS: TimedEvent[] = ['morning_look', 'friend_activity'];
+export type TimedEvent = 'morning_look' | 'tomorrow_look' | 'friend_activity';
+export const TIMED_EVENTS: TimedEvent[] = ['morning_look', 'tomorrow_look', 'friend_activity'];
 export const TIMED_EVENT_TIME_KEY = {
   morning_look: 'morning_look_time',
+  tomorrow_look: 'tomorrow_look_time',
   friend_activity: 'friend_activity_time',
 } as const satisfies Record<TimedEvent, keyof NotificationPreferences>;
 export type DefaultChannel = 'email' | 'push';
@@ -159,6 +162,7 @@ export interface NotificationPreferences {
   native_push_platforms?: ('android' | 'ios')[];
   /** HH:MM in the user's own timezone. */
   morning_look_time: string;
+  tomorrow_look_time: string;
   friend_activity_time: string;
 }
 
@@ -166,6 +170,7 @@ export type NotificationPreferencesPatch = Partial<
   Record<DefaultChannel, Partial<EventToggles>>
 > & {
   morning_look_time?: string;
+  tomorrow_look_time?: string;
   friend_activity_time?: string;
 };
 

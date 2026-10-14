@@ -509,7 +509,17 @@
         "3": "una capa que puedas quitarte y no te pillará ni el frío ni el calor.",
         "4": "si algo te hace sentir bien, póntelo. Lo demás se nota menos."
       },
-      "quickAsk": "Pedir look"
+      "quickAsk": "Pedir look",
+      "lookTitleTomorrow": "Tu look de mañana",
+      "days": {
+        "label": "Qué día",
+        "today": "Hoy",
+        "tomorrow": "Mañana"
+      },
+      "tomorrowEmptyTitle": "¿Y mañana qué te pones?",
+      "tomorrowEmptyBody": "Stinky te lo prepara con la previsión de mañana, y lo puedes cambiar hasta que te lo pongas.",
+      "tomorrowPrepare": "Prepárame el de mañana",
+      "tomorrowEveryEvening": "Recíbelo cada noche"
     },
     "moments": {
       "title": "Tu día",
@@ -1524,6 +1534,12 @@
           "description": "El look de hoy, a la hora que elijas",
           "timeHint": "Te llega a esta hora, en tu franja horaria. Si ya has aceptado un look para hoy, no te molestamos.",
           "offHint": "Desactivado. Actívalo y te lo mandamos a las 7:30."
+        },
+        "tomorrow_look": {
+          "title": "Tu look de mañana",
+          "description": "La noche antes, el look de mañana con su previsión",
+          "timeHint": "Te llega a esta hora, en tu franja horaria, con el tiempo que hará mañana. Si ya has elegido el look de mañana, no te molestamos.",
+          "offHint": "Desactivado. Actívalo y te lo mandamos a las 21:00."
         },
         "friend_activity": {
           "title": "Movimiento de amigos",
@@ -3749,6 +3765,7 @@
     "pushNote": "Esto solo afecta al email: los avisos en tus dispositivos siguen igual.",
     "scopes": {
       "morning_look": "tu look de la mañana",
+      "tomorrow_look": "tu look de mañana",
       "friend_activity": "movimiento de amigos",
       "friend_request": "solicitudes de amistad",
       "friend_accepted": "amistades aceptadas",

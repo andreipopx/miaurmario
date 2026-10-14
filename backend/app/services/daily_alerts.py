@@ -1,4 +1,5 @@
-"""The two once-a-day alerts: «Tu look de la mañana» and «Movimiento de amigos».
+"""The once-a-day alerts: «Tu look de la mañana», «Tu look de mañana» (the evening
+before, dressed for tomorrow's forecast) and «Movimiento de amigos».
 
 Both go out at a local clock time the user picks (stored on
 ``NotificationPreference``), through the default channels (account email + Web
@@ -53,6 +54,7 @@ from app.utils.email_templates import (
 logger = logging.getLogger(__name__)
 
 MORNING_LOOK_EVENT = "morning_look"
+TOMORROW_LOOK_EVENT = "tomorrow_look"
 FRIEND_ACTIVITY_EVENT = "friend_activity"
 
 # One digest per day, with slack for DST shifts and a late cron tick: a digest
@@ -216,18 +218,34 @@ def _is_settled(outfit: Outfit | None, worn: bool) -> bool:
 
 async def send_morning_look(db: AsyncSession, user_id: UUID, day: date) -> dict:
     """Today's suggestion for moment 0, as one line. Flushes; caller commits."""
+    return await _send_day_look(db, user_id, sent_on=day, look_day=day, event=MORNING_LOOK_EVENT)
+
+
+async def send_tomorrow_look(db: AsyncSession, user_id: UUID, day: date) -> dict:
+    """The evening before: tomorrow's suggestion for moment 0, dressed for tomorrow's
+    forecast (the day-moments path reads it for a future day). ``day`` is the local
+    day it is sent on, which is what makes it once a day. Flushes; caller commits."""
+    return await _send_day_look(
+        db, user_id, sent_on=day, look_day=day + timedelta(days=1), event=TOMORROW_LOOK_EVENT
+    )
+
+
+async def _send_day_look(
+    db: AsyncSession, user_id: UUID, *, sent_on: date, look_day: date, event: str
+) -> dict:
+    tomorrow = event == TOMORROW_LOOK_EVENT
     user = await load_alert_user(db, user_id)
     if user is None:
         return {"status": "skipped", "reason": "user_not_found"}
-    if await already_notified_for_day(db, user_id, MORNING_LOOK_EVENT, day):
+    if await already_notified_for_day(db, user_id, event, sent_on):
         return {"status": "skipped", "reason": "already_sent"}
 
-    channels = await default_channels_for(db, user, MORNING_LOOK_EVENT)
+    channels = await default_channels_for(db, user, event)
     if not channels:
         return {"status": "skipped", "reason": "no_channel"}
 
     service = DayMomentService(db)
-    moments = await service.get_day(user.id, day)
+    moments = await service.get_day(user.id, look_day)
     first = next((m for m in moments if m.order == 0), None)
     if first is not None and _is_settled(first.outfit, first.is_worn):
         return {"status": "skipped", "reason": "already_decided"}
@@ -235,31 +253,32 @@ async def send_morning_look(db: AsyncSession, user_id: UUID, day: date) -> dict:
     outfit = first.outfit if first is not None else None
     if outfit is None:
         try:
-            outfit = (await service.suggest(user, day, MomentRequest(order=0))).outfit
+            outfit = (await service.suggest(user, look_day, MomentRequest(order=0))).outfit
         except InsufficientWardrobeError:
             # Too few items to compose anything: say nothing at all.
-            _no_op_marker(db, user_id, MORNING_LOOK_EVENT, day, "wardrobe_too_small")
+            _no_op_marker(db, user_id, event, sent_on, "wardrobe_too_small")
             await db.flush()
             return {"status": "skipped", "reason": "wardrobe_too_small"}
         except ValueError as exc:
             # No weather, no candidate items after filters, bad preferences...
-            logger.info("No morning look for user %s: %s", user_id, exc)
-            _no_op_marker(db, user_id, MORNING_LOOK_EVENT, day, "cannot_compose")
+            logger.info("No %s for user %s: %s", event, user_id, exc)
+            _no_op_marker(db, user_id, event, sent_on, "cannot_compose")
             await db.flush()
             return {"status": "skipped", "reason": "cannot_compose"}
         except AIDisabledError:
             # suggest() already falls back to the heuristic; a leak means no look.
-            _no_op_marker(db, user_id, MORNING_LOOK_EVENT, day, "no_engine")
+            _no_op_marker(db, user_id, event, sent_on, "no_engine")
             await db.flush()
             return {"status": "skipped", "reason": "no_engine"}
 
     line = morning_look_line(outfit)
     if not line:
-        _no_op_marker(db, user_id, MORNING_LOOK_EVENT, day, "nothing_to_say")
+        _no_op_marker(db, user_id, event, sent_on, "nothing_to_say")
         await db.flush()
         return {"status": "skipped", "reason": "nothing_to_say"}
 
-    cta_url = f"{public_origin()}/dashboard"
+    path = "/dashboard?dia=manana" if tomorrow else "/dashboard"
+    cta_url = f"{public_origin()}{path}"
 
     def render(unsubscribe_url: str) -> RenderedEmail:
         return render_morning_look_email(
@@ -267,27 +286,28 @@ async def send_morning_look(db: AsyncSession, user_id: UUID, day: date) -> dict:
             items=outfit_item_names(outfit),
             cta_url=cta_url,
             unsubscribe_url=unsubscribe_url,
+            tomorrow=tomorrow,
         )
 
     results = await send_default_channels(
         db,
         user=user,
-        event=MORNING_LOOK_EVENT,
+        event=event,
         render_email=render,
         push=PushPayload(
-            title="Tu look de la mañana",
+            title="Tu look de mañana" if tomorrow else "Tu look de la mañana",
             body=line[:180],
-            url="/dashboard",
-            tag=f"morning-look-{day.isoformat()}",
+            url=path,
+            tag=f"{event.replace('_', '-')}-{look_day.isoformat()}",
         ),
     )
     sent = _record(
         db,
         user_id=user_id,
-        event=MORNING_LOOK_EVENT,
-        day=day,
+        event=event,
+        day=sent_on,
         results=results,
-        payload_extra={"line": line},
+        payload_extra={"line": line, "look_day": look_day.isoformat()},
         outfit_id=outfit.id,
     )
     await db.flush()
@@ -455,6 +475,7 @@ async def send_friend_activity(db: AsyncSession, user_id: UUID, day: date) -> di
 __all__ = [
     "FRIEND_ACTIVITY_EVENT",
     "MORNING_LOOK_EVENT",
+    "TOMORROW_LOOK_EVENT",
     "FriendActivity",
     "already_notified_for_day",
     "collect_friend_activity",
@@ -463,5 +484,6 @@ __all__ = [
     "outfit_item_names",
     "send_friend_activity",
     "send_morning_look",
+    "send_tomorrow_look",
     "weather_phrase",
 ]

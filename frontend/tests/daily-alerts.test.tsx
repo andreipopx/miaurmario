@@ -68,6 +68,7 @@ const defaultPrefs = (over: Partial<NotificationPreferences> = {}): Notification
     friend_accepted: true,
     daily_outfit: true,
     morning_look: false,
+    tomorrow_look: false,
     friend_activity: false,
   },
   push: {
@@ -75,6 +76,7 @@ const defaultPrefs = (over: Partial<NotificationPreferences> = {}): Notification
     friend_accepted: true,
     daily_outfit: true,
     morning_look: false,
+    tomorrow_look: false,
     friend_activity: true,
   },
   email_address: 'yo@example.com',
@@ -83,6 +85,7 @@ const defaultPrefs = (over: Partial<NotificationPreferences> = {}): Notification
   vapid_public_key: 'BKey',
   push_devices: 1,
   morning_look_time: '07:30',
+  tomorrow_look_time: '21:00',
   friend_activity_time: '20:00',
   ...over,
 })
@@ -201,6 +204,7 @@ describe('Notificaciones · daily alerts', () => {
   it('maps each timed event to its own time field', () => {
     expect(TIMED_EVENT_TIME_KEY).toEqual({
       morning_look: 'morning_look_time',
+      tomorrow_look: 'tomorrow_look_time',
       friend_activity: 'friend_activity_time',
     })
   })

@@ -68,6 +68,7 @@ NOTIFICATION_EVENTS = (
     "friend_accepted",
     "daily_outfit",
     "morning_look",
+    "tomorrow_look",
     "friend_activity",
 )
 DEFAULT_CHANNELS = ("email", "push")
@@ -75,10 +76,12 @@ DEFAULT_CHANNELS = ("email", "push")
 # The two events that go out once a day at a time the user picks, in their own
 # timezone. ``TIMED_EVENT_DEFAULT_TIME`` is the local clock time used until they
 # change it.
-TIMED_EVENTS = ("morning_look", "friend_activity")
+TIMED_EVENTS = ("morning_look", "tomorrow_look", "friend_activity")
 TIMED_EVENT_DEFAULT_TIME = {
     # The look of the morning lands before you get dressed...
     "morning_look": time(7, 30),
+    # ...tomorrow's look lands the evening before, to lay it out or pack it...
+    "tomorrow_look": time(21, 0),
     # ...and what your friends did lands once, in the evening.
     "friend_activity": time(20, 0),
 }
@@ -90,6 +93,7 @@ EVENT_DEFAULTS: dict[str, dict[str, bool]] = {
     "friend_accepted": {"email": True, "push": True},
     "daily_outfit": {"email": True, "push": True},
     "morning_look": {"email": False, "push": False},
+    "tomorrow_look": {"email": False, "push": False},
     "friend_activity": {"email": False, "push": True},
 }
 
@@ -114,11 +118,16 @@ class NotificationPreference(Base):
     push_daily_outfit: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     email_morning_look: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     push_morning_look: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    email_tomorrow_look: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    push_tomorrow_look: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     email_friend_activity: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     push_friend_activity: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Local clock times (the user's own timezone), never UTC.
     morning_look_time: Mapped[time] = mapped_column(
         Time, default=TIMED_EVENT_DEFAULT_TIME["morning_look"], nullable=False
+    )
+    tomorrow_look_time: Mapped[time] = mapped_column(
+        Time, default=TIMED_EVENT_DEFAULT_TIME["tomorrow_look"], nullable=False
     )
     friend_activity_time: Mapped[time] = mapped_column(
         Time, default=TIMED_EVENT_DEFAULT_TIME["friend_activity"], nullable=False

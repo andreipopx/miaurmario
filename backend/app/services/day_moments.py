@@ -408,11 +408,14 @@ class DayMomentService:
         )
 
         rec = RecommendationService(self.db)
+        # A look for another day is dressed for that day's forecast, not today's sky.
+        forecast = await rec.forecast_for_day(user, day)
         engine = "ai"
         try:
             outfit = await rec.generate_recommendation(
                 user=user,
                 occasion=occasion,
+                weather_override=forecast,
                 source=OutfitSource.on_demand,
                 scheduled_date=day,
                 moment=spec,
@@ -426,7 +429,7 @@ class DayMomentService:
             logger.warning("AI stylist failed for a day moment, using heuristic: %s", e)
             engine = "heuristic"
         if engine == "heuristic":
-            outfit = await self._heuristic_outfit(user, day, occasion, spec)
+            outfit = await self._heuristic_outfit(user, day, occasion, spec, forecast)
 
         # Regenerating: the previous live looks of this moment step aside.
         if existing is not None:
@@ -438,11 +441,16 @@ class DayMomentService:
         return SuggestResult(outfit=outfit, engine=engine)
 
     async def _heuristic_outfit(
-        self, user: User, day: date, occasion: str, spec: MomentSpec
+        self,
+        user: User,
+        day: date,
+        occasion: str,
+        spec: MomentSpec,
+        forecast: WeatherData | None = None,
     ) -> Outfit:
         rec = RecommendationService(self.db)
         try:
-            weather = await rec.resolve_weather(user)
+            weather = forecast or await rec.resolve_weather(user)
         except ValueError:
             weather = NEUTRAL_WEATHER
 

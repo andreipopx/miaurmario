@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -60,9 +60,10 @@ function MomentCard({
   const t = useTranslations('dashboard.moments');
   const tToday = useTranslations('dashboard.today');
   const occasionLabel = useOccasionLabel();
-  const suggest = useSuggestMoment();
-  const wear = useWearMomentLook();
-  const removeWithUndo = useRemoveMomentWithUndo();
+  const day = useContext(DayContext);
+  const suggest = useSuggestMoment(day);
+  const wear = useWearMomentLook(day);
+  const removeWithUndo = useRemoveMomentWithUndo(day);
   const tCommon = useTranslations('common');
   const titleId = useId();
   /** "Ver por detrás" for this moment's look; see the switch below the header. */
@@ -218,7 +219,8 @@ function MomentCard({
               )}
               {outfit ? tToday('anotherIdea') : t('suggest')}
             </Button>
-            {outfit && (
+            {/* Tomorrow's look can be swapped, not worn yet. */}
+            {outfit && day === 'today' && (
               <Button size="lg" className="min-w-[8.5rem] flex-1 px-4 sm:px-6" onClick={wearIt} disabled={wear.isPending}>
                 {wear.isPending ? (
                   <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
@@ -240,7 +242,7 @@ function MomentCard({
 function AddMomentForm({ moments, onDone }: { moments: DayMoment[]; onDone: () => void }) {
   const t = useTranslations('dashboard.moments');
   const occasionLabel = useOccasionLabel();
-  const suggest = useSuggestMoment();
+  const suggest = useSuggestMoment(useContext(DayContext));
   const { data: aiStatus } = useAIStatus();
   const noAi = Boolean(aiStatus && !aiStatus.capabilities.text);
 
@@ -369,22 +371,58 @@ function AddMomentForm({ moments, onDone }: { moments: DayMoment[]; onDone: () =
 
 // -- The day ---------------------------------------------------------------------------
 
-/** Today on this device, as YYYY-MM-DD (what the server returns in `DayPlan.date`). */
-function localISODate(): string {
+/** Today (or tomorrow) on this device, as YYYY-MM-DD (what the server returns in `DayPlan.date`). */
+function localISODate(addDays = 0): string {
   const d = new Date();
+  d.setDate(d.getDate() + addDays);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+type PlanDay = 'today' | 'tomorrow';
+/** Which day the cards below act on; the hooks key their caches by it. */
+const DayContext = createContext<PlanDay>('today');
+
+/** «Hoy · Mañana»: tomorrow's look can be prepared (or swapped) the evening before. */
+function DaySwitch({ day, onChange }: { day: PlanDay; onChange: (day: PlanDay) => void }) {
+  const t = useTranslations('dashboard.today.days');
+  return (
+    <div role="tablist" aria-label={t('label')} className="flex shrink-0 rounded-full bg-panel p-1">
+      {(['today', 'tomorrow'] as const).map((d) => (
+        <button
+          key={d}
+          type="button"
+          role="tab"
+          aria-selected={day === d}
+          onClick={() => onChange(d)}
+          className={cn(
+            'h-8 rounded-full px-3.5 text-[13px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            day === d ? 'bg-foreground text-background' : 'text-muted-foreground'
+          )}
+        >
+          {t(d)}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /** "Hoy": the day's moments (work in the morning, a date at night...), one look each. */
 export function DayMoments() {
   const t = useTranslations('dashboard.moments');
   const tToday = useTranslations('dashboard.today');
-  const { data: savedPlan, isLoading, isError, refetch } = useDayPlan();
+  const [day, setDay] = useState<PlanDay>('today');
+  // «Tu look de mañana» (the evening alert) opens Hoy on tomorrow: /dashboard?dia=manana.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('dia') === 'manana') setDay('tomorrow');
+  }, []);
+  const tomorrow = day === 'tomorrow';
+  const { data: savedPlan, isLoading, isError, refetch } = useDayPlan(day);
+  const prepareTomorrow = useSuggestMoment('tomorrow');
   const online = useOnline();
   // Offline, the plan comes from the copy saved on the phone: only trust it if
-  // it is still today's (yesterday's look is not "your look of the day").
-  const plan = online || savedPlan?.date === localISODate() ? savedPlan : undefined;
+  // it is still that day's (yesterday's look is not "your look of the day").
+  const plan = online || savedPlan?.date === localISODate(tomorrow ? 1 : 0) ? savedPlan : undefined;
   const offlineWithoutPlan = !online && !plan;
   const [adding, setAdding] = useState(false);
   // After "Me lo pongo", offer to share that look with friends.
@@ -399,105 +437,145 @@ export function DayMoments() {
   };
 
   return (
-    <section aria-labelledby="today-look-title" className="space-y-3">
-      {justWorn && (
-        <ShareLookPrompt
-          key={justWorn.id}
-          outfitId={justWorn.id}
-          alreadyShared={justWorn.shared}
-          onDismiss={() => setJustWorn(null)}
-        />
-      )}
-
-      <div className="flex items-center justify-between gap-3 px-1">
-        <h2 id="today-look-title" className="text-[15px] font-bold sm:text-lg">
-          {moments.length > 1 ? t('title') : tToday('lookTitle')}
-        </h2>
-        {moments.length > 1 && (
-          <span className="text-sm font-semibold text-muted-foreground">{t('count', { count: moments.length })}</span>
+    <DayContext.Provider value={day}>
+      <section aria-labelledby="today-look-title" className="space-y-3">
+        {justWorn && (
+          <ShareLookPrompt
+            key={justWorn.id}
+            outfitId={justWorn.id}
+            alreadyShared={justWorn.shared}
+            onDismiss={() => setJustWorn(null)}
+          />
         )}
-      </div>
 
-      {offlineWithoutPlan ? (
-        <div className="rounded-lg bg-panel p-4">
-          <p className="text-sm font-medium text-muted-foreground">{t('offline')}</p>
+        <div className="flex items-center justify-between gap-3 px-1">
+          <h2 id="today-look-title" className="min-w-0 text-[15px] font-bold sm:text-lg">
+            {tomorrow ? tToday('lookTitleTomorrow') : moments.length > 1 ? t('title') : tToday('lookTitle')}
+            {moments.length > 1 && (
+              <span className="ml-2 text-sm font-semibold text-muted-foreground">{t('count', { count: moments.length })}</span>
+            )}
+          </h2>
+          <DaySwitch
+            day={day}
+            onChange={(next) => {
+              setDay(next);
+              setAdding(false);
+            }}
+          />
         </div>
-      ) : isLoading ? (
-        <Skeleton className="h-[300px] w-full rounded-lg" />
-      ) : isError ? (
-        <div className="flex items-center justify-between gap-4 rounded-lg bg-panel p-4">
-          <p className="text-sm font-medium text-muted-foreground">{t('loadError')}</p>
-          <Button variant="secondary" size="sm" className="bg-background" onClick={() => refetch()}>
-            {t('retry')}
-          </Button>
-        </div>
-      ) : moments.length === 0 ? (
-        !adding && (
+
+        {offlineWithoutPlan ? (
+          <div className="rounded-lg bg-panel p-4">
+            <p className="text-sm font-medium text-muted-foreground">{t('offline')}</p>
+          </div>
+        ) : isLoading ? (
+          <Skeleton className="h-[300px] w-full rounded-lg" />
+        ) : isError ? (
+          <div className="flex items-center justify-between gap-4 rounded-lg bg-panel p-4">
+            <p className="text-sm font-medium text-muted-foreground">{t('loadError')}</p>
+            <Button variant="secondary" size="sm" className="bg-background" onClick={() => refetch()}>
+              {t('retry')}
+            </Button>
+          </div>
+        ) : moments.length === 0 && tomorrow ? (
           <div className="rounded-lg bg-panel p-3.5 sm:p-5">
             <div className="flex flex-col items-center px-4 pb-2 pt-4 text-center">
               <div className="flex h-32 w-32 items-center justify-center rounded-full bg-signature-soft">
                 <LazyStinky state="idle" size={112} label="" />
               </div>
-              <p className="mt-4 text-lg font-extrabold tracking-tight">{tToday('noLookTitle')}</p>
-              <p className="mt-1 max-w-xs text-sm text-muted-foreground">{tToday('noLookBody')}</p>
+              <p className="mt-4 text-lg font-extrabold tracking-tight">{tToday('tomorrowEmptyTitle')}</p>
+              <p className="mt-1 max-w-xs text-sm text-muted-foreground">{tToday('tomorrowEmptyBody')}</p>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2.5">
-              <Button asChild variant="secondary" size="lg" className="min-w-[8.5rem] flex-1 bg-background px-4 sm:px-6">
-                <Link href="/dashboard/suggest">
-                  <Sparkles className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-                  {tToday('askStinky')}
-                </Link>
-              </Button>
-              <Button size="lg" className="min-w-[8.5rem] flex-1 px-4 sm:px-6" onClick={() => setAdding(true)}>
-                <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-                {t('planDay')}
-              </Button>
-            </div>
+            <Button
+              size="lg"
+              className="mt-3 w-full"
+              onClick={() => prepareTomorrow.mutate({})}
+              disabled={prepareTomorrow.isPending}
+            >
+              {prepareTomorrow.isPending ? (
+                <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
+              ) : (
+                <Sparkles className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+              )}
+              {tToday('tomorrowPrepare')}
+            </Button>
           </div>
-        )
-      ) : (
-        <ol className="space-y-3">
-          {moments.map((m, i) => (
-            <li key={m.order}>
-              <MomentCard
-                moment={m}
-                single={single}
-                removable={!single || m.label !== null}
-                previousLabel={labelOf(m.transition_from_order) ?? (i > 0 ? labelOf(moments[i - 1].order) : null)}
-                onWorn={(id, shared) => setJustWorn({ id, shared })}
-              />
-            </li>
-          ))}
-        </ol>
-      )}
+        ) : moments.length === 0 ? (
+          !adding && (
+            <div className="rounded-lg bg-panel p-3.5 sm:p-5">
+              <div className="flex flex-col items-center px-4 pb-2 pt-4 text-center">
+                <div className="flex h-32 w-32 items-center justify-center rounded-full bg-signature-soft">
+                  <LazyStinky state="idle" size={112} label="" />
+                </div>
+                <p className="mt-4 text-lg font-extrabold tracking-tight">{tToday('noLookTitle')}</p>
+                <p className="mt-1 max-w-xs text-sm text-muted-foreground">{tToday('noLookBody')}</p>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                <Button asChild variant="secondary" size="lg" className="min-w-[8.5rem] flex-1 bg-background px-4 sm:px-6">
+                  <Link href="/dashboard/suggest">
+                    <Sparkles className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+                    {tToday('askStinky')}
+                  </Link>
+                </Button>
+                <Button size="lg" className="min-w-[8.5rem] flex-1 px-4 sm:px-6" onClick={() => setAdding(true)}>
+                  <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+                  {t('planDay')}
+                </Button>
+              </div>
+            </div>
+          )
+        ) : (
+          <ol className="space-y-3">
+            {moments.map((m, i) => (
+              <li key={m.order}>
+                <MomentCard
+                  moment={m}
+                  single={single}
+                  removable={!single || m.label !== null}
+                  previousLabel={labelOf(m.transition_from_order) ?? (i > 0 ? labelOf(moments[i - 1].order) : null)}
+                  onWorn={(id, shared) => setJustWorn({ id, shared })}
+                />
+              </li>
+            ))}
+          </ol>
+        )}
 
-      {adding ? (
-        <AddMomentForm moments={moments} onDone={() => setAdding(false)} />
-      ) : (
-        moments.length > 0 &&
-        canAdd && (
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-border text-[15px] font-bold transition active:scale-[0.99] hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        {adding ? (
+          <AddMomentForm moments={moments} onDone={() => setAdding(false)} />
+        ) : (
+          moments.length > 0 &&
+          canAdd && (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-border text-[15px] font-bold transition active:scale-[0.99] hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+              {t('add')}
+            </button>
+          )
+        )}
+
+        <Link
+          href="/dashboard/stinky"
+          className="flex min-h-[64px] items-center gap-3 rounded-lg bg-signature-soft p-2.5 pr-4 transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <StinkyAvatar size={44} className="bg-background" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-bold leading-tight">{tToday('chatWithStinky')}</span>
+            <span className="block truncate text-[13px] text-muted-foreground">{tToday('chatWithStinkyBody')}</span>
+          </span>
+          <MessageCircle className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+        </Link>
+        {tomorrow && (
+          <Link
+            href="/dashboard/notifications"
+            className="block px-1 text-center text-sm font-semibold text-muted-foreground underline-offset-4 hover:underline"
           >
-            <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-            {t('add')}
-          </button>
-        )
-      )}
-
-      <Link
-        href="/dashboard/stinky"
-        className="flex min-h-[64px] items-center gap-3 rounded-lg bg-signature-soft p-2.5 pr-4 transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <StinkyAvatar size={44} className="bg-background" />
-        <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold leading-tight">{tToday('chatWithStinky')}</span>
-          <span className="block truncate text-[13px] text-muted-foreground">{tToday('chatWithStinkyBody')}</span>
-        </span>
-        <MessageCircle className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-      </Link>
-    </section>
+            {tToday('tomorrowEveryEvening')}
+          </Link>
+        )}
+      </section>
+    </DayContext.Provider>
   );
 }

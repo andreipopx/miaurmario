@@ -797,6 +797,26 @@ _MORNING_LOOK = {
 }
 
 
+_TOMORROW_LOOK = {
+    "es": {
+        "subject": "Tu look de mañana",
+        "preheader": "Lo que te he preparado para mañana.",
+        "heading": "Tu look de mañana",
+        "intro": "Mañana, con la previsión que hay, yo me pondría esto:",
+        "cta": "Ver mañana",
+        "note": "¿Mañana tienes otro plan? Pide otra idea y la dejo lista.",
+    },
+    "en": {
+        "subject": "Your look for tomorrow",
+        "preheader": "What I put together for tomorrow.",
+        "heading": "Your look for tomorrow",
+        "intro": "With tomorrow's forecast, this is what I'd wear:",
+        "cta": "See tomorrow",
+        "note": "Other plans tomorrow? Ask for another idea and I'll have it ready.",
+    },
+}
+
+
 def render_morning_look_email(
     *,
     line: str,
@@ -805,10 +825,12 @@ def render_morning_look_email(
     locale: str | None = None,
     origin: str | None = None,
     unsubscribe_url: str | None = None,
+    tomorrow: bool = False,
 ) -> RenderedEmail:
-    """The one-line morning suggestion ("9 °C y lluvia: vaqueros, jersey y botas")."""
+    """The one-line suggestion ("9 °C y lluvia: vaqueros, jersey y botas"), for this
+    morning or, with ``tomorrow``, sent the evening before."""
     loc = normalize_locale(locale)
-    c = _MORNING_LOOK[loc]
+    c = (_TOMORROW_LOOK if tomorrow else _MORNING_LOOK)[loc]
     body = _p(escape(c["intro"]), style=f"font-size:14px; color:{MUTED};") + _p(
         f"<strong>{escape(line)}</strong>",
         style=f"font-size:17px; background:{PINK_SOFT}; padding:12px 16px; border-radius:14px;",

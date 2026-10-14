@@ -1,6 +1,7 @@
 import json
 import logging
 from dataclasses import dataclass
+from datetime import date as date_cls
 from datetime import datetime
 
 import httpx
@@ -473,19 +474,47 @@ class WeatherService:
 
         return forecasts
 
+    @staticmethod
+    def forecast_as_weather(day: DailyForecast) -> WeatherData:
+        """One day of the daily forecast in the shape the stylist reads.
+
+        The temperature is the average of min and max and ``feels_like`` the max (a
+        daytime outfit); what the daily forecast does not carry gets a typical value.
+        """
+        return WeatherData(
+            temperature=round((day.temp_min + day.temp_max) / 2, 1),
+            feels_like=round(day.temp_max, 1),
+            humidity=50,
+            precipitation_chance=day.precipitation_chance,
+            precipitation_mm=0,
+            wind_speed=0,
+            condition=day.condition,
+            condition_code=day.condition_code,
+            is_day=True,
+            uv_index=0,
+            timestamp=datetime.utcnow(),
+            condition_label=day.condition_label or wmo_condition_label_es(day.condition_code),
+        )
+
+    async def get_weather_for_date(
+        self, latitude: float, longitude: float, day: date_cls
+    ) -> WeatherData | None:
+        """The forecast for ``day`` at a place, or None past the 16-day horizon.
+
+        Dates are the place's own (Open-Meteo answers in local time), which is what
+        a trip or tomorrow's look means by "that day".
+        """
+        forecasts = await self.get_daily_forecast(latitude, longitude, days=16)
+        wanted = day.isoformat()
+        match = next((f for f in forecasts if str(f.date) == wanted), None)
+        return self.forecast_as_weather(match) if match else None
+
     async def get_tomorrow_weather(self, latitude: float, longitude: float) -> WeatherData:
         """
         Fetch tomorrow's weather forecast and return as WeatherData.
 
         This is used for day-before notifications where we need to recommend
         outfits based on tomorrow's expected weather.
-
-        Args:
-            latitude: Location latitude
-            longitude: Location longitude
-
-        Returns:
-            WeatherData with tomorrow's forecast (avg temp, conditions)
         """
         forecasts = await self.get_daily_forecast(latitude, longitude, days=2)
 
@@ -494,28 +523,7 @@ class WeatherService:
             logger.warning("Could not get tomorrow's forecast, using current weather")
             return await self.get_current_weather(latitude, longitude)
 
-        tomorrow = forecasts[1]  # Index 0 is today, 1 is tomorrow
-
-        # Use average of min/max for the representative temperature
-        avg_temp = (tomorrow.temp_min + tomorrow.temp_max) / 2
-        # Use the max temp for feels_like (daytime outfit)
-        feels_like = tomorrow.temp_max
-
-        return WeatherData(
-            temperature=round(avg_temp, 1),
-            feels_like=round(feels_like, 1),
-            humidity=50,  # Not available in daily forecast, use typical value
-            precipitation_chance=tomorrow.precipitation_chance,
-            precipitation_mm=0,  # Not available for forecast
-            wind_speed=0,  # Not available in daily forecast
-            condition=tomorrow.condition,
-            condition_code=tomorrow.condition_code,
-            is_day=True,  # Assume daytime for outfit recommendations
-            uv_index=0,  # Not available in daily forecast
-            timestamp=datetime.utcnow(),
-            condition_label=tomorrow.condition_label
-            or wmo_condition_label_es(tomorrow.condition_code),
-        )
+        return self.forecast_as_weather(forecasts[1])  # 0 is today, 1 is tomorrow
 
     async def check_health(self) -> dict:
         """Check if the weather service is available."""

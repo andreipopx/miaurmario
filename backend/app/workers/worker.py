@@ -23,6 +23,7 @@ from app.workers.notifications import (
     send_notification,
     send_social_notification,
     send_spotify_seat_request_notification,
+    send_tomorrow_look,
     send_waitlist_admin_notification,
     update_learning_profiles,
 )
@@ -77,6 +78,7 @@ class WorkerSettings:
         send_social_notification,
         send_spotify_seat_request_notification,
         send_morning_look,
+        send_tomorrow_look,
         send_friend_activity,
         send_waitlist_admin_notification,
         retry_failed_notifications,

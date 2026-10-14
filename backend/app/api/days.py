@@ -10,6 +10,7 @@ Logging what was worn stays on `POST /outfits/{id}/feedback`.
 import logging
 from datetime import date as Date
 from datetime import time as Time
+from datetime import timedelta
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -106,12 +107,18 @@ class MomentSuggestResponse(BaseModel):
 def _parse_day(day: str, user: User) -> Date:
     if day == "today":
         return get_user_today(user)
+    if day == "tomorrow":
+        # «Tu look de mañana» (the evening alert and the Hoy/Mañana switch).
+        return get_user_today(user) + timedelta(days=1)
     try:
         return Date.fromisoformat(day)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"error_code": "INVALID_DAY", "message": "Use YYYY-MM-DD or 'today'"},
+            detail={
+                "error_code": "INVALID_DAY",
+                "message": "Use YYYY-MM-DD, 'today' or 'tomorrow'",
+            },
         ) from None
 
 

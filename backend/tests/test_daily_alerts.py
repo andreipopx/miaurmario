@@ -35,6 +35,7 @@ from app.services.daily_alerts import (
     morning_look_line,
     send_friend_activity,
     send_morning_look,
+    send_tomorrow_look,
     weather_phrase,
 )
 from app.utils.unsubscribe import make_unsubscribe_token, read_unsubscribe_token
@@ -453,6 +454,55 @@ class TestMorningLook:
         await db_session.commit()
         assert result == {"status": "skipped", "reason": "no_channel"}
         assert sent_emails == [] and pushes == []
+
+
+# -- «Tu look de mañana» -------------------------------------------------------------
+
+
+class TestTomorrowLook:
+    async def test_sends_tomorrows_look_the_evening_before(
+        self, db_session: AsyncSession, sent_emails, vapid, pushes
+    ):
+        user = await _make_user(db_session)
+        await _wardrobe(db_session, user)
+        await _prefs(db_session, user, email_tomorrow_look=True, push_tomorrow_look=True)
+        await _subscribe_push(db_session, user)
+
+        result = await send_tomorrow_look(db_session, user.id, TODAY)
+        await db_session.commit()
+
+        assert result["status"] == "sent"
+        assert "Tu look de mañana" in pushes[0]
+        assert "dia=manana" in pushes[0]
+        assert sent_emails[0]["email"].subject == "Tu look de mañana"
+        outfit = await db_session.get(Outfit, result["outfit_id"])
+        # The look is tomorrow's; the alert counts against the day it was sent.
+        assert outfit.scheduled_for == TODAY + timedelta(days=1)
+        rows = (
+            (await db_session.execute(select(Notification).where(Notification.user_id == user.id)))
+            .scalars()
+            .all()
+        )
+        assert all(r.payload["day"] == TODAY.isoformat() for r in rows)
+        assert all(r.payload["look_day"] == (TODAY + timedelta(days=1)).isoformat() for r in rows)
+
+        again = await send_tomorrow_look(db_session, user.id, TODAY)
+        assert again == {"status": "skipped", "reason": "already_sent"}
+
+    async def test_off_by_default(self, db_session: AsyncSession, sent_emails, vapid, pushes):
+        user = await _make_user(db_session)
+        await _wardrobe(db_session, user)
+        await _subscribe_push(db_session, user)
+        result = await send_tomorrow_look(db_session, user.id, TODAY)
+        assert result == {"status": "skipped", "reason": "no_channel"}
+        assert sent_emails == [] and pushes == []
+
+    async def test_due_at_nine_in_the_evening_by_default(self, db_session: AsyncSession):
+        user = await _make_user(db_session, timezone="Europe/Madrid")
+        await _prefs(db_session, user, push_tomorrow_look=True)
+        # 20:00 UTC on a winter day is 21:00 in Madrid.
+        due = await due_daily_alerts(db_session, datetime(2026, 1, 15, 20, 0, tzinfo=UTC))
+        assert ("tomorrow_look", user.id, date(2026, 1, 15)) in due
 
 
 # -- «Movimiento de amigos» ---------------------------------------------------------

@@ -711,6 +711,36 @@ class RecommendationService:
         logger.info(f"Created outfit {outfit.id} with {len(valid_ids)} items")
         return outfit
 
+    async def forecast_for_day(self, user: User, day: date) -> WeatherData | None:
+        """The forecast at the user's place for a future ``day``; None for today or past
+        days, past the 16-day horizon, without a location or when the lookup fails —
+        callers then use the current weather, as before."""
+        if day <= get_user_today(user):
+            return None
+        try:
+            lat, lon = await self._user_coords(user)
+            return await self.weather_service.get_weather_for_date(lat, lon, day)
+        except (ValueError, WeatherServiceError) as e:
+            logger.info(f"No forecast for {day} for user {user.id}: {e}")
+            return None
+
+    async def _user_coords(self, user: User) -> tuple[float, float]:
+        lat = float(user.location_lat) if user.location_lat is not None else None
+        lon = float(user.location_lon) if user.location_lon is not None else None
+        if (lat is None and lon is None) and user.location_name:
+            try:
+                geocoded = await self.weather_service.geocode_location_name(user.location_name)
+            except GeocodingServiceError as e:
+                raise CodedValueError(
+                    "Could not resolve the saved location name.",
+                    code="location_unresolved",
+                ) from e
+            if geocoded:
+                lat, lon, _ = geocoded
+        if lat is None or lon is None:
+            raise CodedValueError("User location not set.", code="location_not_set")
+        return lat, lon
+
     async def resolve_weather(
         self, user: User, weather_override: WeatherData | None = None
     ) -> WeatherData:

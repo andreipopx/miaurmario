@@ -175,8 +175,18 @@ class TestPreferencesApi:
         # exception (see EVENT_DEFAULTS): the morning look waits to be asked for,
         # and the friend digest only buzzes the phone.
         on = {"friend_request": True, "friend_accepted": True, "daily_outfit": True}
-        assert body["email"] == {**on, "morning_look": False, "friend_activity": False}
-        assert body["push"] == {**on, "morning_look": False, "friend_activity": True}
+        assert body["email"] == {
+            **on,
+            "morning_look": False,
+            "tomorrow_look": False,
+            "friend_activity": False,
+        }
+        assert body["push"] == {
+            **on,
+            "morning_look": False,
+            "tomorrow_look": False,
+            "friend_activity": True,
+        }
         assert body["email_address"] == test_user.email
         assert body["push_devices"] == 0
 

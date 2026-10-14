@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Loader2,
   Mail,
+  Moon,
   Send,
   Smartphone,
   Sunrise,
@@ -42,6 +43,7 @@ import { cn } from '@/lib/utils';
 
 const EVENT_ICON: Record<NotificationEvent, React.ReactNode> = {
   morning_look: <Sunrise className="h-5 w-5" strokeWidth={1.75} />,
+  tomorrow_look: <Moon className="h-5 w-5" strokeWidth={1.75} />,
   friend_activity: <Users className="h-5 w-5" strokeWidth={1.75} />,
   friend_request: <UserPlus className="h-5 w-5" strokeWidth={1.75} />,
   friend_accepted: <UserCheck className="h-5 w-5" strokeWidth={1.75} />,
@@ -50,6 +52,7 @@ const EVENT_ICON: Record<NotificationEvent, React.ReactNode> = {
 
 const EVENT_BG: Record<NotificationEvent, string> = {
   morning_look: 'bg-pop-amber',
+  tomorrow_look: 'bg-pop-sky',
   friend_activity: 'bg-pop-pink',
   friend_request: 'bg-pop-sky',
   friend_accepted: 'bg-pop-mint',

@@ -132,6 +132,7 @@ class EventToggles(BaseModel):
     daily_outfit: bool = True
     # Off until the user picks it up in Ajustes → Notificaciones.
     morning_look: bool = False
+    tomorrow_look: bool = False
     friend_activity: bool = False
 
 
@@ -142,6 +143,7 @@ class EventTogglesPatch(BaseModel):
     friend_accepted: bool | None = None
     daily_outfit: bool | None = None
     morning_look: bool | None = None
+    tomorrow_look: bool | None = None
     friend_activity: bool | None = None
 
 
@@ -157,9 +159,12 @@ class NotificationPreferencesResponse(BaseModel):
     native_push_platforms: list[str] = Field(default_factory=list)
     # Local clock times (HH:MM) for the two once-a-day alerts.
     morning_look_time: str
+    tomorrow_look_time: str
     friend_activity_time: str
 
-    @field_validator("morning_look_time", "friend_activity_time", mode="before")
+    @field_validator(
+        "morning_look_time", "tomorrow_look_time", "friend_activity_time", mode="before"
+    )
     @classmethod
     def convert_time(cls, v):
         if hasattr(v, "strftime"):
@@ -179,9 +184,10 @@ class NotificationPreferencesUpdate(BaseModel):
     email: EventTogglesPatch | None = None
     push: EventTogglesPatch | None = None
     morning_look_time: str | None = None
+    tomorrow_look_time: str | None = None
     friend_activity_time: str | None = None
 
-    @field_validator("morning_look_time", "friend_activity_time")
+    @field_validator("morning_look_time", "tomorrow_look_time", "friend_activity_time")
     @classmethod
     def validate_times(cls, v: str | None) -> str | None:
         return _validate_hhmm(v)

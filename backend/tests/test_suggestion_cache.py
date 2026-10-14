@@ -96,3 +96,32 @@ class TestSuggestionCache:
 
             await push_suggestions(user_id, "casual", [{"items": [1]}])
             await clear_suggestions(user_id, "casual")
+
+
+class TestCachedItemsStillUsable:
+    """A cached suggestion is only served while every garment in it still exists."""
+
+    async def test_gone_or_archived_items_invalidate_it(self, db_session, test_user):
+        from uuid import uuid4
+
+        from app.models.item import ClothingItem, ItemStatus
+        from app.services.recommendation_service import RecommendationService
+
+        items = [
+            ClothingItem(
+                user_id=test_user.id,
+                type=t,
+                status=ItemStatus.ready,
+                image_path=f"x/{uuid4()}.jpg",
+            )
+            for t in ("t-shirt", "jeans")
+        ]
+        db_session.add_all(items)
+        await db_session.commit()
+        rec = RecommendationService(db_session)
+        ids = {i.id for i in items}
+        assert await rec._all_usable(test_user.id, ids) is True
+        assert await rec._all_usable(test_user.id, ids | {uuid4()}) is False  # deleted
+        items[0].is_archived = True
+        await db_session.commit()
+        assert await rec._all_usable(test_user.id, ids) is False

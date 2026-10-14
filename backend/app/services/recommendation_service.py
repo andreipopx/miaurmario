@@ -6,7 +6,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -711,6 +711,22 @@ class RecommendationService:
         logger.info(f"Created outfit {outfit.id} with {len(valid_ids)} items")
         return outfit
 
+    async def _all_usable(self, user_id: UUID, item_ids: set[UUID]) -> bool:
+        """Whether every item still exists, is the user's, ready and not archived."""
+        if not item_ids:
+            return True
+        found = await self.db.execute(
+            select(func.count())
+            .select_from(ClothingItem)
+            .where(
+                ClothingItem.id.in_(item_ids),
+                ClothingItem.user_id == user_id,
+                ClothingItem.status == ItemStatus.ready,
+                ClothingItem.is_archived.is_(False),
+            )
+        )
+        return found.scalar_one() == len(item_ids)
+
     async def forecast_for_day(self, user: User, day: date) -> WeatherData | None:
         """The forecast at the user's place for a future ``day``; None for today or past
         days, past the 16-day horizon, without a location or when the lookup fails —
@@ -905,6 +921,10 @@ class RecommendationService:
 
                 if cached_item_ids & rejected_ids:
                     logger.info("Cached suggestion contains rejected items, skipping")
+                elif not await self._all_usable(user.id, cached_item_ids):
+                    # A garment deleted or archived since the suggestion was cached:
+                    # materializing it would point an outfit at nothing.
+                    logger.info("Cached suggestion has items that are gone, skipping")
                 else:
                     logger.info(f"Using cached suggestion for user {user.id}, occasion: {occasion}")
                     return await self._materialize_outfit(

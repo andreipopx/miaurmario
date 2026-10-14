@@ -334,7 +334,9 @@
       "addButton": "Añadir al armario",
       "addedToast": "¡Prenda añadida a tu armario!",
       "addError": "No se pudo subir la prenda. Inténtalo de nuevo.",
-      "previewAlt": "Vista previa de la prenda"
+      "previewAlt": "Vista previa de la prenda",
+      "bulkButton": "Subir varias de golpe",
+      "bulkHint": "Elige un montón de fotos y Stinky las recorta y etiqueta solas."
     },
     "complete": {
       "title": "¡Todo listo!",
@@ -4117,6 +4119,34 @@
           "shirt": "Blusa",
           "blouse": "Blusa",
           "top": "Top"
+        }
+      }
+    },
+    "gettingStarted": {
+      "title": "Primeros pasos",
+      "progress": "{done} de {total} hechos",
+      "hide": "Ocultar primeros pasos",
+      "tomorrowOn": "Listo: cada noche te llega el look de mañana.",
+      "steps": {
+        "wardrobe": {
+          "title": "Completa tu armario",
+          "body": "Con unas {target} prendas Stinky deja de repetirse."
+        },
+        "style": {
+          "title": "Cuéntale tu estilo",
+          "body": "El test «Tu estilo con Stinky»: un minuto deslizando."
+        },
+        "firstLook": {
+          "title": "Pide tu primer look",
+          "body": "Arriba, en «Tu look de hoy»."
+        },
+        "cat": {
+          "title": "Haz tuyo a Stinky",
+          "body": "Ponle nombre, pelaje y ojos."
+        },
+        "tomorrow": {
+          "title": "Recibe tu look de mañana",
+          "body": "Cada noche, con la previsión del día siguiente."
         }
       }
     }

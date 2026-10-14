@@ -334,7 +334,9 @@
       "addButton": "Add to Wardrobe",
       "addedToast": "Item added to your wardrobe!",
       "addError": "Failed to upload item. Please try again.",
-      "previewAlt": "Item preview"
+      "previewAlt": "Item preview",
+      "bulkButton": "Upload several at once",
+      "bulkHint": "Pick a bunch of photos and Stinky cuts out and tags them by himself."
     },
     "complete": {
       "title": "You're All Set!",
@@ -4117,6 +4119,34 @@
           "shirt": "Blouse",
           "blouse": "Blouse",
           "top": "Top"
+        }
+      }
+    },
+    "gettingStarted": {
+      "title": "First steps",
+      "progress": "{done} of {total} done",
+      "hide": "Hide first steps",
+      "tomorrowOn": "Done: tomorrow's look will arrive every evening.",
+      "steps": {
+        "wardrobe": {
+          "title": "Fill your wardrobe",
+          "body": "With about {target} pieces Stinky stops repeating himself."
+        },
+        "style": {
+          "title": "Tell him your style",
+          "body": "The «Your style with Stinky» quiz: a minute of swiping."
+        },
+        "firstLook": {
+          "title": "Ask for your first look",
+          "body": "Above, in «Your look today»."
+        },
+        "cat": {
+          "title": "Make Stinky yours",
+          "body": "Give him a name, a coat and eyes."
+        },
+        "tomorrow": {
+          "title": "Get tomorrow's look",
+          "body": "Every evening, with the next day's forecast."
         }
       }
     }

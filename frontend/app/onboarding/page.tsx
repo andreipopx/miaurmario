@@ -4,17 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import {
-  Loader2,
-  Shirt,
-  Users,
-  MapPin,
-  Palette,
-  Camera,
-  ChevronLeft,
-  Check,
-  ArrowRight,
-} from 'lucide-react';
+import { ArrowRight, Camera, Check, ChevronLeft, ImagePlus, Loader2, MapPin, Palette, Shirt, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -517,7 +507,16 @@ function PreferencesStep({ onNext, onSkip }: { onNext: () => void; onSkip: () =>
   );
 }
 
-function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
+function UploadStep({
+  onNext,
+  onSkip,
+  onBulk,
+}: {
+  onNext: () => void;
+  onSkip: () => void;
+  /** Finish here and open the batch uploader: a wardrobe is filled in one sitting. */
+  onBulk: () => void;
+}) {
   const t = useTranslations('onboarding.upload');
   const typeLabel = useClothingTypeLabel();
   const tCommon = useTranslations('common');
@@ -643,6 +642,12 @@ function UploadStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
         </CardContent>
       </Card>
 
+      <Button variant="secondary" size="lg" className="w-full" onClick={onBulk}>
+        <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+        {t('bulkButton')}
+      </Button>
+      <p className="-mt-3 text-center text-xs text-muted-foreground">{t('bulkHint')}</p>
+
       <div className="text-center">
         <Button variant="ghost" onClick={onSkip}>
           {tCommon('skip')}
@@ -699,7 +704,7 @@ export default function OnboardingPage() {
   const nextStep = () => setCurrentStep((s) => Math.min(s + 1, STEPS.length));
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
-  const completeOnboarding = async () => {
+  const completeOnboarding = async (destination = '/dashboard') => {
     setCompleting(true);
     try {
       if (session?.accessToken) {
@@ -708,8 +713,7 @@ export default function OnboardingPage() {
       await api.post('/users/me/onboarding/complete');
       // Invalidate cached user data so dashboard sees onboarding_completed: true
       await queryClient.invalidateQueries({ queryKey: ['auth-user'] });
-      // Redirect to dashboard
-      router.push('/dashboard');
+      router.push(destination);
     } catch (error) {
       setCompleting(false);
       toast.error(tComplete('finishError'));
@@ -717,7 +721,7 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = () => {
-    completeOnboarding();
+    void completeOnboarding();
   };
 
   // Show loading state while checking authentication
@@ -762,7 +766,11 @@ export default function OnboardingPage() {
             />
           )}
           {stepId === 'preferences' && <PreferencesStep onNext={nextStep} onSkip={nextStep} />}
-          {stepId === 'upload' && <UploadStep onNext={nextStep} onSkip={nextStep} />}
+          {stepId === 'upload' && <UploadStep
+              onNext={nextStep}
+              onSkip={nextStep}
+              onBulk={() => completeOnboarding('/dashboard/wardrobe?bulk=1')}
+            />}
           {currentStep === STEPS.length && <CompleteStep onFinish={handleFinish} completing={completing} />}
         </div>
 

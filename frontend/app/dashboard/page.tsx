@@ -42,6 +42,7 @@ import { Button } from '@/components/ui/button';
 import { POP_BG, type PopColor } from '@/components/chip';
 import { DayMoments } from '@/components/today/day-moments';
 import { InstallHint } from '@/components/install/install-hint';
+import { GettingStarted } from '@/components/onboarding/getting-started';
 import { FirstStepsCard } from '@/components/onboarding/first-steps-card';
 import {
   MIN_ITEMS_FOR_LOOKS,
@@ -416,7 +417,13 @@ export default function DashboardPage() {
         <div className="space-y-5">
           <WeekStrip />
           {showMoments && <DayMoments />}
-          {stage !== 'ready' && <FirstStepsCard count={total} />}
+          {/* Blocked on clothes: the wardrobe card is the only nudge. Once looks can
+              be made, «Primeros pasos» takes over (and goes away when all is done). */}
+          {showMoments ? (
+            isSuccess && <GettingStarted stage={stage} target={counts.varietyTarget} />
+          ) : (
+            <FirstStepsCard count={total} />
+          )}
           <QuickActions />
         </div>
         <div className="space-y-6 lg:space-y-8">

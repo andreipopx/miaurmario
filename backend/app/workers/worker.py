@@ -30,6 +30,7 @@ from app.workers.notifications import (
 from app.workers.pinterest import import_pinterest_board, refresh_expiring_tokens
 from app.workers.settings import get_redis_settings
 from app.workers.tagging import tag_item_image
+from app.workers.trips import plan_trip_job
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ class WorkerSettings:
         process_scheduled_notification,
         update_learning_profiles,
         import_pinterest_board,
+        plan_trip_job,
         refresh_expiring_tokens,
         sync_listening_history_job,
         sync_lastfm_history_job,

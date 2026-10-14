@@ -387,7 +387,8 @@
     "askLook": "Pedir look",
     "inspiration": "Inspiración",
     "yourStyle": "Tu estilo",
-    "customize": "Tu Stinky"
+    "customize": "Tu Stinky",
+    "trips": "Viaje"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -4493,5 +4494,52 @@
     "previewLabel": "{name}, pelaje {coat}",
     "settingsBody": "Su nombre y su pelaje",
     "settingsAction": "Personalizar"
+  },
+  "trips": {
+    "title": "Modo viaje",
+    "subtitle": "Dime adónde vas y cuándo: Stinky te prepara un look para cada día con la previsión de allí, y la maleta con lo justo.",
+    "new": "Nuevo viaje",
+    "empty": "Aún no has planeado ningún viaje.",
+    "upcoming": "Próximos",
+    "past": "Pasados",
+    "planningShort": "haciendo la maleta…",
+    "packedCount": "{packed}/{total} en la maleta",
+    "form": {
+      "title": "Nuevo viaje",
+      "where": "¿Adónde?",
+      "from": "Ida",
+      "to": "Vuelta",
+      "plans": "¿Algún plan especial?",
+      "plansPlaceholder": "Una boda el sábado, playa el domingo, mucho caminar…",
+      "plansHint": "Stinky lo tiene en cuenta para el look de cada día.",
+      "needPlace": "Elige el destino.",
+      "badDates": "La vuelta tiene que ser después de la ida.",
+      "tooLong": "Como mucho {max} días por viaje.",
+      "cancel": "Cancelar",
+      "submit": "Planear el viaje",
+      "failed": "No se ha podido crear el viaje"
+    },
+    "detail": {
+      "back": "Viajes",
+      "days": "{count, plural, one {# día} other {# días}}",
+      "planning": "Stinky está haciendo la maleta…",
+      "planningBody": "Mira la previsión de allí y elige un look para cada día, repitiendo lo que se pueda para que viajes ligero.",
+      "suitcase": "La maleta",
+      "packed": "{packed} de {total} dentro",
+      "timesWorn": "{count} looks",
+      "extras": "No te olvides",
+      "dayByDay": "Día a día",
+      "noForecast": "sin previsión aún",
+      "forecastLater": "Para los días sin previsión, vuelve a planificar cuando falten menos de dos semanas: Stinky mirará el tiempo de verdad.",
+      "replan": "Volver a planificar",
+      "delete": "Borrar viaje",
+      "deleteConfirm": "¿Borrar el viaje a {place}?",
+      "deleted": "Viaje borrado",
+      "notFound": "Este viaje no existe",
+      "tooSmall": "Para planear un viaje necesitas algo más de ropa en el armario.",
+      "upload": "Subir ropa",
+      "failed": "No se ha podido planear el viaje.",
+      "retry": "Volver a intentarlo"
+    }
   }
 }

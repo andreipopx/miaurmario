@@ -29,6 +29,7 @@ from app.api.selfie import router as selfie_router
 from app.api.social import friends_router, social_router
 from app.api.stinky import router as stinky_router
 from app.api.stinky_memory import router as stinky_memory_router
+from app.api.trips import router as trips_router
 from app.api.users import router as users_router
 from app.api.waitlist import router as waitlist_router
 from app.api.weather import router as weather_router
@@ -52,6 +53,7 @@ api_router.include_router(weather_router)
 api_router.include_router(geo_router)
 api_router.include_router(outfits_router)
 api_router.include_router(days_router)
+api_router.include_router(trips_router)
 api_router.include_router(pairings_router)
 api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(analytics_router)

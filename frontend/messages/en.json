@@ -387,7 +387,8 @@
     "askLook": "Ask for a look",
     "inspiration": "Inspiration",
     "yourStyle": "Your style",
-    "customize": "Your Stinky"
+    "customize": "Your Stinky",
+    "trips": "Trip"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
@@ -4493,5 +4494,52 @@
     "previewLabel": "{name}, {coat} coat",
     "settingsBody": "Their name and coat",
     "settingsAction": "Customize"
+  },
+  "trips": {
+    "title": "Trip mode",
+    "subtitle": "Tell me where you're going and when: Stinky plans a look for each day with the forecast there, and a suitcase with just enough.",
+    "new": "New trip",
+    "empty": "No trips planned yet.",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "planningShort": "packing…",
+    "packedCount": "{packed}/{total} packed",
+    "form": {
+      "title": "New trip",
+      "where": "Where to?",
+      "from": "Leaving",
+      "to": "Back",
+      "plans": "Any special plans?",
+      "plansPlaceholder": "A wedding on Saturday, beach on Sunday, lots of walking…",
+      "plansHint": "Stinky takes it into account for each day's look.",
+      "needPlace": "Choose the destination.",
+      "badDates": "The return has to be after the departure.",
+      "tooLong": "At most {max} days per trip.",
+      "cancel": "Cancel",
+      "submit": "Plan the trip",
+      "failed": "The trip couldn't be created"
+    },
+    "detail": {
+      "back": "Trips",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "planning": "Stinky is packing…",
+      "planningBody": "He checks the forecast there and picks a look for each day, reusing what he can so you travel light.",
+      "suitcase": "The suitcase",
+      "packed": "{packed} of {total} packed",
+      "timesWorn": "{count} looks",
+      "extras": "Don't forget",
+      "dayByDay": "Day by day",
+      "noForecast": "no forecast yet",
+      "forecastLater": "For the days without a forecast, plan again when the trip is under two weeks away: Stinky will check the real weather.",
+      "replan": "Plan again",
+      "delete": "Delete trip",
+      "deleteConfirm": "Delete the trip to {place}?",
+      "deleted": "Trip deleted",
+      "notFound": "This trip doesn't exist",
+      "tooSmall": "You need a few more clothes in your wardrobe to plan a trip.",
+      "upload": "Upload clothes",
+      "failed": "The trip couldn't be planned.",
+      "retry": "Try again"
+    }
   }
 }

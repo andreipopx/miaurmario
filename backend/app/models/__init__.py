@@ -39,6 +39,7 @@ from app.models.preference import UserPreference
 from app.models.schedule import Schedule
 from app.models.spotify import SpotifyConnection
 from app.models.stinky_memory import StinkyMemory
+from app.models.trip import Trip
 from app.models.user import User
 from app.models.user_ai_settings import UserAISettings
 
@@ -83,6 +84,7 @@ __all__ = [
     "ListeningEvent",
     "ListeningMood",
     "PinterestBoard",
+    "Trip",
     "PinterestConnection",
     "PinterestPin",
     "SpotifyConnection",

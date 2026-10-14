@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Music,
   Pin,
+  Plane,
   Plug,
   Settings,
   Shirt,
@@ -88,6 +89,7 @@ export const STINKY: NavSection = {
     { key: 'history', href: '/dashboard/history', icon: CalendarDays, hidden: true },
     { key: 'music', href: '/dashboard/music', icon: Music, hidden: true },
     { key: 'pins', href: '/dashboard/pins', icon: Pin, hidden: true },
+    { key: 'trips', href: '/dashboard/trips', icon: Plane, hidden: true },
   ],
 };
 

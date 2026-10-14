@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowUp, Camera, Compass, History, Loader2, NotebookPen, Palette, Sparkles, SquarePen, Square } from 'lucide-react';
+import { ArrowUp, Camera, Compass, History, Loader2, NotebookPen, Palette, Plane, Sparkles, Square, SquarePen } from 'lucide-react';
 
 import { Stinky } from '@/components/stinky/stinky';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
@@ -45,6 +45,8 @@ const STINKY_ACTIONS = [
   { key: 'askLook', href: '/dashboard/suggest', icon: Sparkles, tint: 'bg-pop-amber' },
   { key: 'selfie', href: '/dashboard/selfie', icon: Camera, tint: 'bg-pop-sky' },
   { key: 'inspiration', href: '/dashboard/inspiration', icon: Compass, tint: 'bg-pop-mint' },
+  // «Modo viaje»: looks and suitcase for a trip.
+  { key: 'trips', href: '/dashboard/trips', icon: Plane, tint: 'bg-pop-sky' },
   // Their own Stinky: name and coat.
   { key: 'customize', href: '/dashboard/stinky/customize', icon: Palette, tint: 'bg-pop-pink' },
 ] as const;
@@ -531,14 +533,16 @@ function StinkyChat() {
             </p>
             <p className="mt-1.5 max-w-xs text-[15px] text-muted-foreground">{t('emptyBody')}</p>
             {/* The rest of what Stinky does, one tap away (it used to be other tabs). */}
-            <nav aria-label={tNav('stinky')} className="mt-5 grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
+            <nav aria-label={tNav('stinky')} className="mt-5 grid w-full grid-cols-2 gap-2 sm:grid-cols-5">
               {STINKY_ACTIONS.map(({ key, href, icon: Icon, tint }) => (
                 <Link
                   key={key}
                   href={href}
                   className={cn(
                     'pressable flex min-h-[84px] flex-col items-center justify-center gap-1.5 rounded-lg px-2 py-3 text-center text-[13px] font-bold leading-tight text-pop-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    tint
+                    tint,
+                    // Five tiles: the last one spans the row on a phone instead of sitting alone.
+                    key === 'customize' && 'col-span-2 sm:col-span-1'
                   )}
                 >
                   <Icon className="h-6 w-6" strokeWidth={2} aria-hidden />

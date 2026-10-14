@@ -12,8 +12,9 @@ import { clothingColorHex, hexToRgb, rgbToHex } from '@/lib/colors';
  *
  * Coordinates are normalized against the frame: `x`/`y` are the piece's centre
  * (0..1, left→right and top→bottom) and `width` is a fraction of the frame's
- * width. Garment cut-outs are square, so a piece's height as a fraction of the
- * frame is `width * aspect`.
+ * width. `height`, when set, is a fraction of the frame's height: the board gives
+ * each garment its whole cell (column wide, cell tall) and the photo is fitted
+ * inside it. Without it a piece is square, `width * aspect` tall.
  */
 
 export type FlatLayRole =
@@ -67,8 +68,13 @@ export interface FlatLayPiece<T extends FlatLayInput = FlatLayInput> {
   /** Centre of the piece, 0..1 of the frame. */
   x: number;
   y: number;
-  /** Fraction of the frame's width. The piece is square. */
+  /** Fraction of the frame's width. */
   width: number;
+  /**
+   * Fraction of the frame's height. Absent: a square piece. The board sets it so a
+   * dress or a pair of jeans fills a tall cell instead of a square in its middle.
+   */
+  height?: number;
   /** Paint order; larger is nearer the viewer. */
   z: number;
 }
@@ -134,7 +140,7 @@ export function fitToFrame<T extends FlatLayInput>(
   let maxY = -Infinity;
   for (const p of pieces) {
     const halfW = p.width / 2;
-    const halfH = (p.width * aspect) / 2;
+    const halfH = (p.height ?? p.width * aspect) / 2;
     minX = Math.min(minX, p.x - halfW);
     maxX = Math.max(maxX, p.x + halfW);
     minY = Math.min(minY, p.y - halfH);
@@ -154,6 +160,7 @@ export function fitToFrame<T extends FlatLayInput>(
     x: round(0.5 + (p.x - centreX) * scale),
     y: round(0.5 + (p.y - centreY) * scale),
     width: round(p.width * scale),
+    ...(p.height !== undefined ? { height: round(p.height * scale) } : {}),
   }));
 }
 
@@ -222,8 +229,7 @@ function layColumn<T extends FlatLayInput>(
   cells: Cell<T>[],
   x: number,
   width: number,
-  unit: number,
-  aspect: number
+  unit: number
 ): FlatLayPiece<T>[] {
   if (cells.length === 0) return [];
   const top = BOARD_MARGIN;
@@ -242,14 +248,16 @@ function layColumn<T extends FlatLayInput>(
   }
   return cells.map((cell, i) => {
     const h = heights[i];
-    // A square piece: as wide as the column allows, as tall as the cell allows.
-    const side = Math.min(width, h / aspect) * CELL_FILL;
+    // The whole cell, column wide and cell tall: the photo is fitted inside, so a
+    // dress or jeans fill a tall cell and shoes a wide one. A square here left a
+    // lone dress small in a column of grey.
     const piece: FlatLayPiece<T> = {
       item: cell.item,
       role: cell.role,
       x: round(x),
       y: round(cursor + h / 2),
-      width: round(side),
+      width: round(width * CELL_FILL),
+      height: round(h * CELL_FILL),
       z: cell.z,
     };
     cursor += h + gap;
@@ -270,7 +278,6 @@ export function buildFlatLay<T extends FlatLayInput>(
   const usable = (items ?? []).filter((item): item is T => Boolean(item && item.id));
   if (usable.length === 0) return { pieces: [], overflow: 0 };
 
-  const aspect = options.aspect ?? FLAT_LAY_ASPECT;
   const ordered = canonicalItemOrder(usable as T[]);
   const shown = ordered.slice(0, Math.max(0, max));
 
@@ -319,15 +326,15 @@ export function buildFlatLay<T extends FlatLayInput>(
 
   let pieces: FlatLayPiece<T>[];
   if (side.length === 0) {
-    pieces = layColumn(main, 0.5, 0.72, mainUnit, aspect);
+    pieces = layColumn(main, 0.5, 0.72, mainUnit);
   } else {
     const mainWidth = 0.56;
     const sideWidth = 0.34;
     const mainX = BOARD_MARGIN + mainWidth / 2;
     const sideX = 1 - BOARD_MARGIN - sideWidth / 2;
     pieces = [
-      ...layColumn(main, mainX, mainWidth, mainUnit, aspect),
-      ...layColumn(side, sideX, sideWidth, unitFor(side), aspect),
+      ...layColumn(main, mainX, mainWidth, mainUnit),
+      ...layColumn(side, sideX, sideWidth, unitFor(side)),
     ];
   }
 

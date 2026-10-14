@@ -55,12 +55,13 @@ function Suitcase({ trip }: { trip: Trip }) {
                   isPacked && 'opacity-55'
                 )}
               >
-                <span className="relative block aspect-square w-full">
+                {/* The photo is positioned, so a tall one (jeans) can't stretch the square. */}
+                <span className="relative block aspect-square w-full overflow-hidden">
                   {item.thumbnail_url || item.image_url ? (
                     <img
                       src={item.thumbnail_url || item.image_url || ''}
                       alt=""
-                      className="h-full w-full object-contain"
+                      className="absolute inset-0 h-full w-full object-contain"
                       loading="lazy"
                     />
                   ) : (

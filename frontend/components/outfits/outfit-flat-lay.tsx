@@ -292,6 +292,7 @@ function FlatLayGarment<T extends FlatLayInput>({
     left: `${piece.x * 100}%`,
     top: `${piece.y * 100}%`,
     width: `${piece.width * 100}%`,
+    ...(piece.height !== undefined ? { height: `${piece.height * 100}%` } : {}),
     transform: 'translate(-50%, -50%)',
     zIndex: piece.z,
   };
@@ -365,7 +366,10 @@ function FlatLayGarment<T extends FlatLayInput>({
         aria-label={openLabel}
         title={name}
         style={style}
-        className="absolute aspect-square rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+        className={cn(
+          'absolute rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-panel',
+          piece.height === undefined && 'aspect-square'
+        )}
       >
         {content}
       </Link>
@@ -373,7 +377,7 @@ function FlatLayGarment<T extends FlatLayInput>({
   }
 
   return (
-    <span style={style} className="absolute aspect-square">
+    <span style={style} className={cn('absolute', piece.height === undefined && 'aspect-square')}>
       {content}
     </span>
   );

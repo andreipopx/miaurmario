@@ -52,8 +52,8 @@ const item = (id: string, type: string, extra: Partial<FlatLayInput> = {}): Flat
 function boundingBox(pieces: FlatLayPiece[], aspect = FLAT_LAY_ASPECT) {
   const left = Math.min(...pieces.map((p) => p.x - p.width / 2))
   const right = Math.max(...pieces.map((p) => p.x + p.width / 2))
-  const top = Math.min(...pieces.map((p) => p.y - (p.width * aspect) / 2))
-  const bottom = Math.max(...pieces.map((p) => p.y + (p.width * aspect) / 2))
+  const top = Math.min(...pieces.map((p) => p.y - (p.height ?? p.width * aspect) / 2))
+  const bottom = Math.max(...pieces.map((p) => p.y + (p.height ?? p.width * aspect) / 2))
   return { left, right, top, bottom, width: right - left, height: bottom - top }
 }
 
@@ -138,7 +138,8 @@ describe('buildFlatLay', () => {
           if (a === b) continue
           const apart =
             Math.abs(a.x - b.x) >= (a.width + b.width) / 2 - 1e-6 ||
-            Math.abs(a.y - b.y) >= ((a.width + b.width) * FLAT_LAY_ASPECT) / 2 - 1e-6
+            Math.abs(a.y - b.y) >=
+              ((a.height ?? a.width * FLAT_LAY_ASPECT) + (b.height ?? b.width * FLAT_LAY_ASPECT)) / 2 - 1e-6
           expect(apart, `${a.item.id} over ${b.item.id}`).toBe(true)
         }
       }
@@ -207,13 +208,11 @@ describe('buildFlatLay', () => {
 
   it('never shrinks the body because of what lies beside it', () => {
     // The coat, bag and shoes stack in their own column at their own scale: the
-    // T-shirt and the jeans keep their size; only the narrower column trims them.
+    // T-shirt and the jeans keep the height of their cells.
     const two = buildFlatLay([item('b', 't-shirt'), item('c', 'jeans')])
     const six = buildFlatLay(FULL_LOOK)
     for (const role of ['base_top', 'bottom'] as const) {
-      expect(roleOf(six.pieces, role).width).toBeGreaterThanOrEqual(
-        roleOf(two.pieces, role).width * 0.9
-      )
+      expect(roleOf(six.pieces, role).height).toBeCloseTo(roleOf(two.pieces, role).height ?? 0, 4)
     }
   })
 
@@ -277,10 +276,14 @@ describe('buildFlatLay', () => {
   })
 
   it('adapts the arrangement to the frame it is given', () => {
+    // Pieces fill their cells, so whatever the frame's shape everything stays inside it.
     const portrait = buildFlatLay(FULL_LOOK, { aspect: 4 / 5 })
     const square = buildFlatLay(FULL_LOOK, { aspect: 1 })
-    expect(square.pieces.map((p) => p.width)).not.toEqual(portrait.pieces.map((p) => p.width))
-    expect(boundingBox(square.pieces, 1).bottom).toBeLessThanOrEqual(1.001)
+    for (const [layout, aspect] of [[portrait, 4 / 5], [square, 1]] as const) {
+      const box = boundingBox(layout.pieces, aspect)
+      expect(box.bottom).toBeLessThanOrEqual(1.001)
+      expect(box.right).toBeLessThanOrEqual(1.001)
+    }
   })
 })
 

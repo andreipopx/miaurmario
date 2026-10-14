@@ -121,7 +121,8 @@ describe('flat lay: a dress worn over a bottom', () => {
     const dress = at(pieces, 'd')
     const jeans = at(pieces, 'j')
     expect(jeans.y).toBeGreaterThan(dress.y)
-    expect(jeans.y - dress.y).toBeGreaterThanOrEqual(((dress.width + jeans.width) * 0.8) / 2 - 1e-6)
+    const h = (p: typeof dress) => p.height ?? p.width * 0.8
+    expect(jeans.y - dress.y).toBeGreaterThanOrEqual((h(dress) + h(jeans)) / 2 - 1e-6)
   })
 
   it('keeps the coat beside both of them', () => {

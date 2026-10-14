@@ -46,6 +46,13 @@ MAX_ITEMS = 300
 MAX_EXTRAS = 4
 #: Roles worth reusing across days (what makes a suitcase light).
 REUSABLE_ROLES = {"bottom", "outer_layer", "footwear", "accessory"}
+#: Each earlier day a top or a dress was worn multiplies its score by this: a
+#: suitcase is light because trousers and shoes repeat, not because the same
+#: T-shirt shows up three days running.
+TOP_REPEAT = 0.45
+#: Trousers and shoes may repeat, but after two days they start to give way.
+REUSE_BONUS = 1.2
+REUSE_FADE = 0.8
 
 
 def trip_dates(trip: Trip) -> list[date]:
@@ -152,11 +159,13 @@ def heuristic_day(
     weather: WeatherData,
     occasion: str,
     prefs,
-    packed: set[UUID],
+    worn: dict[UUID, int],
     rng: random.Random,
     lat: float | None,
+    avoid: frozenset[UUID] = frozenset(),
 ) -> list[UUID]:
-    """One day's look by the non-AI composer, preferring what is already packed."""
+    """One day's look by the non-AI composer: reuse what is packed (trousers, coat,
+    shoes, bag) and change what shows (tops, dresses). ``worn`` counts earlier days."""
     scored = score_items(
         items=items,
         weather=weather,
@@ -171,11 +180,16 @@ def heuristic_day(
     )
 
     def weight(item: ClothingItem, score: float) -> float:
+        if item.id in avoid:
+            # A look we already have this trip: change at least something.
+            score *= 0.5
+        uses = worn.get(item.id, 0)
+        if uses == 0:
+            return score
         role = ITEM_ROLE.get((item.type or "").lower(), "accessory")
-        if item.id in packed:
-            # Reuse trousers, coat, shoes and bag; a top worn again reads as repeating.
-            return score * (1.25 if role in REUSABLE_ROLES else 0.8)
-        return score
+        if role in REUSABLE_ROLES:
+            return score * REUSE_BONUS * (REUSE_FADE ** max(0, uses - 1))
+        return score * (TOP_REPEAT**uses)
 
     ranked = sorted(
         ((s.item, weight(s.item, s.score) * rng.uniform(0.9, 1.0)) for s in scored),
@@ -246,16 +260,26 @@ async def plan_trip(db: AsyncSession, trip: Trip) -> Trip:
 
     # Any day the model left out (or all of them, without AI): the composer.
     rng = random.Random(str(trip.id))
-    packed: set[UUID] = {i for ids, _ in plan.values() for i in ids}
+    worn: dict[UUID, int] = {}
+    for ids, _ in plan.values():
+        for i in ids:
+            worn[i] = worn.get(i, 0) + 1
     for d in dates:
         if d in plan:
             continue
-        ids = heuristic_day(
-            items, forecasts.get(d) or NEUTRAL_WEATHER, "casual", prefs, packed, rng, trip.latitude
-        )
+        weather = forecasts.get(d) or NEUTRAL_WEATHER
+        ids = heuristic_day(items, weather, "casual", prefs, worn, rng, trip.latitude)
+        looks = {frozenset(i) for i, _ in plan.values()}
+        if frozenset(ids) in looks:
+            again = heuristic_day(
+                items, weather, "casual", prefs, worn, rng, trip.latitude, frozenset(ids)
+            )
+            if len(again) >= 2:
+                ids = again
         if len(ids) >= 2:
             plan[d] = (ids, None)
-            packed.update(ids)
+            for i in ids:
+                worn[i] = worn.get(i, 0) + 1
 
     trip.days = [
         {

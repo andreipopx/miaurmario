@@ -108,6 +108,9 @@ class TestPlan:
         packed = [p["item_id"] for p in trip.packing]
         assert set(packed) <= wardrobe_ids and len(packed) == len(set(packed))
         assert len(packed) < sum(len(d["item_ids"]) for d in trip.days)
+        # ...but it is not the same look every day: what shows changes
+        looks = [tuple(sorted(d["item_ids"])) for d in trip.days]
+        assert len(set(looks)) >= 3
 
     async def test_ai_plans_the_whole_trip_in_one_call(self, db_session, test_user):
         items = await _wardrobe(db_session, test_user)

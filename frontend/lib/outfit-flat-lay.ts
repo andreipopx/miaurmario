@@ -307,27 +307,27 @@ export function buildFlatLay<T extends FlatLayInput>(
   side.sort((a, b) => SIDE_ORDER[a.role] - SIDE_ORDER[b.role] || a.z - b.z);
 
   const available = 1 - 2 * BOARD_MARGIN;
-  // One height per weight for both columns, so a coat beside a T-shirt is drawn
-  // at the same scale as it: the taller column decides.
-  const mainNeed = main.reduce((s, c) => s + c.weight, 0);
-  const sideNeed = side.reduce((s, c) => s + c.weight, 0);
+  // Each column fills its own height. One shared scale (the fuller column
+  // deciding) looked right on paper and wrong on screen: a coat, a bag, sunglasses
+  // and shoes beside the body shrank the T-shirt and the jeans to stamps adrift in
+  // their column. A board is read piece by piece, so each piece is drawn as big as
+  // its own column lets it.
   const gaps = (n: number) => BOARD_GAP * Math.max(0, n - 1);
-  const unit = Math.min(
-    (available - gaps(main.length)) / Math.max(mainNeed, 1e-6),
-    side.length ? (available - gaps(side.length)) / Math.max(sideNeed, 1e-6) : Infinity
-  );
+  const unitFor = (cells: Cell<T>[]) =>
+    (available - gaps(cells.length)) / Math.max(cells.reduce((s, c) => s + c.weight, 0), 1e-6);
+  const mainUnit = unitFor(main);
 
   let pieces: FlatLayPiece<T>[];
   if (side.length === 0) {
-    pieces = layColumn(main, 0.5, 0.72, unit, aspect);
+    pieces = layColumn(main, 0.5, 0.72, mainUnit, aspect);
   } else {
     const mainWidth = 0.56;
     const sideWidth = 0.34;
     const mainX = BOARD_MARGIN + mainWidth / 2;
     const sideX = 1 - BOARD_MARGIN - sideWidth / 2;
     pieces = [
-      ...layColumn(main, mainX, mainWidth, unit, aspect),
-      ...layColumn(side, sideX, sideWidth, unit, aspect),
+      ...layColumn(main, mainX, mainWidth, mainUnit, aspect),
+      ...layColumn(side, sideX, sideWidth, unitFor(side), aspect),
     ];
   }
 

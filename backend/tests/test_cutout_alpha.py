@@ -231,3 +231,13 @@ class TestServingACutout:
         assert empty.has_cutout is False
         schema = OutfitItemResponse.model_json_schema(mode="serialization")
         assert "has_cutout" in schema["properties"]
+
+
+def test_trim_transparent_crops_a_small_garment() -> None:
+    """Sunglasses shot from a step back (~2 % of the photo) still get a tight crop."""
+    image = Image.new("RGBA", (1000, 1000), (0, 0, 0, 0))
+    for x in range(400, 560):
+        for y in range(450, 580):
+            image.putpixel((x, y), (20, 20, 20, 255))
+    trimmed = trim_transparent(image)
+    assert trimmed.width < 200 and trimmed.height < 170

@@ -205,12 +205,23 @@ describe('buildFlatLay', () => {
     expect(Math.max(box.width, box.height)).toBeGreaterThan(0.75)
   })
 
-  it('makes a two-piece look bigger than the same pieces in a six-piece look', () => {
+  it('never shrinks the body because of what lies beside it', () => {
+    // The coat, bag and shoes stack in their own column at their own scale: the
+    // T-shirt and the jeans keep their size; only the narrower column trims them.
     const two = buildFlatLay([item('b', 't-shirt'), item('c', 'jeans')])
     const six = buildFlatLay(FULL_LOOK)
-    expect(roleOf(two.pieces, 'base_top').width).toBeGreaterThan(
-      roleOf(six.pieces, 'base_top').width
-    )
+    for (const role of ['base_top', 'bottom'] as const) {
+      expect(roleOf(six.pieces, role).width).toBeGreaterThanOrEqual(
+        roleOf(two.pieces, role).width * 0.9
+      )
+    }
+  })
+
+  it('draws the body big in a full look (no stamps adrift in their column)', () => {
+    const { pieces } = buildFlatLay(FULL_LOOK)
+    // two body pieces in a column 0.56 wide: each close to the column's width
+    expect(roleOf(pieces, 'base_top').width).toBeGreaterThan(0.42)
+    expect(roleOf(pieces, 'bottom').width).toBeGreaterThan(0.42)
   })
 
   it('gives each accessory its own place', () => {

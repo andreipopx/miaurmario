@@ -184,6 +184,10 @@ def _encode_alpha(image: Image.Image, quality: int) -> bytes:
     return output.getvalue()
 
 
+#: Below this share of the photo a mask is a speck, not a garment (see ``trim_box``).
+MIN_TRIM_AREA = 0.005
+
+
 def trim_box(alpha: Image.Image, padding: float = 0.02) -> tuple[int, int, int, int] | None:
     """The crop ``trim_transparent`` would take, or ``None`` to keep the whole frame.
 
@@ -197,7 +201,10 @@ def trim_box(alpha: Image.Image, padding: float = 0.02) -> tuple[int, int, int, 
     left, top, right, bottom = box
     width = right - left
     height = bottom - top
-    if width * height < 0.05 * alpha.width * alpha.height:
+    # A speck is a mask that found almost nothing; a small garment is not. Sunglasses
+    # or a belt shot from a step back cover ~1-4 % of the photo, and under the old
+    # 5 % floor they kept the whole frame and showed up as a dot on the look board.
+    if width * height < MIN_TRIM_AREA * alpha.width * alpha.height or min(width, height) < 16:
         return None
     pad = int(round(max(width, height) * padding))
     return (

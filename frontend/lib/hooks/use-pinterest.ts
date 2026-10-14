@@ -3,6 +3,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { api, setAccessToken } from '@/lib/api';
+import type { SelfieAnalysis } from '@/lib/selfie';
 
 function useSetTokenIfAvailable() {
   const { data: session } = useSession();
@@ -147,5 +148,24 @@ export function usePinterestPins(limit = 50, offset = 0, boardId?: string) {
   return useQuery({
     queryKey: ['pinterest', 'pins', limit, offset, boardId ?? null],
     queryFn: () => api.get<PinterestPinList>('/pins', { params }),
+  });
+}
+
+export function usePinterestPin(pinId: string | null) {
+  useSetTokenIfAvailable();
+  return useQuery({
+    queryKey: ['pinterest', 'pin', pinId],
+    queryFn: () => api.get<PinterestPin>(`/pins/${pinId}`),
+    enabled: pinId !== null,
+  });
+}
+
+/** «Recrea este look con mi ropa»: the pin's garments matched to the wardrobe. */
+export function useRecreatePin() {
+  useSetTokenIfAvailable();
+  return useMutation({
+    // The screen renders its own inline message (AI notices included).
+    meta: { silentErrors: true },
+    mutationFn: (pinId: string) => api.post<SelfieAnalysis>(`/pins/${pinId}/recreate`, {}),
   });
 }

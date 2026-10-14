@@ -20,6 +20,8 @@ interface SelfieGarmentCardProps {
   onAdd: () => void;
   isAdding?: boolean;
   wasAdded?: boolean;
+  /** Off for a pin: what you don't own there is what you're missing, not a photo of yours. */
+  allowAdd?: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export function SelfieGarmentCard({
   onAdd,
   isAdding = false,
   wasAdded = false,
+  allowAdd = true,
 }: SelfieGarmentCardProps) {
   const t = useTranslations('selfie');
   const label = useTagLabel();
@@ -133,7 +136,7 @@ export function SelfieGarmentCard({
             {t('clearPick')}
           </Button>
         )}
-        {!picked && !wasAdded && (
+        {allowAdd && !picked && !wasAdded && (
           <Button type="button" size="sm" variant="signature" onClick={onAdd} disabled={isAdding}>
             {isAdding ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -150,7 +153,7 @@ export function SelfieGarmentCard({
           </span>
         )}
       </div>
-      {!picked && !wasAdded && (
+      {allowAdd && !picked && !wasAdded && (
         <p className="mt-2 text-xs leading-snug text-muted-foreground">{t('addPhotoLater')}</p>
       )}
     </li>

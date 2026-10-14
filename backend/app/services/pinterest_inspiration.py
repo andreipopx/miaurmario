@@ -63,7 +63,7 @@ def _allowed(url: str) -> bool:
     return parsed.scheme == "https" and (host == "pinimg.com" or host.endswith(IMAGE_HOST_SUFFIX))
 
 
-async def _download(urls: list[str]) -> list[bytes]:
+async def download_pin_images(urls: list[str]) -> list[bytes]:
     """Fetch the pin images (Pinterest CDN only); a failed one is just left out."""
     sem = asyncio.Semaphore(6)
 
@@ -130,7 +130,7 @@ def parse_board_answer(raw: str) -> tuple[bool, str | None]:
 async def summarise_board(ai_service, pins: list[dict]) -> tuple[bool, str | None]:
     """One vision call over a mosaic of the board's latest pins."""
     urls = [u for u in (pick_image(p, ANALYSIS_SIZES) for p in pins[:COLLAGE_PINS]) if u]
-    images = await _download(urls)
+    images = await download_pin_images(urls)
     collage = await asyncio.to_thread(build_collage, images)
     if collage is None:
         raise ValueError("no pin image could be read")

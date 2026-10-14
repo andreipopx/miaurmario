@@ -2467,7 +2467,10 @@
     "manageConnection": "Gestionar conexión",
     "previous": "Anterior",
     "next": "Siguiente",
-    "openPin": "Abrir pin"
+    "openPin": "Abrir pin",
+    "recreate": "Recrear con mi ropa",
+    "recreateLabel": "Recrear con mi ropa: {what}",
+    "thisPin": "este pin"
   },
   "music": {
     "title": "Música",
@@ -4163,7 +4166,22 @@
     "saveFailed": "No se ha podido guardar",
     "tooManySaves": "Vas muy rápido. Espera un momento y vuelve a intentarlo.",
     "needItems": "Elige al menos una prenda de tu armario.",
-    "defaultLookName": "Look del {date}"
+    "defaultLookName": "Look del {date}",
+    "pin": {
+      "title": "Recrea este look",
+      "subtitle": "Busco en tu armario lo más parecido a cada prenda del pin, y te digo qué te falta.",
+      "analyze": "Recrear con mi ropa",
+      "analyzing": "Buscando en tu armario…",
+      "analyzeFailed": "No he podido leer el pin. Inténtalo otra vez.",
+      "resultTitle": "Así lo harías con tu ropa",
+      "startOver": "Otro pin",
+      "nothingFound": {
+        "title": "No veo un look en este pin",
+        "description": "Prueba con un pin donde se vea la ropa: un look puesto o prendas sobre una mesa."
+      },
+      "wearToday": "Me lo pongo hoy",
+      "saveLook": "Guardar como look"
+    }
   },
   "bulkUpload": {
     "cta": "Subir prendas",

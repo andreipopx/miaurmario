@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.selfie import SelfieAnalyzeResponse, _ai_http_error, garments_response
 from app.config import get_settings
 from app.database import get_db
 from app.integrations.crypto import encryption_configured
@@ -29,7 +30,12 @@ from app.integrations.redirects import frontend_redirect
 from app.integrations.state import bind_browser, browser_nonce
 from app.models.pinterest import PinterestBoard, PinterestConnection, PinterestPin
 from app.models.user import User
+from app.services.ai_access import require_ai_client
+from app.services.ai_service import AIDisabledError
+from app.services.pinterest_inspiration import download_pin_images
+from app.services.selfie_outfit import SelfieImageError, parse_detections, sanitize_selfie
 from app.utils.auth import get_current_user
+from app.utils.prompts import load_prompt
 from app.utils.rate_limit import rate_limit_by_user
 from app.workers.settings import get_redis_settings
 
@@ -44,6 +50,10 @@ UNKNOWN_ACCOUNT = {"unknown", "pending"}
 # Board imports per user per day (each one is a vision call).
 BOARD_IMPORT_LIMIT = (20, 24 * 3600)
 BOARD_ID_RE = re.compile(r"[0-9A-Za-z_-]{1,64}")
+# «Recrea este look»: one vision call each, same budget as «Qué llevo».
+RECREATE_BURST = (3, 60)
+RECREATE_HOURLY = (15, 3600)
+INSPIRATION_PROMPT = load_prompt("inspiration_outfit")
 
 
 def _is_configured() -> bool:
@@ -271,6 +281,20 @@ async def disconnect(
     await db.commit()
 
 
+def _pin_dict(pin: PinterestPin) -> dict[str, Any]:
+    return {
+        "id": str(pin.id),
+        "pinterest_pin_id": pin.pinterest_pin_id,
+        "board_id": pin.board_id,
+        "board_name": pin.board_name,
+        "image_url": pin.image_url,
+        "source_link": pin.source_link,
+        "description": pin.description,
+        "dominant_color": pin.dominant_color,
+        "imported_at": pin.imported_at.isoformat(),
+    }
+
+
 @pins_router.get("")
 async def list_pins(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -284,21 +308,63 @@ async def list_pins(
         stmt = stmt.where(PinterestPin.board_id == board_id)
     stmt = stmt.order_by(PinterestPin.imported_at.desc()).offset(offset).limit(limit)
     rows = (await db.execute(stmt)).scalars().all()
-    return {
-        "items": [
-            {
-                "id": str(pin.id),
-                "pinterest_pin_id": pin.pinterest_pin_id,
-                "board_id": pin.board_id,
-                "board_name": pin.board_name,
-                "image_url": pin.image_url,
-                "source_link": pin.source_link,
-                "description": pin.description,
-                "dominant_color": pin.dominant_color,
-                "imported_at": pin.imported_at.isoformat(),
-            }
-            for pin in rows
-        ],
-        "limit": limit,
-        "offset": offset,
-    }
+    return {"items": [_pin_dict(pin) for pin in rows], "limit": limit, "offset": offset}
+
+
+async def _own_pin(db: AsyncSession, user: User, pin_id: uuid.UUID) -> PinterestPin:
+    pin = await db.get(PinterestPin, pin_id)
+    if pin is None or pin.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Pin not found")
+    return pin
+
+
+@pins_router.get("/{pin_id}")
+async def get_pin(
+    pin_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    return _pin_dict(await _own_pin(db, current_user, pin_id))
+
+
+@pins_router.post("/{pin_id}/recreate", response_model=SelfieAnalyzeResponse)
+async def recreate_pin(
+    pin_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> SelfieAnalyzeResponse:
+    """«Recrea este look con mi ropa»: the pin's garments, each with the closest one
+    the user owns (or what they are missing). One vision call, same matcher and same
+    answer as «Qué llevo», so the screen that shows it is the same too."""
+    pin = await _own_pin(db, current_user, pin_id)
+    await rate_limit_by_user(current_user.id, "pin_recreate_burst", *RECREATE_BURST)
+    await rate_limit_by_user(current_user.id, "pin_recreate", *RECREATE_HOURLY)
+    try:
+        ai = await require_ai_client(db, current_user, "vision")
+    except AIDisabledError as e:
+        raise _ai_http_error(e) from None
+
+    # The library keeps the original; Pinterest's 736 px rendition is plenty and light.
+    images = await download_pin_images([pin.image_url.replace("/originals/", "/736x/")])
+    if not images:
+        images = await download_pin_images([pin.image_url])
+    try:
+        image_base64 = sanitize_selfie(images[0]) if images else None
+    except SelfieImageError:
+        image_base64 = None
+    if image_base64 is None:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "pin_image_unavailable", "message": "The pin image could not be read."},
+        )
+    try:
+        raw = await ai.analyze_vision_json(
+            image_base64, INSPIRATION_PROMPT, task_name="pin-recreate"
+        )
+    except Exception as e:
+        logger.warning("Pin recreate failed: %s", type(e).__name__)
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "selfie_ai_failed", "message": "The photo could not be analysed."},
+        ) from None
+    return await garments_response(db, current_user, parse_detections(raw))

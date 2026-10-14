@@ -204,11 +204,15 @@ async def analyze_selfie(
     finally:
         del image_base64
 
-    detections = parse_detections(raw)
+    return await garments_response(db, current_user, parse_detections(raw))
+
+
+async def garments_response(db: AsyncSession, user: User, detections) -> SelfieAnalyzeResponse:
+    """Detected garments → the closest item the user owns for each (or none)."""
     if not detections:
         return SelfieAnalyzeResponse(garments=[], matched_count=0)
 
-    wardrobe = await _load_wardrobe(db, current_user.id)
+    wardrobe = await _load_wardrobe(db, user.id)
     matches = match_garments(detections, wardrobe)
 
     garments = [

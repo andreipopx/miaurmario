@@ -2467,7 +2467,10 @@
     "manageConnection": "Manage connection",
     "previous": "Previous",
     "next": "Next",
-    "openPin": "Open pin"
+    "openPin": "Open pin",
+    "recreate": "Recreate with my clothes",
+    "recreateLabel": "Recreate with my clothes: {what}",
+    "thisPin": "this pin"
   },
   "music": {
     "title": "Music",
@@ -4163,7 +4166,22 @@
     "saveFailed": "It could not be saved",
     "tooManySaves": "That was quick. Wait a moment and try again.",
     "needItems": "Pick at least one garment from your wardrobe.",
-    "defaultLookName": "Look from {date}"
+    "defaultLookName": "Look from {date}",
+    "pin": {
+      "title": "Recreate this look",
+      "subtitle": "I find the closest thing in your wardrobe to each garment in the pin, and tell you what you're missing.",
+      "analyze": "Recreate with my clothes",
+      "analyzing": "Looking through your wardrobe…",
+      "analyzeFailed": "I couldn't read the pin. Please try again.",
+      "resultTitle": "How you'd wear it with your clothes",
+      "startOver": "Another pin",
+      "nothingFound": {
+        "title": "I can't see a look in this pin",
+        "description": "Try a pin where the clothes show: a worn look or garments laid out flat."
+      },
+      "wearToday": "Wearing it today",
+      "saveLook": "Save as a look"
+    }
   },
   "bulkUpload": {
     "cta": "Upload items",

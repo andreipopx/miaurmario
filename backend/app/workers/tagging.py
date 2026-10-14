@@ -103,6 +103,27 @@ async def update_item_status_to_error(ctx: dict, item_id: str, error_msg: str) -
         logger.error(f"Failed to update item {item_id} status to error: {e}")
 
 
+def tagging_images(item: ClothingItem, queued_path: str) -> tuple[Path | None, Path | None]:
+    """(what the model looks at, what the colour is sampled from), from the item itself.
+
+    The model gets the photo as it was taken when we still have it: a cut-out that
+    lost a sleeve or a strap to background removal reads as a different garment.
+    The colour is sampled from the current image, the cut-out, where no background
+    can tint it. The queued path is only the last resort: an edit made after the
+    job was queued (the eraser on upload, a re-render) replaces and deletes the
+    file it names, which used to leave the garment untagged.
+    """
+    root = Path(get_settings().storage_path)
+    current = root / item.image_path if item.image_path else None
+    original = root / item.original_image_path if item.original_image_path else None
+    queued = Path(queued_path) if queued_path else None
+    existing = [p for p in (original, current, queued) if p is not None and p.exists()]
+    if not existing:
+        return None, None
+    colour = current if current is not None and current.exists() else existing[0]
+    return existing[0], colour
+
+
 async def tag_item_image(ctx: dict, item_id: str, image_path: str) -> dict[str, Any]:
     """
     Analyze an item's image and update it with AI-generated tags.
@@ -123,14 +144,6 @@ async def tag_item_image(ctx: dict, item_id: str, image_path: str) -> dict[str, 
         return {"status": "skipped", "reason": "vision disabled", "item_id": item_id}
 
     try:
-        # Verify image exists
-        path = Path(image_path)
-        if not path.exists():
-            error_msg = f"Image not found: {image_path}"
-            logger.error(error_msg)
-            await update_item_status_to_error(ctx, item_id, error_msg)
-            return {"status": "error", "error": "Image not found"}
-
         # Resolve the item owner's AI access (none / platform / byok).
         skip_reason: str | None = None
         db = get_db_session(ctx)
@@ -140,6 +153,12 @@ async def tag_item_image(ctx: dict, item_id: str, image_path: str) -> dict[str, 
             if item is None:
                 logger.error(f"Item not found: {item_id}")
                 return {"status": "error", "error": "Item not found"}
+            path, colour_path = tagging_images(item, image_path)
+            if path is None:
+                error_msg = f"Image not found: {image_path}"
+                logger.error(error_msg)
+                await update_item_status_to_error(ctx, item_id, error_msg)
+                return {"status": "error", "error": "Image not found"}
             owner = await db.get(User, item.user_id)
             access = await get_ai_access(db, owner) if owner is not None else None
             capability_error = (
@@ -170,7 +189,7 @@ async def tag_item_image(ctx: dict, item_id: str, image_path: str) -> dict[str, 
         # a 64x64 pass over an image already on disk, so it is cheap, and it is
         # allowed to fail: a null hex just means the card shows the palette's brown
         # instead of this garment's brown.
-        sampled_hex = await asyncio.to_thread(dominant_garment_hex, str(path))
+        sampled_hex = await asyncio.to_thread(dominant_garment_hex, str(colour_path))
 
         # Update item in database
         db = get_db_session(ctx)

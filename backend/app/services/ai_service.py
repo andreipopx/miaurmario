@@ -50,6 +50,8 @@ class ClothingTags(BaseModel):
 TAGGING_PROMPT = load_prompt("clothing_analysis")
 DESCRIPTION_PROMPT = load_prompt("clothing_description")
 CARE_LABEL_PROMPT = load_prompt("care_label")
+# Longest side of the photo sent for garment tagging.
+TAGGING_IMAGE_SIZE = 1024
 
 # Valid values for validation
 VALID_TYPES = {
@@ -397,7 +399,7 @@ class AIService:
             )
         return content, choice
 
-    def _preprocess_image(self, image_path: str | Path) -> str:
+    def _preprocess_image(self, image_path: str | Path, max_size: int = 512) -> str:
         """
         Preprocess image for AI analysis.
         Returns base64-encoded JPEG string.
@@ -417,8 +419,7 @@ class AIService:
             # Auto-orient based on EXIF
             img = ImageOps.exif_transpose(img)
 
-            # Resize to max 512x512 for faster AI processing
-            max_size = 512
+            # Downscale for the model (512 px by default; garment tagging asks for more)
             img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
 
             # Convert to JPEG bytes
@@ -641,7 +642,8 @@ class AIService:
         return None, last_error, None
 
     async def analyze_image(self, image_path: str | Path) -> ClothingTags:
-        image_base64 = self._preprocess_image(image_path)
+        # Fabric, prints and small details (buttons, a logo, a collar) need the pixels.
+        image_base64 = self._preprocess_image(image_path, max_size=TAGGING_IMAGE_SIZE)
 
         # System/user separation for injection protection
         messages_tags = [

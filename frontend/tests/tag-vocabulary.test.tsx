@@ -9,6 +9,7 @@ import {
   DEFAULT_QUICK_COLORS,
   DEFAULT_QUICK_TYPES,
   QUICK_CHOICE_COUNT,
+  QUICK_TYPE_COUNT,
   quickChoicesFor,
   quickColorsFor,
   quickTypesFor,
@@ -41,6 +42,7 @@ describe('quickTypesFor', () => {
     for (const usage of [undefined, null, []] as const) {
       const types = quickTypesFor(usage)
       expect(types).toEqual([...DEFAULT_QUICK_TYPES])
+      expect(types).toContain('boots')
       expect(types).toContain('top')
     }
   })
@@ -53,7 +55,7 @@ describe('quickTypesFor', () => {
     ])
     expect(types.slice(0, 3)).toEqual(['top', 'skirt', 'boots'])
     // The rest of the row is padded out of the defaults, in the defaults' order.
-    expect(types).toHaveLength(QUICK_CHOICE_COUNT)
+    expect(types).toHaveLength(QUICK_TYPE_COUNT)
     expect(types[3]).toBe('t-shirt')
   })
 
@@ -85,13 +87,13 @@ describe('quickTypesFor', () => {
       undefined,
       [],
       [{ type: 'top', count: 3 }],
-      // A wardrobe of nothing but tops: the row is still full, still 12 long.
+      // A wardrobe of nothing but tops: the row is still full, still 14 long.
       [{ type: 'top', count: 3 }, { type: 'top', count: 3 }],
       ALL_TYPES.map((type, i) => ({ type, count: ALL_TYPES.length - i })),
     ]
     for (const usage of cases) {
       const types = quickTypesFor(usage)
-      expect(types).toHaveLength(QUICK_CHOICE_COUNT)
+      expect(types).toHaveLength(QUICK_TYPE_COUNT)
       expect(new Set(types).size).toBe(types.length)
     }
   })
@@ -341,7 +343,7 @@ describe('TagFields adapts its buttons to the wardrobe', () => {
       const labels = Array.from(row?.querySelectorAll('button') ?? []).map((b) => b.textContent)
       expect(labels[0]).toBe(es.clothingTypes.top)
       expect(labels[1]).toBe(es.clothingTypes.skirt)
-      expect(labels).toHaveLength(QUICK_CHOICE_COUNT)
+      expect(labels).toHaveLength(QUICK_TYPE_COUNT)
     })
   })
 

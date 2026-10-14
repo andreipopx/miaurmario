@@ -18,6 +18,11 @@ import { CLOTHING_COLORS, CLOTHING_TYPES } from '@/lib/types';
 
 /** How many one-tap buttons a row offers, whoever the owner is. */
 export const QUICK_CHOICE_COUNT = 12;
+/**
+ * The type row is two longer: with twelve, shoes other than trainers and the bag
+ * fell off the defaults, so tagging boots meant digging through «más tipos».
+ */
+export const QUICK_TYPE_COUNT = 14;
 
 /**
  * The shortlist for a wardrobe that has not told us anything yet, and the padding
@@ -37,6 +42,8 @@ export const DEFAULT_QUICK_TYPES = [
   'skirt',
   'dress',
   'sneakers',
+  'boots',
+  'bag',
 ] as const;
 
 export const DEFAULT_QUICK_COLORS = [
@@ -128,7 +135,7 @@ function countOf(row: unknown): number {
 export function quickTypesFor(
   usage?: readonly TypeUsage[] | null,
   defaults: readonly string[] = DEFAULT_QUICK_TYPES,
-  count: number = QUICK_CHOICE_COUNT
+  count: number = QUICK_TYPE_COUNT
 ): string[] {
   return quickChoicesFor(
     byUsage(usage, (row) => row?.type),

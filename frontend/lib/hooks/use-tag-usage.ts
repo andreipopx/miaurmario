@@ -101,7 +101,7 @@ export function useTagUsage(): TagUsage | null {
 
 /**
  * The shortlists to put on screen: this owner's most-used types and colours,
- * padded from the defaults, always `QUICK_CHOICE_COUNT` long.
+ * padded from the defaults, always `QUICK_TYPE_COUNT` (types) and `QUICK_CHOICE_COUNT` (colours) long.
  *
  * They settle once, before the first tap, and then never change for the session.
  */

@@ -50,6 +50,8 @@ from app.utils.email_templates import (
     render_friend_activity_email,
     render_morning_look_email,
 )
+from app.utils.meows import meows
+from app.utils.stinky_persona import meow_only
 
 logger = logging.getLogger(__name__)
 
@@ -272,6 +274,9 @@ async def _send_day_look(
             return {"status": "skipped", "reason": "no_engine"}
 
     line = morning_look_line(outfit)
+    if line and meow_only(user):
+        # «Solo miau» keeps what to wear (it is the useful part) and meows the rest.
+        line = f"{meows(outfit.id, max_phrases=1)} {line}"
     if not line:
         _no_op_marker(db, user_id, event, sent_on, "nothing_to_say")
         await db.flush()

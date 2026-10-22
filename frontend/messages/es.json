@@ -4562,7 +4562,31 @@
     "reset": "Volver al {defaultName} de siempre",
     "previewLabel": "{name}, pelaje {coat}",
     "settingsBody": "Su nombre y su pelaje",
-    "settingsAction": "Personalizar"
+    "settingsAction": "Personalizar",
+    "voiceLabel": "Cómo habla",
+    "voiceHint": "Cuánto gato hay en tu estilista. Cambia el tono, no los consejos.",
+    "voices": {
+      "estilista": {
+        "title": "Estilista",
+        "body": "Criterio y al grano, sin cosas de gato.",
+        "sample": "El jersey gris con los vaqueros oscuros: abriga y el tono va con las botas."
+      },
+      "gato": {
+        "title": "Gato",
+        "body": "Como siempre: estilista con bigotes, un miau de vez en cuando.",
+        "sample": "Prrr. El jersey gris con los vaqueros oscuros: abriga y no parece que te hayas rendido."
+      },
+      "muy-gato": {
+        "title": "Muy gato",
+        "body": "Más miaus, más siestas, más drama felino. Los consejos, igual de buenos.",
+        "sample": "¡Mrrp! Me has despertado de la siesta para esto, así que escucha: jersey gris y vaqueros oscuros. Ñam."
+      },
+      "solo-miau": {
+        "title": "Solo miau",
+        "body": "{name} solo maúlla. Las prendas de cada look se siguen viendo; él no te explica nada.",
+        "sample": ""
+      }
+    }
   },
   "trips": {
     "title": "Modo viaje",

@@ -56,8 +56,9 @@ from app.services.stinky_chat.tools import (
     tool_definitions,
 )
 from app.services.stinky_memory import build_digest, get_call_name
+from app.utils.meows import meows
 from app.utils.prompts import load_prompt
-from app.utils.stinky_persona import personalize
+from app.utils.stinky_persona import meow_only, personalize_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +143,7 @@ def build_system_prompt(
     prompt = load_prompt("stinky_chat")
     for key, value in replacements.items():
         prompt = prompt.replace(key, value)
-    return personalize(prompt, user)
+    return personalize_prompt(prompt, user)
 
 
 # --- Conversations ------------------------------------------------------------------------
@@ -272,7 +273,7 @@ class _Turn:
 async def run_turn(
     db: AsyncSession,
     user: User,
-    ai: AIService,
+    ai: AIService | None,
     conversation: ChatConversation,
     user_text: str,
     locale: str = "es",
@@ -287,6 +288,20 @@ async def run_turn(
     user_msg = turn.add(role=CHAT_ROLE_USER, content=user_text)
     await turn.commit()
     turn_start = user_msg.seq
+
+    if meow_only(user):
+        # «Solo miau»: the answer is written here, so it costs no tokens and
+        # works without AI. It still lands in the history like any other reply.
+        content = meows()
+        for word in content.split(" "):
+            yield _event("delta", {"text": word + " "})
+        final = turn.add(role=CHAT_ROLE_ASSISTANT, content=content)
+        await turn.commit()
+        yield _event(
+            "done",
+            {"message_id": str(final.id), "outfit_created": False, "tool_rounds": 0, "tokens": 0},
+        )
+        return
 
     rows = await load_history(db, conversation.id, settings.stinky_chat_history_messages)
     # What Stinky already wrote down about this person (capped, pinned first).

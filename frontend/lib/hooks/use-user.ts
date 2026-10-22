@@ -35,6 +35,7 @@ export interface UserProfile {
   stinky_name?: string;
   stinky_coat?: string;
   stinky_eyes?: string;
+  stinky_voice?: string;
 }
 
 export interface UserProfileUpdate {
@@ -51,6 +52,7 @@ export interface UserProfileUpdate {
   stinky_coat?: string | null;
   /** null or "natural" keep the coat's own eyes. */
   stinky_eyes?: string | null;
+  stinky_voice?: string | null;
 }
 
 function useSetTokenIfAvailable() {

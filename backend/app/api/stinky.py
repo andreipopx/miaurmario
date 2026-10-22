@@ -43,6 +43,7 @@ from app.services.stinky_chat.tools import (
 from app.utils.auth import get_current_user
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.signed_urls import sign_image_url
+from app.utils.stinky_persona import meow_only
 from app.utils.timezone import get_user_today
 
 logger = logging.getLogger(__name__)
@@ -203,7 +204,7 @@ async def _chat_stream(
     bind: Any,
     user_id: UUID,
     conversation_id: UUID,
-    ai: AIService,
+    ai: AIService | None,
     message: str,
     locale: str,
 ) -> AsyncIterator[str]:
@@ -259,10 +260,13 @@ async def chat(
         window_seconds=86400,
     )
 
-    try:
-        ai = await require_ai_client(db, current_user, "text")
-    except AIDisabledError as e:
-        raise _ai_http_error(e) from None
+    # «Solo miau» never reaches the model, so it needs no AI at all.
+    ai: AIService | None = None
+    if not meow_only(current_user):
+        try:
+            ai = await require_ai_client(db, current_user, "text")
+        except AIDisabledError as e:
+            raise _ai_http_error(e) from None
 
     if request.conversation_id is not None:
         conversation = await get_owned_conversation(db, current_user.id, request.conversation_id)

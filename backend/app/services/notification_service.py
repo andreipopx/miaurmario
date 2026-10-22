@@ -20,8 +20,9 @@ from app.services.event_notifications import (
 )
 from app.services.web_push import PushPayload
 from app.utils.email_templates import render_outfit_email
+from app.utils.meows import meows
 from app.utils.occasions import occasion_label_es
-from app.utils.stinky_persona import personalize, stinky_name
+from app.utils.stinky_persona import meow_only, personalize, stinky_name
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +178,8 @@ class NotificationDispatcher:
         temp = weather.get("temperature")
         title = f"Tu look {day} está listo"
         body = outfit.reasoning or f"{stinky_name(user)} te ha preparado un look {occasion}."
+        if meow_only(user):
+            body = meows(outfit.id, max_phrases=3)
         if temp is not None:
             body = f"{temp}°C · {body}"
         return PushPayload(
@@ -197,9 +200,10 @@ class NotificationDispatcher:
                 highlights = [str(h) for h in raw]
         email = render_outfit_email(
             occasion=outfit.occasion,
-            reasoning=outfit.reasoning,
-            highlights=highlights,
-            style_notes=outfit.style_notes,
+            # «Solo miau»: the cat's words are meows; the look itself is still there.
+            reasoning=meows(outfit.id) if meow_only(user) else outfit.reasoning,
+            highlights=[] if meow_only(user) else highlights,
+            style_notes=None if meow_only(user) else outfit.style_notes,
             temperature=weather.get("temperature") if weather else None,
             condition=str(weather["condition"]) if weather.get("condition") else None,
             for_tomorrow=for_tomorrow,

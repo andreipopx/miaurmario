@@ -63,16 +63,28 @@ export const STINKY_NATURAL_EYES: Record<StinkyCoat, Exclude<StinkyEyes, 'natura
   calico: 'ambar',
 };
 
+/**
+ * How much cat there is in the stylist. "solo-miau" only meows, and the meows are
+ * made here and on the server (never by the model), so it costs nothing.
+ */
+export const STINKY_VOICES = ['estilista', 'gato', 'muy-gato', 'solo-miau'] as const;
+export type StinkyVoice = (typeof STINKY_VOICES)[number];
+export const DEFAULT_STINKY_VOICE: StinkyVoice = 'gato';
+export const isStinkyVoice = (value: unknown): value is StinkyVoice =>
+  typeof value === 'string' && (STINKY_VOICES as readonly string[]).includes(value);
+
 export interface StinkyPersona {
   name: string;
   coat: StinkyCoat;
   eyes: StinkyEyes;
+  voice: StinkyVoice;
 }
 
 export const DEFAULT_STINKY_PERSONA: StinkyPersona = {
   name: DEFAULT_STINKY_NAME,
   coat: DEFAULT_STINKY_COAT,
   eyes: DEFAULT_STINKY_EYES,
+  voice: DEFAULT_STINKY_VOICE,
 };
 
 export const isStinkyCoat = (value: unknown): value is StinkyCoat =>
@@ -104,26 +116,32 @@ export function personaFromProfile(profile: {
   stinky_name?: string | null;
   stinky_coat?: string | null;
   stinky_eyes?: string | null;
+  stinky_voice?: string | null;
 }): StinkyPersona {
   return {
     name: profile.stinky_name || DEFAULT_STINKY_NAME,
     coat: isStinkyCoat(profile.stinky_coat) ? profile.stinky_coat : DEFAULT_STINKY_COAT,
     eyes: isStinkyEyes(profile.stinky_eyes) ? profile.stinky_eyes : DEFAULT_STINKY_EYES,
+    voice: isStinkyVoice(profile.stinky_voice) ? profile.stinky_voice : DEFAULT_STINKY_VOICE,
   };
 }
 
 export const samePersona = (a: StinkyPersona, b: StinkyPersona) =>
-  a.name === b.name && a.coat === b.coat && a.eyes === b.eyes;
+  a.name === b.name && a.coat === b.coat && a.eyes === b.eyes && a.voice === b.voice;
 export const isDefaultPersona = (p: StinkyPersona) => samePersona(p, DEFAULT_STINKY_PERSONA);
 
-/** "coat|eyes|name" (the name URI-encoded); a missing or broken cookie is the default cat. */
+/**
+ * "coat|eyes|name|voice" (the name URI-encoded, so it never holds a "|"). Cookies
+ * written before the voice existed have three parts and keep the default voice;
+ * a missing or broken cookie is the default cat.
+ */
 export function parsePersonaCookie(value: string | undefined | null): StinkyPersona {
   if (!value) return DEFAULT_STINKY_PERSONA;
-  const [coat, eyes, ...rest] = value.split('|');
+  const [coat, eyes, encodedName, voice] = value.split('|');
   let name = DEFAULT_STINKY_NAME;
-  if (rest.length) {
+  if (encodedName) {
     try {
-      name = cleanStinkyName(decodeURIComponent(rest.join('|'))) ?? DEFAULT_STINKY_NAME;
+      name = cleanStinkyName(decodeURIComponent(encodedName)) ?? DEFAULT_STINKY_NAME;
     } catch {
       /* malformed: keep the default name */
     }
@@ -132,11 +150,12 @@ export function parsePersonaCookie(value: string | undefined | null): StinkyPers
     name,
     coat: isStinkyCoat(coat) ? coat : DEFAULT_STINKY_COAT,
     eyes: isStinkyEyes(eyes) ? eyes : DEFAULT_STINKY_EYES,
+    voice: isStinkyVoice(voice) ? voice : DEFAULT_STINKY_VOICE,
   };
 }
 
 export const serializePersona = (p: StinkyPersona) =>
-  `${p.coat}|${p.eyes}|${encodeURIComponent(p.name)}`;
+  `${p.coat}|${p.eyes}|${encodeURIComponent(p.name)}|${p.voice}`;
 
 const STINKY_WORD = /\bStinky\b/g;
 

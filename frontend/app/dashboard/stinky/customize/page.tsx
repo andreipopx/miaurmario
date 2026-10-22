@@ -20,11 +20,13 @@ import {
   DEFAULT_STINKY_EYES,
   DEFAULT_STINKY_NAME,
   DEFAULT_STINKY_PERSONA,
+  DEFAULT_STINKY_VOICE,
   STINKY_COATS,
   STINKY_EYES,
   STINKY_EYE_COLORS,
   STINKY_NAME_MAX_LENGTH,
   STINKY_NATURAL_EYES,
+  STINKY_VOICES,
   cleanStinkyName,
   stinkyEyeColor,
   isDefaultPersona,
@@ -32,7 +34,9 @@ import {
   type StinkyCoat,
   type StinkyEyes,
   type StinkyPersona,
+  type StinkyVoice,
 } from '@/lib/stinky-persona';
+import { meows } from '@/lib/meows';
 import { cn } from '@/lib/utils';
 
 /** A pair of cat eyes in that colour; "de serie" shows the coat's own (white: one blue, one gold). */
@@ -67,6 +71,7 @@ export default function StinkyCustomizePage() {
   const [name, setName] = useState(persona.name === DEFAULT_STINKY_NAME ? '' : persona.name);
   const [coat, setCoat] = useState<StinkyCoat>(persona.coat);
   const [eyes, setEyes] = useState<StinkyEyes>(persona.eyes);
+  const [voice, setVoice] = useState<StinkyVoice>(persona.voice);
   const [mood, setMood] = useState<'idle' | 'wave' | 'happy'>('wave');
 
   // Another device (or the account loading late) changed it: start from that.
@@ -74,14 +79,16 @@ export default function StinkyCustomizePage() {
     setName(persona.name === DEFAULT_STINKY_NAME ? '' : persona.name);
     setCoat(persona.coat);
     setEyes(persona.eyes);
-  }, [persona.name, persona.coat, persona.eyes]);
+    setVoice(persona.voice);
+  }, [persona.name, persona.coat, persona.eyes, persona.voice]);
 
   const trimmed = name.trim();
   const cleaned = trimmed ? cleanStinkyName(trimmed) : DEFAULT_STINKY_NAME;
   const invalid = cleaned === null;
   const shownName = cleaned ?? (trimmed || DEFAULT_STINKY_NAME);
   const dirty =
-    !invalid && (cleaned !== persona.name || coat !== persona.coat || eyes !== persona.eyes);
+    !invalid &&
+    (cleaned !== persona.name || coat !== persona.coat || eyes !== persona.eyes || voice !== persona.voice);
 
   const pickCoat = (next: StinkyCoat) => {
     if (next === coat) return;
@@ -103,6 +110,7 @@ export default function StinkyCustomizePage() {
         stinky_name: next.name === DEFAULT_STINKY_NAME ? null : next.name,
         stinky_coat: next.coat,
         stinky_eyes: next.eyes,
+        stinky_voice: next.voice,
       },
       {
         onSuccess: (profile: UserProfile) => {
@@ -252,6 +260,42 @@ export default function StinkyCustomizePage() {
         </div>
       </fieldset>
 
+      <fieldset className="mt-7">
+        <legend className="mb-1 px-1 text-sm font-bold">{t('voiceLabel')}</legend>
+        <p className="mb-3 px-1 text-[13px] text-muted-foreground">{t('voiceHint')}</p>
+        <div className="space-y-2" role="radiogroup">
+          {STINKY_VOICES.map((v) => {
+            const selected = v === voice;
+            return (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => {
+                  if (v === voice) return;
+                  haptic(6);
+                  setVoice(v);
+                  setMood(v === 'estilista' ? 'idle' : 'happy');
+                }}
+                className={cn(
+                  'pressable block w-full rounded-lg border-[1.5px] p-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  selected ? 'border-foreground bg-panel' : 'border-border'
+                )}
+              >
+                <span className="block text-[15px] font-bold">{t(`voices.${v}.title` as never)}</span>
+                <span className="mt-0.5 block text-[13px] text-muted-foreground">
+                  {t(`voices.${v}.body` as never, { name: shownName })}
+                </span>
+                <span className="mt-2 block rounded-[14px] bg-background px-3 py-2 text-[13px] italic">
+                  «{v === 'solo-miau' ? meows('muestra-voz') : t(`voices.${v}.sample` as never, { name: shownName })}»
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
       {!isDefaultPersona(persona) && (
         <button
           type="button"
@@ -259,6 +303,7 @@ export default function StinkyCustomizePage() {
             setName('');
             setCoat(DEFAULT_STINKY_COAT);
             setEyes(DEFAULT_STINKY_EYES);
+            setVoice(DEFAULT_STINKY_VOICE);
             setMood('wave');
             save(DEFAULT_STINKY_PERSONA);
           }}
@@ -276,7 +321,7 @@ export default function StinkyCustomizePage() {
             size="lg"
             className="w-full shadow-lg"
             disabled={update.isPending}
-            onClick={() => cleaned && save({ name: cleaned, coat, eyes })}
+            onClick={() => cleaned && save({ name: cleaned, coat, eyes, voice })}
           >
             {update.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
             {t('save')}

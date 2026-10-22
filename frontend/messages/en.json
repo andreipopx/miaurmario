@@ -4562,7 +4562,31 @@
     "reset": "Back to good old {defaultName}",
     "previewLabel": "{name}, {coat} coat",
     "settingsBody": "Their name and coat",
-    "settingsAction": "Customize"
+    "settingsAction": "Customize",
+    "voiceLabel": "How he talks",
+    "voiceHint": "How much cat is in your stylist. It changes the tone, not the advice.",
+    "voices": {
+      "estilista": {
+        "title": "Stylist",
+        "body": "Sharp and to the point, no cat stuff.",
+        "sample": "The grey jumper with the dark jeans: warm, and the tone goes with the boots."
+      },
+      "gato": {
+        "title": "Cat",
+        "body": "As always: a stylist with whiskers, the odd meow.",
+        "sample": "Prrr. The grey jumper with the dark jeans: warm, and it doesn't look like you gave up."
+      },
+      "muy-gato": {
+        "title": "Very cat",
+        "body": "More meows, more naps, more feline drama. The advice is just as good.",
+        "sample": "Mrrp! You woke me from my nap for this, so listen: grey jumper and dark jeans. Nom."
+      },
+      "solo-miau": {
+        "title": "Only meows",
+        "body": "{name} only meows. You still see each look's garments; he just won't explain them.",
+        "sample": ""
+      }
+    }
   },
   "trips": {
     "title": "Trip mode",

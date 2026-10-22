@@ -39,13 +39,16 @@ from app.utils.stinky_persona import (
     DEFAULT_COAT,
     DEFAULT_EYES,
     DEFAULT_NAME,
+    DEFAULT_VOICE,
     stinky_coat,
     stinky_eyes,
     stinky_name,
+    stinky_voice,
 )
 from app.utils.stinky_persona import clean_coat as clean_stinky_coat
 from app.utils.stinky_persona import clean_eyes as clean_stinky_eyes
 from app.utils.stinky_persona import clean_name as clean_stinky_name
+from app.utils.stinky_persona import clean_voice as clean_stinky_voice
 from app.utils.timezone import canonical_timezone, is_valid_timezone
 
 USERNAME_REGEX = re.compile(r"^[a-z0-9_]{3,20}$")
@@ -89,6 +92,7 @@ class UserProfileResponse(BaseModel):
     stinky_name: str = DEFAULT_NAME
     stinky_coat: str = DEFAULT_COAT
     stinky_eyes: str = DEFAULT_EYES
+    stinky_voice: str = DEFAULT_VOICE
 
 
 class UserProfileUpdate(BaseModel):
@@ -105,6 +109,8 @@ class UserProfileUpdate(BaseModel):
     stinky_coat: str | None = Field(default=None, max_length=32)
     # null or "natural" keep the coat's own eyes.
     stinky_eyes: str | None = Field(default=None, max_length=16)
+    # null or "gato" are the default voice.
+    stinky_voice: str | None = Field(default=None, max_length=16)
 
     @field_validator("stinky_name")
     @classmethod
@@ -120,6 +126,11 @@ class UserProfileUpdate(BaseModel):
     @classmethod
     def _valid_stinky_eyes(cls, value: str | None) -> str | None:
         return clean_stinky_eyes(value)
+
+    @field_validator("stinky_voice")
+    @classmethod
+    def _valid_stinky_voice(cls, value: str | None) -> str | None:
+        return clean_stinky_voice(value)
 
     @field_validator("timezone")
     @classmethod
@@ -295,6 +306,7 @@ def _user_response(user: User) -> UserProfileResponse:
         stinky_name=stinky_name(user),
         stinky_coat=stinky_coat(user),
         stinky_eyes=stinky_eyes(user),
+        stinky_voice=stinky_voice(user),
     )
 
 

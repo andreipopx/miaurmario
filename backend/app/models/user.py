@@ -50,6 +50,8 @@ class User(Base):
     stinky_coat: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # NULL = the coat's own eyes.
     stinky_eyes: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # How much cat in the stylist (estilista … solo-miau); NULL = "gato".
+    stinky_voice: Mapped[str | None] = mapped_column(String(16), nullable=True)
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")
     # Who chose the zone: "auto" (detected from the device or the chosen city)
     # or "manual" (the user picked it). Detection never overwrites "manual".

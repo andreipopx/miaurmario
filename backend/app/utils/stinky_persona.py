@@ -57,6 +57,52 @@ EYES: dict[str, str] = {
 }
 
 
+#: How much cat there is in the stylist (Ajustes → Tu Stinky → «Cómo habla»).
+#: NULL in the database = "gato", the voice every prompt is written in.
+DEFAULT_VOICE = "gato"
+#: Only meows, written here and never by the model: costs no tokens and needs no AI.
+MEOW_ONLY = "solo-miau"
+VOICES = ("estilista", DEFAULT_VOICE, "muy-gato", MEOW_ONLY)
+
+#: Appended to the prompts that speak as the cat when the voice is not the default.
+#: It only changes the tone of the texts; the format each prompt asks for still rules.
+_VOICE_NOTES: dict[str, str] = {
+    "estilista": (
+        "TONO QUE HA ELEGIDO LA PERSONA: «Estilista». Tiene prioridad sobre la personalidad "
+        "descrita arriba. Sigues siendo Stinky, pero hablas como un estilista profesional y "
+        "cercano: sin sonidos gatunos (ni miau, ni prrr, ni ñam), sin siestas, rayos de sol ni "
+        "imágenes de gato. Directo, claro, con criterio y con el motivo de cada elección. Esto "
+        "solo cambia el tono de los textos: el formato que se te pide sigue igual."
+    ),
+    "muy-gato": (
+        "TONO QUE HA ELEGIDO LA PERSONA: «Muy gato». Tiene prioridad sobre la personalidad "
+        "descrita arriba. Exagera lo gato: hasta dos sonidos gatunos por mensaje (miau, prrr, "
+        "mrrp, ñam), asides felinos frecuentes (la siesta, la caja, el punto rojo, la cena que "
+        "llega tarde) y dramatismo de gato ofendido. La ropa, las razones y los datos siguen "
+        "claros y completos, y nada de lenguaje infantil. Esto solo cambia el tono de los "
+        "textos: el formato que se te pide sigue igual."
+    ),
+}
+
+
+def clean_voice(value: str | None) -> str | None:
+    """None/the default voice both store as None."""
+    if value is None or value == DEFAULT_VOICE:
+        return None
+    if value not in VOICES:
+        raise ValueError("invalid_stinky_voice")
+    return value
+
+
+def stinky_voice(user: Any) -> str:
+    voice = getattr(user, "stinky_voice", None)
+    return voice if voice in VOICES else DEFAULT_VOICE
+
+
+def meow_only(user: Any) -> bool:
+    return stinky_voice(user) == MEOW_ONLY
+
+
 def describe(coat: str, eyes: str = DEFAULT_EYES) -> str:
     """ "un gato naranja atigrado (…) de ojos verdes": how the cat describes himself."""
     look = COAT_LOOKS.get(coat, COAT_LOOKS[DEFAULT_COAT])
@@ -123,6 +169,16 @@ def stinky_coat(user: Any) -> str:
 def stinky_eyes(user: Any) -> str:
     eyes = getattr(user, "stinky_eyes", None)
     return eyes if eyes in EYES else DEFAULT_EYES
+
+
+def personalize_prompt(prompt: str, user: Any) -> str:
+    """``personalize`` for a prompt that speaks as the cat, plus the voice the
+    person chose. Messages (push, email) go through ``personalize`` only."""
+    note = _VOICE_NOTES.get(stinky_voice(user))
+    prompt = personalize(prompt, user)
+    if note:
+        prompt = f"{prompt.rstrip()}\n\n{personalize(note, user)}\n"
+    return prompt
 
 
 def personalize(text: str, user: Any) -> str:

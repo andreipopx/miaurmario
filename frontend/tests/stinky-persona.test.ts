@@ -8,6 +8,7 @@ import {
   serializePersona,
   stinkyAssetSet,
 } from '@/lib/stinky-persona';
+import { meows } from '@/lib/meows';
 import { stinkyAssetBase, stinkyNeutralStill } from '@/components/stinky/stinky-states';
 
 describe('their own Stinky', () => {
@@ -22,14 +23,17 @@ describe('their own Stinky', () => {
   });
 
   it('round-trips the cookie and falls back to Stinky on garbage', () => {
-    const chan = { name: 'Chan Chan', coat: 'naranja-atigrado', eyes: 'verde' } as const;
+    const chan = { name: 'Chan Chan', coat: 'naranja-atigrado', eyes: 'verde', voice: 'solo-miau' } as const;
     expect(parsePersonaCookie(serializePersona(chan))).toEqual(chan);
+    // A cookie from before the voice existed keeps the default voice.
+    expect(parsePersonaCookie('negro|azul|Chan')).toEqual({ name: 'Chan', coat: 'negro', eyes: 'azul', voice: 'gato' });
     expect(parsePersonaCookie(undefined)).toEqual(DEFAULT_STINKY_PERSONA);
     expect(parsePersonaCookie('dragon|rojo|%E0%A4%A')).toEqual(DEFAULT_STINKY_PERSONA);
     expect(parsePersonaCookie('siames|natural|Hola%20%7Bx%7D')).toEqual({
       name: 'Stinky',
       coat: 'siames',
       eyes: 'natural',
+      voice: 'gato',
     });
   });
 
@@ -39,7 +43,16 @@ describe('their own Stinky', () => {
       name: 'Chan',
       coat: 'negro',
       eyes: 'azul',
+      voice: 'gato',
     });
+    expect(personaFromProfile({ stinky_voice: 'muy-gato' }).voice).toBe('muy-gato');
+    expect(personaFromProfile({ stinky_voice: 'ladrido' }).voice).toBe('gato');
+  });
+
+  it('meows the same way for the same look, and only meows', () => {
+    expect(meows('look-1')).toBe(meows('look-1'));
+    expect(meows('look-1').length).toBeGreaterThan(2);
+    expect(meows('look-1').toLowerCase()).not.toMatch(/jersey|vaquero|look/);
   });
 
   it('renames every message but leaves placeholders alone', () => {

@@ -11,6 +11,7 @@ from app.api.days import router as days_router
 from app.api.families import router as families_router
 from app.api.feedback import router as feedback_router
 from app.api.geo import router as geo_router
+from app.api.habit import router as habit_router
 from app.api.health import router as health_router
 from app.api.images import router as images_router
 from app.api.integrations.lastfm import router as lastfm_router
@@ -40,6 +41,7 @@ api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
+api_router.include_router(habit_router)
 api_router.include_router(location_router)
 api_router.include_router(ai_settings_router)
 api_router.include_router(admin_router)

@@ -4586,7 +4586,23 @@
         "body": "{name} solo maúlla. Las prendas de cada look se siguen viendo; él no te explica nada.",
         "sample": ""
       }
-    }
+    },
+    "wardrobeLabel": "Su armario",
+    "wardrobeHint": "Se desbloquea comiendo: un look al día que te pongas es una comida.",
+    "nothing": "Nada",
+    "lockedAt": "Nivel {level}",
+    "accessoryNames": {
+      "pajarita": "Pajarita",
+      "cascabel": "Cascabel",
+      "panuelo": "Pañuelo",
+      "lazo": "Lazo",
+      "perlas": "Perlas",
+      "pajarita-dorada": "Pajarita dorada"
+    },
+    "goalLabel": "Tu racha",
+    "goalHint": "Cuántos días a la semana quieres contarle lo que llevas. Un comodín al mes cubre una semana floja.",
+    "goalDays": "{count, plural, one {# día} other {# días}}",
+    "accessorySaved": "Listo"
   },
   "trips": {
     "title": "Modo viaje",
@@ -4633,6 +4649,38 @@
       "upload": "Subir ropa",
       "failed": "No se ha podido planear el viaje.",
       "retry": "Volver a intentarlo"
+    }
+  },
+  "habit": {
+    "hungryTitle": "¿Qué te has puesto hoy?",
+    "hungryBody": "Cuéntamelo y me lo como: «Me lo pongo» en tu look, o una foto si llevas otra cosa.",
+    "backTitle": "¡Has vuelto!",
+    "backBody": "Te he guardado el sitio en el sofá. Dime qué llevas hoy y seguimos.",
+    "fedTitle": "¡Ñam! Hoy ya he comido",
+    "fedBody": "{left, plural, one {Un día más esta semana y la racha sigue.} other {# días más esta semana y la racha sigue.}}",
+    "fedWeekMet": "Semana cumplida: {goal, plural, one {# día} other {# días}} con look. Todo lo demás es postre.",
+    "ate": "¡Ñam! {name} se ha comido tu look",
+    "levelUp": "¡Nivel {level}!",
+    "unlockedNow": "Ya tiene {item}. Pónselo en Tu Stinky.",
+    "weekLabel": "Esta semana: {count} de {goal} días",
+    "dayDone": "Con look",
+    "streak": "Racha",
+    "weeks": "{count, plural, =0 {Empieza hoy} one {# semana} other {# semanas}}",
+    "comodinLeft": "Comodín del mes disponible",
+    "comodinUsed": "Comodín del mes usado",
+    "level": "Nivel {level}",
+    "toReward": "{count, plural, one {# comida} other {# comidas}} para {item}",
+    "toLevel": "{count, plural, one {# comida} other {# comidas}} para subir",
+    "maxLevel": "Nivel máximo. Leyenda felina.",
+    "dressHim": "Ponle {item}",
+    "woreSomethingElse": "Llevo otra cosa",
+    "accessories": {
+      "pajarita": "la pajarita",
+      "cascabel": "el cascabel",
+      "panuelo": "el pañuelo",
+      "lazo": "el lazo",
+      "perlas": "las perlas",
+      "pajarita-dorada": "la pajarita dorada"
     }
   }
 }

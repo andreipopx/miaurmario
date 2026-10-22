@@ -93,6 +93,8 @@ class UserProfileResponse(BaseModel):
     stinky_coat: str = DEFAULT_COAT
     stinky_eyes: str = DEFAULT_EYES
     stinky_voice: str = DEFAULT_VOICE
+    # What he wears (unlocked through his meals, see /habit); null = nothing.
+    stinky_accessory: str | None = None
 
 
 class UserProfileUpdate(BaseModel):
@@ -307,6 +309,7 @@ def _user_response(user: User) -> UserProfileResponse:
         stinky_coat=stinky_coat(user),
         stinky_eyes=stinky_eyes(user),
         stinky_voice=stinky_voice(user),
+        stinky_accessory=user.stinky_accessory,
     )
 
 

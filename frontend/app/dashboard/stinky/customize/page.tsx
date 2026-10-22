@@ -37,6 +37,12 @@ import {
   type StinkyVoice,
 } from '@/lib/stinky-persona';
 import { meows } from '@/lib/meows';
+import { useHabit, useUpdateHabit } from '@/lib/hooks/use-habit';
+import {
+  STINKY_ACCESSORIES,
+  StinkyAccessoryArt,
+  type StinkyAccessory,
+} from '@/components/stinky/stinky-accessory';
 import { cn } from '@/lib/utils';
 
 /** A pair of cat eyes in that colour; "de serie" shows the coat's own (white: one blue, one gold). */
@@ -128,6 +134,23 @@ export default function StinkyCustomizePage() {
 
   const coatLabel = (c: StinkyCoat) => t(`coats.${c}` as never);
 
+  const { data: habit } = useHabit();
+  const updateHabit = useUpdateHabit();
+  const wear = (accessory: StinkyAccessory | null) => {
+    if (!habit || accessory === habit.accessory) return;
+    haptic(8);
+    updateHabit.mutate(
+      { accessory: accessory ?? '' },
+      {
+        onSuccess: (next) => {
+          applyPersona({ ...persona, accessory: next.accessory });
+          setMood('happy');
+        },
+        onError: () => toast.error(t('saveError')),
+      }
+    );
+  };
+
   return (
     <div className="mx-auto max-w-xl pb-44 pt-2 sm:pt-4 lg:pb-28">
       {/* Pinned under the header: the cat stays in sight while picking further down. */}
@@ -138,6 +161,7 @@ export default function StinkyCustomizePage() {
         <Stinky
           coat={coat}
           eyes={eyes}
+          accessory={persona.accessory}
           state={mood}
           size={148}
           settleTo="idle"
@@ -296,6 +320,78 @@ export default function StinkyCustomizePage() {
         </div>
       </fieldset>
 
+      {habit && (
+        <fieldset className="mt-7 scroll-mt-28" id="armario">
+          <legend className="mb-1 px-1 text-sm font-bold">{t('wardrobeLabel')}</legend>
+          <p className="mb-3 px-1 text-[13px] text-muted-foreground">{t('wardrobeHint')}</p>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-7" role="radiogroup">
+            {([null, ...STINKY_ACCESSORIES] as (StinkyAccessory | null)[]).map((a) => {
+              const open = a === null || habit.unlocked.includes(a);
+              const selected = (habit.accessory ?? null) === a;
+              return (
+                <button
+                  key={a ?? 'nada'}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-disabled={!open}
+                  disabled={!open || updateHabit.isPending}
+                  onClick={() => wear(a)}
+                  className={cn(
+                    'pressable flex flex-col items-center gap-1 rounded-lg border-[1.5px] p-2 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    selected ? 'border-foreground font-bold' : 'border-border',
+                    !open && 'opacity-45'
+                  )}
+                >
+                  <span className="flex h-10 w-14 items-center justify-center">
+                    {a ? (
+                      <svg viewBox="24 72 52 28" className="h-full w-full" aria-hidden>
+                        <StinkyAccessoryArt accessory={a} />
+                      </svg>
+                    ) : (
+                      <span className="text-[18px] text-muted-foreground" aria-hidden>—</span>
+                    )}
+                  </span>
+                  <span className="leading-tight">
+                    {a ? t(`accessoryNames.${a}` as never) : t('nothing')}
+                  </span>
+                  {!open && a && (
+                    <span className="text-[10.5px] text-muted-foreground">
+                      {t('lockedAt', { level: habit.accessories[a] + 1 })}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      {habit && (
+        <fieldset className="mt-7">
+          <legend className="mb-1 px-1 text-sm font-bold">{t('goalLabel')}</legend>
+          <p className="mb-3 px-1 text-[13px] text-muted-foreground">{t('goalHint')}</p>
+          <div className="flex flex-wrap gap-2" role="radiogroup">
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={habit.weekly_goal === n}
+                disabled={updateHabit.isPending}
+                onClick={() => n !== habit.weekly_goal && updateHabit.mutate({ weekly_goal: n })}
+                className={cn(
+                  'pressable h-10 rounded-full border-[1.5px] px-4 text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  habit.weekly_goal === n ? 'border-foreground font-bold' : 'border-border text-muted-foreground'
+                )}
+              >
+                {t('goalDays', { count: n })}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
       {!isDefaultPersona(persona) && (
         <button
           type="button"
@@ -321,7 +417,7 @@ export default function StinkyCustomizePage() {
             size="lg"
             className="w-full shadow-lg"
             disabled={update.isPending}
-            onClick={() => cleaned && save({ name: cleaned, coat, eyes, voice })}
+            onClick={() => cleaned && save({ name: cleaned, coat, eyes, voice, accessory: persona.accessory })}
           >
             {update.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
             {t('save')}

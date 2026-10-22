@@ -23,10 +23,10 @@ describe('their own Stinky', () => {
   });
 
   it('round-trips the cookie and falls back to Stinky on garbage', () => {
-    const chan = { name: 'Chan Chan', coat: 'naranja-atigrado', eyes: 'verde', voice: 'solo-miau' } as const;
+    const chan = { name: 'Chan Chan', coat: 'naranja-atigrado', eyes: 'verde', voice: 'solo-miau', accessory: 'perlas' } as const;
     expect(parsePersonaCookie(serializePersona(chan))).toEqual(chan);
     // A cookie from before the voice existed keeps the default voice.
-    expect(parsePersonaCookie('negro|azul|Chan')).toEqual({ name: 'Chan', coat: 'negro', eyes: 'azul', voice: 'gato' });
+    expect(parsePersonaCookie('negro|azul|Chan')).toEqual({ name: 'Chan', coat: 'negro', eyes: 'azul', voice: 'gato', accessory: null });
     expect(parsePersonaCookie(undefined)).toEqual(DEFAULT_STINKY_PERSONA);
     expect(parsePersonaCookie('dragon|rojo|%E0%A4%A')).toEqual(DEFAULT_STINKY_PERSONA);
     expect(parsePersonaCookie('siames|natural|Hola%20%7Bx%7D')).toEqual({
@@ -34,6 +34,7 @@ describe('their own Stinky', () => {
       coat: 'siames',
       eyes: 'natural',
       voice: 'gato',
+      accessory: null,
     });
   });
 
@@ -44,7 +45,10 @@ describe('their own Stinky', () => {
       coat: 'negro',
       eyes: 'azul',
       voice: 'gato',
+      accessory: null,
     });
+    expect(personaFromProfile({ stinky_accessory: 'cascabel' }).accessory).toBe('cascabel');
+    expect(personaFromProfile({ stinky_accessory: 'sombrero' }).accessory).toBeNull();
     expect(personaFromProfile({ stinky_voice: 'muy-gato' }).voice).toBe('muy-gato');
     expect(personaFromProfile({ stinky_voice: 'ladrido' }).voice).toBe('gato');
   });

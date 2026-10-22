@@ -23,6 +23,7 @@ import { startPurrVibration } from './stinky-purr'
 import { PURR_FX_MS, StinkyPurrFx } from './stinky-purr-fx'
 import { currentStinkyVariant, prefersReducedMotionNow, usePrefersReducedMotion, useStinkyVariant } from './use-stinky-env'
 import { useStinkyPersona } from './stinky-persona'
+import { StinkyAccessoryOverlay, type StinkyAccessory } from './stinky-accessory'
 import { DEFAULT_STINKY_COAT, type StinkyCoat, type StinkyEyes } from '@/lib/stinky-persona'
 
 export interface StinkyProps {
@@ -46,6 +47,11 @@ export interface StinkyProps {
   paused?: boolean
   /** Which coat to draw. Default: the person's own Stinky (Ajustes → Tu Stinky). */
   coat?: StinkyCoat
+  /**
+   * What he wears; default: the person's own cat wears what they chose, and a
+   * forced coat (someone else's cat, a preview) wears nothing. null = nothing.
+   */
+  accessory?: StinkyAccessory | null
   /** Eye colour; default: the person's choice (or the coat's own eyes when `coat` is forced). */
   eyes?: StinkyEyes
   className?: string
@@ -177,12 +183,23 @@ interface Playing {
  * Their own Stinky: his coat and name come from the person's choice unless forced. A new coat
  * is a new set of clips, so the head starts over from that coat's neutral frame.
  */
-export function Stinky({ coat: forcedCoat, eyes: forcedEyes, label, ...props }: StinkyProps) {
+export function Stinky({ coat: forcedCoat, eyes: forcedEyes, accessory: forcedAccessory, label, ...props }: StinkyProps) {
   const persona = useStinkyPersona()
   const coat = forcedCoat ?? persona.coat
   const eyes = forcedEyes ?? (forcedCoat ? 'natural' : persona.eyes)
-  return (
+  const head = (
     <StinkyHead key={`${coat}/${eyes}`} {...props} coat={coat} eyes={eyes} name={persona.name} label={label ?? persona.name} />
+  )
+  // What he wears (unlocked by his meals). Only the person's own cat wears it, and
+  // without one nothing wraps the head, so every layout stays exactly as it was.
+  const accessory = forcedAccessory !== undefined ? forcedAccessory : forcedCoat ? null : persona.accessory
+  if (!accessory) return head
+  const size = props.size ?? 128
+  return (
+    <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
+      {head}
+      <StinkyAccessoryOverlay accessory={accessory} />
+    </span>
   )
 }
 

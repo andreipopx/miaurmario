@@ -5,7 +5,18 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    SmallInteger,
+    String,
+    Text,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -52,6 +63,10 @@ class User(Base):
     stinky_eyes: Mapped[str | None] = mapped_column(String(16), nullable=True)
     # How much cat in the stylist (estilista … solo-miau); NULL = "gato".
     stinky_voice: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # What he wears, among what his meals unlocked (app/services/habit.py); NULL = nothing.
+    stinky_accessory: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Days a week with a logged look that keep the streak; NULL = 3.
+    weekly_goal: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")
     # Who chose the zone: "auto" (detected from the device or the chosen city)
     # or "manual" (the user picked it). Detection never overwrites "manual".

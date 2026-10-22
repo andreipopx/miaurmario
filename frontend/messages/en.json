@@ -4586,7 +4586,23 @@
         "body": "{name} only meows. You still see each look's garments; he just won't explain them.",
         "sample": ""
       }
-    }
+    },
+    "wardrobeLabel": "His wardrobe",
+    "wardrobeHint": "Unlocked by eating: each day you log what you wore is one meal.",
+    "nothing": "Nothing",
+    "lockedAt": "Level {level}",
+    "accessoryNames": {
+      "pajarita": "Bow tie",
+      "cascabel": "Bell",
+      "panuelo": "Bandana",
+      "lazo": "Bow",
+      "perlas": "Pearls",
+      "pajarita-dorada": "Golden bow tie"
+    },
+    "goalLabel": "Your streak",
+    "goalHint": "How many days a week you want to tell him what you wore. One joker a month covers a slow week.",
+    "goalDays": "{count, plural, one {# day} other {# days}}",
+    "accessorySaved": "Done"
   },
   "trips": {
     "title": "Trip mode",
@@ -4633,6 +4649,38 @@
       "upload": "Upload clothes",
       "failed": "The trip couldn't be planned.",
       "retry": "Try again"
+    }
+  },
+  "habit": {
+    "hungryTitle": "What are you wearing today?",
+    "hungryBody": "Tell me and I eat it: «Me lo pongo» on your look, or a photo if you wore something else.",
+    "backTitle": "You're back!",
+    "backBody": "I kept your spot on the sofa. Tell me what you're wearing today and we carry on.",
+    "fedTitle": "Nom! I already ate today",
+    "fedBody": "{left, plural, one {One more day this week keeps the streak.} other {# more days this week keep the streak.}}",
+    "fedWeekMet": "Week done: {goal, plural, one {# day} other {# days}} with a look. Everything else is dessert.",
+    "ate": "Nom! {name} ate your look",
+    "levelUp": "Level {level}!",
+    "unlockedNow": "He now has {item}. Put it on him in Your Stinky.",
+    "weekLabel": "This week: {count} of {goal} days",
+    "dayDone": "With a look",
+    "streak": "Streak",
+    "weeks": "{count, plural, =0 {Start today} one {# week} other {# weeks}}",
+    "comodinLeft": "This month's joker available",
+    "comodinUsed": "This month's joker used",
+    "level": "Level {level}",
+    "toReward": "{count, plural, one {# meal} other {# meals}} to {item}",
+    "toLevel": "{count, plural, one {# meal} other {# meals}} to level up",
+    "maxLevel": "Top level. Feline legend.",
+    "dressHim": "Give him {item}",
+    "woreSomethingElse": "I wore something else",
+    "accessories": {
+      "pajarita": "the bow tie",
+      "cascabel": "the bell",
+      "panuelo": "the bandana",
+      "lazo": "the bow",
+      "perlas": "the pearls",
+      "pajarita-dorada": "the golden bow tie"
     }
   }
 }

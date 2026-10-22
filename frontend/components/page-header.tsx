@@ -19,7 +19,8 @@ export function PageHeader({
     <header className={cn('flex flex-wrap items-center justify-between gap-x-4 gap-y-3', className)}>
       <div className="min-w-0 space-y-1">
         <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] sm:text-3xl">{title}</h1>
-        {description && <p className="text-[15px] leading-snug text-muted-foreground">{description}</p>}
+        {/* The title should say it; when a page still needs a line, it stays small. */}
+        {description && <div className="text-[13.5px] leading-snug text-muted-foreground">{description}</div>}
       </div>
       {action && <div className="flex max-w-full flex-wrap items-center gap-2">{action}</div>}
     </header>

@@ -23,9 +23,10 @@ export function StinkyTip({
   const said = voice === 'solo-miau' ? meows(seedOf(children) || 'stinky') : children;
   return (
     <div className={cn('flex items-center gap-3 rounded-[18px] bg-background p-2 pr-4', className)}>
-      <StinkyAvatar size={40} className="bg-signature-soft" />
+      {/* His face says who is talking: no «Stinky:» label to repeat it. */}
+      <StinkyAvatar size={36} className="bg-signature-soft" label={t('stinkySays')} />
       <p className={cn('text-[13.5px] leading-snug', clamp && 'line-clamp-3')}>
-        <strong className="font-bold">{t('stinkySays')}</strong> {said}
+        {said}
       </p>
     </div>
   );

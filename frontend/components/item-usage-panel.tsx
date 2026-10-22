@@ -130,7 +130,7 @@ export function ItemUsagePanel({ item }: { item: Item }) {
   return (
     <div className="space-y-3 rounded-lg bg-panel p-4">
       <div className="flex items-center gap-2 text-[15px] font-bold">
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-pop-mint text-pop-foreground">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-panel text-foreground">
           <Coins className="h-3.5 w-3.5" strokeWidth={1.75} />
         </span>
         {t('sectionTitle')}

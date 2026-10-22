@@ -6,6 +6,9 @@ import subprocess
 os.environ["DEBUG"] = "true"
 os.environ["SECRET_KEY"] = "change-me-in-production"
 os.environ["STORAGE_PATH"] = "/tmp/wardrobe_test"
+# The daily activity row is written from a background task on its own engine,
+# which would outlive each test's event loop; tests call it directly instead.
+os.environ["ACTIVITY_TRACKING"] = "false"
 os.environ.pop("OIDC_ISSUER_URL", None)
 os.environ.pop("OIDC_CLIENT_ID", None)
 os.environ.pop("OIDC_CLIENT_SECRET", None)

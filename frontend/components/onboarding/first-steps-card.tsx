@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Camera, ListChecks } from 'lucide-react';
+import { Camera, ImagePlus, Link2, ListChecks } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { LazyStinky } from '@/components/native/lazy-stinky';
@@ -18,6 +18,9 @@ import { useWardrobeStats } from '@/lib/hooks/use-wardrobe-stats';
 const UPLOAD_HREF = '/dashboard/wardrobe?bulk=1';
 /** The quick "tipo + color" pass over everything the tagger never named. */
 const REVIEW_HREF = '/dashboard/wardrobe?bulk=review';
+/** The ways in that need no photo of your own: what you bought online. */
+const SCREENSHOT_HREF = '/dashboard/wardrobe?add=shot';
+const LINK_HREF = '/dashboard/wardrobe?add=link';
 
 /**
  * Hoy, while the wardrobe is too small to be useful.
@@ -91,7 +94,8 @@ export function FirstStepsCard({ count }: { count: number }) {
               />
             </div>
           )}
-          <p className="mt-2 text-[13px] text-foreground/70">{t(copy.hint, values)}</p>
+          {/* The empty card's body already says what to upload. */}
+          {stage !== 'empty' && <p className="mt-2 text-[13px] text-foreground/70">{t(copy.hint, values)}</p>}
         </div>
 
         <Button asChild size="lg" className="mt-5 w-full max-w-sm">
@@ -108,6 +112,24 @@ export function FirstStepsCard({ count }: { count: number }) {
           <Button asChild variant="ghost" size="sm" className="mt-2">
             <Link href={UPLOAD_HREF}>{t('emptyCta')}</Link>
           </Button>
+        )}
+        {/* Photographing the wardrobe is where people give up, so the first
+            garments can also come from a screenshot or a shop link. */}
+        {(stage === 'empty' || stage === 'progress') && (
+          <div className="mt-2 grid w-full max-w-sm grid-cols-2 gap-2">
+            <Button asChild variant="secondary">
+              <Link href={SCREENSHOT_HREF}>
+                <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+                {t('fromScreenshot')}
+              </Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href={LINK_HREF}>
+                <Link2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+                {t('fromLink')}
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
     </section>

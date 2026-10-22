@@ -183,13 +183,24 @@ class ItemBase(BaseModel):
     care: CareInfo | None = None
 
 
+#: The ways a garment gets into the wardrobe, for the funnel (items.created_via).
+CREATED_VIA = frozenset({"photo", "bulk", "link", "screenshot", "selfie", "pin"})
+
+
 class ItemCreate(ItemBase):
     tags: ItemTags | None = None
+    #: How it was added (CREATED_VIA); anything else is stored as unknown.
+    created_via: str | None = None
     colors: list[str] | None = None
     primary_color: str | None = None
     # The sampled shade of the garment, "#rrggbb". Display only: `primary_color`
     # stays the family everything else reasons on.
     primary_color_hex: str | None = Field(None, max_length=7)
+
+    @field_validator("created_via", mode="before")
+    @classmethod
+    def _known_way_in(cls, value: Any) -> Any:
+        return value if value in CREATED_VIA else None
 
     @field_validator("primary_color_hex", mode="before")
     @classmethod
@@ -737,9 +748,10 @@ class WashHistoryResponse(BaseModel):
 
 
 class LinkPreviewRequest(BaseModel):
-    """A shop URL pasted by the user, to be read server-side."""
+    """A shop URL pasted by the user, to be read server-side. A whole shared
+    sentence ("Mira este producto… https://…") is fine: the link is found in it."""
 
-    url: str = Field(min_length=4, max_length=2048)
+    url: str = Field(min_length=4, max_length=4096)
 
 
 class LinkPreviewImage(BaseModel):
@@ -764,6 +776,39 @@ class LinkPreviewResponse(BaseModel):
     description: str | None = None
     site_name: str | None = None
     image: LinkPreviewImage | None = None
+    #: Every photo the shop has of the garment, the one alone first; ``image`` is images[0].
+    images: list[LinkPreviewImage] = Field(default_factory=list)
+    #: The garment type the shop's category gives away, in the wardrobe vocabulary.
+    type: str | None = None
+    primary_color_hex: str | None = None
+
+
+class ScreenshotGarmentResponse(BaseModel):
+    """One garment read off a screenshot, ready for the review screen."""
+
+    type: str
+    subtype: str | None = None
+    primary_color: str | None = None
+    primary_color_hex: str | None = None
+    colors: list[str] = Field(default_factory=list)
+    pattern: str | None = None
+    material: str | None = None
+    name: str | None = None
+    brand: str | None = None
+    price: Decimal | None = None
+    currency: str | None = None
+    #: The product page, when the garment was found in the shop's catalogue.
+    source_url: str | None = None
+    #: True when the photos come from the shop rather than from the screenshot.
+    from_shop: bool = False
+    #: Photos to choose from: the shop's (garment alone first), then the crop.
+    images: list[LinkPreviewImage] = Field(default_factory=list)
+
+
+class ScreenshotResponse(BaseModel):
+    """Everything a screenshot gave us. Nothing is saved until the user adds it."""
+
+    garments: list[ScreenshotGarmentResponse] = Field(default_factory=list)
 
 
 class CareLabelResponse(BaseModel):

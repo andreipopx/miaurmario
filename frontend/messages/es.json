@@ -869,8 +869,8 @@
       "removeLink": "Quitar el enlace",
       "link": {
         "label": "Enlace de la tienda",
-        "placeholder": "https://...",
-        "hint": "Pega el enlace de la prenda. Lo leemos nosotros en el servidor: solo lo que la tienda publica (nombre, marca, precio, color y la foto).",
+        "placeholder": "https://… o el texto de «Compartir»",
+        "hint": "Pega el enlace, o el texto entero de «Compartir». De Zara, Pull&Bear, Bershka, Stradivarius, Massimo Dutti y Mango me traigo también la foto de la prenda sola.",
         "read": "Leer enlace",
         "reading": "Leyendo...",
         "use": "Usar estos datos",
@@ -884,13 +884,50 @@
           "https_required": "Solo podemos abrir enlaces https.",
           "private_address": "Ese enlace apunta a una dirección privada y no lo vamos a abrir.",
           "unresolvable": "No hemos podido encontrar esa página.",
-          "fetch_failed": "No hemos podido leer esa página. Inténtalo otra vez o añade la prenda a mano.",
+          "fetch_failed": "Esa tienda no nos deja leer la página.",
           "link_import_disabled": "Ahora mismo no se pueden importar enlaces."
-        }
+        },
+        "whichPhoto": "¿Con qué foto la guardas?",
+        "photoN": "Foto {n}",
+        "tryScreenshot": "Algunas tiendas no dejan leer sus enlaces desde fuera. Con una captura de la prenda funciona siempre.",
+        "useScreenshot": "Usar una captura"
       },
       "choosePhoto": "Elegir foto",
       "takePhoto": "Hacer foto",
-      "photoNeeded": "Falta la foto de la prenda."
+      "photoNeeded": "Falta la foto de la prenda.",
+      "tabShot": "Captura",
+      "screenshot": {
+        "title": "Sube una captura",
+        "body": "De la app o la web de la tienda, de Instagram o de Pinterest. Te saco las prendas y, si es de Zara, Bershka, Pull&Bear, Stradivarius o Massimo Dutti, busco cada una en su tienda para coger la foto buena.",
+        "choose": "Elegir captura",
+        "pasteHint": "En el ordenador también puedes pegarla aquí (Ctrl+V).",
+        "reading": "Leyendo tu captura…",
+        "readingHint": "Busco las prendas y, si son de una tienda que conozco, su foto oficial.",
+        "found": "{count, plural, one {He encontrado esta prenda} other {He encontrado # prendas}}",
+        "pick": "Añadir {name}",
+        "fromShop": "Foto de {brand}",
+        "whichPhoto": "¿Con qué foto la guardas?",
+        "shopPhoto": "Foto {n} de la tienda",
+        "cropPhoto": "Recorte de tu captura",
+        "cropTag": "Captura",
+        "privacy": "La captura no se guarda: la leo y la olvido. Solo se queda la foto que elijas.",
+        "another": "Otra captura",
+        "add": "{count, plural, =0 {Elige alguna} one {Añadir la prenda} other {Añadir # prendas}}",
+        "adding": "Añadiendo {done} de {total}…",
+        "added": "{count, plural, one {Prenda añadida} other {# prendas añadidas}}",
+        "addedHint": "Les quito el fondo y las reviso en segundo plano.",
+        "duplicates": "{count, plural, one {Esa ya la tenías} other {# ya las tenías}}",
+        "someFailed": "{count, plural, one {No he podido añadir una} other {No he podido añadir #}}. Prueba otra vez.",
+        "noneTitle": "No veo ninguna prenda",
+        "noneBody": "Prueba con una captura donde la prenda se vea bien, mejor la de la página del producto.",
+        "cancel": "Cancelar",
+        "errors": {
+          "image_unreadable": "No puedo abrir esa imagen. Prueba con una captura en PNG o JPG.",
+          "screenshot_failed": "No he podido leer la captura. Prueba otra vez.",
+          "rate_limited": "Has subido muchas capturas seguidas. Espera un minuto.",
+          "ai": "Para leer capturas hace falta la IA de Stinky. Mientras, puedes pegar el enlace o hacer una foto."
+        }
+      }
     },
     "searchCountPlaceholder": "Busca en tus {count, plural, one {# prenda} other {# prendas}}",
     "categories": "Categorías",
@@ -2948,6 +2985,36 @@
         "noBudget": "Sin límite",
         "hint": "Solo afecta a la estimación y a los avisos; no corta la IA.",
         "save": "Guardar precios"
+      },
+      "funnel": {
+        "title": "Embudo",
+        "description": "Todas las cuentas desde el principio. Las barras son el % de altas.",
+        "steps": {
+          "signed_up": "Se registran",
+          "onboarded": "Terminan el alta",
+          "items_1": "Suben 1 prenda",
+          "items_3": "Suben 3 prendas",
+          "items_10": "Suben 10 prendas",
+          "first_look": "Tienen un look"
+        },
+        "firstWeek": "Vuelven la 1.ª semana",
+        "firstWeekHint": "Otro día distinto al del alta, en sus primeros 7 días",
+        "secondWeek": "Vuelven la 2.ª semana",
+        "secondWeekHint": "Entre el día 7 y el 13 desde el alta",
+        "backOf": "{count} de {eligible} ({pct} %)",
+        "notYet": "Aún no hay datos",
+        "today": "Activos hoy",
+        "week": "Activos 7 días",
+        "waysTitle": "Cómo añaden prendas",
+        "ways": {
+          "photo": "Foto",
+          "bulk": "Varias fotos",
+          "link": "Enlace",
+          "screenshot": "Captura",
+          "selfie": "Qué llevo",
+          "pin": "Pinterest",
+          "unknown": "Antes de medirlo"
+        }
       }
     },
     "users": {
@@ -3837,9 +3904,9 @@
       "friends": "busca a tus amigos por su @usuario y mira los looks que comparten."
     },
     "firstSteps": {
-      "emptyTitle": "Sube unas cuantas prendas",
-      "emptyBody": "Elige varias fotos de golpe: les quito el fondo y las etiqueto (o lo haces tú en dos toques si tu plan no tiene IA).",
-      "emptyCta": "Subir prendas",
+      "emptyTitle": "Dame dos prendas y te hago un look",
+      "emptyBody": "Una de arriba y otra de abajo, o un vestido y unos zapatos. Haz fotos o tráelas de lo que compraste online: una captura de la tienda o el enlace.",
+      "emptyCta": "Hacer fotos de mi ropa",
       "progressTitle": "¡Vas bien!",
       "progress": "{count} de {min} prendas para que Stinky empiece a proponerte looks",
       "progressHint": "Mejor una parte de arriba y otra de abajo, o un vestido y unos zapatos.",
@@ -3851,7 +3918,9 @@
       "varietyTitle": "Ya puedo proponerte algo",
       "variety": "Con {target} prendas empiezo a proponerte looks de verdad; llevas {count}.",
       "varietyHint": "Con {min} me las apaño, pero repito mucho. Cuantas más haya, menos me repito.",
-      "varietyCta": "Subir más prendas"
+      "varietyCta": "Subir más prendas",
+      "fromScreenshot": "Desde captura",
+      "fromLink": "Pegar enlace"
     },
     "styleQuiz": {
       "dialogLabel": "Tu estilo con Stinky",

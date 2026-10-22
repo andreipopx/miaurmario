@@ -1,3 +1,4 @@
+from app.models.activity import UserActivityDay
 from app.models.admin import (
     AccountDeletion,
     AdminAuditLog,
@@ -44,6 +45,7 @@ from app.models.user import User
 from app.models.user_ai_settings import UserAISettings
 
 __all__ = [
+    "UserActivityDay",
     "AccountDeletion",
     "AdminAuditLog",
     "AppSetting",

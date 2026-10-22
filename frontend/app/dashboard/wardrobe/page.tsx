@@ -39,7 +39,7 @@ import { useTranslations } from 'next-intl';
 import { useColorLabel } from '@/lib/tag-labels';
 import { garmentTileTint } from '@/lib/garment-tint';
 import { readSharedIntake } from '@/lib/shared-intake';
-import type { AddItemInitial } from '@/components/add-item-dialog';
+import type { AddItemInitial, AddItemTab } from '@/components/add-item-dialog';
 import { WARDROBE_PAGE_SIZE } from '@/lib/offline/warmup';
 import { FEATURES } from '@/lib/features';
 
@@ -341,7 +341,7 @@ export default function WardrobePage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   // Which tab the add dialog opens on, and — for the bulk tab — whether it starts
   // at the picker or straight in the quick pass over everything still untagged.
-  const [addTab, setAddTab] = useState<'single' | 'link' | 'bulk'>('single');
+  const [addTab, setAddTab] = useState<AddItemTab>('single');
   const [bulkMode, setBulkMode] = useState<'batch' | 'untagged'>('batch');
   const [sharedIntake, setSharedIntake] = useState<AddItemInitial | null>(null);
   const [selecting, setSelecting] = useState(false);
@@ -392,10 +392,13 @@ export default function WardrobePage() {
   // ?shared=1 means the share target stashed a photo or a link for us to pick
   // up; ?share_failed=1 means the POST reached the server instead of the
   // worker, so there is nothing to pick up and we say so.
+  // ?add=shot / ?add=link land on that way in (the Hoy empty state links here).
   useEffect(() => {
-    if (!searchParams.get('add')) return;
+    const add = searchParams.get('add');
+    if (!add) return;
     const shared = searchParams.get('shared');
     const shareFailed = searchParams.get('share_failed');
+    setAddTab(add === 'shot' || add === 'link' ? add : 'single');
     setAddDialogOpen(true);
     router.replace('/dashboard/wardrobe', { scroll: false });
 

@@ -41,11 +41,13 @@ import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { CareLabelField } from '@/components/add-item/care-label-field';
 import { LinkImportTab } from '@/components/add-item/link-import-tab';
+import { ScreenshotImportTab } from '@/components/add-item/screenshot-import-tab';
 import { ColorCaptureField } from '@/components/color-capture-field';
 import { BulkUploadPanel } from '@/components/bulk-upload/bulk-upload-panel';
 import { CareDraft } from '@/lib/hooks/use-intake';
 import { NO_FRAMING, PhotoPreview, type PhotoFraming } from '@/components/add-item/photo-preview';
 import { supportsShareTarget } from '@/lib/pwa/platform';
+import { normalizePrice, type CreatedVia } from '@/lib/intake/garment-form';
 
 interface AddItemDialogProps {
   open: boolean;
@@ -56,7 +58,7 @@ interface AddItemDialogProps {
    */
   initial?: AddItemInitial | null;
   /** Which tab to land on; "bulk" is what ?bulk=1 and every nudge link opens. */
-  initialTab?: 'single' | 'link' | 'bulk';
+  initialTab?: AddItemTab;
   /**
    * "untagged" opens the bulk tab straight into the quick pass over every garment
    * the tagger never named, rather than into the picker.
@@ -64,11 +66,20 @@ interface AddItemDialogProps {
   bulkMode?: 'batch' | 'untagged';
 }
 
+export type AddItemTab = 'single' | 'link' | 'shot' | 'bulk';
+
 export interface AddItemInitial {
   file?: File | null;
   link?: string | null;
   name?: string | null;
 }
+
+const TAB_LABEL: Record<AddItemTab, string> = {
+  single: 'tabSingle',
+  shot: 'tabShot',
+  link: 'tabLink',
+  bulk: 'tabBulk',
+};
 
 export function AddItemDialog({
   open,
@@ -93,6 +104,9 @@ export function AddItemDialog({
   const [primaryColorHex, setPrimaryColorHex] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
+  const [purchasePrice, setPurchasePrice] = useState<string | null>(null);
+  /** How the garment got here, for the funnel: a photo, unless a link filled the form. */
+  const [createdVia, setCreatedVia] = useState<CreatedVia>('photo');
   const [care, setCare] = useState<CareDraft | null>(null);
   /** Turns and crop the user chose in the preview; applied server-side on save. */
   const [framing, setFraming] = useState<PhotoFraming>(NO_FRAMING);
@@ -189,6 +203,8 @@ export function AddItemDialog({
     if (primaryColor && primaryColorHex) formData.append('primary_color_hex', primaryColorHex);
     if (notes) formData.append('notes', notes);
     if (sourceUrl) formData.append('source_url', sourceUrl);
+    if (purchasePrice) formData.append('purchase_price', purchasePrice);
+    formData.append('created_via', createdVia);
     if (care) formData.append('care', JSON.stringify(care));
     // The server straightens and crops: no canvas re-encode here, so nothing is
     // lost and a HEIC the browser cannot decode is still saved correctly.
@@ -246,6 +262,8 @@ export function AddItemDialog({
     setPrimaryColorHex(undefined);
     setNotes('');
     setSourceUrl('');
+    setPurchasePrice(null);
+    setCreatedVia('photo');
     setCare(null);
     setFraming(NO_FRAMING);
 
@@ -280,17 +298,15 @@ export function AddItemDialog({
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          {/* Three tabs have to fit a 320px phone at 125% font: let them
+          {/* Four tabs have to fit a 320px phone at 125% font: let them
               shrink and ellipsize instead of pushing the dialog wider. */}
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             {/* The label needs its own block for `truncate` to ellipsise it: a bare
                 text node in a centred flex box just gets clipped at both ends,
                 which at 320 px and 125 % font turns "Varias" into "aria". */}
-            {(['single', 'link', 'bulk'] as const).map((tab) => (
-              <TabsTrigger key={tab} value={tab} className="min-w-0 px-2 text-xs sm:px-4 sm:text-sm">
-                <span className="min-w-0 truncate">
-                  {t(tab === 'single' ? 'tabSingle' : tab === 'link' ? 'tabLink' : 'tabBulk')}
-                </span>
+            {(['single', 'shot', 'link', 'bulk'] as const).map((tab) => (
+              <TabsTrigger key={tab} value={tab} className="min-w-0 px-1.5 text-xs sm:px-3 sm:text-sm">
+                <span className="min-w-0 truncate">{t(TAB_LABEL[tab])}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -300,6 +316,7 @@ export function AddItemDialog({
             <LinkImportTab
               initialUrl={initial?.link ?? null}
               onCancel={handleCloseRequest}
+              onScreenshot={() => setActiveTab('shot')}
               onUse={(prefill) => {
                 if (prefill.file) {
                   setFile(prefill.file);
@@ -312,13 +329,23 @@ export function AddItemDialog({
                 if (prefill.brand) setBrand(prefill.brand.slice(0, 100));
                 if (prefill.primaryColor) {
                   setPrimaryColor(prefill.primaryColor);
-                  // The shop only gave us a name, so there is no shade to show.
-                  setPrimaryColorHex(undefined);
+                  // The shop's own shade when it publishes one (Zara, Mango).
+                  setPrimaryColorHex(prefill.primaryColorHex ?? undefined);
                 }
+                if (prefill.type && (CLOTHING_TYPES as readonly { value: string }[]).some((c) => c.value === prefill.type)) {
+                  setType(prefill.type);
+                }
+                setPurchasePrice(normalizePrice(prefill.price));
                 setSourceUrl(prefill.sourceUrl);
-                setActiveTab(initialTab);
+                setCreatedVia('link');
+                setActiveTab('single');
               }}
             />
+          </TabsContent>
+
+          {/* A screenshot of the shop, Instagram or Pinterest: read, then reviewed here */}
+          <TabsContent value="shot" className="space-y-4">
+            <ScreenshotImportTab onCancel={handleCloseRequest} onDone={handleClose} />
           </TabsContent>
 
           {/* Single Item Upload */}

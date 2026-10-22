@@ -869,8 +869,8 @@
       "removeLink": "Remove the link",
       "link": {
         "label": "Shop link",
-        "placeholder": "https://...",
-        "hint": "Paste the link to the garment. We read it on the server: only what the shop publishes (name, brand, price, colour and the photo).",
+        "placeholder": "https://… or the «Share» text",
+        "hint": "Paste the link, or the whole «Share» text. For Zara, Pull&Bear, Bershka, Stradivarius, Massimo Dutti and Mango I also bring the photo of the garment on its own.",
         "read": "Read link",
         "reading": "Reading...",
         "use": "Use this",
@@ -884,13 +884,50 @@
           "https_required": "We can only open https links.",
           "private_address": "That link points at a private address, so we will not open it.",
           "unresolvable": "We could not find that page.",
-          "fetch_failed": "We could not read that page. Try again or add the garment by hand.",
+          "fetch_failed": "That shop doesn't let us read the page.",
           "link_import_disabled": "Link import is off right now."
-        }
+        },
+        "whichPhoto": "Which photo should it keep?",
+        "photoN": "Photo {n}",
+        "tryScreenshot": "Some shops don't let their links be read from outside. A screenshot of the garment always works.",
+        "useScreenshot": "Use a screenshot"
       },
       "choosePhoto": "Choose a photo",
       "takePhoto": "Take a photo",
-      "photoNeeded": "The garment's photo is missing."
+      "photoNeeded": "The garment's photo is missing.",
+      "tabShot": "Screenshot",
+      "screenshot": {
+        "title": "Upload a screenshot",
+        "body": "From the shop's app or website, Instagram or Pinterest. I pick out the garments and, for Zara, Bershka, Pull&Bear, Stradivarius or Massimo Dutti, I find each one in the shop to get the good photo.",
+        "choose": "Choose screenshot",
+        "pasteHint": "On a computer you can also paste it here (Ctrl+V).",
+        "reading": "Reading your screenshot…",
+        "readingHint": "Looking for the garments and, when they come from a shop I know, their official photo.",
+        "found": "{count, plural, one {I found this garment} other {I found # garments}}",
+        "pick": "Add {name}",
+        "fromShop": "Photo from {brand}",
+        "whichPhoto": "Which photo should it keep?",
+        "shopPhoto": "Shop photo {n}",
+        "cropPhoto": "Crop of your screenshot",
+        "cropTag": "Screenshot",
+        "privacy": "The screenshot isn't kept: I read it and forget it. Only the photo you choose stays.",
+        "another": "Another screenshot",
+        "add": "{count, plural, =0 {Pick one} one {Add the garment} other {Add # garments}}",
+        "adding": "Adding {done} of {total}…",
+        "added": "{count, plural, one {Garment added} other {# garments added}}",
+        "addedHint": "I remove the background and check them in the background.",
+        "duplicates": "{count, plural, one {You already had that one} other {You already had #}}",
+        "someFailed": "{count, plural, one {Couldn't add one} other {Couldn't add #}}. Try again.",
+        "noneTitle": "I can't see any garment",
+        "noneBody": "Try a screenshot where the garment is clearly visible, ideally the product page.",
+        "cancel": "Cancel",
+        "errors": {
+          "image_unreadable": "I can't open that image. Try a PNG or JPG screenshot.",
+          "screenshot_failed": "I couldn't read the screenshot. Try again.",
+          "rate_limited": "Lots of screenshots in a row. Wait a minute.",
+          "ai": "Reading screenshots needs Stinky's AI. Meanwhile, paste the link or take a photo."
+        }
+      }
     },
     "searchCountPlaceholder": "Search your {count, plural, one {# item} other {# items}}",
     "categories": "Categories",
@@ -2948,6 +2985,36 @@
         "noBudget": "No limit",
         "hint": "Only affects the estimate and warnings; AI is never cut off.",
         "save": "Save prices"
+      },
+      "funnel": {
+        "title": "Funnel",
+        "description": "Every account since the start. Bars are % of sign-ups.",
+        "steps": {
+          "signed_up": "Sign up",
+          "onboarded": "Finish onboarding",
+          "items_1": "Add 1 garment",
+          "items_3": "Add 3 garments",
+          "items_10": "Add 10 garments",
+          "first_look": "Get a look"
+        },
+        "firstWeek": "Back in week 1",
+        "firstWeekHint": "On another day than sign-up, within their first 7 days",
+        "secondWeek": "Back in week 2",
+        "secondWeekHint": "Between day 7 and 13 after signing up",
+        "backOf": "{count} of {eligible} ({pct} %)",
+        "notYet": "No data yet",
+        "today": "Active today",
+        "week": "Active 7 days",
+        "waysTitle": "How garments get added",
+        "ways": {
+          "photo": "Photo",
+          "bulk": "Several photos",
+          "link": "Link",
+          "screenshot": "Screenshot",
+          "selfie": "What I wear",
+          "pin": "Pinterest",
+          "unknown": "Before tracking"
+        }
       }
     },
     "users": {
@@ -3837,9 +3904,9 @@
       "friends": "find your friends by their @username and see the looks they share."
     },
     "firstSteps": {
-      "emptyTitle": "Upload a few items",
-      "emptyBody": "Pick several photos at once: I take the background off and tag them (or you do, in two taps, if your plan has no AI).",
-      "emptyCta": "Upload items",
+      "emptyTitle": "Give me two garments and I'll make you a look",
+      "emptyBody": "A top and a bottom, or a dress and shoes. Take photos, or bring what you bought online: a screenshot of the shop or the link.",
+      "emptyCta": "Photograph my clothes",
       "progressTitle": "Good start!",
       "progress": "{count} of {min} items before Stinky starts suggesting looks",
       "progressHint": "Ideally a top and a bottom, or a dress and some shoes.",
@@ -3851,7 +3918,9 @@
       "varietyTitle": "I can suggest something now",
       "variety": "With {target} items I start suggesting real looks; you have {count}.",
       "varietyHint": "I can manage with {min}, but I repeat myself a lot. The more there are, the less I do.",
-      "varietyCta": "Upload more items"
+      "varietyCta": "Upload more items",
+      "fromScreenshot": "From screenshot",
+      "fromLink": "Paste a link"
     },
     "styleQuiz": {
       "dialogLabel": "Your style with Stinky",

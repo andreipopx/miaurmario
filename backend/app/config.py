@@ -11,9 +11,12 @@ DEFAULT_SECRET_KEY = "change-me-in-production"
 # Nominatim requires an identifying User-Agent with a contact URL.
 DEFAULT_GEOCODING_USER_AGENT = "Miaurmario/1.0 (+https://github.com/andreipopx/miaurmario)"
 
-# Shops we read a pasted product link from deserve to know who is knocking.
+# A pasted product link is read the way the user's own browser would ask for it:
+# one page (or the shop's own product JSON), on their behalf, never crawled. Shops
+# answer an unknown agent with a 403, so an identifying one reads nothing at all.
 DEFAULT_LINK_IMPORT_USER_AGENT = (
-    "Miaurmario/1.0 (+https://github.com/andreipopx/miaurmario; wardrobe link preview)"
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) Version/17.5 Safari/605.1.15"
 )
 
 
@@ -181,9 +184,11 @@ class Settings(BaseSettings):
     max_bulk_upload_count: int = Field(default=30, ge=1, le=100)
 
     # Importing a garment from a pasted shop link. The page is fetched
-    # server-side (https only, public addresses only, no JavaScript executed);
-    # the User-Agent identifies us to the shops we read, as Nominatim requires.
+    # server-side (https only, public addresses only, no JavaScript executed),
+    # one request per paste, as a browser would.
     link_import_enabled: bool = Field(default=True)
+    # One row per user per day of use (user_activity_days), for the funnel.
+    activity_tracking: bool = Field(default=True)
     link_import_user_agent: str = Field(default=DEFAULT_LINK_IMPORT_USER_AGENT)
 
     # Background removal

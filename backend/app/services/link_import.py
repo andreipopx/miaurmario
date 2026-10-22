@@ -20,7 +20,9 @@ deliberately narrow:
   re-validated from scratch;
 * an allowlist of content types, a byte cap enforced while streaming and a
   wall-clock timeout on every request;
-* an identifying User-Agent with a contact URL;
+* a browser User-Agent: the fetch is the user's own paste, one page, the way
+  their browser would ask for it (most shops answer an unknown agent with a
+  403), and nothing is crawled;
 * pages that ask not to be indexed (``<meta name="robots" content="noindex">``
   or an ``X-Robots-Tag: noindex`` header) are fetched but not extracted;
 * the remote image is re-encoded through Pillow before it reaches the user, so
@@ -28,6 +30,10 @@ deliberately narrow:
 
 Results are cached in-process by normalized URL for a few hours, which is what
 keeps a user pasting the same link twice from hitting the shop twice.
+
+Shops whose pages a server cannot read at all (the Inditex brands, Mango) are
+read from the JSON their own web apps use instead, through the same fetcher —
+see :mod:`app.services.shop_catalog`.
 """
 
 from __future__ import annotations
@@ -41,7 +47,7 @@ import re
 import socket
 import time
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from html.parser import HTMLParser
 from typing import Any
@@ -51,7 +57,9 @@ import httpx
 from PIL import Image, ImageOps
 
 from app.config import get_settings
-from app.services.ai_service import VALID_COLORS
+from app.services import shop_catalog
+from app.services.ai_service import VALID_COLORS, VALID_TYPES
+from app.utils.colors import normalize_hex
 
 logger = logging.getLogger(__name__)
 
@@ -60,21 +68,29 @@ MAX_REDIRECTS = 3
 FETCH_TIMEOUT_SECONDS = 10.0
 CONNECT_TIMEOUT_SECONDS = 5.0
 DNS_TIMEOUT_SECONDS = 5.0
-MAX_HTML_BYTES = 1_500_000
+# Product pages carry their whole app inline (Zalando, Primark, Vinted ~2 MB).
+MAX_HTML_BYTES = 4_000_000
+MAX_JSON_BYTES = 4_000_000
 MAX_IMAGE_BYTES = 8_000_000
 MAX_IMAGE_EDGE = 1600
+#: Photos offered to choose from when the shop has several.
+MAX_IMAGES = 4
 
 HTML_CONTENT_TYPES = frozenset({"text/html", "application/xhtml+xml"})
 IMAGE_CONTENT_TYPES = frozenset(
     {"image/jpeg", "image/pjpeg", "image/png", "image/webp", "image/avif", "image/gif"}
 )
+JSON_CONTENT_TYPES = frozenset({"application/json"})
+
+#: Shops whose og:image is the garment alone and whose JSON-LD photo is on a model.
+OG_IMAGE_FIRST = ("zalando.es", "zalando.com", "zalando.fr", "zalando.it", "zalando.de")
 
 #: Reasons that mean "we refused to go there" — the caller answers 4xx.
 BLOCKED_REASONS = frozenset({"invalid_url", "https_required", "private_address", "unresolvable"})
 
 CACHE_TTL_SECONDS = 6 * 60 * 60
 CACHE_MAX_ENTRIES = 16
-CACHE_MAX_IMAGE_BYTES = 2_000_000
+CACHE_MAX_IMAGE_BYTES = 4_000_000
 
 # Extra ranges that older Pythons still call "global".
 _EXTRA_BLOCKED_NETWORKS = (
@@ -90,10 +106,12 @@ _EXTRA_BLOCKED_NETWORKS = (
 class LinkImportError(ValueError):
     """A pasted link could not be used; ``reason`` is a stable code for the UI."""
 
-    def __init__(self, reason: str, message: str):
+    def __init__(self, reason: str, message: str, url: str | None = None):
         super().__init__(message)
         self.reason = reason
         self.message = message
+        #: The hop that failed, so a short link that redirected to a shop is still known.
+        self.url = url
 
     @property
     def blocked(self) -> bool:
@@ -115,6 +133,11 @@ class ProductExtraction:
     description: str | None = None
     site_name: str | None = None
     image_url: str | None = None
+    #: Every photo worth offering, ``image_url`` first.
+    image_urls: list[str] = field(default_factory=list)
+    #: The garment type the shop's category or the name gives away.
+    type: str | None = None
+    primary_color_hex: str | None = None
     noindex: bool = False
 
     def has_content(self) -> bool:
@@ -127,6 +150,8 @@ class LinkImportResult:
     image: bytes | None = None
     image_content_type: str | None = None
     reason: str | None = None  # why the result is thin, when it is
+    #: Every photo we could read, ``(bytes, content type)``, the main one first.
+    images: list[tuple[bytes, str]] = field(default_factory=list)
 
     @property
     def extracted(self) -> bool:
@@ -142,6 +167,22 @@ def _ip_is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     if not ip.is_global or ip.is_multicast:
         return False
     return not any(ip in net for net in _EXTRA_BLOCKED_NETWORKS if net.version == ip.version)
+
+
+_LINK_IN_TEXT = re.compile(r"(?:https?://|www\.)[^\s<>\"']+", re.I)
+
+
+def link_in_text(text: str) -> str:
+    """The link inside what was pasted.
+
+    A shop app's «Compartir» hands over a sentence ("Mira este producto de ZARA
+    https://…"), and people paste it whole. Plain links come back unchanged.
+    """
+    raw = (text or "").strip()
+    if not raw or (" " not in raw and "\n" not in raw):
+        return raw
+    match = _LINK_IN_TEXT.search(raw)
+    return match.group(0).rstrip(".,;:!?)»”") if match else raw
 
 
 def normalize_link_url(url: str) -> tuple[str, str, int]:
@@ -280,7 +321,9 @@ async def _fetch(
                     continue
                 if response.status_code >= 400:
                     raise LinkImportError(
-                        "fetch_failed", f"The shop answered {response.status_code}"
+                        "fetch_failed",
+                        f"The shop answered {response.status_code}",
+                        url=normalized,
                     )
                 content_type = response.headers.get("content-type", "")
                 media_type = content_type.split(";")[0].strip().lower()
@@ -404,7 +447,8 @@ def _walk_jsonld(node: Any) -> list[dict]:
             found.extend(_walk_jsonld(child))
     elif isinstance(node, dict):
         found.append(node)
-        for key in ("@graph", "mainEntity", "hasVariant", "itemListElement"):
+        # ``offers`` too: a ProductGroup keeps its prices on each variant.
+        for key in ("@graph", "mainEntity", "hasVariant", "itemListElement", "offers"):
             if key in node:
                 found.extend(_walk_jsonld(node[key]))
     return found
@@ -474,7 +518,11 @@ def parse_price(value: Any) -> Decimal | None:
 _CURRENCY_SYMBOLS = {"€": "EUR", "$": "USD", "£": "GBP"}
 
 
+_CURRENCY_CODES = re.compile(r"(?<![A-Z])(EUR|USD|GBP|CHF|MXN)(?![A-Z])")
+
+
 def _currency_from(value: Any) -> str | None:
+    """``"EUR"``, ``"29,95 €"`` or ``"29,95 EUR"`` → ``"EUR"``."""
     if not isinstance(value, str):
         return None
     text = value.strip().upper()
@@ -483,7 +531,8 @@ def _currency_from(value: Any) -> str | None:
     for symbol, code in _CURRENCY_SYMBOLS.items():
         if symbol in value:
             return code
-    return None
+    match = _CURRENCY_CODES.search(text)
+    return match.group(1) if match else None
 
 
 #: Colour words we can recognise in a product title, mapped to the app vocabulary.
@@ -542,6 +591,19 @@ COLOR_WORDS: dict[str, str] = {
     "gold": "gold",
     "plateado": "silver",
     "silver": "silver",
+    "visón": "beige",
+    "vison": "beige",
+    "arena": "beige",
+    "nude": "beige",
+    "topo": "brown",
+    "chocolate": "brown",
+    "tostado": "tan",
+    "fucsia": "pink",
+    "coral": "orange",
+    "mostaza": "yellow",
+    "vino": "burgundy",
+    "antracita": "gray",
+    "marengo": "gray",
 }
 
 _COLOR_PATTERNS = sorted(COLOR_WORDS, key=len, reverse=True)
@@ -560,6 +622,137 @@ def guess_color(*texts: str | None) -> str | None:
                 if color in VALID_COLORS:
                     return color
     return None
+
+
+#: Category words in shop names and families (Spanish or English), mapped to the
+#: wardrobe types. Longer phrases win ("chaqueta punto" is a cardigan, not a jacket).
+TYPE_WORDS: dict[str, str] = {
+    "abrigo": "coat",
+    "gabardina": "coat",
+    "trench": "coat",
+    "parka": "coat",
+    "plumifero": "coat",
+    "plumífero": "coat",
+    "coat": "coat",
+    "chaqueta punto": "cardigan",
+    "chaqueta de punto": "cardigan",
+    "cardigan": "cardigan",
+    "cárdigan": "cardigan",
+    "chaqueta": "jacket",
+    "cazadora": "jacket",
+    "sobrecamisa": "jacket",
+    "bomber": "jacket",
+    "jacket": "jacket",
+    "blazer": "blazer",
+    "americana": "blazer",
+    "chaleco": "vest",
+    "vest": "vest",
+    "sudadera": "hoodie",
+    "hoodie": "hoodie",
+    "jersey": "sweater",
+    "jerséis": "sweater",
+    "sweater": "sweater",
+    "tricot": "sweater",
+    "punto": "sweater",
+    "polo": "polo",
+    "blusa": "blouse",
+    "blouse": "blouse",
+    "camisa": "shirt",
+    "shirt": "shirt",
+    "camiseta": "t-shirt",
+    "t-shirt": "t-shirt",
+    "tirantes": "tank-top",
+    "tank": "tank-top",
+    "top": "top",
+    "body": "top",
+    "corsé": "top",
+    "vestido": "dress",
+    "dress": "dress",
+    "mono": "jumpsuit",
+    "jumpsuit": "jumpsuit",
+    "falda": "skirt",
+    "skirt": "skirt",
+    "vaquero": "jeans",
+    "jeans": "jeans",
+    "denim": "jeans",
+    "pantalón corto": "shorts",
+    "bermuda": "shorts",
+    "short": "shorts",
+    "shorts": "shorts",
+    "pantalon": "pants",
+    "pantalón": "pants",
+    "pantalones": "pants",
+    "trousers": "pants",
+    "leggings": "pants",
+    "chinos": "pants",
+    "zapatillas": "sneakers",
+    "deportivas": "sneakers",
+    "sneakers": "sneakers",
+    "botas": "boots",
+    "bota": "boots",
+    "botín": "boots",
+    "botin": "boots",
+    "botines": "boots",
+    "boots": "boots",
+    "sandalia": "sandals",
+    "sandalias": "sandals",
+    "chanclas": "sandals",
+    "sandals": "sandals",
+    "zapato": "shoes",
+    "zapatos": "shoes",
+    "mocasín": "shoes",
+    "mocasines": "shoes",
+    "bailarinas": "shoes",
+    "destalonados": "shoes",
+    "salones": "shoes",
+    "shoes": "shoes",
+    "bolso": "bag",
+    "bandolera": "bag",
+    "mochila": "bag",
+    "bag": "bag",
+    "cinturón": "belt",
+    "cinturon": "belt",
+    "belt": "belt",
+    "gorro": "hat",
+    "gorra": "hat",
+    "sombrero": "hat",
+    "hat": "hat",
+    "bufanda": "scarf",
+    "pañuelo": "scarf",
+    "fular": "scarf",
+    "scarf": "scarf",
+    "corbata": "tie",
+    "calcetines": "socks",
+}
+_TYPE_PATTERNS = sorted(TYPE_WORDS, key=len, reverse=True)
+
+
+_DENIM = re.compile(r"(?<![\w-])(?:denim|vaquer[oa]s?|jeans?)(?![\w-])", re.I)
+
+
+def guess_type(*texts: str | None) -> str | None:
+    """Pick a wardrobe type out of a product name or a shop category.
+
+    Earlier texts win — pass the name before the shop's family, which is often
+    broader ("Tricot" for a cardigan) — and within a text the leftmost word wins:
+    "Jersey cuello camisa" is a sweater. Trousers in denim are jeans.
+    """
+    found: str | None = None
+    for text in texts:
+        if not text:
+            continue
+        haystack = f" {text.lower()} "
+        best: tuple[int, str] | None = None
+        for word in _TYPE_PATTERNS:
+            match = re.search(rf"(?<![\w-]){re.escape(word)}(?:es|s)?(?![\w-])", haystack)
+            if match and (best is None or match.start() < best[0]):
+                best = (match.start(), TYPE_WORDS[word])
+        if best and best[1] in VALID_TYPES:
+            found = best[1]
+            break
+    if found == "pants" and any(_DENIM.search(t) for t in texts if t):
+        return "jeans"
+    return found
 
 
 def _clean_title(title: str | None, site_name: str | None) -> str | None:
@@ -650,14 +843,35 @@ def parse_product_html(
     )
 
     # The JSON-LD product image is the garment itself; og:image is often a
-    # social card with the logo burnt in, so it is the fallback.
-    image = (
-        _first_string(product.get("image"))
-        or meta.get("og:image:secure_url")
+    # social card with the logo burnt in, so it is the fallback — except on the
+    # shops whose og:image is the packshot and whose JSON-LD photo is the model.
+    variants = [n for n in _walk_jsonld(product.get("hasVariant") or []) if isinstance(n, dict)]
+    jsonld_images = _all_strings(product.get("image")) + [
+        url for variant in variants[:3] for url in _all_strings(variant.get("image"))
+    ]
+    og_image = (
+        meta.get("og:image:secure_url")
         or meta.get("og:image")
         or meta.get("twitter:image")
         or meta.get("twitter:image:src")
     )
+    host = (urlsplit(base_url).hostname or "").lower()
+    ordered = (
+        [og_image, *jsonld_images]
+        if any(host == h or host.endswith(f".{h}") for h in OG_IMAGE_FIRST)
+        else [*jsonld_images, og_image]
+    )
+    images: list[str] = []
+    for candidate in ordered:
+        if not candidate:
+            continue
+        try:
+            absolute = urljoin(base_url, candidate.strip())
+        except ValueError:
+            continue
+        if absolute.startswith("https://") and absolute not in images:
+            images.append(absolute)
+    image = images[0] if images else None
 
     extraction.name = _clean_title(name, site_name)
     extraction.brand = (brand or "").strip()[:100] or None
@@ -666,17 +880,38 @@ def parse_product_html(
     extraction.description = (description or "").strip()[:500] or None
     extraction.site_name = (site_name or "").strip()[:100] or None
     extraction.material = _first_string(product.get("material"))
+    variant_color = next((_first_string(v.get("color")) for v in variants if v.get("color")), None)
     extraction.primary_color = guess_color(
         _first_string(product.get("color")),
+        variant_color,
         meta.get("product:color"),
         extraction.name,
     )
-    if image:
-        try:
-            extraction.image_url = urljoin(base_url, image.strip())
-        except ValueError:
-            extraction.image_url = None
+    extraction.type = guess_type(
+        extraction.name,
+        _first_string(product.get("category")),
+        meta.get("product:category"),
+    )
+    extraction.image_url = image
+    extraction.image_urls = images[:MAX_IMAGES]
     return extraction
+
+
+def _all_strings(value: Any) -> list[str]:
+    """Every URL-ish string in a JSON-LD ``image`` (a string, a list, ImageObjects)."""
+    out: list[str] = []
+    if isinstance(value, str):
+        if value.strip():
+            out.append(value.strip())
+    elif isinstance(value, list):
+        for child in value:
+            out.extend(_all_strings(child))
+    elif isinstance(value, dict):
+        for key in ("url", "contentUrl"):
+            if isinstance(value.get(key), str):
+                out.append(value[key].strip())
+                break
+    return out
 
 
 # --- Image ---------------------------------------------------------------------
@@ -720,7 +955,9 @@ def _cache_get(key: str) -> LinkImportResult | None:
 
 
 def _cache_put(key: str, result: LinkImportResult) -> None:
-    if result.image is not None and len(result.image) > CACHE_MAX_IMAGE_BYTES:
+    if sum(len(data) for data, _ in result.images) > CACHE_MAX_IMAGE_BYTES or (
+        result.image is not None and len(result.image) > CACHE_MAX_IMAGE_BYTES
+    ):
         result = LinkImportResult(extraction=result.extraction, reason=result.reason)
     _cache[key] = (time.monotonic(), result)
     _cache.move_to_end(key)
@@ -735,6 +972,66 @@ def clear_cache() -> None:
 # --- Entry point -----------------------------------------------------------------
 
 
+async def _fetch_json(client: httpx.AsyncClient, url: str) -> Any:
+    """A shop's own JSON, through the same validated fetcher as a page."""
+    fetched = await _fetch(
+        client,
+        url,
+        accept="application/json, text/plain;q=0.5, */*;q=0.1",
+        allowed_types=JSON_CONTENT_TYPES,
+        max_bytes=MAX_JSON_BYTES,
+    )
+    try:
+        return json.loads(_decode(fetched.body, fetched.headers.get("content-type", "")))
+    except ValueError:
+        raise LinkImportError("no_metadata", "The shop answered something unreadable") from None
+
+
+async def _fetch_images(
+    client: httpx.AsyncClient, urls: list[str]
+) -> tuple[list[tuple[bytes, str]], str | None]:
+    """Download and re-encode the candidate photos, in order. Returns what was
+    read and, when none could be, why the first one failed."""
+
+    async def one(url: str) -> tuple[bytes, str] | LinkImportError:
+        try:
+            fetched = await _fetch(
+                client,
+                url,
+                accept="image/*",
+                allowed_types=IMAGE_CONTENT_TYPES,
+                max_bytes=MAX_IMAGE_BYTES,
+            )
+            return await asyncio.to_thread(normalize_image, fetched.body)
+        except LinkImportError as exc:
+            return exc
+
+    results = await asyncio.gather(*(one(u) for u in urls[:MAX_IMAGES]))
+    images = [r for r in results if not isinstance(r, LinkImportError)]
+    first_error = next((r for r in results if isinstance(r, LinkImportError)), None)
+    if not images and first_error is not None:
+        logger.info("Link import: image skipped (%s)", first_error.reason)
+        return [], f"image_{first_error.reason}"
+    return images, None
+
+
+def _from_shop(product: shop_catalog.ShopProduct, url: str) -> ProductExtraction:
+    name = product.name
+    return ProductExtraction(
+        source_url=product.url or url,
+        name=name,
+        brand=product.shop,
+        price=product.price,
+        currency=product.currency,
+        primary_color=guess_color(product.color_name, name),
+        primary_color_hex=normalize_hex(product.color_hex),
+        site_name=product.shop,
+        image_url=product.images[0] if product.images else None,
+        image_urls=product.images[:MAX_IMAGES],
+        type=guess_type(name, product.family),
+    )
+
+
 async def import_link(url: str, *, with_image: bool = True) -> LinkImportResult:
     """Fetch a shop link and return what we could read off it.
 
@@ -743,13 +1040,45 @@ async def import_link(url: str, *, with_image: bool = True) -> LinkImportResult:
     back as a result with ``extracted`` False and a ``reason``, because the user
     can still save the link and type the garment in by hand.
     """
-    normalized, _host, _port = normalize_link_url(url)
+    normalized, host, _port = normalize_link_url(link_in_text(url))
     cached = _cache_get(normalized)
     if cached is not None:
         return cached
 
     client = _open_client()
+
+    async def fetch_json(json_url: str) -> Any:
+        return await _fetch_json(client, json_url)
+
+    async def finish(extraction: ProductExtraction) -> LinkImportResult:
+        images: list[tuple[bytes, str]] = []
+        reason: str | None = None if extraction.has_content() else "no_metadata"
+        urls = extraction.image_urls or ([extraction.image_url] if extraction.image_url else [])
+        if with_image and urls:
+            images, image_reason = await _fetch_images(client, urls)
+            reason = reason or image_reason
+        result = LinkImportResult(
+            extraction=extraction,
+            image=images[0][0] if images else None,
+            image_content_type=images[0][1] if images else None,
+            reason=reason,
+            images=images,
+        )
+        _cache_put(normalized, result)
+        return result
+
+    async def from_shop(shop_url: str) -> LinkImportResult | None:
+        product = await shop_catalog.lookup(shop_url, fetch_json)
+        if product is None or not (product.name or product.images):
+            return None
+        return await finish(_from_shop(product, shop_url))
+
     try:
+        if shop_catalog.supports(host):
+            result = await from_shop(normalized)
+            if result is not None:
+                return result
+
         page = await _fetch(
             client,
             normalized,
@@ -757,6 +1086,10 @@ async def import_link(url: str, *, with_image: bool = True) -> LinkImportResult:
             allowed_types=HTML_CONTENT_TYPES,
             max_bytes=MAX_HTML_BYTES,
         )
+        if page.url != normalized and shop_catalog.supports(urlsplit(page.url).hostname or ""):
+            result = await from_shop(page.url)
+            if result is not None:
+                return result
         extraction = parse_product_html(
             _decode(page.body, page.headers.get("content-type", "")),
             page.url,
@@ -769,37 +1102,55 @@ async def import_link(url: str, *, with_image: bool = True) -> LinkImportResult:
             )
             _cache_put(normalized, result)
             return result
-
-        image_bytes: bytes | None = None
-        image_type: str | None = None
-        reason: str | None = None if extraction.has_content() else "no_metadata"
-        if with_image and extraction.image_url:
-            try:
-                fetched = await _fetch(
-                    client,
-                    extraction.image_url,
-                    accept="image/*",
-                    allowed_types=IMAGE_CONTENT_TYPES,
-                    max_bytes=MAX_IMAGE_BYTES,
-                )
-                image_bytes, image_type = normalize_image(fetched.body)
-            except LinkImportError as exc:
-                logger.info("Link import: image skipped (%s)", exc.reason)
-                reason = reason or f"image_{exc.reason}"
-
-        result = LinkImportResult(
-            extraction=extraction,
-            image=image_bytes,
-            image_content_type=image_type,
-            reason=reason,
-        )
-        _cache_put(normalized, result)
-        return result
+        return await finish(extraction)
     except LinkImportError as exc:
         if exc.blocked:
             raise
+        # A short link from a shop's app can redirect to a page that refuses us;
+        # the product is still readable from where it led.
+        if (
+            exc.url
+            and exc.url != normalized
+            and shop_catalog.supports(urlsplit(exc.url).hostname or "")
+        ):
+            try:
+                result = await from_shop(exc.url)
+            except LinkImportError:
+                result = None
+            if result is not None:
+                return result
         return LinkImportResult(
             extraction=ProductExtraction(source_url=normalized), reason=exc.reason
         )
+    finally:
+        await client.aclose()
+
+
+async def find_in_shop(brand: str | None, name: str | None) -> LinkImportResult | None:
+    """The product a screenshot names, looked up in the shop's own search
+    (Inditex brands only), with its photos. None when there is no good match."""
+    if shop_catalog.inditex_shop_named(brand) is None or not name:
+        return None
+    client = _open_client()
+    try:
+
+        async def fetch_json(json_url: str) -> Any:
+            return await _fetch_json(client, json_url)
+
+        product = await shop_catalog.search(brand, name, fetch_json)
+        if product is None:
+            return None
+        extraction = _from_shop(product, product.url or "")
+        images, reason = await _fetch_images(client, extraction.image_urls)
+        return LinkImportResult(
+            extraction=extraction,
+            image=images[0][0] if images else None,
+            image_content_type=images[0][1] if images else None,
+            reason=reason,
+            images=images,
+        )
+    except LinkImportError as exc:
+        logger.info("Shop search skipped: %s", exc.reason)
+        return None
     finally:
         await client.aclose()

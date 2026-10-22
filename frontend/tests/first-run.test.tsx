@@ -307,10 +307,22 @@ describe('FirstStepsCard', () => {
   // to resolve undefined), which is the same path a slow network takes.
   it('sends the first upload to the batch flow, not to the one-at-a-time form', () => {
     renderWithProviders(<FirstStepsCard count={0} />)
-    expect(screen.getByRole('heading', { name: 'Sube unas cuantas prendas' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Subir prendas/ })).toHaveAttribute(
+    expect(screen.getByRole('heading', { name: 'Dame dos prendas y te hago un look' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Hacer fotos de mi ropa/ })).toHaveAttribute(
       'href',
       '/dashboard/wardrobe?bulk=1'
+    )
+  })
+
+  it('offers what was bought online as a way in: a screenshot or a link', () => {
+    renderWithProviders(<FirstStepsCard count={0} />)
+    expect(screen.getByRole('link', { name: /Desde captura/ })).toHaveAttribute(
+      'href',
+      '/dashboard/wardrobe?add=shot'
+    )
+    expect(screen.getByRole('link', { name: /Pegar enlace/ })).toHaveAttribute(
+      'href',
+      '/dashboard/wardrobe?add=link'
     )
   })
 

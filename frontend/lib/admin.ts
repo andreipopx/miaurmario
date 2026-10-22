@@ -18,6 +18,16 @@ export interface AIPricing {
 
 export type BudgetLevel = 'ok' | 'warning' | 'exceeded';
 
+/** Where people drop off (admin_stats.funnel). */
+export interface AdminFunnel {
+  steps: { key: 'signed_up' | 'onboarded' | 'items_1' | 'items_3' | 'items_10' | 'first_look'; count: number }[];
+  came_back_first_week: { count: number; eligible: number };
+  came_back_second_week: { count: number; eligible: number };
+  active_today: number;
+  active_week: number;
+  items_by_way: { way: string; count: number }[];
+}
+
 export interface AdminOverview {
   users_total: number;
   active_7d: number;
@@ -28,6 +38,8 @@ export interface AdminOverview {
   onboarding_pct: number;
   items_total: number;
   outfits_total: number;
+  /** Missing on a backend that predates the funnel. */
+  funnel?: AdminFunnel;
   ai: {
     month: string;
     requests: number;

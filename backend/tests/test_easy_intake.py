@@ -171,7 +171,9 @@ class TestUrlGuard:
         await link_import.import_link("https://shop.example/p/1", with_image=False)
         assert seen["url"].startswith(f"https://{PUBLIC_IP}/")
         assert seen["host"] == "shop.example"
-        assert "Miaurmario" in seen["ua"]
+        # Asked the way the user's browser would (shops 403 unknown agents).
+        assert seen["ua"] == link_import.get_settings().link_import_user_agent
+        assert seen["ua"].startswith("Mozilla/5.0")
 
     async def test_oversized_page_is_refused(self, public_dns, monkeypatch):
         def handler(request: httpx.Request) -> httpx.Response:

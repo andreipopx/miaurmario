@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 import { SectionCard, StatTile, useAdminErrorMessage } from '@/components/admin/shared';
 import {
+  type AdminFunnel,
   type AdminOverview,
   type AIPricing,
   barHeights,
@@ -60,6 +61,52 @@ function SignupsChart({ days }: { days: AdminOverview['signups_by_day'] }) {
         </tbody>
       </table>
     </figure>
+  );
+}
+
+/** Sign-up → garments → a first look, and who came back. Bars are % of sign-ups. */
+function FunnelCard({ funnel }: { funnel: AdminFunnel }) {
+  const t = useTranslations('admin.summary.funnel');
+  const total = funnel.steps[0]?.count ?? 0;
+  const pct = (count: number, of: number) => (of ? Math.round((count / of) * 100) : 0);
+  const back = (r: { count: number; eligible: number }) =>
+    r.eligible ? t('backOf', { count: r.count, eligible: r.eligible, pct: pct(r.count, r.eligible) }) : t('notYet');
+  return (
+    <SectionCard title={t('title')} description={t('description')}>
+      <ol className="space-y-2.5">
+        {funnel.steps.map((step) => (
+          <li key={step.key}>
+            <div className="mb-1 flex justify-between gap-3 text-sm">
+              <span className="font-semibold">{t(`steps.${step.key}`)}</span>
+              <span className="tabular-nums text-muted-foreground">
+                {step.count} · {pct(step.count, total)}%
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-panel" aria-hidden>
+              <div className="h-full rounded-full bg-foreground" style={{ width: `${pct(step.count, total)}%` }} />
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile label={t('firstWeek')} value={back(funnel.came_back_first_week)} hint={t('firstWeekHint')} />
+        <StatTile label={t('secondWeek')} value={back(funnel.came_back_second_week)} hint={t('secondWeekHint')} />
+        <StatTile label={t('today')} value={String(funnel.active_today)} />
+        <StatTile label={t('week')} value={String(funnel.active_week)} />
+      </div>
+      {funnel.items_by_way.length > 0 && (
+        <>
+          <h3 className="mb-2 mt-5 text-[15px] font-bold">{t('waysTitle')}</h3>
+          <ul className="flex flex-wrap gap-2">
+            {funnel.items_by_way.map((w) => (
+              <li key={w.way} className="rounded-full bg-panel px-3 py-1.5 text-[13px] font-semibold">
+                {t.has(`ways.${w.way}`) ? t(`ways.${w.way}`) : w.way} · {w.count}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </SectionCard>
   );
 }
 
@@ -197,6 +244,8 @@ export function OverviewSection() {
         />
         <StatTile label={t('content')} value={n(data.items_total)} hint={t('contentHint', { outfits: data.outfits_total })} />
       </div>
+
+      {data.funnel && <FunnelCard funnel={data.funnel} />}
 
       <SectionCard title={t('signupsTitle')} description={t('signupsBody', { count: data.new_7d })}>
         <SignupsChart days={data.signups_by_day} />

@@ -290,6 +290,7 @@ async def create_item_from_detection(
             name=(payload.name or "").strip() or None,
             colors=detected.colors,
             primary_color=detected.primary_color,
+            created_via="selfie",
         ),
         image_paths=image_paths,
     )

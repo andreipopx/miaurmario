@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import BackgroundTasks, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import AuthSession, TokenPayload
+from app.services.activity import already_recorded, record_activity
 from app.services.user_service import UserService
 
 settings = get_settings()
@@ -60,6 +61,7 @@ async def get_current_user_optional(
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    background_tasks: BackgroundTasks,
 ) -> User:
     user_service = UserService(db)
     user = None
@@ -84,6 +86,9 @@ async def get_current_user(
             detail="User account is inactive",
         )
 
+    # «Came back today», for the funnel: written after the response, once a day.
+    if settings.activity_tracking and not already_recorded(user.id):
+        background_tasks.add_task(record_activity, user.id)
     return user
 
 

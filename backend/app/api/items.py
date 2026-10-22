@@ -5,6 +5,7 @@ import logging
 import tempfile
 from collections.abc import Callable
 from datetime import UTC, datetime
+from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Any
@@ -60,11 +61,13 @@ from app.schemas.item import (
     MergeItemResponse,
     RemoveBackgroundRequest,
     ReorderImagesRequest,
+    ScreenshotGarmentResponse,
+    ScreenshotResponse,
     SetImageViewRequest,
     WardrobeStats,
     WashHistoryResponse,
 )
-from app.services import link_import
+from app.services import link_import, screenshot_import
 from app.services.ai_access import ai_error_detail, get_ai_access, require_ai_client
 from app.services.ai_service import AIDisabledError
 from app.services.care_label import parse_care_label
@@ -75,6 +78,7 @@ from app.services.wardrobe_usage import item_usage
 from app.utils.auth import get_current_user
 from app.utils.care import care_hints, dominant_material
 from app.utils.error_codes import error_detail
+from app.utils.prompts import load_prompt
 from app.utils.rate_limit import rate_limit_by_user
 from app.utils.timezone import get_user_today
 from app.workers.settings import get_redis_settings
@@ -331,14 +335,9 @@ async def preview_item_link(
         ) from None
 
     extraction = result.extraction
-    image: LinkPreviewImage | None = None
-    if result.image and result.image_content_type:
-        encoded = base64.b64encode(result.image).decode("ascii")
-        image = LinkPreviewImage(
-            data_url=f"data:{result.image_content_type};base64,{encoded}",
-            content_type=result.image_content_type,
-            size_bytes=len(result.image),
-        )
+    images = [_inline_image(data, content_type) for data, content_type in result.images]
+    if not images and result.image and result.image_content_type:
+        images = [_inline_image(result.image, result.image_content_type)]
 
     return LinkPreviewResponse(
         source_url=extraction.source_url,
@@ -351,8 +350,124 @@ async def preview_item_link(
         primary_color=extraction.primary_color,
         description=extraction.description,
         site_name=extraction.site_name,
-        image=image,
+        image=images[0] if images else None,
+        images=images,
+        type=extraction.type,
+        primary_color_hex=extraction.primary_color_hex,
     )
+
+
+def _inline_image(data: bytes, content_type: str) -> LinkPreviewImage:
+    encoded = base64.b64encode(data).decode("ascii")
+    return LinkPreviewImage(
+        data_url=f"data:{content_type};base64,{encoded}",
+        content_type=content_type,
+        size_bytes=len(data),
+    )
+
+
+SCREENSHOT_PROMPT = load_prompt("screenshot_garments")
+#: Shop lookups per screenshot: a product page has one garment, a grid a few.
+MAX_SHOP_LOOKUPS = 3
+#: Where a named product with no brand in sight is looked for.
+DEFAULT_SHOP = "Zara"
+
+
+@router.post("/screenshot", response_model=ScreenshotResponse)
+async def read_screenshot(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    image: UploadFile = File(...),
+) -> ScreenshotResponse:
+    """«Desde una captura»: the garments in a screenshot, for the review screen.
+
+    One vision call reads each garment with its written name, brand and price;
+    the Inditex brands are then looked up in their catalogue so the garment comes
+    with the shop's photos. Nothing is stored: the screenshot lives in memory for
+    the request, and the user picks what to add on the next screen.
+    """
+    await rate_limit_by_user(current_user.id, "item_screenshot_burst", 6, 60)
+    await rate_limit_by_user(current_user.id, "item_screenshot", 60, 86400)
+
+    content = await image.read()
+    try:
+        prepared = await asyncio.to_thread(screenshot_import.prepare, content)
+    except screenshot_import.ScreenshotImageError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "image_unreadable", "message": "That image could not be read"},
+        ) from None
+
+    try:
+        ai_service = await require_ai_client(db, current_user, "vision")
+    except AIDisabledError as e:
+        code, detail = ai_error_detail(e)
+        raise HTTPException(status_code=code, detail=detail) from None
+
+    try:
+        raw = await ai_service.analyze_vision_json(
+            base64.b64encode(prepared.model_jpeg).decode("ascii"),
+            SCREENSHOT_PROMPT,
+            task_name="screenshot",
+        )
+    except AIDisabledError as e:
+        code, detail = ai_error_detail(e)
+        raise HTTPException(status_code=code, detail=detail) from None
+    except Exception as e:
+        logger.warning(f"Screenshot read failed: {type(e).__name__}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "screenshot_failed", "message": "We could not read that screenshot"},
+        ) from None
+
+    found = screenshot_import.parse_screenshot(raw or "")
+
+    async def in_shop(entry: screenshot_import.ScreenshotGarment):
+        try:
+            # Zara's pages and app carry no logo next to the product, so a named
+            # product with no brand is looked for there: one search, and the name
+            # has to match closely or the crop is kept.
+            brand = entry.brand or (DEFAULT_SHOP if entry.name else None)
+            return await link_import.find_in_shop(brand, entry.name)
+        except Exception as e:  # the crop is still there; a shop hiccup costs nothing
+            logger.info(f"Screenshot shop lookup failed: {type(e).__name__}")
+            return None
+
+    lookups = await asyncio.gather(
+        *(
+            in_shop(entry) if index < MAX_SHOP_LOOKUPS else asyncio.sleep(0, result=None)
+            for index, entry in enumerate(found)
+        )
+    )
+    crops = await asyncio.gather(
+        *(asyncio.to_thread(screenshot_import.crop, prepared.source, entry.box) for entry in found)
+    )
+
+    garments: list[ScreenshotGarmentResponse] = []
+    for entry, shop, crop_bytes in zip(found, lookups, crops, strict=True):
+        detected = entry.garment
+        images = [_inline_image(data, kind) for data, kind in (shop.images if shop else [])]
+        images.append(_inline_image(crop_bytes, "image/jpeg"))
+        extraction = shop.extraction if shop else None
+        garments.append(
+            ScreenshotGarmentResponse(
+                type=detected.type,
+                subtype=detected.subtype,
+                primary_color=detected.primary_color,
+                primary_color_hex=extraction.primary_color_hex if extraction else None,
+                colors=detected.colors,
+                pattern=detected.pattern,
+                material=detected.material,
+                name=(extraction.name if extraction else None) or entry.name,
+                brand=(extraction.brand if extraction else None) or entry.brand,
+                price=(extraction.price if extraction else None) or entry.price,
+                currency=(extraction.currency if extraction else None) or entry.currency,
+                source_url=extraction.source_url if extraction else None,
+                from_shop=bool(shop and shop.images),
+                images=images,
+            )
+        )
+    return ScreenshotResponse(garments=garments)
 
 
 @router.post("/care-label", response_model=CareLabelResponse)
@@ -428,6 +543,10 @@ async def create_item(
     favorite: bool = Form(False),
     skip_ai: bool = Form(False),
     source_url: str | None = Form(None),
+    purchase_price: Decimal | None = Form(None, ge=0, lt=1_000_000),
+    created_via: str | None = Form(
+        None, description="How it was added: photo, link, screenshot… (for the funnel)"
+    ),
     care: str | None = Form(None, description="CareInfo as a JSON object"),
     rotate: int = Form(0, description="Quarter turns clockwise the user applied in the preview"),
     crop_x: int | None = Form(None, description="Crop, in pixels of the upright, rotated image"),
@@ -509,6 +628,8 @@ async def create_item(
         primary_color_hex=primary_color_hex,
         favorite=favorite,
         source_url=_clean_source_url(source_url),
+        purchase_price=purchase_price,
+        created_via=created_via or "photo",
         care=_parse_care_form(care),
     )
 
@@ -807,7 +928,7 @@ async def bulk_create_items(
 
             item = await item_service.create(
                 user_id=current_user.id,
-                item_data=ItemCreate(type="unknown"),
+                item_data=ItemCreate(type="unknown", created_via="bulk"),
                 image_paths=image_paths,
             )
 

@@ -17,6 +17,7 @@ from sqlalchemy import Date, cast, func, literal_column, select, text, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.models.activity import UserActivityDay
 from app.models.admin import AdminAuditLog
 from app.models.item import ClothingItem
 from app.models.lastfm import LastfmConnection
@@ -160,6 +161,83 @@ async def ai_usage_summary(db: AsyncSession, top: int = 5) -> dict[str, Any]:
     }
 
 
+async def funnel(db: AsyncSession) -> dict[str, Any]:
+    """Where people drop off, all users so far (the numbers are small enough).
+
+    Steps: signed up → finished onboarding → 1 / 3 / 10 garments (ever added,
+    archived included) → a first look. Retention reads ``user_activity_days``:
+    came back on a later day within the first week (eligible once a day has
+    passed), and came back in the second week (eligible after 14 days).
+    """
+    per_user = (
+        select(
+            User.id.label("uid"),
+            User.created_at.label("joined"),
+            User.onboarding_completed.label("onboarded"),
+            select(func.count(ClothingItem.id))
+            .where(ClothingItem.user_id == User.id)
+            .correlate(User)
+            .scalar_subquery()
+            .label("items"),
+            select(func.count(Outfit.id))
+            .where(Outfit.user_id == User.id)
+            .correlate(User)
+            .scalar_subquery()
+            .label("looks"),
+        )
+    ).subquery()
+    rows = (await db.execute(select(per_user))).all()
+
+    days_rows = (await db.execute(select(UserActivityDay.user_id, UserActivityDay.day))).all()
+    days: dict[uuid.UUID, list[date]] = {}
+    for uid, day in days_rows:
+        days.setdefault(uid, []).append(day)
+
+    today = datetime.now(UTC).date()
+    d1_eligible = d1_back = w2_eligible = w2_back = 0
+    for row in rows:
+        joined = row.joined.astimezone(UTC).date()
+        seen = days.get(row.uid, [])
+        if today > joined:
+            d1_eligible += 1
+            if any(joined < d <= joined + timedelta(days=6) for d in seen):
+                d1_back += 1
+        if today >= joined + timedelta(days=14):
+            w2_eligible += 1
+            if any(joined + timedelta(days=7) <= d <= joined + timedelta(days=13) for d in seen):
+                w2_back += 1
+
+    steps = [
+        ("signed_up", len(rows)),
+        ("onboarded", sum(1 for r in rows if r.onboarded)),
+        ("items_1", sum(1 for r in rows if r.items >= 1)),
+        ("items_3", sum(1 for r in rows if r.items >= 3)),
+        ("items_10", sum(1 for r in rows if r.items >= 10)),
+        ("first_look", sum(1 for r in rows if r.looks >= 1)),
+    ]
+    via_rows = (
+        await db.execute(
+            select(ClothingItem.created_via, func.count(ClothingItem.id)).group_by(
+                ClothingItem.created_via
+            )
+        )
+    ).all()
+    week_ago = today - timedelta(days=6)
+    active_today = sum(1 for seen in days.values() if today in seen)
+    active_week = sum(1 for seen in days.values() if any(d >= week_ago for d in seen))
+    return {
+        "steps": [{"key": key, "count": count} for key, count in steps],
+        "came_back_first_week": {"count": d1_back, "eligible": d1_eligible},
+        "came_back_second_week": {"count": w2_back, "eligible": w2_eligible},
+        "active_today": active_today,
+        "active_week": active_week,
+        "items_by_way": sorted(
+            ({"way": way or "unknown", "count": int(count)} for way, count in via_rows),
+            key=lambda entry: -entry["count"],
+        ),
+    }
+
+
 async def overview(db: AsyncSession) -> dict[str, Any]:
     now = datetime.now(UTC)
     total_users = int((await db.execute(select(func.count(User.id)))).scalar_one())
@@ -194,6 +272,7 @@ async def overview(db: AsyncSession) -> dict[str, Any]:
         "items_total": items,
         "outfits_total": outfits,
         "ai": await ai_usage_summary(db),
+        "funnel": await funnel(db),
     }
 
 

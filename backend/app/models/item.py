@@ -144,6 +144,9 @@ class ClothingItem(Base):
 
     # Where the garment came from: the shop link it was imported from, if any
     source_url: Mapped[str | None] = mapped_column(String(2048))
+    # How it got into the wardrobe (photo, bulk, link, screenshot, selfie), to
+    # learn which way of adding clothes people actually use. See CREATED_VIA.
+    created_via: Mapped[str | None] = mapped_column(String(20))
 
     # Care label: composition and laundry symbols (see app/schemas/item.CareInfo)
     care: Mapped[dict | None] = mapped_column(JSONB)

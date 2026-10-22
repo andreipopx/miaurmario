@@ -389,7 +389,8 @@
     "yourStyle": "Tu estilo",
     "customize": "Tu Stinky",
     "trips": "Viaje",
-    "wrapped": "Tu mes"
+    "wrapped": "Tu mes",
+    "lab": "Laboratorio de Stinky"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -4753,5 +4754,19 @@
     },
     "streak": "Tu mejor racha: {count, plural, =0 {aún por estrenar} one {# semana} other {# semanas}}.",
     "cta": "Tu mes con {name}"
+  },
+  "stinkyLab": {
+    "title": "Laboratorio de Stinky",
+    "intro": "Prototipo: la cabeza pre-renderizada (WebP) junto al Stinky vectorial, que dibuja cualquier pelaje, ojos y complemento con una sola figura animada.",
+    "states": "Estados (pulsa uno; cada cabeza se puede acariciar)",
+    "current": "Actual (WebP)",
+    "vector": "Vectorial (SVG)",
+    "doneCount": "{count, plural, =0 {sin terminar} one {# terminado} other {# terminados}}",
+    "lastPet": "última caricia: {reaction}",
+    "coatsLight": "Pelajes × ojos, claro",
+    "coatsDark": "Pelajes × ojos, oscuro",
+    "webpRow": "WebP",
+    "accessories": "Complementos",
+    "sizes": "Tamaños (WebP · SVG)"
   }
 }

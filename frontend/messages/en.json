@@ -389,7 +389,8 @@
     "yourStyle": "Your style",
     "customize": "Your Stinky",
     "trips": "Trip",
-    "wrapped": "Your month"
+    "wrapped": "Your month",
+    "lab": "Stinky lab"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
@@ -4753,5 +4754,19 @@
     },
     "streak": "Your best streak: {count, plural, =0 {still to come} one {# week} other {# weeks}}.",
     "cta": "Your month with {name}"
+  },
+  "stinkyLab": {
+    "title": "Stinky lab",
+    "intro": "Prototype: the pre-rendered head (WebP) next to the vector Stinky, one animated figure that draws any coat, eyes and accessory.",
+    "states": "States (press one; both heads can be petted)",
+    "current": "Current (WebP)",
+    "vector": "Vector (SVG)",
+    "doneCount": "{count, plural, =0 {not finished yet} one {# finished} other {# finished}}",
+    "lastPet": "last pet: {reaction}",
+    "coatsLight": "Coats × eyes, light",
+    "coatsDark": "Coats × eyes, dark",
+    "webpRow": "WebP",
+    "accessories": "Accessories",
+    "sizes": "Sizes (WebP · SVG)"
   }
 }

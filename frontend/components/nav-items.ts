@@ -92,6 +92,8 @@ export const STINKY: NavSection = {
     { key: 'trips', href: '/dashboard/trips', icon: Plane, hidden: true },
     // «Tu mes con Stinky», linked from his card on Hoy.
     { key: 'wrapped', href: '/dashboard/wrapped', icon: CalendarDays, hidden: true },
+    // Stinky lab: the vector rig next to the pre-rendered head (prototype, reached by URL only).
+    { key: 'lab', href: '/dashboard/stinky/lab', icon: Sparkles, hidden: true },
   ],
 };
 

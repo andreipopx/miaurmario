@@ -1006,7 +1006,7 @@
     "selectMode": "Seleccionar"
   },
   "suggest": {
-    "title": "Pídeme un look",
+    "title": "Pedir look",
     "editorialSubtitle": "Un look, guiado por Stinky.",
     "editorialSuggestFrame": "La propuesta del día",
     "editorialWeather": "Clima",
@@ -1082,19 +1082,16 @@
     "creatingLook": "Creando tu look...",
     "getSuggestion": "Sugerir",
     "songLabel": "¿Qué escuchas hoy?",
+    "songAdd": "Añadir canción",
     "songPlaceholder": "Ej: Mitski — My Love Mine All Mine, o pega un link de Spotify",
-    "songHelp": "Opcional. Stinky usará el mood de la canción como capa de inspiración.",
     "inspiredBy": "Inspirado en",
     "songSpotifyHint": "Música conectada: si lo dejas vacío, usaremos cómo suena lo que estás escuchando.",
-    "thinkingTitle": "Stinky lo está rumiando… prrr",
     "thinkingBody": "Mirando tu armario, el tiempo y la ocasión.",
     "thinkingBodySong": "Mirando tu armario, el tiempo y lo que suena: <b>{song}</b>.",
     "thinkingCaption": "Combinando tus prendas · unos segundos",
-    "introTitle": "¿Qué nos ponemos hoy?",
-    "introBody": "Elige la ocasión y te monto un look con lo que ya tienes. Sin moverme del sofá.",
+    "introBody": "Elige la ocasión y te monto un look con lo que ya tienes.",
     "introBodyOccasion": "Plan: {occasion}. Cuando quieras me pongo, que la siesta puede esperar.",
-    "acceptedTitle": "¡Buena elección!",
-    "acceptedBody": "Guardado en tus looks. Stinky lo aprueba con un ronroneo.",
+    "acceptedBody": "Guardado en tus looks. Lo apruebo con un ronroneo.",
     "anotherLook": "Otro look",
     "seeLooks": "Ver mis looks",
     "errorTitle": "Uy, algo se ha torcido",
@@ -3471,7 +3468,6 @@
   },
   "stinkyChat": {
     "title": "Stinky",
-    "subtitle": "Tu estilista gatuno",
     "statusThinking1": "Pensándolo…",
     "statusThinking2": "Rumiándolo… prrr",
     "statusThinking3": "Dándole vueltas…",
@@ -3488,11 +3484,10 @@
       "forget": "Tachándolo del cuaderno…",
       "default": "Un momento…"
     },
-    "greeting1": "Miau. ¿Qué nos ponemos hoy?",
+    "greeting1": "¿Qué nos ponemos hoy?",
     "greeting2": "¿En qué te ayudo?",
     "greeting3": "Aquí estoy, despierto y todo.",
     "greeting4": "Dime, ¿qué plan tienes?",
-    "emptyBody": "Pregúntame qué ponerte, qué te falta o cómo combinar esa prenda que nunca usas. La tengo vigilada.",
     "suggestion1": "¿Qué me pongo hoy?",
     "suggestion2": "Tengo una boda en octubre",
     "suggestion3": "¿Qué me falta para el otoño?",
@@ -3536,9 +3531,8 @@
   "stinkyMemory": {
     "backToSettings": "← Ajustes",
     "pageTitle": "Stinky recuerda",
-    "pageDescription": "Lo que Stinky ha apuntado sobre ti mientras habláis. Tú mandas: cámbialo, fíjalo o bórralo.",
     "how": {
-      "title": "Cómo funciona",
+      "title": "Qué apunta y qué no",
       "body": "Stinky escribe estas notas él mismo cuando charláis, para no preguntarte lo mismo cada semana.",
       "point1": "Solo anota cosas que le sirven para vestirte: estilos, colores, cómo te gusta que te quede la ropa, planes que se repiten, tallas o materiales.",
       "point2": "Nunca anota nada sobre tu salud, tu cuerpo, tu peso, tu religión, tu sexualidad, tu política ni tu dinero. Si lo intenta, se lo bloqueamos.",
@@ -3554,7 +3548,7 @@
     "list": {
       "title": "Sus notas",
       "count": "{count} de {max} notas.",
-      "empty": "Todavía no ha apuntado nada. Habla con él y lo irá escribiendo solo.",
+      "empty": "Todavía no he apuntado nada. Habla conmigo y lo iré escribiendo solo.",
       "emptyCta": "Hablar con Stinky"
     },
     "kinds": {
@@ -3963,7 +3957,6 @@
     "styleQuiz": {
       "dialogLabel": "Tu estilo con Stinky",
       "pageTitle": "Tu estilo",
-      "pageDescription": "Lo que le has contado a Stinky sobre tu gusto. Va de ropa, no de ti.",
       "backToSettings": "← Ajustes",
       "loading": "Cargando…",
       "progressLabel": "Progreso del test",
@@ -4261,9 +4254,9 @@
   },
   "selfie": {
     "title": "Qué llevo puesto",
-    "subtitle": "Hazte una foto de cuerpo entero y te digo qué prendas de tu armario llevas.",
     "privacy": {
-      "title": "Qué pasa con tu foto",
+      "title": "Tu foto no se guarda",
+      "more": "Más",
       "body": "La foto se mira solo para reconocer la ropa y se borra en cuanto termina: no se guarda ni aquí ni en el servidor. Le quitamos los datos de la cámara (fecha y ubicación) y describimos únicamente las prendas, nunca a la persona."
     },
     "takePhoto": "Hacer una foto",
@@ -4307,7 +4300,6 @@
     "defaultLookName": "Look del {date}",
     "pin": {
       "title": "Recrea este look",
-      "subtitle": "Busco en tu armario lo más parecido a cada prenda del pin, y te digo qué te falta.",
       "analyze": "Recrear con mi ropa",
       "analyzing": "Buscando en tu armario…",
       "analyzeFailed": "No he podido leer el pin. Inténtalo otra vez.",
@@ -4557,21 +4549,18 @@
   },
   "inspiration": {
     "title": "Inspiración",
-    "description": "Además de tu armario, Stinky se fija en lo que escuchas y en lo que guardas.",
     "music": {
       "title": "Tu música",
-      "body": "Spotify o Last.fm: el mood de lo que suena entra en tus looks."
+      "service": "Spotify o Last.fm"
     },
     "pins": {
       "title": "Tus pins",
-      "body": "Pinterest: los looks que guardas le dicen qué te gusta."
+      "service": "Pinterest"
     }
   },
   "stinkyCustomize": {
     "title": "Tu Stinky",
-    "intro": "Ponle nombre y elige su pelaje. Así se llamará en el chat, en los avisos y en toda la app.",
     "nameLabel": "¿Cómo se llama?",
-    "nameHint": "Hasta 20 letras. Vacío, vuelve a llamarse {defaultName}.",
     "nameInvalid": "Solo letras, números y espacios, hasta 20.",
     "coatLabel": "Pelaje",
     "coats": {
@@ -4602,27 +4591,21 @@
     "settingsBody": "Su nombre y su pelaje",
     "settingsAction": "Personalizar",
     "voiceLabel": "Cómo habla",
-    "voiceHint": "Cuánto gato hay en tu estilista. Cambia el tono, no los consejos.",
     "voices": {
       "estilista": {
         "title": "Estilista",
-        "body": "Criterio y al grano, sin cosas de gato.",
         "sample": "El jersey gris con los vaqueros oscuros: abriga y el tono va con las botas."
       },
       "gato": {
         "title": "Gato",
-        "body": "Como siempre: estilista con bigotes, un miau de vez en cuando.",
         "sample": "Prrr. El jersey gris con los vaqueros oscuros: abriga y no parece que te hayas rendido."
       },
       "muy-gato": {
         "title": "Muy gato",
-        "body": "Más miaus, más siestas, más drama felino. Los consejos, igual de buenos.",
         "sample": "¡Mrrp! Me has despertado de la siesta para esto, así que escucha: jersey gris y vaqueros oscuros. Ñam."
       },
       "solo-miau": {
-        "title": "Solo miau",
-        "body": "{name} solo maúlla. Las prendas de cada look se siguen viendo; él no te explica nada.",
-        "sample": ""
+        "title": "Solo miau"
       }
     },
     "wardrobeLabel": "Su armario",
@@ -4638,8 +4621,10 @@
       "pajarita-dorada": "Pajarita dorada"
     },
     "goalLabel": "Tu racha",
-    "goalHint": "Cuántos días a la semana quieres contarle lo que llevas. Un comodín al mes cubre una semana floja.",
-    "goalDays": "{count, plural, one {# día} other {# días}}",
+    "goalHint": "Días a la semana que le cuentas lo que llevas. Un comodín al mes cubre una semana floja.",
+    "goalDays": "Objetivo: {count, plural, one {# día} other {# días}}",
+    "goalLess": "Un día menos",
+    "goalMore": "Un día más",
     "accessorySaved": "Listo"
   },
   "trips": {

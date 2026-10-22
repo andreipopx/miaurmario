@@ -24,7 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Chip } from '@/components/chip';
-import { LazyStinky } from '@/components/native/lazy-stinky';
+import { StinkyTip } from '@/components/stinky-tip';
 import { useFormatDate } from '@/lib/date-locale';
 import { openStyleQuiz, useSaveStyleQuiz, useStyleQuiz } from '@/lib/hooks/use-style-quiz';
 import { SizeFields } from '@/components/style-quiz/size-fields';
@@ -126,7 +126,7 @@ export default function StyleProfilePage() {
         <Link href="/dashboard/settings">{t('backToSettings')}</Link>
       </Button>
 
-      <PageHeader title={t('pageTitle')} description={t('pageDescription')} />
+      <PageHeader title={t('pageTitle')} />
 
       {/* --- What Stinky learned ------------------------------------------- */}
       <Card>
@@ -146,16 +146,15 @@ export default function StyleProfilePage() {
               ))}
             </ul>
           ) : (
-            <div className="flex flex-col items-center gap-3 py-2 text-center">
-              <LazyStinky state="sleepy" settleTo="idle" size={96} interactive={false} label="" />
-              <p className="max-w-sm text-sm leading-snug text-muted-foreground">{t('emptyState')}</p>
-              <Button variant="signature" onClick={() => openStyleQuiz('fresh')}>
+            <div className="space-y-3">
+              {/* He says it himself, small, next to the one thing to do. */}
+              <StinkyTip className="bg-panel">{t('emptyState')}</StinkyTip>
+              <Button onClick={() => openStyleQuiz('fresh')}>
                 <Sparkles className="h-4 w-4" strokeWidth={2} aria-hidden />
                 {t('startQuiz')}
               </Button>
             </div>
           )}
-          <p className="mt-3 text-[13px] leading-snug text-muted-foreground">{t('summary.editable')}</p>
         </CardContent>
       </Card>
 

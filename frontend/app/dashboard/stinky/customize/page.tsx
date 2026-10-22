@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Minus, Plus } from 'lucide-react';
 
 import { Stinky } from '@/components/stinky/stinky';
 import { stinkyNeutralStill } from '@/components/stinky/stinky-states';
@@ -177,8 +177,6 @@ export default function StinkyCustomizePage() {
         <p className="mt-1.5 text-sm font-semibold text-muted-foreground">{coatLabel(coat)}</p>
       </section>
 
-      <p className="mt-5 px-1 text-[15px] text-muted-foreground">{t('intro')}</p>
-
       <div className="mt-6 space-y-2">
         <label htmlFor="stinky-name" className="block px-1 text-sm font-bold">
           {t('nameLabel')}
@@ -193,15 +191,15 @@ export default function StinkyCustomizePage() {
           autoCapitalize="words"
           enterKeyHint="done"
           aria-invalid={invalid || undefined}
-          aria-describedby="stinky-name-hint"
+          aria-describedby={invalid ? 'stinky-name-hint' : undefined}
           className={cn(invalid && 'border-destructive focus-visible:border-destructive')}
         />
-        <p
-          id="stinky-name-hint"
-          className={cn('px-1 text-[13px]', invalid ? 'text-destructive' : 'text-muted-foreground')}
-        >
-          {invalid ? t('nameInvalid') : t('nameHint', { defaultName: DEFAULT_STINKY_NAME })}
-        </p>
+        {/* The placeholder says what an empty field means; only a bad name needs a line. */}
+        {invalid && (
+          <p id="stinky-name-hint" className="px-1 text-[13px] text-destructive">
+            {t('nameInvalid')}
+          </p>
+        )}
       </div>
 
       <fieldset className="mt-7">
@@ -285,36 +283,44 @@ export default function StinkyCustomizePage() {
       </fieldset>
 
       <fieldset className="mt-7">
-        <legend className="mb-1 px-1 text-sm font-bold">{t('voiceLabel')}</legend>
-        <p className="mb-3 px-1 text-[13px] text-muted-foreground">{t('voiceHint')}</p>
-        <div className="space-y-2" role="radiogroup">
-          {STINKY_VOICES.map((v) => {
+        <legend className="mb-3 px-1 text-sm font-bold">{t('voiceLabel')}</legend>
+        {/* Four lines; the chosen one shows how he would sound (in «Solo miau», the meows). */}
+        <div className="rounded-lg border-[1.5px] border-border" role="radiogroup">
+          {STINKY_VOICES.map((v, i) => {
             const selected = v === voice;
             return (
-              <button
-                key={v}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => {
-                  if (v === voice) return;
-                  haptic(6);
-                  setVoice(v);
-                  setMood(v === 'estilista' ? 'idle' : 'happy');
-                }}
-                className={cn(
-                  'pressable block w-full rounded-lg border-[1.5px] p-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  selected ? 'border-foreground bg-panel' : 'border-border'
+              <div key={v} className={cn(i > 0 && 'border-t border-border')}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => {
+                    if (v === voice) return;
+                    haptic(6);
+                    setVoice(v);
+                    setMood(v === 'estilista' ? 'idle' : 'happy');
+                  }}
+                  className="flex min-h-[48px] w-full items-center gap-3 px-3.5 text-left text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px]',
+                      selected ? 'border-foreground' : 'border-border'
+                    )}
+                  >
+                    {selected && <span className="h-2.5 w-2.5 rounded-full bg-foreground" />}
+                  </span>
+                  <span className={selected ? 'font-bold' : 'font-medium text-muted-foreground'}>
+                    {t(`voices.${v}.title` as never)}
+                  </span>
+                </button>
+                {selected && (
+                  <p className="px-3.5 pb-3 pl-[46px] text-[13px] italic leading-snug text-muted-foreground">
+                    «{v === 'solo-miau' ? meows('muestra-voz') : t(`voices.${v}.sample` as never, { name: shownName })}»
+                  </p>
                 )}
-              >
-                <span className="block text-[15px] font-bold">{t(`voices.${v}.title` as never)}</span>
-                <span className="mt-0.5 block text-[13px] text-muted-foreground">
-                  {t(`voices.${v}.body` as never, { name: shownName })}
-                </span>
-                <span className="mt-2 block rounded-[14px] bg-background px-3 py-2 text-[13px] italic">
-                  «{v === 'solo-miau' ? meows('muestra-voz') : t(`voices.${v}.sample` as never, { name: shownName })}»
-                </span>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -369,26 +375,38 @@ export default function StinkyCustomizePage() {
 
       {habit && (
         <fieldset className="mt-7">
-          <legend className="mb-1 px-1 text-sm font-bold">{t('goalLabel')}</legend>
-          <p className="mb-3 px-1 text-[13px] text-muted-foreground">{t('goalHint')}</p>
-          <div className="flex flex-wrap gap-2" role="radiogroup">
-            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+          <legend className="mb-3 px-1 text-sm font-bold">{t('goalLabel')}</legend>
+          {/* One control: the goal, and − / + to move it (1–7 days a week). */}
+          <div
+            role="group"
+            aria-label={t('goalLabel')}
+            className="flex items-center justify-between gap-3 rounded-lg border-[1.5px] border-border px-3.5 py-2"
+          >
+            <span className="text-[15px] font-bold" aria-live="polite">
+              {t('goalDays', { count: habit.weekly_goal })}
+            </span>
+            <span className="flex items-center gap-1.5">
               <button
-                key={n}
                 type="button"
-                role="radio"
-                aria-checked={habit.weekly_goal === n}
-                disabled={updateHabit.isPending}
-                onClick={() => n !== habit.weekly_goal && updateHabit.mutate({ weekly_goal: n })}
-                className={cn(
-                  'pressable h-10 rounded-full border-[1.5px] px-4 text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  habit.weekly_goal === n ? 'border-foreground font-bold' : 'border-border text-muted-foreground'
-                )}
+                aria-label={t('goalLess')}
+                disabled={updateHabit.isPending || habit.weekly_goal <= 1}
+                onClick={() => updateHabit.mutate({ weekly_goal: habit.weekly_goal - 1 })}
+                className="pressable flex h-10 w-10 items-center justify-center rounded-full bg-panel text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
               >
-                {t('goalDays', { count: n })}
+                <Minus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
               </button>
-            ))}
+              <button
+                type="button"
+                aria-label={t('goalMore')}
+                disabled={updateHabit.isPending || habit.weekly_goal >= 7}
+                onClick={() => updateHabit.mutate({ weekly_goal: habit.weekly_goal + 1 })}
+                className="pressable flex h-10 w-10 items-center justify-center rounded-full bg-panel text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+              </button>
+            </span>
           </div>
+          <p className="mt-2 px-1 text-[13px] text-muted-foreground">{t('goalHint')}</p>
         </fieldset>
       )}
 

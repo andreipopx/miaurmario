@@ -6,17 +6,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowUp, Camera, Compass, History, Loader2, NotebookPen, Palette, Plane, Sparkles, Square, SquarePen } from 'lucide-react';
+import { ArrowUp, Camera, Compass, History, Loader2, NotebookPen, Plane, Sparkles, Square, SquarePen } from 'lucide-react';
 
-import { Stinky } from '@/components/stinky/stinky';
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
+import { useStinkyPersona } from '@/components/stinky/stinky-persona';
 import { AIUnavailableNotice } from '@/components/ai/ai-unavailable-notice';
 import { AreaTip } from '@/components/onboarding/area-tip';
 import { EmptyWardrobeCta } from '@/components/stinky-chat/empty-wardrobe-cta';
 import { ChatOutfitCardView, cardKey } from '@/components/stinky-chat/chat-outfit-card';
 import { ConversationSheet } from '@/components/stinky-chat/conversation-sheet';
-import { POP_BG, popColorAt } from '@/components/chip';
+import { StinkyBubble } from '@/components/stinky-chat/stinky-bubble';
 import { Skeleton } from '@/components/ui/skeleton';
+import { meows } from '@/lib/meows';
 import { ApiError, NetworkError } from '@/lib/api';
 import { getAiAccessErrorCode } from '@/lib/ai-access';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
@@ -41,17 +42,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useKeyboard } from '@/lib/native/keyboard';
 
+/** The rest of what Stinky does, one grey pill each (Tu Stinky lives in Ajustes). */
 const STINKY_ACTIONS = [
-  { key: 'askLook', href: '/dashboard/suggest', icon: Sparkles, tint: 'bg-pop-amber' },
-  { key: 'selfie', href: '/dashboard/selfie', icon: Camera, tint: 'bg-pop-sky' },
-  { key: 'inspiration', href: '/dashboard/inspiration', icon: Compass, tint: 'bg-pop-mint' },
+  { key: 'askLook', href: '/dashboard/suggest', icon: Sparkles },
+  { key: 'selfie', href: '/dashboard/selfie', icon: Camera },
+  { key: 'inspiration', href: '/dashboard/inspiration', icon: Compass },
   // «Modo viaje»: looks and suitcase for a trip.
-  { key: 'trips', href: '/dashboard/trips', icon: Plane, tint: 'bg-pop-sky' },
-  // Their own Stinky: name and coat.
-  { key: 'customize', href: '/dashboard/stinky/customize', icon: Palette, tint: 'bg-pop-pink' },
+  { key: 'trips', href: '/dashboard/trips', icon: Plane },
 ] as const;
-
-type Mood = 'idle' | 'thinking' | 'happy';
 
 const TOOL_KEYS = new Set([
   'get_wardrobe',
@@ -207,7 +205,6 @@ function StinkyChat() {
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [statusLabel, setStatusLabel] = useState<string | null>(null);
-  const [mood, setMood] = useState<Mood>('idle');
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -225,6 +222,7 @@ function StinkyChat() {
   const keyboard = useKeyboard();
 
   const aiStatus = useAIStatus();
+  const { voice } = useStinkyPersona();
   const conversation = useStinkyConversation(cParam);
   const saveOutfit = useSaveStinkyOutfit();
 
@@ -305,14 +303,12 @@ function StinkyChat() {
       ]);
       setInput('');
       setStreaming(true);
-      setMood('thinking');
       const turnThinking = thinkingLabel(thinkingSeed.current++);
       setStatusLabel(turnThinking);
 
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       let outfitCreated = false;
-      let failed = false;
 
       const patchBot = (fn: (m: ChatMessage) => ChatMessage) =>
         setMessages((ms) => ms.map((m) => (m.id === currentBotId ? fn(m) : m)));
@@ -345,7 +341,6 @@ function StinkyChat() {
                 outfitCreated = outfitCreated || ev.data.outfit_created;
                 break;
               case 'error':
-                failed = true;
                 patchBot((m) => ({
                   ...m,
                   content: m.content ? m.content : ev.data.message || t('errorGeneric'),
@@ -360,7 +355,6 @@ function StinkyChat() {
         if ((err as Error)?.name === 'AbortError') {
           patchBot((m) => ({ ...m, streaming: false }));
         } else {
-          failed = true;
           const code = getAiAccessErrorCode(err);
           if (code) {
             setBlockedReason(code);
@@ -381,7 +375,6 @@ function StinkyChat() {
         abortRef.current = null;
         setStreaming(false);
         setStatusLabel(null);
-        setMood(outfitCreated && !failed ? 'happy' : 'idle');
         queryClient.invalidateQueries({ queryKey: STINKY_CONVERSATIONS_KEY });
         if (outfitCreated) queryClient.invalidateQueries({ queryKey: ['outfits'] });
       }
@@ -421,7 +414,6 @@ function StinkyChat() {
               )
             );
             if (conversationId) queryClient.removeQueries({ queryKey: ['stinky-conversation', conversationId] });
-            setMood('happy');
             toast.success(t('savedToast'));
           },
           onError: () => toast.error(t('saveError')),
@@ -438,7 +430,6 @@ function StinkyChat() {
     setConversationId(null);
     setMessages([]);
     setSheetOpen(false);
-    setMood('idle');
     router.replace('/dashboard/stinky', { scroll: false });
     inputRef.current?.focus();
   };
@@ -475,28 +466,17 @@ function StinkyChat() {
   const loadingConversation = !!cParam && conversation.isLoading && messages.length === 0;
   const isEmpty = messages.length === 0 && !loadingConversation;
   const suggestions = [t('suggestion1'), t('suggestion2'), t('suggestion3'), t('suggestion4')];
-  const headerStatus = streaming ? statusLabel || thinkingLabel(0) : t('subtitle');
+  // His opening line is a chat message like any other — in «Solo miau», meows.
+  const greetingKey = rotate(GREETING_KEYS, greetingSeed);
+  const greeting = voice === 'solo-miau' ? meows(greetingKey) : t(greetingKey as never);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
       {/* Chat header: fixed under the app header (<main> clips overflow, so sticky can't work). */}
       <div className="fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-page bg-background lg:left-64 lg:top-20">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-0">
-          <div className="no-callout flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-signature-soft">
-            <Stinky
-              state={mood}
-              size={52}
-              interactive
-              onDone={() => setMood((m) => (m === 'happy' ? 'idle' : m))}
-              label={t('title')}
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-extrabold leading-tight tracking-tight">{t('title')}</h1>
-            <p className="truncate text-[13px] text-muted-foreground" aria-live="polite">
-              {headerStatus}
-            </p>
-          </div>
+        <div className="mx-auto flex min-h-[60px] max-w-3xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-0">
+          {/* Just his name: the Stinky on this screen is the one talking in the chat. */}
+          <h1 className="min-w-0 flex-1 truncate text-xl font-extrabold leading-tight tracking-tight">{t('title')}</h1>
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
@@ -515,7 +495,7 @@ function StinkyChat() {
           </button>
         </div>
       </div>
-      <div aria-hidden className="h-[72px] shrink-0" />
+      <div aria-hidden className="h-[60px] shrink-0" />
       <AreaTip inPage />
 
       <div className="flex flex-col gap-3 pt-3" role="log" aria-live="polite" aria-relevant="additions">
@@ -527,51 +507,47 @@ function StinkyChat() {
         )}
 
         {isEmpty && (
-          <div className="flex flex-col items-center px-2 pb-2 pt-6 text-center">
-            <p className="text-2xl font-extrabold tracking-tight">
-              {t(rotate(GREETING_KEYS, greetingSeed) as never)}
-            </p>
-            <p className="mt-1.5 max-w-xs text-[15px] text-muted-foreground">{t('emptyBody')}</p>
+          <>
             {/* The rest of what Stinky does, one tap away (it used to be other tabs). */}
-            <nav aria-label={tNav('stinky')} className="mt-5 grid w-full grid-cols-2 gap-2 sm:grid-cols-5">
-              {STINKY_ACTIONS.map(({ key, href, icon: Icon, tint }) => (
+            <nav
+              aria-label={tNav('stinky')}
+              className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0"
+            >
+              {STINKY_ACTIONS.map(({ key, href, icon: Icon }) => (
                 <Link
                   key={key}
                   href={href}
-                  className={cn(
-                    'pressable flex min-h-[84px] flex-col items-center justify-center gap-1.5 rounded-lg px-2 py-3 text-center text-[13px] font-bold leading-tight text-pop-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    tint,
-                    // Five tiles: the last one spans the row on a phone instead of sitting alone.
-                    key === 'customize' && 'col-span-2 sm:col-span-1'
-                  )}
+                  className="pressable inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-panel pl-3 pr-4 text-[14px] font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <Icon className="h-6 w-6" strokeWidth={2} aria-hidden />
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
                   {tNav(key)}
                 </Link>
               ))}
             </nav>
-            {!aiUnavailable && (
-              <div className="mt-6 flex w-full flex-col gap-2 sm:grid sm:grid-cols-2">
-                {suggestions.map((s, i) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => void send(s)}
-                    disabled={streaming}
-                    className="flex min-h-[48px] items-center gap-3 rounded-full border-[1.5px] border-border bg-background px-4 text-left text-[15px] font-medium transition-colors hover:bg-accent active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                  >
-                    <span aria-hidden className={cn('h-2.5 w-2.5 shrink-0 rounded-full', POP_BG[popColorAt(i)])} />
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+            {/* He opens the conversation; nothing else on the screen speaks for him. */}
+            <StinkyBubble className="mt-2">{greeting}</StinkyBubble>
+          </>
         )}
 
         {/* Stinky is told to ask for photos when there is nothing to dress anyone
             in; he cannot render a button, so this is the button. */}
-        {!aiUnavailable && <EmptyWardrobeCta />}
+        {!aiUnavailable && <EmptyWardrobeCta continued={isEmpty} />}
+
+        {isEmpty && !aiUnavailable && (
+          <div className="flex flex-wrap gap-2 pl-[38px]">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => void send(s)}
+                disabled={streaming}
+                className="inline-flex min-h-[38px] items-center rounded-full border-[1.5px] border-border bg-background px-3.5 py-1.5 text-left text-[14px] font-medium transition-colors hover:bg-accent active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
 
         {messages.map((m) => (
           <Bubble

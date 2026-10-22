@@ -1006,7 +1006,7 @@
     "selectMode": "Select"
   },
   "suggest": {
-    "title": "Ask me for a look",
+    "title": "Ask for a look",
     "editorialSubtitle": "One look, guided by Stinky.",
     "editorialSuggestFrame": "Today's proposal",
     "editorialWeather": "Weather",
@@ -1082,19 +1082,16 @@
     "creatingLook": "Creating your look...",
     "getSuggestion": "Get Suggestion",
     "songLabel": "What are you listening to today?",
+    "songAdd": "Add a song",
     "songPlaceholder": "e.g. Mitski — My Love Mine All Mine, or paste a Spotify link",
-    "songHelp": "Optional. Stinky will use the song's mood as an extra layer of inspiration.",
     "inspiredBy": "Inspired by",
     "songSpotifyHint": "Music connected: leave it empty and we'll use how your current music sounds.",
-    "thinkingTitle": "Stinky is mulling it over… prrr",
     "thinkingBody": "Looking at your wardrobe, the weather and the occasion.",
     "thinkingBodySong": "Looking at your wardrobe, the weather and what's playing: <b>{song}</b>.",
     "thinkingCaption": "Mixing and matching your clothes · a few seconds",
-    "introTitle": "What are we wearing today?",
-    "introBody": "Pick the occasion and I'll build a look from what you already own. Without leaving the sofa.",
+    "introBody": "Pick the occasion and I'll build a look from what you already own.",
     "introBodyOccasion": "Plan: {occasion}. Say the word and I'm on it — the nap can wait.",
-    "acceptedTitle": "Great choice!",
-    "acceptedBody": "Saved to your looks. Stinky approves, with a purr.",
+    "acceptedBody": "Saved to your looks. I approve, with a purr.",
     "anotherLook": "Another look",
     "seeLooks": "See my looks",
     "errorTitle": "Oops, something went wrong",
@@ -3471,7 +3468,6 @@
   },
   "stinkyChat": {
     "title": "Stinky",
-    "subtitle": "Your feline stylist",
     "statusThinking1": "Thinking it over…",
     "statusThinking2": "Mulling it over… prrr",
     "statusThinking3": "Turning it over…",
@@ -3488,11 +3484,10 @@
       "forget": "Crossing it out of his notebook…",
       "default": "One moment…"
     },
-    "greeting1": "Miau. What are we wearing today?",
+    "greeting1": "What are we wearing today?",
     "greeting2": "How can I help?",
     "greeting3": "Here I am, awake and everything.",
     "greeting4": "Tell me, what's the plan?",
-    "emptyBody": "Ask me what to wear, what you're missing or how to style that piece you never use. I've got my eye on it.",
     "suggestion1": "What should I wear today?",
     "suggestion2": "I have a wedding in October",
     "suggestion3": "What am I missing for autumn?",
@@ -3536,9 +3531,8 @@
   "stinkyMemory": {
     "backToSettings": "← Settings",
     "pageTitle": "Stinky remembers",
-    "pageDescription": "What Stinky has written down about you while you talk. You're in charge: edit it, pin it or delete it.",
     "how": {
-      "title": "How this works",
+      "title": "What he writes down, and what he doesn't",
       "body": "Stinky writes these notes himself while you chat, so he doesn't ask you the same thing every week.",
       "point1": "He only notes things that help him dress you: styles, colours, how you like clothes to sit, recurring plans, sizes or materials.",
       "point2": "He never notes anything about your health, your body, your weight, your religion, your sexuality, your politics or your money. If he tries, we block it.",
@@ -3554,7 +3548,7 @@
     "list": {
       "title": "His notes",
       "count": "{count} of {max} notes.",
-      "empty": "He hasn't written anything yet. Talk to him and he'll start taking notes.",
+      "empty": "I haven't written anything down yet. Talk to me and I'll fill it in on my own.",
       "emptyCta": "Talk to Stinky"
     },
     "kinds": {
@@ -3963,7 +3957,6 @@
     "styleQuiz": {
       "dialogLabel": "Your style with Stinky",
       "pageTitle": "Your style",
-      "pageDescription": "What you have told Stinky about your taste. It is about clothes, not about you.",
       "backToSettings": "← Settings",
       "loading": "Loading…",
       "progressLabel": "Quiz progress",
@@ -4261,9 +4254,9 @@
   },
   "selfie": {
     "title": "What am I wearing",
-    "subtitle": "Take a full-body photo and I'll tell you which of your garments you have on.",
     "privacy": {
-      "title": "What happens to your photo",
+      "title": "Your photo is not kept",
+      "more": "More",
       "body": "The photo is only read to recognise the clothes and is dropped as soon as that is done: it is not stored here or on the server. Camera data (date and location) is stripped, and only the garments are described, never the person."
     },
     "takePhoto": "Take a photo",
@@ -4307,7 +4300,6 @@
     "defaultLookName": "Look from {date}",
     "pin": {
       "title": "Recreate this look",
-      "subtitle": "I find the closest thing in your wardrobe to each garment in the pin, and tell you what you're missing.",
       "analyze": "Recreate with my clothes",
       "analyzing": "Looking through your wardrobe…",
       "analyzeFailed": "I couldn't read the pin. Please try again.",
@@ -4557,21 +4549,18 @@
   },
   "inspiration": {
     "title": "Inspiration",
-    "description": "Besides your wardrobe, Stinky looks at what you listen to and what you save.",
     "music": {
       "title": "Your music",
-      "body": "Spotify or Last.fm: the mood of what is playing goes into your looks."
+      "service": "Spotify or Last.fm"
     },
     "pins": {
       "title": "Your pins",
-      "body": "Pinterest: the looks you save tell him what you like."
+      "service": "Pinterest"
     }
   },
   "stinkyCustomize": {
     "title": "Your Stinky",
-    "intro": "Give your cat a name and a coat. That is what they will be called in the chat, in notifications and across the app.",
     "nameLabel": "What is their name?",
-    "nameHint": "Up to 20 letters. Leave it empty to go back to {defaultName}.",
     "nameInvalid": "Letters, numbers and spaces only, up to 20.",
     "coatLabel": "Coat",
     "coats": {
@@ -4602,27 +4591,21 @@
     "settingsBody": "Their name and coat",
     "settingsAction": "Customize",
     "voiceLabel": "How he talks",
-    "voiceHint": "How much cat is in your stylist. It changes the tone, not the advice.",
     "voices": {
       "estilista": {
         "title": "Stylist",
-        "body": "Sharp and to the point, no cat stuff.",
         "sample": "The grey jumper with the dark jeans: warm, and the tone goes with the boots."
       },
       "gato": {
         "title": "Cat",
-        "body": "As always: a stylist with whiskers, the odd meow.",
         "sample": "Prrr. The grey jumper with the dark jeans: warm, and it doesn't look like you gave up."
       },
       "muy-gato": {
         "title": "Very cat",
-        "body": "More meows, more naps, more feline drama. The advice is just as good.",
         "sample": "Mrrp! You woke me from my nap for this, so listen: grey jumper and dark jeans. Nom."
       },
       "solo-miau": {
-        "title": "Only meows",
-        "body": "{name} only meows. You still see each look's garments; he just won't explain them.",
-        "sample": ""
+        "title": "Only meows"
       }
     },
     "wardrobeLabel": "His wardrobe",
@@ -4638,8 +4621,10 @@
       "pajarita-dorada": "Golden bow tie"
     },
     "goalLabel": "Your streak",
-    "goalHint": "How many days a week you want to tell him what you wore. One joker a month covers a slow week.",
-    "goalDays": "{count, plural, one {# day} other {# days}}",
+    "goalHint": "Days a week you tell him what you're wearing. One wildcard a month covers a slow week.",
+    "goalDays": "Goal: {count, plural, one {# day} other {# days}}",
+    "goalLess": "One day fewer",
+    "goalMore": "One day more",
     "accessorySaved": "Done"
   },
   "trips": {

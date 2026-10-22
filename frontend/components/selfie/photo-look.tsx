@@ -96,6 +96,8 @@ export function PhotoLook({ pinId = null }: { pinId?: string | null }) {
   const [occasion, setOccasion] = useState('casual');
   const [aiBlocked, setAiBlocked] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // «Tu foto no se guarda · Más»: the detail only when asked for.
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   const analyze = useAnalyzeSelfie();
   const recreate = useRecreatePin();
@@ -231,7 +233,7 @@ export function PhotoLook({ pinId = null }: { pinId?: string | null }) {
 
   return (
     <div className="space-y-6 py-2 sm:py-4">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader title={t('title')} />
 
       {fromPin && (
         <div className="relative mx-auto aspect-[3/4] w-full max-w-xs overflow-hidden rounded-lg bg-panel">
@@ -239,16 +241,6 @@ export function PhotoLook({ pinId = null }: { pinId?: string | null }) {
             <Image src={pin.data.image_url} alt={pin.data.description ?? ''} fill className="object-cover" unoptimized />
           )}
         </div>
-      )}
-
-      {!fromPin && (
-      <section className="flex items-start gap-3 rounded-lg bg-panel p-4" role="note">
-        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-        <div className="min-w-0 space-y-1">
-          <p className="text-[15px] font-bold leading-snug">{t('privacy.title')}</p>
-          <p className="text-sm leading-snug text-muted-foreground">{t('privacy.body')}</p>
-        </div>
-      </section>
       )}
 
       {(noVisionAi || aiBlocked) && (
@@ -297,10 +289,11 @@ export function PhotoLook({ pinId = null }: { pinId?: string | null }) {
               </Button>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex min-h-[132px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-panel p-4 text-center focus-within:ring-2 focus-within:ring-ring">
-                <Camera className="h-7 w-7" strokeWidth={1.75} aria-hidden />
-                <span className="text-[15px] font-bold">{t('takePhoto')}</span>
+            <div className="flex flex-col items-center gap-1">
+              {/* One thing to do: the camera. The gallery is the quiet way in. */}
+              <label className="pressable flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 text-[15px] font-bold text-primary-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                <Camera className="h-5 w-5" strokeWidth={2} aria-hidden />
+                {t('takePhoto')}
                 <input
                   type="file"
                   className="sr-only"
@@ -312,9 +305,9 @@ export function PhotoLook({ pinId = null }: { pinId?: string | null }) {
                   }}
                 />
               </label>
-              <label className="flex min-h-[132px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-panel p-4 text-center focus-within:ring-2 focus-within:ring-ring">
-                <ImagePlus className="h-7 w-7" strokeWidth={1.75} aria-hidden />
-                <span className="text-[15px] font-bold">{t('choosePhoto')}</span>
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-1.5 px-3 text-sm font-semibold underline-offset-4 hover:underline focus-within:underline">
+                <ImagePlus className="h-4 w-4" strokeWidth={2} aria-hidden />
+                {t('choosePhoto')}
                 <input
                   type="file"
                   className="sr-only"
@@ -325,6 +318,23 @@ export function PhotoLook({ pinId = null }: { pinId?: string | null }) {
                   }}
                 />
               </label>
+              {/* What happens to the photo: one line after the buttons, the rest on «Más». */}
+              <div className="w-full text-center">
+                <button
+                  type="button"
+                  aria-expanded={privacyOpen}
+                  onClick={() => setPrivacyOpen((open) => !open)}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <ShieldCheck className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  {t('privacy.title')}
+                  <span aria-hidden>·</span>
+                  <span className="underline underline-offset-4">{t('privacy.more')}</span>
+                </button>
+                {privacyOpen && (
+                  <p className="mx-auto max-w-sm px-2 text-[13px] leading-snug text-muted-foreground">{t('privacy.body')}</p>
+                )}
+              </div>
             </div>
           )}
 

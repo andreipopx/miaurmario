@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Camera, ListChecks } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { StinkyBubble } from '@/components/stinky-chat/stinky-bubble';
 import { useWardrobeStats } from '@/lib/hooks/use-wardrobe-stats';
 
 /**
@@ -15,8 +16,11 @@ import { useWardrobeStats } from '@/lib/hooks/use-wardrobe-stats';
  * and he is told never to write ids or links. This is the button that goes with
  * what he says — and it points at tagging rather than uploading when the photos
  * are already there and only the types are missing.
+ *
+ * It reads as one more thing he says in the chat; `continued` when it follows
+ * another bubble of his, so his face is not repeated.
  */
-export function EmptyWardrobeCta() {
+export function EmptyWardrobeCta({ continued = false }: { continued?: boolean }) {
   const t = useTranslations('stinkyChat.emptyWardrobe');
   const { data: stats } = useWardrobeStats();
   if (!stats || stats.usable >= stats.min_for_looks) return null;
@@ -24,26 +28,26 @@ export function EmptyWardrobeCta() {
   const taggingFirst = stats.untyped > 0;
 
   return (
-    <div
-      data-testid="stinky-empty-wardrobe"
-      className="rounded-lg bg-signature-soft p-3.5 sm:p-4"
+    <StinkyBubble
+      testId="stinky-empty-wardrobe"
+      continued={continued}
+      after={
+        <Button asChild size="sm" className="mt-2">
+          <Link href={taggingFirst ? '/dashboard/wardrobe?bulk=review' : '/dashboard/wardrobe?bulk=1'}>
+            {taggingFirst ? (
+              <ListChecks className="h-4 w-4" strokeWidth={2} aria-hidden />
+            ) : (
+              <Camera className="h-4 w-4" strokeWidth={2} aria-hidden />
+            )}
+            {taggingFirst ? t('tagCta') : t('cta')}
+          </Link>
+        </Button>
+      }
     >
-      <p className="text-[15px] font-bold leading-snug">
-        {taggingFirst ? t('tagTitle') : t('title')}
-      </p>
-      <p className="mt-1 text-[13px] leading-snug text-foreground/75">
+      <span className="block font-bold">{taggingFirst ? t('tagTitle') : t('title')}</span>
+      <span className="mt-0.5 block text-[14px] text-foreground/75">
         {taggingFirst ? t('tagBody', { count: stats.untyped }) : t('body')}
-      </p>
-      <Button asChild className="mt-3 w-full sm:w-auto">
-        <Link href={taggingFirst ? '/dashboard/wardrobe?bulk=review' : '/dashboard/wardrobe?bulk=1'}>
-          {taggingFirst ? (
-            <ListChecks className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-          ) : (
-            <Camera className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-          )}
-          {taggingFirst ? t('tagCta') : t('cta')}
-        </Link>
-      </Button>
-    </div>
+      </span>
+    </StinkyBubble>
   );
 }

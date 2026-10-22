@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useWeatherConditionLabel } from '@/lib/weather-condition';
-import { AlertCircle, CalendarDays, ChevronDown, Cloud, CloudLightning, CloudRain, CloudSun, Cloudy, Droplets, LayoutGrid, Loader2, MapPin, Music, RefreshCw, Snowflake, Sparkles, Sun, Thermometer, ThumbsDown, ThumbsUp, Wind } from 'lucide-react';
+import { CalendarDays, ChevronDown, Cloud, CloudLightning, CloudRain, CloudSun, Cloudy, Droplets, History, LayoutGrid, Loader2, MapPin, Music, RefreshCw, Snowflake, Sparkles, Sun, Thermometer, ThumbsDown, ThumbsUp, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,10 +29,8 @@ import { Chip } from '@/components/chip';
 import { OccasionChips } from '@/components/shared/occasion-chips';
 import { PageHeader } from '@/components/page-header';
 import { StinkyTip } from '@/components/stinky-tip';
-import { Stinky } from '@/components/stinky/stinky';
 import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
-import type { StinkyState } from '@/components/stinky/stinky-states';
 
 // Weather condition to icon mapping
 function getWeatherIcon(condition: string, isDay: boolean) {
@@ -50,12 +48,10 @@ interface WeatherOverride {
   condition: 'sunny' | 'cloudy' | 'rainy';
 }
 
-function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weather; isLoading: boolean; temperatureUnit: TempUnit }) {
+/** What Stinky says about the weather («una chaqueta ligera…»); it goes in his tip, not on the card. */
+function useWeatherHint() {
   const t = useTranslations('suggest');
-  const conditionLabel = useWeatherConditionLabel();
-
-  // Get weather-based outfit hint
-  const getWeatherHint = (w: Weather): string => {
+  return (w: Weather): string => {
     const temp = w.temperature;
     const condition = w.condition.toLowerCase();
 
@@ -66,6 +62,11 @@ function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weathe
     if (condition.includes('wind')) return t('weatherHintWind');
     return t('weatherHintDefault');
   };
+}
+
+function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weather; isLoading: boolean; temperatureUnit: TempUnit }) {
+  const t = useTranslations('suggest');
+  const conditionLabel = useWeatherConditionLabel();
 
   if (isLoading) {
     return <Skeleton className="h-[88px] w-full rounded-lg" />;
@@ -77,7 +78,7 @@ function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weathe
         href="/dashboard/settings"
         className="flex items-center gap-4 rounded-lg bg-panel p-4 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pop-sky text-pop-foreground">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background text-foreground">
           <MapPin className="h-5 w-5" strokeWidth={1.75} aria-hidden />
         </span>
         <span>
@@ -92,7 +93,7 @@ function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weathe
     <div className="rounded-lg bg-panel p-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pop-amber text-pop-foreground">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background text-foreground">
             {getWeatherIcon(weather.condition, weather.is_day)}
           </span>
           <div>
@@ -118,7 +119,6 @@ function WeatherCard({ weather, isLoading, temperatureUnit }: { weather?: Weathe
           </li>
         </ul>
       </div>
-      <p className="mt-3 border-t border-border pt-3 text-sm font-medium">{getWeatherHint(weather)}</p>
     </div>
   );
 }
@@ -346,30 +346,6 @@ function OutfitResult({
   );
 }
 
-/** Big Stinky in a soft-pink circle — the page's hero. */
-function StinkyHero({
-  state,
-  title,
-  body,
-  children,
-}: {
-  state: StinkyState;
-  title: string;
-  body?: React.ReactNode;
-  children?: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col items-center px-2 text-center" aria-live="polite">
-      <div className="flex h-44 w-44 items-center justify-center rounded-full bg-signature-soft">
-        <Stinky state={state} size={150} label="" />
-      </div>
-      <h2 className="mt-4 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">{title}</h2>
-      {body && <p className="mt-2 max-w-md text-[15px] leading-snug text-muted-foreground">{body}</p>}
-      {children}
-    </section>
-  );
-}
-
 export default function SuggestPage() {
   const t = useTranslations('suggest');
   const tOcc = useTranslations('suggest.occasions');
@@ -381,7 +357,9 @@ export default function SuggestPage() {
   const [occasionInitialized, setOccasionInitialized] = useState(false);
   const [weatherOverride, setWeatherOverride] = useState<WeatherOverride | null>(null);
   const [song, setSong] = useState<SongSelection>({ text: '', trackId: null, track: null });
+  const [songOpen, setSongOpen] = useState(false);
   const songQuery = song.text;
+  const weatherHint = useWeatherHint();
   const musicSettings = useMusicSettings();
   const musicConnected = Boolean(musicSettings.data?.source);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -511,10 +489,11 @@ export default function SuggestPage() {
         action={
           <Link
             href="/dashboard/history"
-            className="pressable inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={t('pastSuggestions')}
+            title={t('pastSuggestions')}
+            className="pressable flex h-11 w-11 items-center justify-center rounded-full bg-panel text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-            {t('pastSuggestions')}
+            <History className="h-5 w-5" strokeWidth={1.75} aria-hidden />
           </Link>
         }
       />
@@ -531,16 +510,12 @@ export default function SuggestPage() {
           isAccepting={isAccepting}
         />
       ) : isGenerating ? (
-        <div className="space-y-6">
-          <StinkyHero
-            state="thinking"
-            title={t('thinkingTitle')}
-            body={
-              trimmedSong
-                ? t.rich('thinkingBodySong', { song: trimmedSong, b: (c) => <strong className="text-foreground">{c}</strong> })
-                : t('thinkingBody')
-            }
-          />
+        <div className="space-y-6" aria-live="polite">
+          <StinkyTip className="bg-panel">
+            {trimmedSong
+              ? t.rich('thinkingBodySong', { song: trimmedSong, b: (c) => <strong>{c}</strong> })
+              : t('thinkingBody')}
+          </StinkyTip>
           <section>
             <p className="mb-2.5 px-1 text-sm font-bold">{t('occasionsQuestion')}</p>
             <OccasionChips selected={selectedOccasion} onSelect={() => {}} disabled scroll />
@@ -558,8 +533,9 @@ export default function SuggestPage() {
           </div>
         </div>
       ) : accepted ? (
-        <StinkyHero state="happy" title={t('acceptedTitle')} body={t('acceptedBody')}>
-          <div className="mt-6 flex w-full max-w-md gap-2.5">
+        <div className="space-y-6" aria-live="polite">
+          <StinkyTip className="bg-panel">{t('acceptedBody')}</StinkyTip>
+          <div className="flex gap-2.5">
             <Button variant="secondary" size="lg" className="flex-1" onClick={handleNewRequest}>
               <RefreshCw className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
               {t('anotherLook')}
@@ -571,19 +547,25 @@ export default function SuggestPage() {
               </Link>
             </Button>
           </div>
-        </StinkyHero>
+        </div>
       ) : (
         <div className="space-y-6">
           {aiBlocked || noTextAi ? (
             <AIUnavailableNotice feature="suggest" reason={aiBlocked ?? aiStatus?.blocked_reason} />
-          ) : error ? (
-            <StinkyHero state="sad" title={t('errorTitle')} body={error} />
           ) : (
-            <StinkyHero
-              state="idle"
-              title={t('introTitle')}
-              body={selectedOccasion ? t('introBodyOccasion', { occasion: tOcc(selectedOccasion as any) }) : t('introBody')}
-            />
+            /* The one Stinky on the screen, saying one thing: the weather and what he needs. */
+            <StinkyTip className="bg-panel">
+              {error
+                ? `${t('errorTitle')} ${error}`
+                : [
+                    weather ? weatherHint(weather) : null,
+                    selectedOccasion ? t('introBodyOccasion', { occasion: tOcc(selectedOccasion as any) }) : t('introBody'),
+                  ]
+                    .filter((s): s is string => Boolean(s))
+                    // The weather hints have no full stop of their own.
+                    .map((s) => (/[.!?…]$/.test(s) ? s : `${s}.`))
+                    .join(' ')}
+            </StinkyTip>
           )}
 
           <WeatherCard weather={weather} isLoading={weatherLoading} temperatureUnit={temperatureUnit} />
@@ -595,25 +577,36 @@ export default function SuggestPage() {
 
           <WeatherOverrideSection weather={weatherOverride} onChange={setWeatherOverride} temperatureUnit={temperatureUnit} />
 
-          {/* Song — optional mood/aesthetic reference */}
-          <div className="space-y-2">
-            <label htmlFor="song-query" className="flex items-center gap-2 px-1 text-sm font-bold">
-              <Music className="h-4 w-4" aria-hidden />
-              {t('songLabel')}
-            </label>
-            <SongAutocomplete
-              value={song}
-              onChange={setSong}
-              musicConnected={musicConnected}
-              describedBy="song-help"
-            />
-            <p id="song-help" className="px-1 text-xs text-muted-foreground">
-              {t('songHelp')}
-            </p>
-            {musicConnected && musicSettings.data?.use_for_mood && !songQuery.trim() && (
-              <p className="px-1 text-xs font-semibold text-success">{t('songSpotifyHint')}</p>
-            )}
-          </div>
+          {/* Song — optional, folded away until wanted */}
+          <Collapsible open={songOpen} onOpenChange={setSongOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                aria-expanded={songOpen}
+                className="-ml-2 flex min-h-[44px] max-w-full items-center gap-2 rounded-full px-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', songOpen && 'rotate-180')} aria-hidden />
+                <span>{t('songAdd')}</span>
+                {trimmedSong && (
+                  <Badge variant="secondary" className="min-w-0 max-w-[12rem] text-xs">
+                    <span className="truncate">{trimmedSong}</span>
+                  </Badge>
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <div className="space-y-2 rounded-lg bg-panel p-4">
+                <label htmlFor="song-query" className="flex items-center gap-2 text-sm font-bold">
+                  <Music className="h-4 w-4" aria-hidden />
+                  {t('songLabel')}
+                </label>
+                <SongAutocomplete value={song} onChange={setSong} musicConnected={musicConnected} />
+                {musicConnected && musicSettings.data?.use_for_mood && !trimmedSong && (
+                  <p className="text-xs font-semibold text-success">{t('songSpotifyHint')}</p>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           <Button size="lg" className="w-full" onClick={handleGenerate} disabled={!selectedOccasion || noTextAi}>
             <Sparkles className="h-5 w-5" strokeWidth={2} aria-hidden />

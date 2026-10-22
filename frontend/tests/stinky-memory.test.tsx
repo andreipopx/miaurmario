@@ -123,7 +123,7 @@ describe('«Stinky recuerda» copy', () => {
   })
 
   it('tells the user Stinky writes it and that they are in control', () => {
-    expect(es.stinkyMemory.pageDescription).toMatch(/Stinky/)
+    expect(es.stinkyMemory.how.body).toMatch(/Stinky/)
     expect(es.stinkyMemory.how.body).toMatch(/él mismo/)
     // The sensitive-topics promise is stated where the user can read it.
     expect(es.stinkyMemory.how.point2).toMatch(/salud/)

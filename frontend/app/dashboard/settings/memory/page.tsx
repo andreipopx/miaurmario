@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Check, Loader2, Pencil, Pin, PinOff, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, Loader2, Pencil, Pin, PinOff, Trash2, X } from 'lucide-react';
 
 import { PageHeader } from '@/components/page-header';
 import {
@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LazyStinky } from '@/components/native/lazy-stinky';
+import { StinkyTip } from '@/components/stinky-tip';
 import {
   groupByKind,
   useClearStinkyMemory,
@@ -190,6 +190,8 @@ export default function StinkyMemoryPage() {
   const [nameDraft, setNameDraft] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  // «Qué apunta y qué no»: the privacy detail, open only when asked for.
+  const [howOpen, setHowOpen] = useState(false);
 
   // Follow the server while the user is not typing in the field.
   useEffect(() => {
@@ -215,22 +217,30 @@ export default function StinkyMemoryPage() {
         <Link href="/dashboard/settings">{t('backToSettings')}</Link>
       </Button>
 
-      <PageHeader title={t('pageTitle')} description={t('pageDescription')} />
+      <PageHeader title={t('pageTitle')} />
 
-      {/* --- How this works ------------------------------------------------ */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('how.title')}</CardTitle>
-          <CardDescription>{t('how.body')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-1.5 text-sm leading-snug text-muted-foreground">
-            <li className="rounded-quick bg-panel px-3 py-2">{t('how.point1')}</li>
-            <li className="rounded-quick bg-panel px-3 py-2">{t('how.point2')}</li>
-            <li className="rounded-quick bg-panel px-3 py-2">{t('how.point3')}</li>
-          </ul>
-        </CardContent>
-      </Card>
+      {/* --- What he writes down and what he never does: one link, the detail on tap --- */}
+      <div>
+        <button
+          type="button"
+          aria-expanded={howOpen}
+          onClick={() => setHowOpen((open) => !open)}
+          className="-ml-2 flex min-h-[44px] items-center gap-2 rounded-full px-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronDown className={cn('h-4 w-4 transition-transform', howOpen && 'rotate-180')} aria-hidden />
+          {t('how.title')}
+        </button>
+        {howOpen && (
+          <div className="mt-1 space-y-2 px-1 text-sm leading-snug text-muted-foreground">
+            <p>{t('how.body')}</p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li>{t('how.point1')}</li>
+              <li>{t('how.point2')}</li>
+              <li>{t('how.point3')}</li>
+            </ul>
+          </div>
+        )}
+      </div>
 
       {/* --- ¿Cómo quieres que te llame? ----------------------------------- */}
       <Card>
@@ -294,11 +304,9 @@ export default function StinkyMemoryPage() {
           {isLoading ? (
             <p className="text-sm text-muted-foreground">{t('loading')}</p>
           ) : total === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-2 text-center">
-              <LazyStinky state="sleepy" settleTo="idle" size={96} interactive={false} label="" />
-              <p className="max-w-sm text-sm leading-snug text-muted-foreground">
-                {t('list.empty')}
-              </p>
+            <div className="space-y-3">
+              {/* He says it himself, small, with the way to make him write. */}
+              <StinkyTip className="bg-panel">{t('list.empty')}</StinkyTip>
               <Button variant="outline" asChild>
                 <Link href="/dashboard/stinky">{t('list.emptyCta')}</Link>
               </Button>

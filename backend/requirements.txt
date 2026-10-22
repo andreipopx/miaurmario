@@ -1,5 +1,8 @@
 # FastAPI and web framework
-fastapi>=0.109.0
+# <0.143: from 0.143 a bool Form field the client leaves out no longer gets its
+# default (Form(True) arrives as False), which silently skips background removal
+# on bulk uploads. 0.142.2 is what production runs; lift once fixed upstream.
+fastapi>=0.109.0,<0.143
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.6
 

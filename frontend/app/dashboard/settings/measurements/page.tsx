@@ -117,9 +117,9 @@ export default function MeasurementsSettingsPage() {
       }
     }
     try {
-      await updateUserProfile.mutateAsync({
-        body_measurements: Object.keys(parsed).length > 0 ? parsed : null,
-      });
+      // An empty object, not null: the backend ignores null, so clearing every
+      // field would otherwise keep the old values.
+      await updateUserProfile.mutateAsync({ body_measurements: parsed });
       setDirty(false);
       toast.success(t('saved'));
     } catch (e) {

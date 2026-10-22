@@ -23,8 +23,18 @@ function shiftMonth(month: string, delta: number): string {
   return d.toISOString().slice(0, 7);
 }
 
-function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <section className={cn('rounded-lg p-5', className)}>{children}</section>;
+/** One grey card per section; the blocks inside are separated by a hairline. */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section aria-label={title} className="space-y-2">
+      <h2 className="px-1 text-[15px] font-bold">{title}</h2>
+      <div className="divide-y divide-border rounded-lg bg-panel px-5">{children}</div>
+    </section>
+  );
+}
+
+function Block({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <div className={cn('py-5', className)}>{children}</div>;
 }
 
 function Big({ children }: { children: React.ReactNode }) {
@@ -70,7 +80,7 @@ export default function WrappedPage() {
   const top = w?.top[0];
 
   return (
-    <div className="mx-auto max-w-xl space-y-4 pb-28 pt-2">
+    <div className="mx-auto max-w-xl space-y-6 pb-28 pt-2">
       <div className="flex items-center justify-between">
         <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
           <Link href="/dashboard">
@@ -98,106 +108,115 @@ export default function WrappedPage() {
         </div>
       ) : (
         <>
-          <Card className="flex flex-col items-center bg-signature-soft text-center">
-            <LazyStinky state="happy" settleTo="idle" size={120} label="" />
-            <h1 className="mt-3 text-[26px] font-extrabold leading-tight tracking-tight first-letter:uppercase">
-              {t('title', { month: monthName, name })}
-            </h1>
-            <p className="mt-1 text-[14px] text-muted-foreground">{t('subtitle', { meals: w.meals_total, level: w.level + 1 })}</p>
-          </Card>
+          {/* Stinky beside what he has to say about the month: his meals and his level. */}
+          <header className="flex items-center gap-4 px-1">
+            <LazyStinky state="happy" settleTo="idle" size={72} label="" className="shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-[26px] font-extrabold leading-tight tracking-tight first-letter:uppercase">
+                {t('title', { month: monthName, name })}
+              </h1>
+              <p className="mt-1 text-[14px] text-muted-foreground">{t('subtitle', { meals: w.meals_total, level: w.level + 1 })}</p>
+            </div>
+          </header>
 
-          <Card className="bg-panel">
-            <Big>{w.days_logged}</Big>
-            <p className="mt-1 text-[15px] font-semibold">{t('days', { count: w.days_logged })}</p>
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              {w.days_logged ? t('looks', { count: w.looks_worn }) : t('noDays', { name })}
-            </p>
-          </Card>
+          <Section title={t('sections.days')}>
+            <Block>
+              <Big>{w.days_logged}</Big>
+              <p className="mt-1 text-[15px] font-semibold">{t('days', { count: w.days_logged })}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                {w.days_logged ? t('looks', { count: w.looks_worn }) : t('noDays', { name })}
+              </p>
+            </Block>
 
-          {top && (
-            <Card className="bg-panel">
-              <p className="text-[13px] font-semibold text-muted-foreground">{t('garmentOfTheMonth')}</p>
-              <div className="mt-3 flex items-center gap-4">
-                <Garment g={top} />
-                <p className="text-[15px] font-bold leading-snug">{t('topTimes', { count: top.count })}</p>
-              </div>
-              {w.top.length > 1 && (
-                <div className="mt-4 flex gap-3">
-                  {w.top.slice(1).map((g) => (
-                    <Garment key={g.id} g={g} caption={t('times', { count: g.count })} />
-                  ))}
+            {top && (
+              <Block>
+                <p className="text-[13px] font-semibold text-muted-foreground">{t('garmentOfTheMonth')}</p>
+                <div className="mt-3 flex items-center gap-4">
+                  <Garment g={top} />
+                  <p className="text-[15px] font-bold leading-snug">{t('topTimes', { count: top.count })}</p>
                 </div>
-              )}
-            </Card>
-          )}
+                {w.top.length > 1 && (
+                  <div className="mt-4 flex gap-3">
+                    {w.top.slice(1).map((g) => (
+                      <Garment key={g.id} g={g} caption={t('times', { count: g.count })} />
+                    ))}
+                  </div>
+                )}
+              </Block>
+            )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-panel">
-              <Big>{pct}%</Big>
-              <p className="mt-1 text-[13px] font-semibold leading-snug">{t('wardrobeUsed', { worn: w.garments_worn, total: w.wardrobe_size })}</p>
-            </Card>
-            <Card className="bg-panel">
-              {w.top_color ? (
-                <>
-                  <span
-                    className="block h-11 w-11 rounded-full border border-border"
-                    style={{ background: clothingColorHex(w.top_color) ?? '#ccc' }}
-                    aria-hidden
-                  />
-                  <p className="mt-2 text-[13px] font-semibold leading-snug">{t('color', { color: colorLabel(w.top_color).toLowerCase() })}</p>
-                </>
-              ) : (
-                <p className="text-[13px] text-muted-foreground">{t('noColor')}</p>
-              )}
-            </Card>
-          </div>
+            <Block className="grid grid-cols-2 gap-4">
+              <div>
+                <Big>{pct}%</Big>
+                <p className="mt-1 text-[13px] font-semibold leading-snug">{t('wardrobeUsed', { worn: w.garments_worn, total: w.wardrobe_size })}</p>
+              </div>
+              <div>
+                {w.top_color ? (
+                  <>
+                    <span
+                      className="block h-11 w-11 rounded-full border border-border"
+                      style={{ background: clothingColorHex(w.top_color) ?? '#ccc' }}
+                      aria-hidden
+                    />
+                    <p className="mt-2 text-[13px] font-semibold leading-snug">{t('color', { color: colorLabel(w.top_color).toLowerCase() })}</p>
+                  </>
+                ) : (
+                  <p className="text-[13px] text-muted-foreground">{t('noColor')}</p>
+                )}
+              </div>
+            </Block>
+          </Section>
 
           {w.average_cost_per_wear && (
-            <Card className="bg-panel">
-              <p className="text-[13px] font-semibold text-muted-foreground">{t('costTitle')}</p>
-              <Big>{money(w.average_cost_per_wear)}</Big>
-              <p className="mt-1 text-[13px] text-muted-foreground">{t('costBody', { value: money(w.wardrobe_value) ?? '' })}</p>
-              {w.best_value && (
-                <div className="mt-4 flex items-center gap-4">
-                  <Garment g={w.best_value} />
-                  <p className="text-[14px] font-semibold leading-snug">
-                    {t('bestValue', { cost: money(w.best_value.cost_per_wear) ?? '', count: w.best_value.count })}
-                  </p>
+            <Section title={t('sections.money')}>
+              <Block>
+                <p className="text-[13px] font-semibold text-muted-foreground">{t('costTitle')}</p>
+                <Big>{money(w.average_cost_per_wear)}</Big>
+                <p className="mt-1 text-[13px] text-muted-foreground">{t('costBody', { value: money(w.wardrobe_value) ?? '' })}</p>
+                {w.best_value && (
+                  <div className="mt-4 flex items-center gap-4">
+                    <Garment g={w.best_value} />
+                    <p className="text-[14px] font-semibold leading-snug">
+                      {t('bestValue', { cost: money(w.best_value.cost_per_wear) ?? '', count: w.best_value.count })}
+                    </p>
+                  </div>
+                )}
+              </Block>
+            </Section>
+          )}
+
+          <Section title={t('sections.new')}>
+            {w.forgotten_count > 0 && (
+              <Block>
+                <p className="text-[13px] font-semibold text-muted-foreground">{t('forgottenTitle')}</p>
+                <p className="mt-1 text-[15px] font-bold">{t('forgotten', { count: w.forgotten_count })}</p>
+                <div className="mt-3 flex gap-3">
+                  {w.forgotten.map((g) => (
+                    <Link key={g.id} href={`/dashboard/wardrobe?item=${g.id}`}>
+                      <Garment g={g} />
+                    </Link>
+                  ))}
                 </div>
-              )}
-            </Card>
-          )}
-
-          {w.forgotten_count > 0 && (
-            <Card className="bg-panel">
-              <p className="text-[13px] font-semibold text-muted-foreground">{t('forgottenTitle')}</p>
-              <p className="mt-1 text-[15px] font-bold">{t('forgotten', { count: w.forgotten_count })}</p>
-              <div className="mt-3 flex gap-3">
-                {w.forgotten.map((g) => (
-                  <Link key={g.id} href={`/dashboard/wardrobe?item=${g.id}`}>
-                    <Garment g={g} />
-                  </Link>
-                ))}
-              </div>
-              <Button asChild variant="secondary" size="sm" className="mt-4">
-                <Link href={`/dashboard/wardrobe?item=${w.forgotten[0].id}`}>{t('forgottenCta')}</Link>
-              </Button>
-            </Card>
-          )}
-
-          <Card className="bg-panel">
-            <p className="text-[15px] font-bold">{t('added', { count: w.added })}</p>
-            {w.added > 0 && (
-              <ul className="mt-2 flex flex-wrap gap-2">
-                {Object.entries(w.added_by_way).map(([way, n]) => (
-                  <li key={way} className="rounded-full bg-background px-3 py-1 text-[12.5px] font-semibold">
-                    {t.has(`ways.${way}`) ? t(`ways.${way}`) : way} · {n}
-                  </li>
-                ))}
-              </ul>
+                <Button asChild variant="secondary" size="sm" className="mt-4 bg-background">
+                  <Link href={`/dashboard/wardrobe?item=${w.forgotten[0].id}`}>{t('forgottenCta')}</Link>
+                </Button>
+              </Block>
             )}
-            <p className="mt-3 text-[13px] text-muted-foreground">{t('streak', { count: w.best_streak_weeks })}</p>
-          </Card>
+
+            <Block>
+              <p className="text-[15px] font-bold">{t('added', { count: w.added })}</p>
+              {w.added > 0 && (
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {Object.entries(w.added_by_way).map(([way, n]) => (
+                    <li key={way} className="rounded-full bg-background px-3 py-1 text-[12.5px] font-semibold">
+                      {t.has(`ways.${way}`) ? t(`ways.${way}`) : way} · {n}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-3 text-[13px] text-muted-foreground">{t('streak', { count: w.best_streak_weeks })}</p>
+            </Block>
+          </Section>
         </>
       )}
     </div>

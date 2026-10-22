@@ -43,18 +43,17 @@ function StatusIcon({ status, label }: { status: Outfit['status']; label: string
 
 function SourceBadge({ source }: { source: OutfitSource }) {
   const t = useTranslations('outfitHistoryCard');
-  const config: Record<OutfitSource, { icon: typeof Calendar; variant: 'sky' | 'amber' | 'signature' | 'mint' }> = {
-    scheduled: { icon: Calendar, variant: 'sky' },
-    on_demand: { icon: Zap, variant: 'amber' },
-    manual: { icon: Edit3, variant: 'signature' },
-    pairing: { icon: Layers, variant: 'mint' },
-    stinky_chat: { icon: MessageCircle, variant: 'signature' },
+  const icons: Record<OutfitSource, typeof Calendar> = {
+    scheduled: Calendar,
+    on_demand: Zap,
+    manual: Edit3,
+    pairing: Layers,
+    stinky_chat: MessageCircle,
   };
-
-  const { icon: Icon, variant } = config[source] ?? config.on_demand;
+  const Icon = icons[source] ?? Zap;
 
   return (
-    <Badge variant={variant}>
+    <Badge variant="secondary">
       <Icon className="h-3 w-3" />
       {t(`source.${source}`)}
     </Badge>

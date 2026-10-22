@@ -160,7 +160,7 @@ export default function TripsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-2 sm:py-4">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader title={t('title')} />
 
       {creating ? (
         <NewTripForm onDone={() => setCreating(false)} />
@@ -181,7 +181,7 @@ export default function TripsPage() {
         <>
           {upcoming.length > 0 && (
             <section className="space-y-2">
-              <h2 className="px-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">{t('upcoming')}</h2>
+              <h2 className="px-1 text-[15px] font-bold">{t('upcoming')}</h2>
               <ul className="space-y-2">
                 {upcoming.map((trip) => (
                   <TripRow key={trip.id} trip={trip} />
@@ -191,7 +191,7 @@ export default function TripsPage() {
           )}
           {past.length > 0 && (
             <section className="space-y-2">
-              <h2 className="px-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">{t('past')}</h2>
+              <h2 className="px-1 text-[15px] font-bold">{t('past')}</h2>
               <ul className="space-y-2">
                 {past.map((trip) => (
                   <TripRow key={trip.id} trip={trip} />

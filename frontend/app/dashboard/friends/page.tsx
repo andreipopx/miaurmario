@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { ChevronRight, Loader2, Search, ShieldOff } from 'lucide-react';
+import { ChevronRight, Loader2, Search, ShieldOff, Vote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PollsSection } from '@/components/social/polls-section';
-import { LazyStinky } from '@/components/native/lazy-stinky';
 import { LoadMoreSentinel } from '@/components/native/load-more-sentinel';
 import { FeedDayCard } from '@/components/social/feed-day-card';
 import { InviteCard, ShareProfileButton } from '@/components/social/invite-card';
@@ -46,21 +45,6 @@ function CountDot({ count, label }: { count: number; label: string }) {
   );
 }
 
-/** Stinky celebrates for a moment after a new friendship. */
-function Celebration({ name, onDone }: { name: string; onDone: () => void }) {
-  const t = useTranslations('social.friends');
-  useEffect(() => {
-    const id = window.setTimeout(onDone, 4000);
-    return () => window.clearTimeout(id);
-  }, [onDone]);
-  return (
-    <div role="status" className="flex items-center gap-3 rounded-lg bg-signature-soft p-3">
-      <LazyStinky state="happy" size={64} label="" />
-      <p className="text-[15px] font-bold">{t('celebrate', { name })}</p>
-    </div>
-  );
-}
-
 // -- Feed tab ------------------------------------------------------------------------------
 
 function FeedTab({ hasFriends }: { hasFriends: boolean }) {
@@ -85,8 +69,8 @@ function FeedTab({ hasFriends }: { hasFriends: boolean }) {
       <EmptyState
         state="sleepy"
         title={hasFriends ? t('emptyTitle') : t('noFriendsTitle')}
-        description={hasFriends ? t('emptyBody') : t('noFriendsBody')}
-        action={<ShareProfileButton variant="signature" />}
+        description={hasFriends ? undefined : t('noFriendsBody')}
+        action={<ShareProfileButton />}
       />
     );
   }
@@ -303,7 +287,6 @@ export default function FriendsPage() {
     if (initial === 'activity') router.replace('/dashboard/inbox');
   }, [initial, router]);
   const [tab, setTab] = useState<Tab>(TABS.includes(initial as Tab) ? (initial as Tab) : 'feed');
-  const [celebrating, setCelebrating] = useState<string | null>(null);
   const { data: summary } = useSocialSummary();
   const { data: overview } = useFriendsOverview();
 
@@ -318,12 +301,26 @@ export default function FriendsPage() {
   };
 
   const hasFriends = (overview?.friends.length ?? 0) > 0;
+  // A new friendship is a moment, not a banner: one line, and it goes.
+  const celebrate = (name: string) => toast.success(t('friends.celebrate', { name }));
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <PageHeader title={t('title')} description={t('subtitle')} />
-
-      {celebrating && <Celebration name={celebrating} onDone={() => setCelebrating(null)} />}
+      <PageHeader
+        title={t('title')}
+        action={
+          hasFriends ? (
+            <Link
+              href="/dashboard/friends/poll"
+              aria-label={t('polls.ask')}
+              title={t('polls.ask')}
+              className="pressable flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Vote className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+            </Link>
+          ) : undefined
+        }
+      />
 
       <Tabs value={tab} onValueChange={changeTab}>
         <TabsList className="grid w-full grid-cols-2">
@@ -338,7 +335,7 @@ export default function FriendsPage() {
           <FeedTab hasFriends={hasFriends} />
         </TabsContent>
         <TabsContent value="friends" className="mt-4">
-          <FriendsTab onAccepted={setCelebrating} />
+          <FriendsTab onAccepted={celebrate} />
         </TabsContent>
       </Tabs>
     </div>

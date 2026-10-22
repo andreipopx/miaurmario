@@ -577,7 +577,6 @@
     "addItem": "Añadir prenda",
     "searchPlaceholder": "Buscar en tu armario...",
     "myTitle": "Mi armario",
-    "itemCount": "{count, plural, one {# prenda} other {# prendas}} en tu armario",
     "processingBadge": "{count} analizando",
     "errorBadge": "{count} con error",
     "needsWashingTooltip": "Necesita lavado",
@@ -585,8 +584,7 @@
     "analysisFailed": "Análisis fallido",
     "aiCompleteness": "Completitud IA: {pct}%",
     "emptyTitle": "Armario vacío",
-    "emptyBody": "Stinky se echa aquí a esperar, que la siesta no se hace sola. Añade tu primera prenda y empezamos.",
-    "addFirstItem": "Añadir primera prenda",
+    "addFirstItem": "Añadir prendas",
     "searchItemsPlaceholder": "Buscar prendas...",
     "perPage": "{size} por página",
     "needsWashFilter": "Por lavar",
@@ -656,7 +654,7 @@
         "setAsPrimary": "Marcar como principal",
         "deleteImage": "Borrar imagen",
         "label": "Acciones de la prenda",
-        "editTags": "Editar prenda y etiquetas",
+        "editTags": "Editar",
         "favoriteAdd": "Favorita",
         "favoriteRemove": "Quitar favorita",
         "pairings": "Combinar",
@@ -664,7 +662,7 @@
         "more": "Más opciones",
         "morePhoto": "Más cosas con la foto",
         "photoGroup": "La foto",
-        "photoLocked": "Para girar la foto, borrar lo que sobra o cambiarla, toca «Editar prenda y etiquetas».",
+        "photoLocked": "Para girar la foto, borrar lo que sobra o cambiarla, toca «Editar».",
         "reanalyzeWhat": "La IA vuelve a mirar la foto y reescribe el tipo, el color y las etiquetas. Lo que hayas puesto a mano se pierde.",
         "mergeBackWhat": "Mueve esta foto a otra prenda —como su espalda o su detalle— y borra esta ficha.",
         "deleteWhat": "Se borra para siempre, con sus fotos.",
@@ -836,7 +834,7 @@
       "tabSingle": "Una prenda",
       "tabBulk": "Varias",
       "typeLabel": "Tipo",
-      "typePlaceholder": "Que lo detecte la IA...",
+      "typePlaceholder": "Automático",
       "colorLabel": "Color principal",
       "brandLabel": "Marca",
       "brandPlaceholder": "Ej: Zara, Uniqlo",
@@ -850,11 +848,9 @@
         "processingBackground": "Se están analizando en segundo plano.",
         "keepsUploading": "Seguimos subiendo la prenda. Te avisamos al terminar."
       },
-      "description": "Sube fotos de tus prendas",
       "dragDropSingle": "Arrastra una imagen aquí",
       "dragDropSingleActive": "Suelta la imagen aquí...",
       "acceptedFormats": "JPEG, PNG, WebP o HEIC",
-      "typeHint": "(Stinky lo detecta si lo dejas vacío)",
       "nameLabelOptional": "Nombre (opcional)",
       "notesLabel": "Notas",
       "notesPlaceholder": "Cualquier detalle que quieras recordar...",
@@ -872,7 +868,6 @@
       "link": {
         "label": "Enlace de la tienda",
         "placeholder": "https://… o el texto de «Compartir»",
-        "hint": "Pega el enlace, o el texto entero de «Compartir». De Zara, Pull&Bear, Bershka, Stradivarius, Massimo Dutti y Mango me traigo también la foto de la prenda sola.",
         "read": "Leer enlace",
         "reading": "Leyendo...",
         "use": "Usar estos datos",
@@ -898,9 +893,14 @@
       "takePhoto": "Hacer foto",
       "photoNeeded": "Falta la foto de la prenda.",
       "tabShot": "Captura",
+      "shops": {
+        "which": "¿Qué tiendas?",
+        "link": "De Zara, Pull&Bear, Bershka, Stradivarius, Massimo Dutti y Mango me traigo también la foto de la prenda sola.",
+        "shot": "Si es de Zara, Bershka, Pull&Bear, Stradivarius o Massimo Dutti, busco cada prenda en su tienda para coger la foto buena."
+      },
       "screenshot": {
         "title": "Sube una captura",
-        "body": "De la app o la web de la tienda, de Instagram o de Pinterest. Te saco las prendas y, si es de Zara, Bershka, Pull&Bear, Stradivarius o Massimo Dutti, busco cada una en su tienda para coger la foto buena.",
+        "body": "De una tienda, Instagram o Pinterest.",
         "choose": "Elegir captura",
         "pasteHint": "En el ordenador también puedes pegarla aquí (Ctrl+V).",
         "reading": "Leyendo tu captura…",
@@ -1695,10 +1695,8 @@
   },
   "history": {
     "title": "Historial",
-    "subtitle": "Consulta tus recomendaciones anteriores",
     "loadError": "No se pudo cargar el historial. Inténtalo de nuevo.",
     "emptyTitle": "Sin historial de recomendaciones",
-    "emptyBody": "Tu historial de recomendaciones aparecerá aquí cuando empieces a recibir sugerencias.",
     "getFirstSuggestion": "Pide tu primera sugerencia",
     "noOutfitsForDate": "Sin conjuntos para el {date}",
     "allOccasions": "Todas las ocasiones",
@@ -1713,11 +1711,9 @@
   },
   "outfits": {
     "title": "Looks",
-    "subtitle": "Los que guardas, los que te has puesto y los que te propone Stinky.",
-    "viewToggle": "Cambiar vista",
-    "viewList": "Lista",
     "viewCalendar": "Calendario",
     "newOutfit": "Nuevo look",
+    "history": "Historial",
     "chips": {
       "all": "Todos",
       "myLooks": "Mis looks",
@@ -1726,8 +1722,7 @@
       "replacements": "Sustituciones",
       "ai": "IA"
     },
-    "searchLookbook": "Buscar en el lookbook...",
-    "totalCount": "{count} en total",
+    "searchLookbook": "Buscar en tus looks",
     "loadError": "No se pudieron cargar los conjuntos",
     "empty": {
       "all": "Aún no hay conjuntos. ¡Crea tu primer look en el Studio!",
@@ -1774,7 +1769,6 @@
   },
   "pairings": {
     "title": "Combinaciones",
-    "subtitle": "Conjuntos generados por la IA a partir de tus prendas",
     "loadError": "No se pudieron cargar las combinaciones. Inténtalo de nuevo.",
     "emptyTitle": "Aún no hay combinaciones",
     "emptyBody": "Elige una prenda de tu armario y usa \"Buscar combinaciones\" para descubrir conjuntos que quedan bien juntos.",
@@ -2073,9 +2067,7 @@
     "aiNoNew": "La IA no añadió piezas nuevas",
     "aiFailed": "El asistente de IA falló",
     "nameLabel": "Nombre",
-    "nameLabelHelp": "(obligatorio para el lookbook)",
     "namePlaceholder": "Brunch de viernes",
-    "occasionRequiredHint": "Elige una ocasión antes de guardar.",
     "warnings": {
       "noBottoms": "No has elegido pantalón/falda.",
       "noTop": "No has elegido top.",
@@ -2230,9 +2222,9 @@
     "cancel": "Cancelar",
     "wearToday": "Llevar hoy",
     "saveChanges": "Guardar cambios",
-    "saveToLookbook": "Guardar en el lookbook",
-    "pickAtLeastOneOrOccasion": "Elige al menos una pieza y una ocasión",
+    "saveToLookbook": "Guardar",
     "pickOccasion": "Elige una ocasión",
+    "nameNeeded": "Ponle un nombre para guardarlo.",
     "notFoundTitle": "Outfit no encontrado",
     "notFoundBody": "Este outfit ya no existe. Puede que se eliminara desde otra pestaña o dispositivo.",
     "authErrorTitle": "No puedes editar este outfit",
@@ -2253,8 +2245,7 @@
     "wornConflictBody": "Los outfits ya llevados no se editan (forman parte de tu historial). ¿Guardas los cambios como un lookbook nuevo?"
   },
   "studioCanvas": {
-    "emptyTitle": "Un lienzo esperando historia",
-    "emptyHint": "Toca una prenda del armario para empezar a componer.",
+    "emptyTitle": "Toca una prenda para empezar",
     "hint": "Mantén pulsada una prenda para moverla. Toca para seleccionar.",
     "toolbarLabel": "Acciones sobre la prenda seleccionada",
     "bringToFront": "Traer al frente",
@@ -2502,9 +2493,8 @@
   },
   "pins": {
     "title": "Pins",
-    "subtitle": "Tu inspiración importada desde Pinterest.",
     "loading": "Cargando pines…",
-    "empty": "Aún no has importado ningún pin.",
+    "empty": "Sin pins",
     "connectCta": "Conectar Pinterest",
     "manageConnection": "Gestionar conexión",
     "previous": "Anterior",
@@ -2516,13 +2506,11 @@
   },
   "music": {
     "title": "Música",
-    "subtitle": "Lo que escuchas, tu mood y qué llevabas puesto.",
     "manage": "Gestionar",
     "loading": "Cargando tu música…",
     "errorTitle": "No he podido cargar tu música",
     "errorBody": "Inténtalo de nuevo en un momento.",
-    "emptyTitle": "Stinky aún no ha oído nada",
-    "emptyBody": "Conecta Last.fm o Spotify y guardaré tu historial de escuchas para leer cómo suena tu música y relacionarla con tus looks.",
+    "emptyTitle": "Sin música",
     "notConfigured": "La música aún no está configurada en este servidor.",
     "connectCta": "Conectar Spotify",
     "nowPlaying": "Suena ahora",
@@ -2712,14 +2700,8 @@
     "noBackFor": "{name} (no tengo su espalda)"
   },
   "outfitCard": {
-    "badgeReplacement": "Sustitución",
-    "badgeWorn": "Usado",
-    "badgeStudio": "Studio",
-    "badgePairing": "Combinación",
-    "badgeAi": "IA",
     "lookbookTemplate": "Plantilla del lookbook",
-    "titleFallback": "Outfit {occasion}",
-    "badgeStinky": "Stinky"
+    "titleFallback": "Outfit {occasion}"
   },
   "outfitCalendar": {
     "scheduled": "Programado",
@@ -3275,7 +3257,6 @@
   },
   "social": {
     "title": "Amigos",
-    "subtitle": "Los looks que comparten tus amigos y lo que opinan de los tuyos.",
     "tabs": {
       "feed": "Looks",
       "friends": "Amigos",
@@ -3292,8 +3273,7 @@
       "errorTitle": "No hemos podido cargar los looks",
       "errorBody": "Revisa tu conexión e inténtalo de nuevo.",
       "retry": "Reintentar",
-      "emptyTitle": "Aún no hay looks por aquí",
-      "emptyBody": "Cuando tus amigos compartan lo que se ponen, aparecerá aquí. ¡Anímales!",
+      "emptyTitle": "Tus amigos aún no comparten looks",
       "noFriendsTitle": "Invita a tus amigos",
       "noFriendsBody": "Comparte tu enlace y mirad juntos qué os ponéis cada día. Stinky se aburre solo.",
       "loadMore": "Ver más"
@@ -3314,7 +3294,6 @@
     },
     "activity": {
       "emptyTitle": "Sin novedades",
-      "emptyBody": "Cuando alguien reaccione a los looks que compartes, lo verás aquí.",
       "commented": "comentó",
       "loved": "le encantó"
     },
@@ -3451,11 +3430,11 @@
       "closes": "cierra a las {time}",
       "back": "Amigos",
       "newTitle": "¿Cuál me pongo?",
-      "newBody": "Elige dos o tres looks y tus amigos votan. Solo ellos los ven, y la votación dura 12 horas.",
+      "newBody": "Tus amigos votan durante 12 horas.",
       "noFriends": "Aún no tienes amigos en Miaurmario: invita a alguien para que pueda votar.",
       "questionLabel": "Tu pregunta (opcional)",
       "questionPlaceholder": "¿Para la cena del sábado?",
-      "pickLooks": "Elige tus looks: {count} de {max}",
+      "pickLooks": "Elige 2 o 3",
       "fewLooksTitle": "Necesitas al menos dos looks",
       "fewLooksBody": "Pídele looks a Stinky o crea los tuyos y vuelve aquí.",
       "send": "Preguntar a mis amigos",
@@ -4644,7 +4623,6 @@
   },
   "trips": {
     "title": "Modo viaje",
-    "subtitle": "Dime adónde vas y cuándo: Stinky te prepara un look para cada día con la previsión de allí, y la maleta con lo justo.",
     "new": "Nuevo viaje",
     "empty": "Aún no has planeado ningún viaje.",
     "upcoming": "Próximos",
@@ -4719,6 +4697,11 @@
     "next": "Mes siguiente",
     "title": "Tu {month} con {name}",
     "subtitle": "{meals, plural, one {# comida} other {# comidas}} en total · nivel {level}",
+    "sections": {
+      "days": "Días y prendas",
+      "money": "Dinero",
+      "new": "Lo nuevo"
+    },
     "days": "{count, plural, one {día con look} other {días con look}}",
     "looks": "{count, plural, one {# look puesto} other {# looks puestos}}",
     "noDays": "Este mes {name} no ha comido nada. Dile qué te pones y empezamos.",

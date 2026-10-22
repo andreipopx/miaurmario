@@ -18,6 +18,7 @@ import { formatPrice, garmentFormData } from '@/lib/intake/garment-form';
 import { ApiError } from '@/lib/api';
 import { getAiAccessErrorCode } from '@/lib/ai-access';
 import { cn } from '@/lib/utils';
+import { ShopsHint } from '@/components/add-item/shops-hint';
 
 interface ScreenshotImportTabProps {
   /** Opened from a share or a paste with the screenshot already in hand. */
@@ -178,6 +179,7 @@ export function ScreenshotImportTab({ initialFile, onCancel, onDone }: Screensho
           </span>
           <p className="mt-3 text-[17px] font-extrabold tracking-tight">{t('title')}</p>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">{t('body')}</p>
+          <ShopsHint variant="shot" className="mt-1.5" />
           <Button className="mt-4" onClick={() => inputRef.current?.click()}>
             {t('choose')}
           </Button>

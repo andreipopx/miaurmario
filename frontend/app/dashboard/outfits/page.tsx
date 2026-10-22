@@ -3,9 +3,8 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { List as ListIcon, CalendarDays, Plus, Search } from 'lucide-react';
+import { CalendarDays, History, Plus, Search } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -292,39 +291,18 @@ function OutfitsPageContent() {
     <div className="space-y-6">
       <PageHeader
         title={t('title')}
-        description={t('subtitle')}
         action={
           <>
-            <div
-              className="inline-flex h-11 items-center gap-1 rounded-full bg-panel p-1"
-              role="group"
-              aria-label={t('viewToggle')}
-            >
-              {(['list', 'calendar'] as const).map((v) => {
-                const Icon = v === 'list' ? ListIcon : CalendarDays;
-                const active = view === v;
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => handleViewChange(v)}
-                    aria-pressed={active}
-                    className={cn(
-                      'inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                      active
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    <Icon className="h-4 w-4" strokeWidth={active ? 2 : 1.75} />
-                    {v === 'list' ? t('viewList') : t('viewCalendar')}
-                  </button>
-                );
-              })}
-            </div>
-            <Button asChild variant="signature">
+            {/* The book of looks (what Stinky proposed, day by day) left Hoy: it is reachable from here. */}
+            <Button asChild variant="secondary">
+              <Link href="/dashboard/history">
+                <History className="h-4 w-4" aria-hidden />
+                {t('history')}
+              </Link>
+            </Button>
+            <Button asChild>
               <Link href="/dashboard/outfits/new">
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" aria-hidden />
                 {t('newOutfit')}
               </Link>
             </Button>
@@ -332,40 +310,43 @@ function OutfitsPageContent() {
         }
       />
 
+      {/* Search, with the calendar as a toggle beside it */}
+      <div className="flex items-center gap-2">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input
+            type="search"
+            placeholder={t('searchLookbook')}
+            aria-label={t('searchLookbook')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-12 border-transparent bg-panel pl-11"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => handleViewChange(view === 'calendar' ? 'list' : 'calendar')}
+          aria-pressed={view === 'calendar'}
+          aria-label={t('viewCalendar')}
+          title={t('viewCalendar')}
+          className={cn(
+            'flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            view === 'calendar' ? 'bg-primary text-primary-foreground' : 'bg-panel text-foreground hover:bg-accent'
+          )}
+        >
+          <CalendarDays className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+        </button>
+      </div>
+
       {view === 'list' && (
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="-mx-4 flex w-[calc(100%+2rem)] gap-2 overflow-x-auto scrollbar-none px-4 pb-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+        <div className="-mx-4 flex gap-2 overflow-x-auto scrollbar-none px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {CHIP_ORDER.map((c) => (
-            <Chip
-              key={c}
-              active={chip === c}
-              onClick={() => handleChipClick(c)}
-              className="h-11"
-            >
+            <Chip key={c} active={chip === c} onClick={() => handleChipClick(c)}>
               {t(`chips.${CHIP_KEYS[c]}` as `chips.${ChipKey}`)}
             </Chip>
           ))}
         </div>
-
-        {chip === 'my-looks' && (
-          <div className="relative ml-auto min-w-[220px] flex-1 sm:flex-none">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder={t('searchLookbook')}
-              aria-label={t('searchLookbook')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-11 border-transparent bg-panel pl-10"
-            />
-          </div>
-        )}
-
-        {listQuery.data && (
-          <Badge variant="secondary" className="ml-auto">
-            {t('totalCount', { count: listQuery.data.total })}
-          </Badge>
-        )}
-      </div>
       )}
 
       {view === 'list' ? (
@@ -382,16 +363,6 @@ function OutfitsPageContent() {
             <EmptyState
               state="sleepy"
               title={t(`empty.${CHIP_KEYS[chip]}` as `empty.${ChipKey}`)}
-              action={
-                chip === 'my-looks' ? (
-                  <Button asChild variant="signature">
-                    <Link href="/dashboard/outfits/new">
-                      <Plus className="h-4 w-4" />
-                      {t('newOutfit')}
-                    </Link>
-                  </Button>
-                ) : undefined
-              }
             />
           ) : (
             <>
@@ -444,7 +415,7 @@ function OutfitsPageContent() {
 
           <div className="space-y-4">
             {calendarError ? (
-              <EmptyState state="sad" size="sm" title={t('loadError')} />
+              <EmptyState state="sad" title={t('loadError')} />
             ) : calendarLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -452,7 +423,7 @@ function OutfitsPageContent() {
                 ))}
               </div>
             ) : selectedDate && selectedDayOutfits.length === 0 ? (
-              <EmptyState state="sleepy" size="sm" title={t('noOutfitsOnDay')} />
+              <EmptyState state="sleepy" title={t('noOutfitsOnDay')} />
             ) : (
               <>
                 {selectedDate && (

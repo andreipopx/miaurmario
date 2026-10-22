@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Plus, Search, Heart, Loader2, AlertCircle, RefreshCw, Droplets, ArrowUpDown, SlidersHorizontal, X, Shirt, ImagePlus } from 'lucide-react';
+import { Plus, Search, Heart, Loader2, AlertCircle, RefreshCw, Droplets, ArrowUpDown, SlidersHorizontal, X, Shirt, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -295,34 +295,18 @@ function ItemCardSkeleton() {
   );
 }
 
-function EmptyWardrobe({
-  onAddClick,
-  onBulkClick,
-}: {
-  onAddClick: () => void;
-  onBulkClick: () => void;
-}) {
+function EmptyWardrobe({ onAddClick }: { onAddClick: () => void }) {
   const t = useTranslations('wardrobe');
-  const tBulk = useTranslations('bulkUpload');
   return (
     <EmptyState
       state="sleepy"
-      size="lg"
       title={t('emptyTitle')}
-      description={t('emptyBody')}
       action={
-        // A wardrobe of one garment is still an empty wardrobe, so the loud button
-        // is the batch one and adding a single item is the quiet alternative.
-        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row">
-          <Button variant="signature" size="lg" onClick={onBulkClick}>
-            <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-            {tBulk('cta')}
-          </Button>
-          <Button variant="secondary" size="lg" onClick={onAddClick}>
-            <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-            {t('addFirstItem')}
-          </Button>
-        </div>
+        // One way in: the dialog has its tabs for a batch, a photo or a link.
+        <Button size="lg" onClick={onAddClick}>
+          <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+          {t('addFirstItem')}
+        </Button>
       }
     />
   );
@@ -332,7 +316,6 @@ export default function WardrobePage() {
   const t = useTranslations('wardrobe');
   const tCommon = useTranslations('common');
   const tShare = useTranslations('wardrobe.share');
-  const tBulk = useTranslations('bulkUpload');
   const typeLabel = useClothingTypeLabel();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -608,61 +591,42 @@ export default function WardrobePage() {
     <div className="space-y-4">
       <PageHeader
         title={t('title')}
+        // The count lives in the search placeholder; under the title only what is
+        // happening right now (garments still being analysed, or failed).
         description={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>{t('itemCount', { count: total })}</span>
-            {total > 0 && (
-              <button
-                type="button"
-                onClick={() => (selecting ? handleClearSelection() : setSelecting(true))}
-                className="hit-44 relative font-bold text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-              >
-                {selecting ? tCommon('done') : t('selectMode')}
-              </button>
-            )}
-            {processingCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                {t('processingBadge', { count: processingCount })}
-              </span>
-            )}
-            {errorCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 font-semibold text-destructive">
-                <AlertCircle className="h-3.5 w-3.5" aria-hidden />
-                {t('errorBadge', { count: errorCount })}
-              </span>
-            )}
-          </span>
+          processingCount > 0 || errorCount > 0 ? (
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              {processingCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  {t('processingBadge', { count: processingCount })}
+                </span>
+              )}
+              {errorCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 font-semibold text-destructive">
+                  <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+                  {t('errorBadge', { count: errorCount })}
+                </span>
+              )}
+            </span>
+          ) : undefined
         }
         action={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setAddTab('single');
-                setAddDialogOpen(true);
-              }}
-            >
-              <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-              {tCommon('add')}
-            </Button>
-            <Button
-              variant="signature"
-              onClick={() => {
-                setBulkMode('batch');
-                setAddTab('bulk');
-                setAddDialogOpen(true);
-              }}
-            >
-              <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
-              {tBulk('cta')}
-            </Button>
-          </div>
+          <Button
+            onClick={() => {
+              setAddTab('single');
+              setAddDialogOpen(true);
+            }}
+          >
+            <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+            {tCommon('add')}
+          </Button>
         }
       />
 
-      {/* Search (gray pill) with filter toggle inside */}
-      <div className="relative">
+      {/* Search (gray pill) with filter toggle inside, and the select toggle beside it */}
+      <div className="flex items-center gap-2">
+      <div className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
           type="search"
@@ -697,6 +661,23 @@ export default function WardrobePage() {
             </span>
           )}
         </button>
+      </div>
+      {total > 0 && (
+        <button
+          type="button"
+          aria-pressed={selecting}
+          aria-label={selecting ? tCommon('done') : t('selectMode')}
+          title={selecting ? tCommon('done') : t('selectMode')}
+          onClick={() => (selecting ? handleClearSelection() : setSelecting(true))}
+          className={cn(
+            'flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            selecting ? 'bg-primary text-primary-foreground' : 'bg-panel text-foreground hover:bg-accent'
+          )}
+        >
+          <CheckSquare className="h-[20px] w-[20px]" strokeWidth={1.75} aria-hidden />
+        </button>
+      )}
       </div>
 
       {/* Category chips */}
@@ -839,7 +820,6 @@ export default function WardrobePage() {
         hasFilters ? (
           <EmptyState
             state="sleepy"
-            size="sm"
             title={t('noResults')}
             action={
               // Also back to page one. Filtering down to nothing from page three used
@@ -854,10 +834,6 @@ export default function WardrobePage() {
         ) : (
           <EmptyWardrobe
             onAddClick={() => {
-              setAddTab('single');
-              setAddDialogOpen(true);
-            }}
-            onBulkClick={() => {
               setBulkMode('batch');
               setAddTab('bulk');
               setAddDialogOpen(true);

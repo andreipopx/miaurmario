@@ -244,7 +244,7 @@ export default function StudioEditorPage() {
     }
 
     try {
-      await createMutation.mutateAsync({
+      const created = await createMutation.mutateAsync({
         items: state.items.map((i) => i.id),
         items_layout: state.items.map((i) => ({
           item_id: i.id,
@@ -264,10 +264,13 @@ export default function StudioEditorPage() {
       });
       clearDraft();
       toast.success(markWorn ? t('toast.savedAndWorn') : t('toast.savedToLookbook'));
+      // The saved look is where «Llevar hoy» lives: one action here, the next one there.
       router.push(
         markWorn
           ? '/dashboard/outfits?filter=worn'
-          : '/dashboard/outfits?filter=my-looks'
+          : created?.id
+            ? `/dashboard/outfits/${created.id}`
+            : '/dashboard/outfits?filter=my-looks'
       );
     } catch (error) {
       toast.error(getErrorMessage(error, t('toast.outfitSaveFailed')));
@@ -277,6 +280,14 @@ export default function StudioEditorPage() {
   const mutationPending = isEditMode ? patchMutation.isPending : createMutation.isPending;
   const canSave =
     state.items.length > 0 && state.occasion !== null && !mutationPending;
+  const hint =
+    state.items.length === 0
+      ? t('pickAtLeastOne')
+      : state.occasion === null
+        ? t('pickOccasion')
+        : !isEditMode && !state.name.trim()
+          ? t('nameNeeded')
+          : null;
 
   const editPhase = isEditMode
     ? computeEditLoadPhase({
@@ -386,50 +397,18 @@ export default function StudioEditorPage() {
           </h1>
         </div>
         <div className="flex min-w-0 max-w-full flex-col items-end">
-          <div className="flex flex-wrap justify-end gap-2">
-            {!isEditMode && (
-              <Button
-                variant="secondary"
-                disabled={!canSave}
-                onClick={() => handleSave(true)}
-              >
-                {mutationPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  t('wearToday')
-                )}
-              </Button>
+          <Button disabled={!canSave} onClick={() => handleSave(false)}>
+            {mutationPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isEditMode ? (
+              t('saveChanges')
+            ) : (
+              t('saveToLookbook')
             )}
-            <Button disabled={!canSave} onClick={() => handleSave(false)}>
-              {mutationPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isEditMode ? (
-                t('saveChanges')
-              ) : (
-                t('saveToLookbook')
-              )}
-            </Button>
-          </div>
-          {!isEditMode && (
-            <label className="mt-1.5 flex min-h-[32px] cursor-pointer items-center gap-2 text-xs font-semibold">
-              <Switch
-                checked={shareWithFriends}
-                onCheckedChange={setShareWithFriends}
-                aria-label={tSocial('shareToggle')}
-              />
-              {tSocial('shareToggle')}
-            </label>
-          )}
-          {!canSave && !mutationPending && (
-            <p className="mt-1 text-right text-xs text-muted-foreground">
-              {state.items.length === 0 && state.occasion === null
-                ? t('pickAtLeastOneOrOccasion')
-                : state.items.length === 0
-                  ? t('pickAtLeastOne')
-                  : state.occasion === null
-                    ? t('pickOccasion')
-                    : ''}
-            </p>
+          </Button>
+          {/* One thing at a time: the next step, and only when it applies. */}
+          {hint && !mutationPending && (
+            <p className="mt-1 text-right text-xs text-muted-foreground">{hint}</p>
           )}
         </div>
       </div>
@@ -487,6 +466,16 @@ export default function StudioEditorPage() {
                   dispatch({ type: 'REPLACE_CANVAS', items: merged })
                 }
               />
+              {!isEditMode && (
+                <label className="mt-4 flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg bg-panel px-4 text-sm font-semibold">
+                  <Switch
+                    checked={shareWithFriends}
+                    onCheckedChange={setShareWithFriends}
+                    aria-label={tSocial('shareToggle')}
+                  />
+                  {tSocial('shareToggle')}
+                </label>
+              )}
             </section>
           </div>
 

@@ -14,6 +14,7 @@ import { LinkPreview, dataUrlToFile, useLinkPreview } from '@/lib/hooks/use-inta
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/lib/intake/garment-form';
+import { ShopsHint } from '@/components/add-item/shops-hint';
 
 export interface LinkPrefill {
   file: File | null;
@@ -141,7 +142,7 @@ export function LinkImportTab({ initialUrl, onUse, onCancel, onScreenshot }: Lin
           onChange={(event) => setUrl(event.target.value)}
           placeholder={t('placeholder')}
         />
-        <p className="text-xs text-muted-foreground">{t('hint')}</p>
+        <ShopsHint variant="link" />
       </div>
 
       {errorMessage && (

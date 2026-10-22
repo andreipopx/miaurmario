@@ -32,7 +32,7 @@ function EmptyPairings() {
       title={t('emptyTitle')}
       description={t('emptyBody')}
       action={
-        <Button variant="signature" asChild>
+        <Button asChild>
           <Link href="/dashboard/wardrobe">{t('goToWardrobe')}</Link>
         </Button>
       }
@@ -87,7 +87,7 @@ export default function PairingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader title={t('title')} />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">

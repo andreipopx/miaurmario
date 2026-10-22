@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LazyStinky } from '@/components/native/lazy-stinky';
 import { MAX_BATCH_PHOTOS, MAX_PHOTO_MB, type RejectReason } from '@/lib/bulk-upload/queue';
 
 interface PhotoPickerProps {
@@ -58,10 +57,7 @@ export function PhotoPicker({
         }`}
       >
         <input {...getInputProps()} data-testid="bulk-file-input" />
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-background">
-          <LazyStinky state="wave" settleTo="idle" size={64} label="" />
-        </div>
-        <p className="mt-3 text-[15px] font-bold leading-snug">
+        <p className="text-[15px] font-bold leading-snug">
           {isDragActive ? t('dropNow') : t('headline')}
         </p>
         <p className="mt-1 text-[13px] leading-snug text-muted-foreground">

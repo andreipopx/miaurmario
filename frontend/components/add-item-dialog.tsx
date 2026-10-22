@@ -285,9 +285,8 @@ export function AddItemDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{taggingBacklog ? tBulk('reviewTitle') : t('dialogTitle')}</DialogTitle>
-          <DialogDescription>
-            {taggingBacklog ? tBulk('reviewSubtitle') : t('description')}
-          </DialogDescription>
+          {/* The tabs say how; only the backlog pass needs a line of its own. */}
+          {taggingBacklog && <DialogDescription>{tBulk('reviewSubtitle')}</DialogDescription>}
         </DialogHeader>
 
         {/* The backlog pass is the screen you tag by hand on. Opening it with a
@@ -419,7 +418,7 @@ export function AddItemDialog({
 
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="type" className="font-bold">{t('typeLabel')} <span className="font-normal text-muted-foreground">{t('typeHint')}</span></Label>
+                  <Label htmlFor="type" className="font-bold">{t('typeLabel')}</Label>
                   <Select value={type} onValueChange={setType}>
                     <SelectTrigger id="type">
                       <SelectValue placeholder={t('typePlaceholder')} />

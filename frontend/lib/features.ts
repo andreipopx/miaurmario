@@ -9,8 +9,13 @@
  *   Garment care labels ("lavar a 30°") are not laundry tracking and stay.
  * - families: the family group (create/join, family feed, family ratings on
  *   looks, family invite links). Amigos replaces it; the API is untouched.
+ * - svgStinky: draw Stinky as the vector rig (components/stinky/stinky-svg.tsx,
+ *   lib/stinky-rig.ts) instead of the pre-rendered WebP clips: <Stinky>,
+ *   <LazyStinky> and the static <StinkyAvatar> all follow it. Prototype; compare
+ *   both at /dashboard/stinky/lab.
  */
 export const FEATURES = {
   laundry: false,
   families: false,
+  svgStinky: false,
 } as const;

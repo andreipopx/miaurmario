@@ -154,8 +154,27 @@ describe('rig data', () => {
 
   it('draws tapered stripes as closed paths', () => {
     expect(band(0, 0, 10, 0, 2)).toMatch(/^M0 0Q5 2 10 0Q5 -2 0 0Z$/)
-    expect(stripePaths(true)).toHaveLength(13)
-    expect(stripePaths(false)).toHaveLength(8)
+    expect(stripePaths(true)).toHaveLength(17)
+    expect(stripePaths(false)).toHaveLength(12)
+  })
+
+  it('turns the whole head, features ahead of the skull (parallax), far eye narrower', () => {
+    const p = poseAt('thinking', 1536) // yaw 0.1 (from −0.12), pitch −0.15, tilt −4°
+    const t = poseTransforms(p)
+    const num = (s: string) => s.match(/-?\d+(?:\.\d+)?/g)!.map(Number)
+    const [sx, sy, srot] = num(t.skull)
+    const [fx, fy, frot] = num(t.face)
+    expect(sx).toBeGreaterThan(0)
+    expect(fx).toBeGreaterThan(sx)
+    expect(sy).toBeLessThan(0)
+    expect(fy).toBeLessThan(sy)
+    expect(srot).toBeLessThan(0)
+    expect(srot! + frot!).toBeCloseTo(p.rot, 3)
+    // The head turned to the viewer's right: the right eye is the far one and narrows.
+    const scaleX = (s: string) => num(s.slice(s.indexOf('scale')))[0]!
+    expect(scaleX(t.eyeR)).toBeLessThan(1)
+    expect(scaleX(t.eyeL)).toBe(1)
+    expect(poseTransforms(NEUTRAL_POSE).skull).toBe('translate(0px, 0px) rotate(0deg)')
   })
 })
 

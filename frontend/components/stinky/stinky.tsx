@@ -24,6 +24,8 @@ import { PURR_FX_MS, StinkyPurrFx } from './stinky-purr-fx'
 import { currentStinkyVariant, prefersReducedMotionNow, usePrefersReducedMotion, useStinkyVariant } from './use-stinky-env'
 import { useStinkyPersona } from './stinky-persona'
 import { StinkyAccessoryOverlay, type StinkyAccessory } from './stinky-accessory'
+import { StinkySvg } from './stinky-svg'
+import { FEATURES } from '@/lib/features'
 import { DEFAULT_STINKY_COAT, type StinkyCoat, type StinkyEyes } from '@/lib/stinky-persona'
 
 export interface StinkyProps {
@@ -185,6 +187,8 @@ interface Playing {
  */
 export function Stinky({ coat: forcedCoat, eyes: forcedEyes, accessory: forcedAccessory, label, ...props }: StinkyProps) {
   const persona = useStinkyPersona()
+  // The vector rig (prototype): same props, no clips to fetch.
+  if (FEATURES.svgStinky) return <StinkySvg {...props} coat={forcedCoat} eyes={forcedEyes} accessory={forcedAccessory} label={label} />
   const coat = forcedCoat ?? persona.coat
   const eyes = forcedEyes ?? (forcedCoat ? 'natural' : persona.eyes)
   const head = (

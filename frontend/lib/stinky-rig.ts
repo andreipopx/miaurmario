@@ -33,8 +33,17 @@ export const HEAD_CENTER = { x: 210, y: 214 } as const
 /** Surface decals (muzzle, nose, patterns…) sit on the head at `200.6 + 0.73·x, 214 + 0.68·y` of their scene coords. */
 export const decal = (x: number, y: number) => ({ x: 200.6 + 0.73 * x, y: 214 + 0.68 * y })
 export const decalSize = (w: number, h: number) => ({ w: 0.73 * w, h: 0.68 * h })
-/** How far the face slides across the head per radian of yaw / pitch (measured on the rendered clips). */
+/** How far the features travel per radian of yaw / pitch (measured on the rendered clips). */
 export const FACE_SHIFT = 76
+/**
+ * Coupled motion. The 3D scene turned a sphere, so its outline never moved and the features slid
+ * across it. Here the whole head turns: the skull (outline + ears) takes part of the travel and
+ * part of the tilt about a point low on the head, the features take the rest (parallax), so the
+ * features still land where the clips put them.
+ */
+export const SKULL = { shift: 30, rot: 0.7, pivot: { x: 210, y: 242 } } as const
+/** The eye on the far side narrows a little as the head turns. */
+export const EYE_SQUASH = 0.6
 /** The clips' neutral yaw, already baked into the paths. */
 export const NEUTRAL_YAW = -0.12
 
@@ -108,19 +117,34 @@ export function band(x1: number, y1: number, x2: number, y2: number, w: number, 
   return `M${r(x1)} ${r(y1)}Q${r(mx + 2 * nx * a)} ${r(my + 2 * ny * a)} ${r(x2)} ${r(y2)}Q${r(mx + 2 * nx * b)} ${r(my + 2 * ny * b)} ${r(x1)} ${r(y1)}Z`
 }
 
-/** Tabby stripes in scene units: [x1, y1, x2, y2, width, bend] for the left side; the right side mirrors them. */
+/**
+ * Tabby stripes in scene units (eyes at y = 0, head edge at x ≈ ±140): [x1, y1, x2, y2, width, bend]
+ * for the left side, mirrored for the right. Thin, long sweeps from the edge towards the eye,
+ * matched by eye to the rendered sets (the SDK's mackerel generator).
+ */
 const CHEEK_STRIPES: ReadonlyArray<readonly [number, number, number, number, number, number]> = [
-  [-122, -44, -82, -56, 6, -5],
-  [-138, -16, -98, -22, 7, 3],
-  [-134, 12, -96, 2, 6, 5],
-  [-120, 38, -90, 24, 5, 4],
+  [-104, -74, -82, -44, 3, -2],
+  [-72, -68, -58, -40, 3, 0],
+  [-134, -34, -76, -18, 3.6, -4],
+  [-142, -8, -74, 4, 3.8, 2],
+  [-136, 18, -82, 20, 3.6, 4],
+  [-122, 44, -86, 36, 3.2, 3],
 ]
-/** The forehead "M": five short bands fanning out above the eyes. */
+/** The forehead "M": five thin bands fanning out above the eyes, the middle one longest. */
 const FOREHEAD_STRIPES: ReadonlyArray<readonly [number, number, number, number, number, number]> = [
-  [0, -90, 0, -50, 7, 0],
-  [-13, -84, -17, -50, 6, 1], [13, -84, 17, -50, 6, -1],
-  [-26, -76, -36, -50, 6, 2], [26, -76, 36, -50, 6, -2],
+  [0, -94, 0, -44, 4, 0],
+  [-12, -88, -17, -48, 3.6, 1], [12, -88, 17, -48, 3.6, -1],
+  [-25, -80, -35, -50, 3.4, 2], [25, -80, 35, -50, 3.4, -2],
 ]
+/** Siamese point: soft dark ellipses (radial gradient, opaque to `fade`, clear at the rim). */
+export const SIAMESE_MASK = {
+  fade: 0.42,
+  blobs: [
+    { cx: 200.6, cy: 224, rx: 64, ry: 60, opacity: 1 },
+    { cx: 200.6, cy: 240, rx: 44, ry: 48, opacity: 0.6 },
+    { cx: 200.6, cy: 196, rx: 20, ry: 34, opacity: 0.55 },
+  ],
+} as const
 export function stripePaths(forehead: boolean): string[] {
   const s = (p: readonly [number, number, number, number, number, number], m = 1) => {
     const a = decal(m * p[0], p[1])
@@ -461,7 +485,7 @@ function sample<T extends readonly number[]>(keys: ReadonlyArray<readonly [numbe
 
 // ---------------------------------------------------------------------------------------------- transforms
 
-export type RigPart = 'head' | 'face' | 'eyeL' | 'eyeR' | 'pupilL' | 'pupilR' | 'earL' | 'earR' | 'paw'
+export type RigPart = 'head' | 'skull' | 'face' | 'eyeL' | 'eyeR' | 'pupilL' | 'pupilR' | 'earL' | 'earR' | 'paw'
 const f = (n: number) => Math.round(n * 1000) / 1000
 
 /** The transform of every animated group for a pose, as CSS (`px`/`deg`) or as SVG attribute syntax. */
@@ -473,12 +497,14 @@ export function poseTransforms(p: Pose, css = true): Record<RigPart, string> {
   const rot = (a: number) => `rotate(${f(a)}${d})`
   const sc = (x: number, y: number) => `scale(${f(x)}${sep}${f(y)})`
   const gapShift = 0.365 * (p.gap - EYES.baseGap)
+  const dyaw = p.yaw - NEUTRAL_YAW
   const eye = (side: 'left' | 'right', eyeRot: number, h: number) =>
-    `${tr(side === 'left' ? -gapShift : gapShift, 0)} ${rot(EYES[side].rot + (side === 'left' ? eyeRot + EYES.baseRot : eyeRot - EYES.baseRot))} ${sc(1, h / EYES.openHeight)}`
+    `${tr(side === 'left' ? -gapShift : gapShift, 0)} ${rot(EYES[side].rot + (side === 'left' ? eyeRot + EYES.baseRot : eyeRot - EYES.baseRot))} ${sc(1 - EYE_SQUASH * Math.max(0, side === 'left' ? -dyaw : dyaw), h / EYES.openHeight)}`
   const [pr, ps, px, py] = p.paw
   return {
     head: tr(p.x, p.y - VIEW.posY),
-    face: `${tr(FACE_SHIFT * (p.yaw - NEUTRAL_YAW), FACE_SHIFT * p.pitch)} ${rot(p.rot)}`,
+    skull: `${tr(SKULL.shift * dyaw, SKULL.shift * p.pitch)} ${rot(SKULL.rot * p.rot)}`,
+    face: `${tr((FACE_SHIFT - SKULL.shift) * dyaw, (FACE_SHIFT - SKULL.shift) * p.pitch)} ${rot((1 - SKULL.rot) * p.rot)}`,
     eyeL: eye('left', p.lr, p.lh),
     eyeR: eye('right', p.rr, p.rh),
     pupilL: `${tr(p.pupil[0], p.pupil[1])} ${sc(p.pupil[2], 1)}`,
@@ -521,7 +547,7 @@ export function rigTracks(state: StinkyState, from?: Pose): RigTracks {
   }
   // Each group of parts keeps its own key times, so a clip's easing is never split by an ear flick.
   const groups: Array<[RigPart[], readonly number[]]> = [
-    [['head', 'face', 'eyeL', 'eyeR', 'paw'], keys.map(k => k[0])],
+    [['head', 'skull', 'face', 'eyeL', 'eyeR', 'paw'], keys.map(k => k[0])],
     [['earL', 'earR'], (EAR_KEYS[state] ?? []).map(k => k[0])],
     [['pupilL', 'pupilR'], (PUPIL_KEYS[state] ?? []).map(k => k[0])],
   ]

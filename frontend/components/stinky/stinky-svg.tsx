@@ -16,7 +16,7 @@ import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } f
 import { haptic } from '@/lib/native/haptics'
 import {
   COAT_LOOKS, DARK_OUTLINE, EARS, EYES, LIGHT_OUTLINE_WIDTH, MOUTH_NEUTRAL, MOUTH_OPEN, MOUTH_PINK, NEUTRAL_POSE, NOSE, PAW,
-  PUPIL_COLOR, STINKY_SHAPES, VIEW, WHISKERS, decal, decalSize, irisColors, pawOpacity, poseAt, poseTransforms, rigTracks, stripePaths,
+  PUPIL_COLOR, SIAMESE_MASK, SKULL, STINKY_SHAPES, VIEW, WHISKERS, decal, decalSize, irisColors, pawOpacity, poseAt, poseTransforms, rigTracks, stripePaths,
   triangleDown, type Pose, type RigPart,
 } from '@/lib/stinky-rig'
 import { DEFAULT_STINKY_COAT } from '@/lib/stinky-persona'
@@ -38,7 +38,7 @@ const PET_STATES: ReadonlySet<StinkyState> = new Set<StinkyState>(['purr', 'bite
 const PET_FX_MS: Record<StinkyPetReaction, number> = { purr: PURR_FX_MS, bite: BITE_FX_MS }
 const PET_THROTTLE_MS = 1200
 const ONCE_SLACK_MS = 40
-const PARTS: readonly RigPart[] = ['head', 'face', 'eyeL', 'eyeR', 'pupilL', 'pupilR', 'earL', 'earR', 'paw']
+const PARTS: readonly RigPart[] = ['head', 'skull', 'face', 'eyeL', 'eyeR', 'pupilL', 'pupilR', 'earL', 'earR', 'paw']
 const MOUTHS: readonly StinkyMouth[] = ['neutral', 'open', 'bite', 'bite-half']
 const isLoop = (s: StinkyState) => STINKY_STATE_META[s].playback === 'loop'
 const canAnimate = (el: Element | null): el is Element & { animate: Element['animate'] } => !!el && typeof el.animate === 'function'
@@ -338,7 +338,7 @@ function StinkySvgHead({
         <clipPath id={`${id}eyeR`}><ellipse rx={EYES.right.rx} ry={EYES.right.ry} /></clipPath>
         {look.mask && (
           <radialGradient id={`${id}m`}>
-            <stop offset='0.45' stopColor={look.mask} />
+            <stop offset={SIAMESE_MASK.fade} stopColor={look.mask} />
             <stop offset='1' stopColor={look.mask} stopOpacity='0' />
           </radialGradient>
         )}
@@ -346,6 +346,10 @@ function StinkySvgHead({
       <g ref={ref('head')} transform={neutral.head}>
         <g transform={`translate(${VIEW.x} ${VIEW.y}) scale(${VIEW.scale})`}>
           <g ref={gradeRef}>
+            {/* The skull (outline, ears, fur) turns with the face: part of the travel and tilt, about a point low on the head. */}
+            <g transform={`translate(${SKULL.pivot.x} ${SKULL.pivot.y})`}>
+            <g ref={ref('skull')} transform={neutral.skull}>
+            <g transform={`translate(${-SKULL.pivot.x} ${-SKULL.pivot.y})`}>
             {/* The outline is drawn first, under every fill, so the head and ears share one silhouette. */}
             <path d={STINKY_SHAPES.head} fill='none' {...outline} />
             {ear('left', 'earL', STINKY_SHAPES.earL, STINKY_SHAPES.earInL, look.earL ?? look.fur)}
@@ -361,12 +365,8 @@ function StinkySvgHead({
                         {stripePaths(look.stripes.forehead).map((d, i) => <path key={i} d={d} />)}
                       </g>
                     )}
-                    {look.mask && (
-                      <>
-                        <ellipse cx='200.6' cy='227.6' rx='78' ry='71' fill={`url(#${id}m)`} />
-                        <ellipse cx='200.6' cy='198' rx='24' ry='38' fill={`url(#${id}m)`} />
-                      </>
-                    )}
+                    {look.mask &&
+                      SIAMESE_MASK.blobs.map((b, i) => <ellipse key={i} cx={b.cx} cy={b.cy} rx={b.rx} ry={b.ry} opacity={b.opacity} fill={`url(#${id}m)`} />)}
                     {look.muzzle && (
                       <path
                         d={STINKY_SHAPES.muzzle}
@@ -417,6 +417,9 @@ function StinkySvgHead({
               <g ref={ref('paw')} transform={neutral.paw} opacity={pawOpacity(NEUTRAL_POSE)}>
                 <ellipse rx={PAW.rx} ry={PAW.ry} fill={look.paw ?? look.fur} {...outline} />
               </g>
+            </g>
+            </g>
+            </g>
             </g>
           </g>
         </g>

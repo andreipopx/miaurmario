@@ -4691,27 +4691,17 @@
   },
   "habit": {
     "hungryTitle": "¿Qué te has puesto hoy?",
-    "hungryBody": "Cuéntamelo y me lo como: «Me lo pongo» en tu look, o una foto si llevas otra cosa.",
     "backTitle": "¡Has vuelto!",
-    "backBody": "Te he guardado el sitio en el sofá. Dime qué llevas hoy y seguimos.",
     "fedTitle": "¡Ñam! Hoy ya he comido",
-    "fedBody": "{left, plural, one {Un día más esta semana y la racha sigue.} other {# días más esta semana y la racha sigue.}}",
-    "fedWeekMet": "Semana cumplida: {goal, plural, one {# día} other {# días}} con look. Todo lo demás es postre.",
     "ate": "¡Ñam! {name} se ha comido tu look",
     "levelUp": "¡Nivel {level}!",
     "unlockedNow": "Ya tiene {item}. Pónselo en Tu Stinky.",
     "weekLabel": "Esta semana: {count} de {goal} días",
     "dayDone": "Con look",
-    "streak": "Racha",
-    "weeks": "{count, plural, =0 {Empieza hoy} one {# semana} other {# semanas}}",
-    "comodinLeft": "Comodín del mes disponible",
-    "comodinUsed": "Comodín del mes usado",
-    "level": "Nivel {level}",
     "toReward": "{count, plural, one {# comida} other {# comidas}} para {item}",
-    "toLevel": "{count, plural, one {# comida} other {# comidas}} para subir",
     "maxLevel": "Nivel máximo. Leyenda felina.",
     "dressHim": "Ponle {item}",
-    "woreSomethingElse": "Llevo otra cosa",
+    "woreSomethingElse": "¿Llevas otra cosa?",
     "accessories": {
       "pajarita": "la pajarita",
       "cascabel": "el cascabel",
@@ -4719,7 +4709,9 @@
       "lazo": "el lazo",
       "perlas": "las perlas",
       "pajarita-dorada": "la pajarita dorada"
-    }
+    },
+    "month": "Tu mes",
+    "streakShort": "{count, plural, =0 {Racha: empieza hoy} one {Racha de # semana} other {Racha de # semanas}}"
   },
   "wrapped": {
     "back": "Hoy",

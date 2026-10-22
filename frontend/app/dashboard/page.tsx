@@ -2,36 +2,15 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { TransitionLink } from '@/components/native/transition-link';
 import Image from 'next/image';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
-import { OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
 import { addDays, isSameDay, startOfWeek } from 'date-fns';
-import {
-  CalendarDays,
-  Camera,
-  Check,
-  ChevronRight,
-  Cloud,
-  CloudRain,
-  CloudSnow,
-  HeartHandshake,
-  Loader2,
-  MapPin,
-  MessageCircle,
-  Music,
-  RefreshCw,
-  Shirt,
-  Sparkles,
-  Sun,
-  type LucideIcon,
-} from 'lucide-react';
+import { CalendarDays, Camera, ChevronRight, Cloud, CloudRain, CloudSnow, HeartHandshake, MapPin, Shirt, Sparkles, Sun, type LucideIcon } from 'lucide-react';
 import { useWeatherConditionLabel } from '@/lib/weather-condition';
 import { useWeather, type Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
 import { useItems } from '@/lib/hooks/use-items';
-import { useOutfits } from '@/lib/hooks/use-outfits';
 import { useFamily } from '@/lib/hooks/use-family';
 import { FEATURES } from '@/lib/features';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -39,18 +18,14 @@ import { displayValue, tempSymbol, TempUnit } from '@/lib/temperature';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { POP_BG, type PopColor } from '@/components/chip';
+import { type PopColor } from '@/components/chip';
 import { DayMoments } from '@/components/today/day-moments';
 import { StinkyMeals } from '@/components/today/stinky-meals';
 import { FriendsToday } from '@/components/today/friends-today';
 import { InstallHint } from '@/components/install/install-hint';
 import { GettingStarted } from '@/components/onboarding/getting-started';
 import { FirstStepsCard } from '@/components/onboarding/first-steps-card';
-import {
-  MIN_ITEMS_FOR_LOOKS,
-  canSuggestLooks,
-  wardrobeStage,
-} from '@/lib/onboarding/first-run';
+import { MIN_ITEMS_FOR_LOOKS, canSuggestLooks, wardrobeStage } from '@/lib/onboarding/first-run';
 import { useWardrobeStats } from '@/lib/hooks/use-wardrobe-stats';
 
 // -- Section header -------------------------------------------------------------
@@ -82,28 +57,6 @@ const QUICK_ACTIONS: { key: string; href: string; icon: LucideIcon; color: PopCo
   { key: 'quickAsk', href: '/dashboard/suggest', icon: Sparkles, color: 'sky' },
   { key: 'quickPlan', href: '/dashboard/outfits?view=calendar', icon: CalendarDays, color: 'mint' },
 ];
-
-function QuickActions() {
-  const t = useTranslations('dashboard.today');
-  return (
-    <nav aria-label={t('quickActions')} className="grid grid-cols-4 gap-2 sm:gap-3">
-      {QUICK_ACTIONS.map(({ key, href, icon: Icon, color }) => (
-        <Link
-          key={key}
-          href={href}
-          className={cn(
-            POP_BG[color],
-            'flex h-[84px] flex-col items-center justify-center gap-1.5 rounded-quick px-1 text-center text-pop-foreground transition-transform duration-150 hover:-translate-y-0.5 active:scale-[0.97] active:brightness-95 sm:h-24',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-          )}
-        >
-          <Icon className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
-          <span className="text-[11.5px] font-semibold leading-tight sm:text-[13px]">{t(key)}</span>
-        </Link>
-      ))}
-    </nav>
-  );
-}
 
 // -- Week strip + weather -----------------------------------------------------------
 
@@ -257,105 +210,6 @@ function WardrobeSection() {
 }
 
 /** Occasions are English slugs on the wire; never show one raw. */
-function useOccasionLabel() {
-  const tOccasions = useTranslations('suggest.occasions');
-  return (occasion: string) =>
-    tOccasions.has(occasion as never) ? tOccasions(occasion as never) : occasion;
-}
-
-function OutfitsSection() {
-  const t = useTranslations('dashboard.editorial');
-  const occasionLabel = useOccasionLabel();
-  const { data, isLoading } = useOutfits({ status: 'accepted' }, 1, 6);
-  const outfits = data?.outfits ?? [];
-
-  return (
-    <section>
-      <SectionHeader title={t('sectionOutfits')} href="/dashboard/outfits" cta={t('browseOutfits')} />
-      {isLoading ? (
-        <div className="flex gap-3 overflow-hidden">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-40 w-32 flex-shrink-0 rounded-tile" />
-          ))}
-        </div>
-      ) : outfits.length === 0 ? (
-        <div className="flex items-center justify-between gap-4 rounded-lg bg-panel p-4">
-          <p className="text-sm font-medium text-muted-foreground">{t('outfitsEmpty')}</p>
-          <Button asChild variant="signature" size="sm">
-            <Link href="/dashboard/suggest">{t('outfitsEmptyCta')}</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="-mx-4 flex gap-3 overflow-x-auto scrollbar-none px-4 pb-1 sm:mx-0 sm:px-0">
-          {outfits.map((o) => (
-            <TransitionLink
-              key={o.id}
-              href={`/dashboard/outfits/${o.id}`}
-              className="pressable group w-32 flex-shrink-0 rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
-            >
-              {/* A 160 px tile inside a link: no room for a label, and a button
-                  inside an anchor is not valid HTML. The look's own page has it. */}
-              <OutfitFlatLay items={o.items} max={5} sizes="160px" backToggle={false} />
-              <p className="mt-1.5 px-1 text-sm font-semibold first-letter:uppercase">
-                {occasionLabel(o.occasion)}
-              </p>
-            </TransitionLink>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function LibrarySection() {
-  const t = useTranslations('dashboard.editorial');
-  const format = useFormatter();
-  const occasionLabel = useOccasionLabel();
-  const { data, isLoading } = useOutfits({ was_worn: true }, 1, 5);
-  const items = data?.outfits ?? [];
-
-  return (
-    <section>
-      <SectionHeader title={t('sectionLibrary')} href="/dashboard/history" cta={t('browseLibrary')} />
-      {isLoading ? (
-        <div className="space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full" />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="flex items-center justify-between gap-4 rounded-lg bg-panel p-4">
-          <p className="text-sm font-medium text-muted-foreground">{t('libraryEmpty')}</p>
-          <Button asChild variant="secondary" size="sm" className="bg-background">
-            <Link href="/dashboard/history">{t('libraryEmptyCta')}</Link>
-          </Button>
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {items.map((o) => (
-            <li key={o.id}>
-              <TransitionLink
-                href={`/dashboard/outfits/${o.id}`}
-                className="pressable flex min-h-[56px] items-center justify-between rounded-2xl bg-panel px-4 py-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <div>
-                  <p className="text-[15px] font-bold first-letter:uppercase">{occasionLabel(o.occasion)}</p>
-                  {o.scheduled_for && (
-                    <p className="text-xs text-muted-foreground">
-                      {format.dateTime(new Date(o.scheduled_for + 'T00:00:00'), { day: 'numeric', month: 'long' })}
-                    </p>
-                  )}
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} aria-hidden />
-              </TransitionLink>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 function FamilyAside() {
   const tFam = useTranslations('dashboard.familyFeed');
   const { data: family, isLoading, isError } = useFamily();
@@ -429,7 +283,6 @@ export default function DashboardPage() {
           ) : (
             <FirstStepsCard count={total} />
           )}
-          <QuickActions />
         </div>
         <div className="space-y-6 lg:space-y-8">
           {stage !== 'empty' && <WardrobeSection />}
@@ -437,8 +290,6 @@ export default function DashboardPage() {
           {FEATURES.families && <FamilyAside />}
         </div>
       </div>
-      <OutfitsSection />
-      <LibrarySection />
     </div>
   );
 }

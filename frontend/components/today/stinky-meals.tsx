@@ -4,10 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Camera, ChevronRight, Gift, Shield } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { LazyStinky } from '@/components/native/lazy-stinky';
 import { useStinkyPersona } from '@/components/stinky/stinky-persona';
 import { useHabit, useHabitFollowsChanges, type Habit } from '@/lib/hooks/use-habit';
 import { haptic } from '@/lib/native/haptics';
@@ -41,7 +39,6 @@ export function nextReward(habit: Habit): { accessory: string; at: number } | nu
 export function StinkyMeals() {
   const t = useTranslations('habit');
   const tAcc = useTranslations('habit.accessories');
-  const tWrapped = useTranslations('wrapped');
   const locale = useLocale();
   const { name } = useStinkyPersona();
   const { data: habit } = useHabit();
@@ -57,6 +54,7 @@ export function StinkyMeals() {
     if (!prev || prev.today !== habit.today) return;
     if (!prev.fed_today && habit.fed_today) {
       setEating(true);
+      window.setTimeout(() => setEating(false), 700);
       haptic(18);
       const unlocked = habit.unlocked.filter((a) => !prev.unlocked.includes(a));
       if (unlocked.length) {
@@ -76,112 +74,59 @@ export function StinkyMeals() {
   const weekday = (iso: string) =>
     new Intl.DateTimeFormat(locale, { weekday: 'narrow', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`));
   const reward = nextReward(habit);
-  const toNext = habit.next_level_at != null ? habit.next_level_at - habit.meals : 0;
-  const span = habit.next_level_at != null ? habit.next_level_at - habit.level_starts_at : 1;
-  const pct = habit.next_level_at != null ? Math.round(((habit.meals - habit.level_starts_at) / span) * 100) : 100;
   const wearing = habit.unlocked.length > 0 && !habit.accessory;
-
-  const mood = eating ? 'bite' : habit.fed_today ? 'idle' : habit.welcome_back ? 'sleepy' : 'idle';
   const title = habit.fed_today ? t('fedTitle') : habit.welcome_back ? t('backTitle') : t('hungryTitle');
-  const body = habit.fed_today
-    ? habit.week_met
-      ? t('fedWeekMet', { goal: habit.weekly_goal })
-      : t('fedBody', { left: habit.weekly_goal - habit.week_days.length })
-    : habit.welcome_back
-      ? t('backBody')
-      : t('hungryBody');
 
   return (
-    <section aria-labelledby="stinky-meals-title" className="rounded-lg bg-panel p-4 sm:p-5" data-testid="stinky-meals">
-      <div className="flex gap-4">
-        <div className="flex h-[92px] w-[92px] shrink-0 items-center justify-center rounded-full bg-signature-soft">
-          <LazyStinky state={mood} settleTo="idle" size={84} label="" onDone={() => setEating(false)} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2 id="stinky-meals-title" className="text-[17px] font-extrabold leading-tight tracking-tight">
-            {title}
-          </h2>
-          <p className="mt-1 text-[13.5px] leading-snug text-muted-foreground">{body}</p>
-          <ol className="mt-3 flex gap-1.5" aria-label={t('weekLabel', { count: habit.week_days.length, goal: habit.weekly_goal })}>
-            {days.map((d) => {
-              const done = logged.has(d);
-              const isToday = d === habit.today;
-              const future = d > habit.today;
-              return (
-                <li key={d} className="flex flex-col items-center gap-1">
-                  <span
-                    className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold',
-                      done
-                        ? 'bg-foreground text-background'
-                        : isToday
-                          ? 'border-2 border-foreground bg-background'
-                          : 'bg-background',
-                      future && 'opacity-50'
-                    )}
-                    aria-label={done ? t('dayDone') : undefined}
-                  >
-                    {done ? '✓' : ''}
-                  </span>
-                  <span className={cn('text-[11px] uppercase', isToday ? 'font-bold' : 'text-muted-foreground')} aria-hidden>
-                    {weekday(d)}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
+    <section aria-labelledby="stinky-meals-title" className="rounded-lg bg-panel px-4 py-3.5" data-testid="stinky-meals">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="stinky-meals-title" className="min-w-0 truncate text-[15px] font-bold">
+          {title}
+        </h2>
+        <Link href="/dashboard/wrapped" className="flex shrink-0 items-center text-[13px] font-semibold text-muted-foreground">
+          {t('month')}
+          <ChevronRight className="h-4 w-4" aria-hidden />
+        </Link>
       </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-quick bg-background p-3">
-          <p className="text-[12px] font-semibold text-muted-foreground">{t('streak')}</p>
-          <p className="text-[17px] font-extrabold">{t('weeks', { count: habit.streak_weeks })}</p>
-          <p className="mt-0.5 flex items-center gap-1 text-[11.5px] text-muted-foreground">
-            <Shield className="h-3 w-3 shrink-0" aria-hidden />
-            {habit.comodin_left_this_month ? t('comodinLeft') : t('comodinUsed')}
-          </p>
-        </div>
-        <div className="rounded-quick bg-background p-3">
-          <p className="text-[12px] font-semibold text-muted-foreground">{t('level', { level: habit.level + 1 })}</p>
-          <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-panel" aria-hidden>
-            <div className="h-full rounded-full bg-foreground" style={{ width: `${Math.max(6, pct)}%` }} />
-          </div>
-          <p className="mt-1.5 text-[11.5px] leading-snug text-muted-foreground">
-            {reward
-              ? t('toReward', { count: reward.at - habit.meals, item: tAcc(reward.accessory) })
-              : toNext > 0
-                ? t('toLevel', { count: toNext })
-                : t('maxLevel')}
-          </p>
-        </div>
+      <div className="mt-2.5 flex items-end justify-between gap-3">
+        <ol className="flex gap-1.5" aria-label={t('weekLabel', { count: habit.week_days.length, goal: habit.weekly_goal })}>
+          {days.map((d) => {
+            const done = logged.has(d);
+            const isToday = d === habit.today;
+            return (
+              <li key={d} className="flex flex-col items-center gap-1">
+                <span
+                  className={cn(
+                    'h-6 w-6 rounded-full transition-transform duration-300',
+                    done ? 'bg-foreground' : isToday ? 'border-2 border-foreground' : 'bg-background',
+                    done && isToday && eating && 'scale-125',
+                    d > habit.today && 'opacity-50'
+                  )}
+                  aria-label={done ? t('dayDone') : undefined}
+                />
+                <span className={cn('text-[10.5px] uppercase', isToday ? 'font-bold' : 'text-muted-foreground')} aria-hidden>
+                  {weekday(d)}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+        <p className="pb-4 text-right text-[12.5px] leading-tight text-muted-foreground">
+          <span className="block font-semibold text-foreground">{t('streakShort', { count: habit.streak_weeks })}</span>
+          {reward ? t('toReward', { count: reward.at - habit.meals, item: tAcc(reward.accessory) }) : t('maxLevel')}
+        </p>
       </div>
-
-      <Link
-        href="/dashboard/wrapped"
-        className="mt-3 flex items-center justify-between rounded-quick bg-background px-3 py-2.5 text-[13.5px] font-semibold"
-      >
-        {tWrapped('cta', { name })}
-        <ChevronRight className="h-4 w-4" aria-hidden />
-      </Link>
-
       {(wearing || !habit.fed_today) && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-semibold">
           {wearing && (
-            <Button asChild size="sm" variant="signature">
-              <Link href="/dashboard/stinky/customize#armario">
-                <Gift className="h-4 w-4" aria-hidden />
-                {t('dressHim', { item: tAcc(habit.unlocked[habit.unlocked.length - 1]) })}
-              </Link>
-            </Button>
+            <Link href="/dashboard/stinky/customize#armario" className="underline-offset-4 hover:underline">
+              {t('dressHim', { item: tAcc(habit.unlocked[habit.unlocked.length - 1]) })}
+            </Link>
           )}
           {!habit.fed_today && (
-            <Button asChild size="sm" variant="secondary">
-              <Link href="/dashboard/selfie">
-                <Camera className="h-4 w-4" aria-hidden />
-                {t('woreSomethingElse')}
-              </Link>
-            </Button>
+            <Link href="/dashboard/selfie" className="text-muted-foreground underline-offset-4 hover:underline">
+              {t('woreSomethingElse')}
+            </Link>
           )}
         </div>
       )}

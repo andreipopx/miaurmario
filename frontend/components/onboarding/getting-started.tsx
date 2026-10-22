@@ -10,12 +10,7 @@ import { useNotificationPreferences, useUpdateNotificationPreferences } from '@/
 import { useOutfits } from '@/lib/hooks/use-outfits';
 import { useSeenTips } from '@/lib/hooks/use-seen-tips';
 import { openStyleQuiz, useStyleQuiz } from '@/lib/hooks/use-style-quiz';
-import {
-  GETTING_STARTED_KEY,
-  gettingStartedSteps,
-  showGettingStarted,
-  type GettingStartedStep,
-} from '@/lib/onboarding/getting-started';
+import { GETTING_STARTED_KEY, gettingStartedSteps, showGettingStarted, type GettingStartedStep } from '@/lib/onboarding/getting-started';
 import type { WardrobeStage } from '@/lib/onboarding/first-run';
 import { isDefaultPersona } from '@/lib/stinky-persona';
 import { cn } from '@/lib/utils';
@@ -60,37 +55,24 @@ export function GettingStarted({ stage, target }: { stage: WardrobeStage; target
   const pushReady = prefs.data.push_available && prefs.data.push_devices > 0;
 
   return (
-    <section aria-labelledby="getting-started-title" className="rounded-lg bg-panel p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 id="getting-started-title" className="text-[17px] font-extrabold tracking-tight">
-            {t('title')}
-          </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">{t('progress', { done, total: steps.length })}</p>
-        </div>
+    <section aria-labelledby="getting-started-title" className="rounded-lg bg-panel px-4 pb-2 pt-3.5 sm:px-5">
+      {/* Only the next step: the list of everything left reads like homework. */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="getting-started-title" className="text-[15px] font-bold">
+          {t('title')} <span className="font-semibold text-muted-foreground">· {t('progress', { done, total: steps.length })}</span>
+        </h2>
         <button
           type="button"
           onClick={() => markSeen([GETTING_STARTED_KEY])}
           aria-label={t('hide')}
-          className="-mr-1 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="-mr-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <X className="h-4 w-4" strokeWidth={2} aria-hidden />
         </button>
       </div>
 
-      <div
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={steps.length}
-        aria-valuenow={done}
-        aria-label={t('progress', { done, total: steps.length })}
-        className="mt-3 h-2 w-full overflow-hidden rounded-full bg-background"
-      >
-        <div className="h-full rounded-full bg-foreground transition-[width] duration-500" style={{ width: `${(done / steps.length) * 100}%` }} />
-      </div>
-
-      <ol className="mt-3 space-y-1.5">
-        {steps.map(({ key, done: isDone }) => {
+      <ol className="-mx-2 mt-1">
+        {steps.filter((step) => !step.done).slice(0, 1).map(({ key, done: isDone }) => {
           const body = (
             <>
               <span
@@ -106,9 +88,6 @@ export function GettingStarted({ stage, target }: { stage: WardrobeStage; target
                 <span className={cn('block text-[15px] font-bold leading-tight', isDone && 'text-muted-foreground line-through')}>
                   {t(`steps.${key}.title`)}
                 </span>
-                {!isDone && (
-                  <span className="block text-[13px] text-muted-foreground">{t(`steps.${key}.body`, { target })}</span>
-                )}
               </span>
               {!isDone && <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />}
             </>

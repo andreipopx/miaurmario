@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { ArrowRightLeft, Check, Loader2, MessageCircle, Music, Plus, RefreshCw, Sparkles, X } from 'lucide-react';
+import { ArrowRightLeft, Check, Loader2, Music, Plus, RefreshCw, Sparkles, X } from 'lucide-react';
 import { TransitionLink } from '@/components/native/transition-link';
 import { haptic } from '@/lib/native/haptics';
 import { cn } from '@/lib/utils';
@@ -15,24 +15,13 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Chip, popColorAt } from '@/components/chip';
 import { StinkyTip } from '@/components/stinky-tip';
-import { StinkyAvatar } from '@/components/brand/stinky-avatar';
-import { LazyStinky } from '@/components/native/lazy-stinky';
 import { ShareLookPrompt } from '@/components/social/share-look-prompt';
 import { FlatLayBackToggle, OutfitFlatLay } from '@/components/outfits/outfit-flat-lay';
 import { lookHasABack } from '@/lib/outfit-flat-lay';
 import { useAIStatus } from '@/lib/hooks/use-ai-access';
 import { useDayPlan, useRemoveMomentWithUndo, useSuggestMoment, useWearMomentLook } from '@/lib/hooks/use-day-moments';
 import { useOnline } from '@/lib/hooks/use-online';
-import {
-  MOMENT_OCCASIONS,
-  MOMENT_PRESETS,
-  nextPreset,
-  shortTime,
-  transitionSource,
-  transitionSummary,
-  type DayMoment,
-  type MomentPresetKey,
-} from '@/lib/day-moments';
+import { MOMENT_OCCASIONS, MOMENT_PRESETS, nextPreset, shortTime, transitionSource, transitionSummary, type DayMoment, type MomentPresetKey } from '@/lib/day-moments';
 
 /** Lines Stinky says under a look without notes of its own (dashboard.today.defaultTips). */
 const DEFAULT_TIP_COUNT = 5;
@@ -479,13 +468,7 @@ export function DayMoments() {
           </div>
         ) : moments.length === 0 && tomorrow ? (
           <div className="rounded-lg bg-panel p-3.5 sm:p-5">
-            <div className="flex flex-col items-center px-4 pb-2 pt-4 text-center">
-              <div className="flex h-32 w-32 items-center justify-center rounded-full bg-signature-soft">
-                <LazyStinky state="idle" size={112} label="" />
-              </div>
-              <p className="mt-4 text-lg font-extrabold tracking-tight">{tToday('tomorrowEmptyTitle')}</p>
-              <p className="mt-1 max-w-xs text-sm text-muted-foreground">{tToday('tomorrowEmptyBody')}</p>
-            </div>
+            <p className="px-1 pb-1 pt-1 text-[17px] font-extrabold tracking-tight">{tToday('tomorrowEmptyTitle')}</p>
             <Button
               size="lg"
               className="mt-3 w-full"
@@ -503,13 +486,7 @@ export function DayMoments() {
         ) : moments.length === 0 ? (
           !adding && (
             <div className="rounded-lg bg-panel p-3.5 sm:p-5">
-              <div className="flex flex-col items-center px-4 pb-2 pt-4 text-center">
-                <div className="flex h-32 w-32 items-center justify-center rounded-full bg-signature-soft">
-                  <LazyStinky state="idle" size={112} label="" />
-                </div>
-                <p className="mt-4 text-lg font-extrabold tracking-tight">{tToday('noLookTitle')}</p>
-                <p className="mt-1 max-w-xs text-sm text-muted-foreground">{tToday('noLookBody')}</p>
-              </div>
+              <p className="px-1 pb-1 pt-1 text-[17px] font-extrabold tracking-tight">{tToday('noLookTitle')}</p>
               <div className="mt-3 flex flex-wrap gap-2.5">
                 <Button asChild variant="secondary" size="lg" className="min-w-[8.5rem] flex-1 bg-background px-4 sm:px-6">
                   <Link href="/dashboard/suggest">
@@ -556,17 +533,6 @@ export function DayMoments() {
           )
         )}
 
-        <Link
-          href="/dashboard/stinky"
-          className="flex min-h-[64px] items-center gap-3 rounded-lg bg-signature-soft p-2.5 pr-4 transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <StinkyAvatar size={44} className="bg-background" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-bold leading-tight">{tToday('chatWithStinky')}</span>
-            <span className="block truncate text-[13px] text-muted-foreground">{tToday('chatWithStinkyBody')}</span>
-          </span>
-          <MessageCircle className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-        </Link>
         {tomorrow && (
           <Link
             href="/dashboard/notifications"

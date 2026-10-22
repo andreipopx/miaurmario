@@ -76,22 +76,22 @@ describe('Stinky meals', () => {
   it('asks what you wore, with the photo way out, while he is hungry', () => {
     renderCard(BASE)
     expect(screen.getByRole('heading', { name: '¿Qué te has puesto hoy?' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Llevo otra cosa/ })).toHaveAttribute('href', '/dashboard/selfie')
+    expect(screen.getByRole('link', { name: /¿Llevas otra cosa\?/ })).toHaveAttribute('href', '/dashboard/selfie')
     expect(screen.getByText('2 comidas para el cascabel')).toBeInTheDocument()
-    expect(screen.getByText('2 semanas')).toBeInTheDocument()
+    expect(screen.getByText('Racha de 2 semanas')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Tu mes/ })).toHaveAttribute('href', '/dashboard/wrapped')
   })
 
-  it('says he ate, and how far the week is', () => {
+  it('says he ate, quietly: no face, no paragraph', () => {
     renderCard({ ...BASE, fed_today: true, week_days: ['2026-10-20', '2026-10-22'] })
     expect(screen.getByRole('heading', { name: '¡Ñam! Hoy ya he comido' })).toBeInTheDocument()
-    expect(screen.getByText('Un día más esta semana y la racha sigue.')).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /Llevo otra cosa/ })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('stinky')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /otra cosa/ })).not.toBeInTheDocument()
   })
 
   it('welcomes you back instead of scolding', () => {
     renderCard({ ...BASE, welcome_back: true })
     expect(screen.getByRole('heading', { name: '¡Has vuelto!' })).toBeInTheDocument()
-    expect(screen.getByTestId('stinky')).toHaveAttribute('data-state', 'sleepy')
   })
 
   it('offers to dress him once something is unlocked and not worn', () => {

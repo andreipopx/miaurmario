@@ -4691,27 +4691,17 @@
   },
   "habit": {
     "hungryTitle": "What are you wearing today?",
-    "hungryBody": "Tell me and I eat it: «Me lo pongo» on your look, or a photo if you wore something else.",
     "backTitle": "You're back!",
-    "backBody": "I kept your spot on the sofa. Tell me what you're wearing today and we carry on.",
     "fedTitle": "Nom! I already ate today",
-    "fedBody": "{left, plural, one {One more day this week keeps the streak.} other {# more days this week keep the streak.}}",
-    "fedWeekMet": "Week done: {goal, plural, one {# day} other {# days}} with a look. Everything else is dessert.",
     "ate": "Nom! {name} ate your look",
     "levelUp": "Level {level}!",
     "unlockedNow": "He now has {item}. Put it on him in Your Stinky.",
     "weekLabel": "This week: {count} of {goal} days",
     "dayDone": "With a look",
-    "streak": "Streak",
-    "weeks": "{count, plural, =0 {Start today} one {# week} other {# weeks}}",
-    "comodinLeft": "This month's joker available",
-    "comodinUsed": "This month's joker used",
-    "level": "Level {level}",
     "toReward": "{count, plural, one {# meal} other {# meals}} to {item}",
-    "toLevel": "{count, plural, one {# meal} other {# meals}} to level up",
     "maxLevel": "Top level. Feline legend.",
     "dressHim": "Give him {item}",
-    "woreSomethingElse": "I wore something else",
+    "woreSomethingElse": "Wearing something else?",
     "accessories": {
       "pajarita": "the bow tie",
       "cascabel": "the bell",
@@ -4719,7 +4709,9 @@
       "lazo": "the bow",
       "perlas": "the pearls",
       "pajarita-dorada": "the golden bow tie"
-    }
+    },
+    "month": "Your month",
+    "streakShort": "{count, plural, =0 {Streak: start today} one {# week streak} other {# weeks streak}}"
   },
   "wrapped": {
     "back": "Today",

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
@@ -21,6 +22,8 @@ import { FeedbackDialog } from '@/components/feedback-dialog';
 import { OutfitPreviewDialog } from '@/components/outfit-preview-dialog';
 import { isSameDay, parseISO } from 'date-fns';
 import { capitalizeFirst, useFormatDate } from '@/lib/date-locale';
+import { useClothingTypeLabel } from '@/lib/clothing-type-label';
+import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 
 function EmptyHistory() {
@@ -29,9 +32,8 @@ function EmptyHistory() {
     <EmptyState
       state="sleepy"
       title={t('emptyTitle')}
-      description={t('emptyBody')}
       action={
-        <Button variant="signature" asChild>
+        <Button asChild>
           <Link href="/dashboard/suggest">{t('getFirstSuggestion')}</Link>
         </Button>
       }
@@ -42,35 +44,14 @@ function EmptyHistory() {
 function EmptyDate({ date }: { date: Date }) {
   const t = useTranslations('history');
   const formatDate = useFormatDate();
-  return (
-    <EmptyState
-      state="sleepy"
-      size="sm"
-      title={t('noOutfitsForDate', { date: formatDate(date, 'long') })}
-    />
-  );
+  return <EmptyState state="sleepy" title={t('noOutfitsForDate', { date: formatDate(date, 'long') })} />;
 }
 
 function LoadingSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {[1, 2, 3].map((i) => (
-        <Card key={i}>
-          <CardContent className="p-4 sm:p-4">
-            <div className="mb-3 flex items-start justify-between">
-              <div>
-                <Skeleton className="mb-2 h-5 w-24 rounded-full" />
-                <Skeleton className="h-5 w-16 rounded-full" />
-              </div>
-              <Skeleton className="h-6 w-6 rounded-full" />
-            </div>
-            <div className="flex gap-2">
-              {[1, 2, 3].map((j) => (
-                <Skeleton key={j} className="h-16 w-16 rounded-tile" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <Skeleton key={i} className="h-[72px] w-full rounded-lg" />
       ))}
     </div>
   );
@@ -93,6 +74,78 @@ function CalendarSkeleton() {
   );
 }
 
+/**
+ * One look of the day as a row: its garments and a title. The whole card (the
+ * reasoning, Stinky's note, the rating) opens on tap.
+ */
+function HistoryRow({
+  outfit,
+  open,
+  onToggle,
+  onFeedback,
+  onPreview,
+}: {
+  outfit: Outfit;
+  open: boolean;
+  onToggle: () => void;
+  onFeedback: () => void;
+  onPreview: () => void;
+}) {
+  const t = useTranslations('outfitHistoryCard');
+  const tOccasions = useTranslations('suggest.occasions');
+  const typeLabel = useClothingTypeLabel();
+  const occasionLabel = tOccasions.has(outfit.occasion as never) ? tOccasions(outfit.occasion as never) : outfit.occasion;
+  const title = outfit.name || outfit.reasoning || occasionLabel;
+  const thumbs = outfit.items.slice(0, 4);
+  const more = outfit.items.length - thumbs.length;
+
+  return (
+    <li className="overflow-hidden rounded-lg bg-panel">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <span className="flex shrink-0 gap-1">
+          {thumbs.map((item) => (
+            <span key={item.id} className="relative h-11 w-11 overflow-hidden rounded-[10px] bg-background">
+              {item.thumbnail_url ? (
+                <Image src={item.thumbnail_url} alt={item.name || typeLabel(item.type)} fill className="object-contain p-1" sizes="44px" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                  {typeLabel(item.type)}
+                </span>
+              )}
+            </span>
+          ))}
+          {more > 0 && (
+            <span className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-background text-[12px] font-bold text-muted-foreground">
+              +{more}
+            </span>
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="line-clamp-2 text-[14px] font-bold leading-snug">{title}</span>
+          <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
+            {occasionLabel} · {t(`source.${outfit.source}`)}
+          </span>
+        </span>
+        <ChevronDown
+          className={cn('h-5 w-5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')}
+          strokeWidth={1.75}
+          aria-hidden
+        />
+      </button>
+      {open && (
+        <div className="px-3 pb-3">
+          <OutfitHistoryCard outfit={outfit} onFeedback={onFeedback} onPreview={onPreview} />
+        </div>
+      )}
+    </li>
+  );
+}
+
 export default function HistoryPage() {
   const t = useTranslations('history');
   const tOccasions = useTranslations('suggest.occasions');
@@ -102,6 +155,7 @@ export default function HistoryPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(now);
   const [filters, setFilters] = useState<OutfitFilters>({});
+  const [openId, setOpenId] = useState<string | null>(null);
   const [feedbackOutfit, setFeedbackOutfit] = useState<Outfit | null>(null);
   const [previewOutfit, setPreviewOutfit] = useState<Outfit | null>(null);
 
@@ -153,10 +207,28 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+    <div className="mx-auto max-w-2xl space-y-5">
+      <PageHeader title={t('title')} />
 
-      {/* Filters */}
+      {/* The calendar first: the day is how you find a look. */}
+      <div className="rounded-lg bg-panel p-4">
+        {isLoading ? (
+          <CalendarSkeleton />
+        ) : (
+          <OutfitCalendar
+            year={year}
+            month={month}
+            outfits={data?.outfits || []}
+            selectedDate={selectedDate}
+            onSelectDate={(d) => {
+              setSelectedDate(d);
+              setOpenId(null);
+            }}
+            onMonthChange={handleMonthChange}
+          />
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         <Select value={filters.occasion || 'all'} onValueChange={handleOccasionChange}>
           <SelectTrigger className="h-11 w-[170px]" aria-label={t('allOccasions')}>
@@ -185,60 +257,35 @@ export default function HistoryPage() {
         </Select>
       </div>
 
-      {/* Main content - two column layout */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
-        {/* Calendar column */}
-        <Card className="order-2 h-fit border-0 bg-panel lg:order-1">
-          <CardContent className="p-4 sm:p-4">
-            {isLoading ? (
-              <CalendarSkeleton />
-            ) : (
-              <OutfitCalendar
-                year={year}
-                month={month}
-                outfits={data?.outfits || []}
-                selectedDate={selectedDate}
-                onSelectDate={setSelectedDate}
-                onMonthChange={handleMonthChange}
+      <section className="space-y-3">
+        {selectedDate && (
+          <h2 className="px-1 text-[15px] font-bold">
+            {capitalizeFirst(formatDate(selectedDate, 'weekdayLong'))}
+            <span className="font-normal text-muted-foreground"> · {t('outfitCount', { count: selectedDateOutfits.length })}</span>
+          </h2>
+        )}
+
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : !data || data.outfits.length === 0 ? (
+          <EmptyHistory />
+        ) : selectedDate && selectedDateOutfits.length === 0 ? (
+          <EmptyDate date={selectedDate} />
+        ) : (
+          <ul className="space-y-2">
+            {selectedDateOutfits.map((outfit) => (
+              <HistoryRow
+                key={outfit.id}
+                outfit={outfit}
+                open={openId === outfit.id}
+                onToggle={() => setOpenId((cur) => (cur === outfit.id ? null : outfit.id))}
+                onFeedback={() => setFeedbackOutfit(outfit)}
+                onPreview={() => setPreviewOutfit(outfit)}
               />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Outfits column */}
-        <div className="order-1 lg:order-2 space-y-4">
-          {/* Selected date header */}
-          {selectedDate && (
-            <div className="space-y-0.5">
-              <h2 className="text-lg font-bold">
-                {capitalizeFirst(formatDate(selectedDate, 'weekdayLong'))}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t('outfitCount', { count: selectedDateOutfits.length })}
-              </p>
-            </div>
-          )}
-
-          {isLoading ? (
-            <LoadingSkeleton />
-          ) : !data || data.outfits.length === 0 ? (
-            <EmptyHistory />
-          ) : selectedDate && selectedDateOutfits.length === 0 ? (
-            <EmptyDate date={selectedDate} />
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {selectedDateOutfits.map((outfit) => (
-                <OutfitHistoryCard
-                  key={outfit.id}
-                  outfit={outfit}
-                  onFeedback={() => setFeedbackOutfit(outfit)}
-                  onPreview={() => setPreviewOutfit(outfit)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* Feedback dialog */}
       {feedbackOutfit && (

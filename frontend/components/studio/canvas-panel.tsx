@@ -167,12 +167,7 @@ export function CanvasPanel({
           'flex items-center justify-center p-8'
         )}
       >
-        <div className="space-y-2 text-center">
-          <p className="text-lg font-bold text-foreground">
-            {t('emptyTitle')}
-          </p>
-          <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
-        </div>
+        <p className="text-center text-[15px] font-bold text-muted-foreground">{t('emptyTitle')}</p>
       </div>
     );
   }

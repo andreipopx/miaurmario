@@ -465,8 +465,8 @@ describe('i18n parity for the photo copy', () => {
     expect(es.imageCrop.willSave).toMatch(/guardar/i)
   })
 
-  it('labels the edit affordance with a word, not a pencil', () => {
-    expect(es.wardrobe.item.toolbar.editTags.length).toBeGreaterThan(6)
-    expect(en.wardrobe.item.toolbar.editTags.length).toBeGreaterThan(6)
+  it('labels the edit affordance with one word, not a pencil', () => {
+    expect(es.wardrobe.item.toolbar.editTags).toBe('Editar')
+    expect(en.wardrobe.item.toolbar.editTags).toBe('Edit')
   })
 })

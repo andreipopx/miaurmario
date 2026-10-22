@@ -577,7 +577,6 @@
     "addItem": "Add item",
     "searchPlaceholder": "Search your wardrobe...",
     "myTitle": "My Wardrobe",
-    "itemCount": "{count, plural, one {# item} other {# items}} in your wardrobe",
     "processingBadge": "{count} analyzing",
     "errorBadge": "{count} failed",
     "needsWashingTooltip": "Needs washing",
@@ -585,8 +584,7 @@
     "analysisFailed": "Analysis Failed",
     "aiCompleteness": "AI completeness: {pct}%",
     "emptyTitle": "Empty wardrobe",
-    "emptyBody": "Stinky will settle in and wait — the nap won't take itself. Add your first piece and we'll get started.",
-    "addFirstItem": "Add First Item",
+    "addFirstItem": "Add garments",
     "searchItemsPlaceholder": "Search items...",
     "perPage": "{size} per page",
     "needsWashFilter": "Needs wash",
@@ -656,7 +654,7 @@
         "setAsPrimary": "Set as primary",
         "deleteImage": "Delete image",
         "label": "Item actions",
-        "editTags": "Edit item and tags",
+        "editTags": "Edit",
         "favoriteAdd": "Favourite",
         "favoriteRemove": "Unfavourite",
         "pairings": "Outfits",
@@ -664,7 +662,7 @@
         "more": "More options",
         "morePhoto": "More things to do with the photo",
         "photoGroup": "The photo",
-        "photoLocked": "To rotate the photo, erase what doesn't belong or swap it, tap “Edit garment and tags”.",
+        "photoLocked": "To turn the photo, erase what is left over or replace it, tap «Edit».",
         "reanalyzeWhat": "The AI looks at the photo again and rewrites the type, the colour and the tags. Anything you typed by hand is lost.",
         "mergeBackWhat": "Move this photo onto another garment — as its back or its detail — and delete this entry.",
         "deleteWhat": "Gone for good, photos and all.",
@@ -836,7 +834,7 @@
       "tabSingle": "Single item",
       "tabBulk": "Several",
       "typeLabel": "Type",
-      "typePlaceholder": "Let AI detect...",
+      "typePlaceholder": "Automatic",
       "colorLabel": "Primary color",
       "brandLabel": "Brand",
       "brandPlaceholder": "e.g. J.Crew",
@@ -850,11 +848,9 @@
         "processingBackground": "We're processing them in the background.",
         "keepsUploading": "Still uploading your garment. We'll let you know when it's done."
       },
-      "description": "Upload photos of your clothing items",
       "dragDropSingle": "Drag an image here",
       "dragDropSingleActive": "Drop the image here...",
       "acceptedFormats": "JPEG, PNG, WebP, or HEIC",
-      "typeHint": "(AI will detect if empty)",
       "nameLabelOptional": "Name (optional)",
       "notesLabel": "Notes",
       "notesPlaceholder": "Any additional notes...",
@@ -872,7 +868,6 @@
       "link": {
         "label": "Shop link",
         "placeholder": "https://… or the «Share» text",
-        "hint": "Paste the link, or the whole «Share» text. For Zara, Pull&Bear, Bershka, Stradivarius, Massimo Dutti and Mango I also bring the photo of the garment on its own.",
         "read": "Read link",
         "reading": "Reading...",
         "use": "Use this",
@@ -898,9 +893,14 @@
       "takePhoto": "Take a photo",
       "photoNeeded": "The garment's photo is missing.",
       "tabShot": "Screenshot",
+      "shops": {
+        "which": "Which shops?",
+        "link": "From Zara, Pull&Bear, Bershka, Stradivarius, Massimo Dutti and Mango I also bring the photo of the garment on its own.",
+        "shot": "If it is from Zara, Bershka, Pull&Bear, Stradivarius or Massimo Dutti, I look each garment up in the shop to get the good photo."
+      },
       "screenshot": {
         "title": "Upload a screenshot",
-        "body": "From the shop's app or website, Instagram or Pinterest. I pick out the garments and, for Zara, Bershka, Pull&Bear, Stradivarius or Massimo Dutti, I find each one in the shop to get the good photo.",
+        "body": "From a shop, Instagram or Pinterest.",
         "choose": "Choose screenshot",
         "pasteHint": "On a computer you can also paste it here (Ctrl+V).",
         "reading": "Reading your screenshot…",
@@ -1692,10 +1692,8 @@
   },
   "history": {
     "title": "History",
-    "subtitle": "View your past outfit recommendations",
     "loadError": "Failed to load history. Please try again.",
     "emptyTitle": "No recommendation history",
-    "emptyBody": "Your outfit recommendation history will appear here once you start receiving suggestions.",
     "getFirstSuggestion": "Get Your First Suggestion",
     "noOutfitsForDate": "No outfits for {date}",
     "allOccasions": "All occasions",
@@ -1710,11 +1708,9 @@
   },
   "outfits": {
     "title": "Looks",
-    "subtitle": "The ones you save, the ones you wore and the ones Stinky suggests.",
-    "viewToggle": "View toggle",
-    "viewList": "List",
     "viewCalendar": "Calendar",
     "newOutfit": "New look",
+    "history": "History",
     "chips": {
       "all": "All",
       "myLooks": "My Looks",
@@ -1723,8 +1719,7 @@
       "replacements": "Replacements",
       "ai": "AI"
     },
-    "searchLookbook": "Search lookbook...",
-    "totalCount": "{count} total",
+    "searchLookbook": "Search your looks",
     "loadError": "Failed to load outfits",
     "empty": {
       "all": "No outfits yet. Create your first look in the Studio!",
@@ -1771,7 +1766,6 @@
   },
   "pairings": {
     "title": "Pairings",
-    "subtitle": "AI-generated outfit combinations built around your items",
     "loadError": "Failed to load pairings. Please try again.",
     "emptyTitle": "No pairings yet",
     "emptyBody": "Select an item from your wardrobe and use \"Find Pairings\" to discover outfit combinations that work well together.",
@@ -2070,9 +2064,7 @@
     "aiNoNew": "The AI didn't add any new pieces",
     "aiFailed": "AI assist failed",
     "nameLabel": "Name",
-    "nameLabelHelp": "(required for the lookbook)",
     "namePlaceholder": "Friday brunch",
-    "occasionRequiredHint": "Pick an occasion before saving.",
     "warnings": {
       "noBottoms": "No bottom selected.",
       "noTop": "No top selected.",
@@ -2227,9 +2219,9 @@
     "cancel": "Cancel",
     "wearToday": "Wear today",
     "saveChanges": "Save changes",
-    "saveToLookbook": "Save to lookbook",
-    "pickAtLeastOneOrOccasion": "Pick at least one piece and an occasion",
+    "saveToLookbook": "Save",
     "pickOccasion": "Pick an occasion",
+    "nameNeeded": "Give it a name to save it.",
     "notFoundTitle": "Outfit not found",
     "notFoundBody": "This outfit no longer exists. It may have been deleted from another tab or device.",
     "authErrorTitle": "You can't edit this outfit",
@@ -2250,8 +2242,7 @@
     "wornConflictBody": "Worn outfits can't be edited because they're part of your wear history. Save your changes as a new lookbook entry?"
   },
   "studioCanvas": {
-    "emptyTitle": "A canvas waiting for a story",
-    "emptyHint": "Tap an item in your wardrobe to start composing.",
+    "emptyTitle": "Tap a garment to start",
     "hint": "Long-press an item to move it. Tap to select.",
     "toolbarLabel": "Actions on the selected item",
     "bringToFront": "Bring to front",
@@ -2499,9 +2490,8 @@
   },
   "pins": {
     "title": "Pins",
-    "subtitle": "Your inspiration imported from Pinterest.",
     "loading": "Loading pins…",
-    "empty": "You haven't imported any pins yet.",
+    "empty": "No pins",
     "connectCta": "Connect Pinterest",
     "manageConnection": "Manage connection",
     "previous": "Previous",
@@ -2513,13 +2503,11 @@
   },
   "music": {
     "title": "Music",
-    "subtitle": "What you listen to, your mood and what you were wearing.",
     "manage": "Manage",
     "loading": "Loading your music…",
     "errorTitle": "Couldn't load your music",
     "errorBody": "Please try again in a moment.",
-    "emptyTitle": "Stinky hasn't heard a thing yet",
-    "emptyBody": "Connect Last.fm or Spotify and I'll keep your listening history to read how your music sounds and match it with your looks.",
+    "emptyTitle": "No music",
     "notConfigured": "Music isn't configured on this server yet.",
     "connectCta": "Connect Spotify",
     "nowPlaying": "Playing now",
@@ -2709,14 +2697,8 @@
     "noBackFor": "{name} (no back photo)"
   },
   "outfitCard": {
-    "badgeReplacement": "Replacement",
-    "badgeWorn": "Worn",
-    "badgeStudio": "Studio",
-    "badgePairing": "Pairing",
-    "badgeAi": "AI",
     "lookbookTemplate": "Lookbook template",
-    "titleFallback": "{occasion} outfit",
-    "badgeStinky": "Stinky"
+    "titleFallback": "{occasion} outfit"
   },
   "outfitCalendar": {
     "scheduled": "Scheduled",
@@ -3272,7 +3254,6 @@
   },
   "social": {
     "title": "Friends",
-    "subtitle": "Looks your friends share, and what they think of yours.",
     "tabs": {
       "feed": "Looks",
       "friends": "Friends",
@@ -3289,8 +3270,7 @@
       "errorTitle": "We couldn't load the looks",
       "errorBody": "Check your connection and try again.",
       "retry": "Retry",
-      "emptyTitle": "No looks here yet",
-      "emptyBody": "When your friends share what they wear, it shows up here.",
+      "emptyTitle": "Your friends aren't sharing looks yet",
       "noFriendsTitle": "Invite your friends",
       "noFriendsBody": "Share your link and see what you're each wearing every day. Stinky gets bored on his own.",
       "loadMore": "Load more"
@@ -3311,7 +3291,6 @@
     },
     "activity": {
       "emptyTitle": "Nothing new",
-      "emptyBody": "When someone reacts to the looks you share, you'll see it here.",
       "commented": "commented on",
       "loved": "loved"
     },
@@ -3448,11 +3427,11 @@
       "closes": "closes at {time}",
       "back": "Friends",
       "newTitle": "Which one should I wear?",
-      "newBody": "Pick two or three looks and your friends vote. Only they see them, and the vote lasts 12 hours.",
+      "newBody": "Your friends vote for 12 hours.",
       "noFriends": "You don't have friends on Miaurmario yet: invite someone so they can vote.",
       "questionLabel": "Your question (optional)",
       "questionPlaceholder": "For Saturday dinner?",
-      "pickLooks": "Pick your looks: {count} of {max}",
+      "pickLooks": "Pick 2 or 3",
       "fewLooksTitle": "You need at least two looks",
       "fewLooksBody": "Ask Stinky for looks or make your own and come back.",
       "send": "Ask my friends",
@@ -4629,7 +4608,6 @@
   },
   "trips": {
     "title": "Trip mode",
-    "subtitle": "Tell me where you're going and when: Stinky plans a look for each day with the forecast there, and a suitcase with just enough.",
     "new": "New trip",
     "empty": "No trips planned yet.",
     "upcoming": "Upcoming",
@@ -4704,6 +4682,11 @@
     "next": "Next month",
     "title": "Your {month} with {name}",
     "subtitle": "{meals, plural, one {# meal} other {# meals}} in total · level {level}",
+    "sections": {
+      "days": "Days and garments",
+      "money": "Money",
+      "new": "What's new"
+    },
     "days": "{count, plural, one {day with a look} other {days with a look}}",
     "looks": "{count, plural, one {# look worn} other {# looks worn}}",
     "noDays": "{name} didn't eat a thing this month. Tell him what you're wearing and we start.",

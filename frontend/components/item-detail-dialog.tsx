@@ -704,118 +704,15 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                   </span>
                 </Button>
               </div>
-            ) : (
-              <Button
-                variant="default"
-                className="w-full justify-center"
-                onClick={() => setIsEditing(true)}
-                aria-pressed={false}
-              >
-                <Pencil className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-                {t('toolbar.editTags')}
-              </Button>
-            )}
+            ) : null}
             {isEditing && dirty && (
               <p className="text-[12px] leading-snug text-warning" role="status">
                 {t('form.unsaved')}
               </p>
             )}
-            {/* What is on top, and what is not.
-                This used to be one scrolling strip of nine unlabelled icons —
-                favourite, outfits, re-analyse, two rotations, remove background,
-                eraser, undo, replace photo — where a stray tap could re-cut a photo
-                or overwrite tags the owner had just typed, and where half of them
-                scrolled off the right edge of a phone. So:
-
-                * two named things stay out: favourite and combinations, which are
-                  the only two anybody opens a garment to do and neither of which
-                  can lose anything;
-                * everything else is a row in "Más opciones" with a plain-Spanish
-                  name and a sentence saying what it will do;
-                * and anything that rewrites the photo or the tags is locked behind
-                  the pencil, because "bloquearlos hasta que le des a editar" is
-                  exactly right: you cannot undo a re-analysis. */}
-            {!isEditing ? (
-              <div className="space-y-2">
-                {/* Side by side when both words fit, stacked when they do not.
-                    `basis` in rem is the trick: it grows with the root font size, so
-                    at 125% the row runs out of space and wraps by itself rather than
-                    truncating "Favorita" to "Favo…" and "Combinar" to "Com…". A
-                    320px screen wraps for the same reason. */}
-                <div
-                  role="group"
-                  aria-label={t('toolbar.label')}
-                  className="flex flex-wrap gap-2"
-                >
-                  <Button
-                    variant="secondary"
-                    className="min-w-0 flex-1 basis-[8.5rem]"
-                    onClick={handleToggleFavorite}
-                    aria-pressed={favorite}
-                  >
-                    <Heart
-                      key={favorite ? 'on' : 'off'}
-                      strokeWidth={1.75}
-                      aria-hidden
-                      className={cn(
-                        'h-[18px] w-[18px] shrink-0',
-                        favorite && 'fill-signature duration-300 animate-in zoom-in-50 motion-reduce:animate-none'
-                      )}
-                    />
-                    <span className="min-w-0 truncate">
-                      {favorite ? t('toolbar.favoriteRemove') : t('toolbar.favoriteAdd')}
-                    </span>
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    className="min-w-0 flex-1 basis-[8.5rem]"
-                    onClick={() => setShowPairingsDialog(true)}
-                    disabled={item.status !== 'ready'}
-                    title={item.status !== 'ready' ? t('toolbar.pairingsNotReady') : undefined}
-                  >
-                    <Layers className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
-                    <span className="min-w-0 truncate">{t('toolbar.pairings')}</span>
-                  </Button>
-                </div>
-                <Collapsible open={showMore} onOpenChange={setShowMore}>
-                  <CollapsibleTrigger className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-muted-foreground transition-colors hover:bg-panel hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    {t('toolbar.more')}
-                    <ChevronDown
-                      className={cn('h-4 w-4 transition-transform', showMore && 'rotate-180')}
-                      aria-hidden
-                    />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-1 pt-1">
-                    <OverflowAction
-                      icon={<RefreshCw className="h-[18px] w-[18px]" strokeWidth={1.75} />}
-                      label={t('toolbar.reanalyzeWithAi')}
-                      description={t('toolbar.reanalyzeWhat')}
-                      busy={isAnalyzing}
-                      disabled={isAnalyzing}
-                      onClick={() => setConfirmReanalyze(true)}
-                    />
-                    <OverflowAction
-                      icon={<Layers className="h-[18px] w-[18px]" strokeWidth={1.75} />}
-                      label={tMerge('openFromItem')}
-                      description={t('toolbar.mergeBackWhat')}
-                      onClick={() => setShowMergeBack(true)}
-                    />
-                    <OverflowAction
-                      destructive
-                      icon={<Trash2 className="h-[18px] w-[18px]" strokeWidth={1.75} />}
-                      label={t('deleteButton')}
-                      description={t('toolbar.deleteWhat')}
-                      onClick={() => setShowDeleteConfirm(true)}
-                    />
-                    {/* Said here rather than under the photo, because here is where
-                        somebody hunting for the rotate button will look. */}
-                    <p className="px-3 pb-1 pt-1.5 text-[12px] leading-snug text-muted-foreground">
-                      {t('toolbar.photoLocked')}
-                    </p>
-                  </CollapsibleContent>
-                </Collapsible>
-              </div>
-            ) : (
+            {/* While editing, the photo tools live up here with the save bar;
+                reading, the actions sit under the photo. */}
+            {isEditing && (
               <div className="space-y-2">
                 <p
                   id="item-photo-tools"
@@ -1162,15 +1059,98 @@ export function ItemDetailDialog({ item, open, onOpenChange }: ItemDetailDialogP
                 </div>
               )}
 
-              {/* Always offered, not hidden behind "editar": the label is the answer
-                  to a question the photo itself raises, and a garment with one photo
-                  is exactly the one whose owner needs to say "esta es la espalda". */}
-              <PhotoViewPicker
-                idPrefix={`item-photo-${activeImage?.id ?? 'primary'}`}
-                value={activeImage?.view ?? 'front'}
-                disabled={savingView}
-                onChange={(next) => saveView(next)}
-              />
+
+              {/* Photo first. Under it, the three things anybody opens a garment to
+                  do: favourite (the heart), combine, edit. Everything that rewrites
+                  the photo or the tags is behind «Editar», because you cannot undo a
+                  re-analysis; the rest is in «Más opciones». */}
+              {!isEditing && (
+                <div className="space-y-2">
+                  <div role="group" aria-label={t('toolbar.label')} className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={handleToggleFavorite}
+                      aria-pressed={favorite}
+                      aria-label={favorite ? t('toolbar.favoriteRemove') : t('toolbar.favoriteAdd')}
+                      title={favorite ? t('toolbar.favoriteRemove') : t('toolbar.favoriteAdd')}
+                    >
+                      <Heart
+                        key={favorite ? 'on' : 'off'}
+                        strokeWidth={1.75}
+                        aria-hidden
+                        className={cn(
+                          'h-[20px] w-[20px] shrink-0',
+                          favorite && 'fill-signature duration-300 animate-in zoom-in-50 motion-reduce:animate-none'
+                        )}
+                      />
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="min-w-0 flex-1"
+                      onClick={() => setShowPairingsDialog(true)}
+                      disabled={item.status !== 'ready'}
+                      title={item.status !== 'ready' ? t('toolbar.pairingsNotReady') : undefined}
+                    >
+                      <Layers className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
+                      <span className="min-w-0 truncate">{t('toolbar.pairings')}</span>
+                    </Button>
+                    <Button className="min-w-0 flex-1" onClick={() => setIsEditing(true)}>
+                      <Pencil className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
+                      <span className="min-w-0 truncate">{t('toolbar.editTags')}</span>
+                    </Button>
+                  </div>
+                  <Collapsible open={showMore} onOpenChange={setShowMore}>
+                    <CollapsibleTrigger className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-muted-foreground transition-colors hover:bg-panel hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      {t('toolbar.more')}
+                      <ChevronDown
+                        className={cn('h-4 w-4 transition-transform', showMore && 'rotate-180')}
+                        aria-hidden
+                      />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-1 pt-1">
+                      <OverflowAction
+                        icon={<RefreshCw className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                        label={t('toolbar.reanalyzeWithAi')}
+                        description={t('toolbar.reanalyzeWhat')}
+                        busy={isAnalyzing}
+                        disabled={isAnalyzing}
+                        onClick={() => setConfirmReanalyze(true)}
+                      />
+                      <OverflowAction
+                        icon={<Layers className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                        label={tMerge('openFromItem')}
+                        description={t('toolbar.mergeBackWhat')}
+                        onClick={() => setShowMergeBack(true)}
+                      />
+                      <OverflowAction
+                        destructive
+                        icon={<Trash2 className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+                        label={t('deleteButton')}
+                        description={t('toolbar.deleteWhat')}
+                        onClick={() => setShowDeleteConfirm(true)}
+                      />
+                      {/* Said here rather than under the photo, because here is where
+                          somebody hunting for the rotate button will look. */}
+                      <p className="px-3 pb-1 pt-1.5 text-[12px] leading-snug text-muted-foreground">
+                        {t('toolbar.photoLocked')}
+                      </p>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+              )}
+
+              {/* Which side this photo shows: an editing control, so it lives with
+                  the rest of the editing. */}
+              {isEditing && (
+                <PhotoViewPicker
+                  idPrefix={`item-photo-${activeImage?.id ?? 'primary'}`}
+                  value={activeImage?.view ?? 'front'}
+                  disabled={savingView}
+                  onChange={(next) => saveView(next)}
+                />
+              )}
             </div>
 
             {/* Details */}

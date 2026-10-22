@@ -25,11 +25,14 @@ export default function PinsPage() {
     <div className="space-y-6 py-2 sm:py-4">
       <PageHeader
         title={t('title')}
-        description={t('subtitle')}
         action={
-          <Button variant="outline" asChild>
-            <Link href="/dashboard/settings/integrations/pinterest">{t('manageConnection')}</Link>
-          </Button>
+          // With pins on screen the connection is a setting; with none, the empty
+          // state's button is the one way in.
+          query.data && query.data.items.length > 0 ? (
+            <Button variant="secondary" asChild>
+              <Link href="/dashboard/settings/integrations/pinterest">{t('manageConnection')}</Link>
+            </Button>
+          ) : undefined
         }
       />
 

@@ -131,11 +131,8 @@ export function DetailsPanel({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="studio-name" className="flex items-center gap-1 font-bold">
+        <Label htmlFor="studio-name" className="font-bold">
           {t('nameLabel')}
-          <span className="ml-1 text-xs font-normal text-muted-foreground">
-            {t('nameLabelHelp')}
-          </span>
         </Label>
         <Input
           id="studio-name"
@@ -153,11 +150,6 @@ export function DetailsPanel({
           <span className="sr-only">{t('required')}</span>
         </Label>
         <OccasionChips selected={occasion} onSelect={onOccasionChange} />
-        {!occasion && (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t('occasionRequiredHint')}
-          </p>
-        )}
       </div>
 
       {warnings.length > 0 && (
@@ -177,7 +169,7 @@ export function DetailsPanel({
 
       <Button
         type="button"
-        variant="signature"
+        variant="secondary"
         className="w-full"
         disabled={items.length === 0 || !occasion || aiLoading}
         onClick={handleAiAssist}

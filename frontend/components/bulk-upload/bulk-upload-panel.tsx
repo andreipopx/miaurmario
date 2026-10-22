@@ -320,11 +320,12 @@ export function BulkUploadPanel({
 
   return (
     <div className="flex min-w-0 flex-col" data-testid="bulk-panel">
-      {/* In the backlog pass the dialog header already says this; repeating it
-          costs a line of a phone screen that the garments could be using. */}
-      {!(reviewingBacklog && (phase === 'review' || phase === 'stepper')) && (
+      {/* «Puedes cerrar esto: la subida sigue» only once there is an upload to
+          leave running; the review line only outside the backlog pass, whose
+          dialog header already says it. */}
+      {(phase === 'queue' || (!reviewingBacklog && (phase === 'review' || phase === 'stepper'))) && (
         <p className="pb-3 text-[13px] leading-snug text-muted-foreground">
-          {phase === 'review' || phase === 'stepper' ? t('reviewSubtitle') : t('subtitle')}
+          {phase === 'queue' ? t('subtitle') : t('reviewSubtitle')}
         </p>
       )}
 

@@ -38,7 +38,7 @@ export function ActivityList({ active = true }: { active?: boolean }) {
     );
   }
   if (!data || data.length === 0) {
-    return <EmptyState state="sleepy" size="sm" title={t('emptyTitle')} description={t('emptyBody')} />;
+    return <EmptyState state="sleepy" title={t('emptyTitle')} />;
   }
   return (
     <ul className="space-y-2">

@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Settings2 } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { PersonAvatar } from '@/components/social/person-avatar';
 import { RelationActions } from '@/components/social/relation-actions';
 import { ActivityList } from '@/components/social/activity-list';
-import { useFriendsOverview } from '@/lib/hooks/use-social';
+import { useFriendsOverview, useSocialActivity } from '@/lib/hooks/use-social';
 
 /**
  * Avisos (the bell): what's waiting for you — friend requests to answer and what
@@ -17,7 +17,11 @@ import { useFriendsOverview } from '@/lib/hooks/use-social';
 export default function InboxPage() {
   const t = useTranslations('inbox');
   const { data: overview } = useFriendsOverview();
+  const { data: activity } = useSocialActivity();
   const incoming = overview?.incoming ?? [];
+  // «Tus looks» as a heading only over something: with nothing new the quiet
+  // empty state says it all by itself.
+  const hasActivity = (activity?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -26,10 +30,11 @@ export default function InboxPage() {
         action={
           <Link
             href="/dashboard/notifications"
-            className="pressable inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={t('settings')}
+            title={t('settings')}
+            className="pressable flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Settings2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-            {t('settings')}
+            <Settings className="h-5 w-5" strokeWidth={1.75} aria-hidden />
           </Link>
         }
       />
@@ -62,10 +67,8 @@ export default function InboxPage() {
         </section>
       )}
 
-      <section aria-labelledby="inbox-activity" className="space-y-2">
-        <h2 id="inbox-activity" className="px-1 text-[15px] font-bold">
-          {t('activity')}
-        </h2>
+      <section aria-label={t('activity')} className="space-y-2">
+        {hasActivity && <h2 className="px-1 text-[15px] font-bold">{t('activity')}</h2>}
         <ActivityList />
       </section>
     </div>

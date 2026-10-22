@@ -102,7 +102,6 @@ export default function MusicPage() {
     <div className="mx-auto max-w-3xl space-y-7 py-2 sm:py-4">
       <PageHeader
         title={t('title')}
-        description={t('subtitle')}
         action={
           connected ? (
             <Button variant="outline" size="sm" asChild>
@@ -127,9 +126,7 @@ export default function MusicPage() {
         <EmptyState
           state="sleepy"
           title={t('emptyTitle')}
-          description={
-            data.configured || data.lastfm_configured ? t('emptyBody') : t('notConfigured')
-          }
+          description={data.configured || data.lastfm_configured ? undefined : t('notConfigured')}
           action={
             data.configured || data.lastfm_configured ? (
               <div className="flex flex-wrap justify-center gap-2">

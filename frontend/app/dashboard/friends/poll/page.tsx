@@ -53,7 +53,7 @@ export default function NewPollPage() {
     );
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5 pb-40 pt-2">
+    <div className="mx-auto max-w-2xl space-y-5 pb-6 pt-2">
       <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
         <Link href="/dashboard/friends">
           <ArrowLeft className="h-4 w-4" aria-hidden />
@@ -62,7 +62,6 @@ export default function NewPollPage() {
       </Button>
       <header className="px-1">
         <h1 className="text-[28px] font-extrabold leading-tight tracking-tight">{t('newTitle')}</h1>
-        <p className="mt-1 text-[15px] text-muted-foreground">{t('newBody')}</p>
       </header>
 
       {!hasFriends && overview && <p className="rounded-lg bg-signature-soft p-3 text-sm">{t('noFriends')}</p>}
@@ -80,17 +79,17 @@ export default function NewPollPage() {
         />
       </div>
 
-      <p className="px-1 text-sm font-semibold">{t('pickLooks', { count: picked.length, max: MAX_OPTIONS })}</p>
+      <p className="px-1 text-sm font-semibold">{t('pickLooks')}</p>
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-3">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="aspect-[4/5] rounded-lg" />
           ))}
         </div>
       ) : looks.length < 2 ? (
         <EmptyState state="sleepy" title={t('fewLooksTitle')} description={t('fewLooksBody')} />
       ) : (
-        <ul className="grid grid-cols-2 gap-3">
+        <ul className="grid grid-cols-3 gap-2">
           {looks.map((look) => {
             const n = picked.indexOf(look.id);
             return (
@@ -104,9 +103,9 @@ export default function NewPollPage() {
                     n >= 0 && 'ring-2 ring-foreground'
                   )}
                 >
-                  <OutfitFlatLay items={look.items} backToggle={false} label={look.name ?? ''} sizes="45vw" />
+                  <OutfitFlatLay items={look.items} backToggle={false} label={look.name ?? ''} sizes="30vw" />
                   {n >= 0 && (
-                    <span className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">
+                    <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[13px] font-bold text-background">
                       {n + 1}
                     </span>
                   )}
@@ -117,11 +116,15 @@ export default function NewPollPage() {
         </ul>
       )}
 
-      <div className="fixed bottom-float-1 left-1/2 z-float w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 lg:bottom-6 lg:ml-32">
+      {/* In the flow, stuck above the dock while the grid scrolls: it never sits
+          on top of the looks or of the empty state, because at the end of the
+          page it is simply the last thing. */}
+      <div className="sticky bottom-float-1 z-float -mx-4 space-y-2 bg-background px-4 pb-1 pt-3 lg:bottom-6">
         <Button size="lg" className="w-full shadow-lg" disabled={picked.length < 2 || create.isPending} onClick={send}>
           {create.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {t('send')}
         </Button>
+        <p className="text-center text-[13px] text-muted-foreground">{t('newBody')}</p>
       </div>
     </div>
   );

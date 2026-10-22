@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Camera, Gift, Shield } from 'lucide-react';
+import { Camera, ChevronRight, Gift, Shield } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { LazyStinky } from '@/components/native/lazy-stinky';
@@ -41,6 +41,7 @@ export function nextReward(habit: Habit): { accessory: string; at: number } | nu
 export function StinkyMeals() {
   const t = useTranslations('habit');
   const tAcc = useTranslations('habit.accessories');
+  const tWrapped = useTranslations('wrapped');
   const locale = useLocale();
   const { name } = useStinkyPersona();
   const { data: habit } = useHabit();
@@ -155,6 +156,14 @@ export function StinkyMeals() {
           </p>
         </div>
       </div>
+
+      <Link
+        href="/dashboard/wrapped"
+        className="mt-3 flex items-center justify-between rounded-quick bg-background px-3 py-2.5 text-[13.5px] font-semibold"
+      >
+        {tWrapped('cta', { name })}
+        <ChevronRight className="h-4 w-4" aria-hidden />
+      </Link>
 
       {(wearing || !habit.fed_today) && (
         <div className="mt-3 flex flex-wrap gap-2">

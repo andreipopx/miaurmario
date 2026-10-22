@@ -75,3 +75,44 @@ export function useUpdateHabit() {
     },
   });
 }
+
+/** «Tu mes con Stinky» (GET /habit/wrapped). Money comes as decimal strings. */
+export interface WrappedGarment {
+  id: string;
+  name: string | null;
+  type: string;
+  primary_color: string | null;
+  photo: { image_url: string; thumbnail_url: string | null };
+  count: number;
+  cost_per_wear: string | null;
+}
+
+export interface Wrapped {
+  month: string;
+  until: string;
+  days_logged: number;
+  looks_worn: number;
+  garments_worn: number;
+  wardrobe_size: number;
+  top: WrappedGarment[];
+  top_color: string | null;
+  added: number;
+  added_by_way: Record<string, number>;
+  forgotten_count: number;
+  forgotten: WrappedGarment[];
+  wardrobe_value: string | null;
+  average_cost_per_wear: string | null;
+  best_value: WrappedGarment | null;
+  meals_total: number;
+  level: number;
+  best_streak_weeks: number;
+}
+
+export function useWrapped(month: string | null) {
+  const { status } = useSession();
+  return useQuery({
+    queryKey: ['habit', 'wrapped', month ?? 'auto'],
+    queryFn: () => api.get<Wrapped>('/habit/wrapped', { params: month ? { month } : undefined }),
+    enabled: status !== 'loading',
+  });
+}

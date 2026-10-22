@@ -106,5 +106,6 @@ describe('Stinky meals', () => {
     const keys = (o: object): string[] =>
       Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? keys(v).map((s) => `${k}.${s}`) : [k]))
     expect(keys(es.habit).sort()).toEqual(keys(en.habit).sort())
+    expect(keys(es.wrapped).sort()).toEqual(keys(en.wrapped).sort())
   })
 })

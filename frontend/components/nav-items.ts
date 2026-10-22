@@ -90,6 +90,8 @@ export const STINKY: NavSection = {
     { key: 'music', href: '/dashboard/music', icon: Music, hidden: true },
     { key: 'pins', href: '/dashboard/pins', icon: Pin, hidden: true },
     { key: 'trips', href: '/dashboard/trips', icon: Plane, hidden: true },
+    // «Tu mes con Stinky», linked from his card on Hoy.
+    { key: 'wrapped', href: '/dashboard/wrapped', icon: CalendarDays, hidden: true },
   ],
 };
 

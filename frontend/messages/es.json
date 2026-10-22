@@ -388,7 +388,8 @@
     "inspiration": "Inspiración",
     "yourStyle": "Tu estilo",
     "customize": "Tu Stinky",
-    "trips": "Viaje"
+    "trips": "Viaje",
+    "wrapped": "Tu mes"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo, {name}",
@@ -4718,5 +4719,39 @@
       "perlas": "las perlas",
       "pajarita-dorada": "la pajarita dorada"
     }
+  },
+  "wrapped": {
+    "back": "Hoy",
+    "prev": "Mes anterior",
+    "next": "Mes siguiente",
+    "title": "Tu {month} con {name}",
+    "subtitle": "{meals, plural, one {# comida} other {# comidas}} en total · nivel {level}",
+    "days": "{count, plural, one {día con look} other {días con look}}",
+    "looks": "{count, plural, one {# look puesto} other {# looks puestos}}",
+    "noDays": "Este mes {name} no ha comido nada. Dile qué te pones y empezamos.",
+    "garmentOfTheMonth": "Tu prenda del mes",
+    "topTimes": "{count, plural, one {Salió # vez} other {Salió # veces}}. Tiene su club de fans.",
+    "times": "{count, plural, one {# vez} other {# veces}}",
+    "wardrobeUsed": "de tu armario salió a la calle ({worn} de {total})",
+    "color": "Tu color del mes: {color}",
+    "noColor": "Sin color del mes todavía.",
+    "costTitle": "Coste por puesta",
+    "costBody": "De media, con lo que pagaste ({value} en prendas con precio).",
+    "bestValue": "La que mejor te ha salido: {cost} cada vez, en {count, plural, one {# puesta} other {# puestas}}.",
+    "forgottenTitle": "Olvidadas",
+    "forgotten": "{count, plural, one {# prenda lleva más de dos meses sin salir} other {# prendas llevan más de dos meses sin salir}}",
+    "forgottenCta": "Dales una vuelta",
+    "added": "{count, plural, =0 {Este mes no entró nada nuevo} one {# prenda nueva este mes} other {# prendas nuevas este mes}}",
+    "ways": {
+      "photo": "Foto",
+      "bulk": "Varias fotos",
+      "link": "Enlace",
+      "screenshot": "Captura",
+      "selfie": "Qué llevo",
+      "pin": "Pinterest",
+      "unknown": "Otras"
+    },
+    "streak": "Tu mejor racha: {count, plural, =0 {aún por estrenar} one {# semana} other {# semanas}}.",
+    "cta": "Tu mes con {name}"
   }
 }

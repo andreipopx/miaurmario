@@ -1,15 +1,18 @@
 """Stinky's meals, level, streak and what he wears (app/services/habit.py)."""
 
-from datetime import date
+from datetime import date, timedelta
+from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
+from app.schemas.item import GarmentPhoto
 from app.services.habit import ACCESSORIES, LEVELS, build_habit, worn_days
+from app.services.wrapped import GarmentStat, build_wrapped
 from app.utils.auth import get_current_user
 from app.utils.timezone import get_user_today
 
@@ -89,3 +92,93 @@ async def update_habit(
         current_user.stinky_accessory = wanted
     await db.commit()
     return await _habit(db, current_user)
+
+
+class WrappedGarment(BaseModel):
+    id: str
+    name: str | None
+    type: str
+    primary_color: str | None
+    photo: GarmentPhoto
+    count: int = 0
+    cost_per_wear: Decimal | None = None
+
+
+class WrappedResponse(BaseModel):
+    month: date
+    until: date
+    days_logged: int
+    looks_worn: int
+    garments_worn: int
+    wardrobe_size: int
+    top: list[WrappedGarment]
+    top_color: str | None
+    added: int
+    added_by_way: dict[str, int]
+    forgotten_count: int
+    forgotten: list[WrappedGarment]
+    wardrobe_value: Decimal | None
+    average_cost_per_wear: Decimal | None
+    best_value: WrappedGarment | None
+    #: Stinky's side of the month.
+    meals_total: int
+    level: int
+    best_streak_weeks: int
+
+
+def _garment(stat: GarmentStat) -> WrappedGarment:
+    item = stat.item
+    return WrappedGarment(
+        id=str(item.id),
+        name=item.name,
+        type=item.type,
+        primary_color=item.primary_color,
+        photo=GarmentPhoto(image_path=item.image_path, thumbnail_path=item.thumbnail_path),
+        count=stat.count,
+        cost_per_wear=stat.cost_per_wear,
+    )
+
+
+@router.get("/wrapped", response_model=WrappedResponse)
+async def get_wrapped(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    month: Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}$")] = None,
+) -> WrappedResponse:
+    """«Tu mes con Stinky». Without ``month``: the current month in its first
+    days counts as just started, so the month before is the one worth a recap."""
+    today = get_user_today(current_user)
+    if month:
+        year, mon = (int(x) for x in month.split("-"))
+        try:
+            first = date(year, mon, 1)
+        except ValueError:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail={"code": "bad_month"}) from None
+        if first > today:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail={"code": "future_month"})
+    else:
+        first = today.replace(day=1)
+        if today.day <= 5:
+            first = (first - timedelta(days=1)).replace(day=1)
+    wrapped = await build_wrapped(db, current_user.id, first, today)
+    habit = build_habit(await worn_days(db, current_user.id), today, current_user.weekly_goal)
+    return WrappedResponse(
+        month=wrapped.month,
+        until=wrapped.until,
+        days_logged=wrapped.days_logged,
+        looks_worn=wrapped.looks_worn,
+        garments_worn=wrapped.garments_worn,
+        wardrobe_size=wrapped.wardrobe_size,
+        top=[_garment(g) for g in wrapped.top],
+        top_color=wrapped.top_color,
+        added=wrapped.added,
+        added_by_way=wrapped.added_by_way,
+        forgotten_count=wrapped.forgotten_count,
+        forgotten=[_garment(g) for g in wrapped.forgotten],
+        wardrobe_value=wrapped.wardrobe_value,
+        average_cost_per_wear=wrapped.average_cost_per_wear,
+        best_value=_garment(wrapped.best_value) if wrapped.best_value else None,
+        meals_total=habit.meals,
+        level=habit.level,
+        best_streak_weeks=habit.best_streak_weeks,
+    )

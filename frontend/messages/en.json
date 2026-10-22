@@ -388,7 +388,8 @@
     "inspiration": "Inspiration",
     "yourStyle": "Your style",
     "customize": "Your Stinky",
-    "trips": "Trip"
+    "trips": "Trip",
+    "wrapped": "Your month"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
@@ -4718,5 +4719,39 @@
       "perlas": "the pearls",
       "pajarita-dorada": "the golden bow tie"
     }
+  },
+  "wrapped": {
+    "back": "Today",
+    "prev": "Previous month",
+    "next": "Next month",
+    "title": "Your {month} with {name}",
+    "subtitle": "{meals, plural, one {# meal} other {# meals}} in total · level {level}",
+    "days": "{count, plural, one {day with a look} other {days with a look}}",
+    "looks": "{count, plural, one {# look worn} other {# looks worn}}",
+    "noDays": "{name} didn't eat a thing this month. Tell him what you're wearing and we start.",
+    "garmentOfTheMonth": "Your garment of the month",
+    "topTimes": "{count, plural, one {Out # time} other {Out # times}}. It has a fan club.",
+    "times": "{count, plural, one {# time} other {# times}}",
+    "wardrobeUsed": "of your wardrobe went out ({worn} of {total})",
+    "color": "Your colour of the month: {color}",
+    "noColor": "No colour of the month yet.",
+    "costTitle": "Cost per wear",
+    "costBody": "On average, for what you paid ({value} in priced garments).",
+    "bestValue": "Your best value: {cost} each time, over {count, plural, one {# wear} other {# wears}}.",
+    "forgottenTitle": "Forgotten",
+    "forgotten": "{count, plural, one {# garment hasn't been out in over two months} other {# garments haven't been out in over two months}}",
+    "forgottenCta": "Give them a spin",
+    "added": "{count, plural, =0 {Nothing new came in this month} one {# new garment this month} other {# new garments this month}}",
+    "ways": {
+      "photo": "Photo",
+      "bulk": "Several photos",
+      "link": "Link",
+      "screenshot": "Screenshot",
+      "selfie": "What I wear",
+      "pin": "Pinterest",
+      "unknown": "Other"
+    },
+    "streak": "Your best streak: {count, plural, =0 {still to come} one {# week} other {# weeks}}.",
+    "cta": "Your month with {name}"
   }
 }

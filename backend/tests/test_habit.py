@@ -125,3 +125,72 @@ class TestHabitAPI:
         assert me.json()["stinky_accessory"] == "pajarita"
         off = await client.patch("/api/v1/habit", json={"accessory": ""}, headers=auth_headers)
         assert off.json()["accessory"] is None
+
+
+class TestWrapped:
+    async def test_a_month_of_wardrobe(
+        self, client: AsyncClient, auth_headers, db_session, test_user
+    ):
+        from datetime import UTC, datetime
+        from decimal import Decimal
+
+        from app.models.outfit import OutfitItem
+
+        coat = ClothingItem(
+            user_id=test_user.id,
+            type="coat",
+            name="Abrigo camel",
+            primary_color="tan",
+            image_path="c.jpg",
+            status=ItemStatus.ready,
+            purchase_price=Decimal("120"),
+            wear_count=10,
+            last_worn_at=date(2026, 9, 20),
+            created_at=datetime(2026, 9, 3, tzinfo=UTC),
+            created_via="link",
+        )
+        jeans = ClothingItem(
+            user_id=test_user.id,
+            type="jeans",
+            primary_color="blue",
+            image_path="j.jpg",
+            status=ItemStatus.ready,
+            purchase_price=Decimal("40"),
+            wear_count=2,
+            created_at=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        db_session.add_all([coat, jeans])
+        await db_session.flush()
+        for day in (date(2026, 9, 10), date(2026, 9, 20)):
+            outfit = Outfit(
+                user_id=test_user.id,
+                occasion="casual",
+                scheduled_for=day,
+                status=OutfitStatus.accepted,
+                source=OutfitSource.on_demand,
+            )
+            db_session.add(outfit)
+            await db_session.flush()
+            db_session.add(OutfitItem(outfit_id=outfit.id, item_id=coat.id, position=0))
+            db_session.add(UserFeedback(outfit_id=outfit.id, accepted=True, worn_at=day))
+        await db_session.commit()
+
+        resp = await client.get(
+            "/api/v1/habit/wrapped", params={"month": "2026-09"}, headers=auth_headers
+        )
+        assert resp.status_code == 200, resp.text
+        w = resp.json()
+        assert (w["days_logged"], w["looks_worn"], w["garments_worn"]) == (2, 2, 1)
+        assert w["top"][0]["name"] == "Abrigo camel" and w["top"][0]["count"] == 2
+        assert w["top"][0]["photo"]["image_url"]
+        assert w["top_color"] == "tan"
+        assert w["added"] == 1 and w["added_by_way"] == {"link": 1}
+        assert w["forgotten_count"] == 1  # the jeans: never worn, older than a month
+        assert Decimal(w["wardrobe_value"]) == Decimal("160")
+        assert Decimal(w["average_cost_per_wear"]) == Decimal("13.33")  # 160 / 12
+        assert w["best_value"]["name"] == "Abrigo camel"
+        assert Decimal(w["best_value"]["cost_per_wear"]) == Decimal("12.00")
+        future = await client.get(
+            "/api/v1/habit/wrapped", params={"month": "2099-01"}, headers=auth_headers
+        )
+        assert future.status_code == 400

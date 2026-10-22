@@ -820,7 +820,6 @@ describe('copy', () => {
         v && typeof v === 'object' ? flat(v as Record<string, unknown>, `${prefix}${k}.`) : [`${prefix}${k}`]
       )
     expect(flat(es.firstRun.styleQuiz).sort()).toEqual(flat(en.firstRun.styleQuiz).sort())
-    expect(flat(es.settings.styleQuiz).sort()).toEqual(flat(en.settings.styleQuiz).sort())
   })
 
   it('has a title, a body and concrete examples for every card in the deck', () => {

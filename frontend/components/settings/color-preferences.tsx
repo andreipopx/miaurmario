@@ -19,6 +19,8 @@ interface ColorPreferencesProps {
   onChange: (colors: string[]) => void;
   /** Favourites get a pink ring + tick; "avoid" gets a red ring + cross. */
   tone?: 'favorite' | 'avoid';
+  /** False when something above (a segmented control) already names the section. */
+  showLabel?: boolean;
   className?: string;
 }
 
@@ -34,6 +36,7 @@ export function ColorPreferences({
   selected,
   onChange,
   tone = 'favorite',
+  showLabel = true,
   className,
 }: ColorPreferencesProps) {
   const t = useTranslations('colorPicker');
@@ -56,10 +59,12 @@ export function ColorPreferences({
 
   return (
     <section className={cn('space-y-4', className)} aria-label={label}>
-      <div>
-        <h3 className="text-[15px] font-bold">{label}</h3>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
-      </div>
+      {(showLabel || description) && (
+        <div>
+          {showLabel && <h3 className="text-[15px] font-bold">{label}</h3>}
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        </div>
+      )}
 
       {/* What's chosen, always visible */}
       <div className="flex min-h-[36px] flex-wrap gap-1.5" aria-live="polite">

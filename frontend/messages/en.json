@@ -59,7 +59,9 @@
     "loadingWardrobe": "Loading your wardrobe…",
     "stinkySays": "Stinky:",
     "undo": "Undo",
-    "done": "Done"
+    "done": "Done",
+    "more": "More",
+    "less": "Less"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -390,7 +392,14 @@
     "customize": "Your Stinky",
     "trips": "Trip",
     "wrapped": "Your month",
-    "lab": "Stinky lab"
+    "lab": "Stinky lab",
+    "account": "Account",
+    "appearance": "Appearance",
+    "security": "Security",
+    "location": "Location",
+    "measurements": "Measurements",
+    "colors": "Colors",
+    "recommendations": "Recommendations"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}",
@@ -1142,14 +1151,11 @@
       "themeLight": "Light",
       "themeDark": "Dark",
       "themeSystem": "System",
-      "language": "Language",
-      "description": "Choose the app's theme and language."
+      "language": "Language"
     },
     "haptics": {
       "title": "Vibration",
-      "description": "Stinky buzzes your phone when you pet him: a soft purr, or a sharper nibble.",
-      "test": "Test vibration",
-      "note": "On iPhone it only half works: it needs iOS 17.4 or newer, and even then your iPhone may do nothing.",
+      "test": "Test",
       "resultVibrate": "Feel that? That was Stinky purring.",
       "resultSwitch": "Sent. On iPhone you may feel nothing — it depends on your iOS version.",
       "resultNone": "This browser cannot vibrate your phone.",
@@ -1188,7 +1194,6 @@
     },
     "account": {
       "title": "Account",
-      "description": "Your profile information",
       "name": "Name",
       "signOut": "Sign out",
       "signOutConfirm": "Sign out now?",
@@ -1198,7 +1203,6 @@
     },
     "avatar": {
       "title": "Profile photo",
-      "description": "Your friends and anyone who can see your profile will see it. Without a photo, your initial is shown.",
       "add": "Add photo",
       "change": "Change photo",
       "remove": "Remove photo",
@@ -1221,12 +1225,10 @@
     "header": {
       "reset": "Reset",
       "resetConfirm": "Reset all preferences to defaults?",
-      "unsavedChanges": "You have unsaved changes. Leave this page?",
-      "manageSubtitle": "Manage your preferences and account settings"
+      "unsavedChanges": "You have unsaved changes. Leave this page?"
     },
     "location": {
       "title": "Location",
-      "description": "Your city, so Stinky dresses you for the weather there",
       "cityLabel": "City",
       "searchPlaceholder": "Search your city…",
       "searching": "Searching…",
@@ -1254,7 +1256,6 @@
       "advanced": "Advanced: coordinates",
       "advancedHint": "Filled in when you pick a city. Only change them if you know what you're doing.",
       "saveLocation": "Save location",
-      "required": "Pick your city to get weather-aware looks.",
       "detectedToast": "Found you in {city}. Review and save.",
       "savedToast": "Location and time zone saved",
       "saveError": "Couldn't save the location",
@@ -1281,8 +1282,7 @@
       }
     },
     "measurements": {
-      "title": "Body Measurements",
-      "description": "Help AI recommend better-fitting outfits",
+      "title": "Measurements",
       "unitSystem": "Unit System",
       "metric": "Metric (cm/kg)",
       "imperial": "Imperial (in/lbs)",
@@ -1307,14 +1307,14 @@
       "example": "e.g. {value}"
     },
     "colors": {
-      "title": "Color Preferences",
-      "description": "Select colors you love and colors to avoid in recommendations",
+      "title": "Colors",
       "favorites": "Favorite Colors",
-      "avoid": "Colors to Avoid"
+      "avoid": "Colors to Avoid",
+      "segmentLike": "I like",
+      "segmentAvoid": "I avoid"
     },
     "styleProfile": {
-      "title": "Style Profile",
-      "description": "Adjust how much you prefer each style in outfit recommendations",
+      "title": "Style",
       "styles": {
         "casual": "Casual",
         "formal": "Formal",
@@ -1324,8 +1324,7 @@
       }
     },
     "comfort": {
-      "title": "Temperature & Comfort",
-      "description": "Adjust how recommendations adapt to weather",
+      "title": "Temperature",
       "temperatureUnit": "Temperature Unit",
       "sensitivity": "Temperature Sensitivity",
       "sensitivityLow": "I feel warm easily",
@@ -1339,25 +1338,21 @@
       "hotThreshold": "Hot Threshold ({unit})"
     },
     "recommendations": {
-      "title": "Recommendation Settings",
-      "description": "Customize how outfit recommendations are generated",
+      "title": "Recommendations",
       "defaultOccasion": "Default Occasion",
       "varietyLevel": "Variety Level",
       "varietyLow": "Low (stick to favorites)",
       "varietyModerate": "Moderate",
       "varietyHigh": "High (try new combinations)",
       "avoidRepeatDays": "Avoid Repeat Items Within (days)",
-      "preferUnderused": "Prefer Underused Items"
+      "preferUnderused": "Prefer Underused Items",
+      "variety": "Variety"
     },
     "integrations": {
-      "title": "Integrations",
-      "description": "Pinterest for inspiration and Spotify as Stinky's musical mood.",
-      "cta": "Manage integrations"
+      "title": "Integrations"
     },
     "security": {
       "title": "Security",
-      "description": "How you sign in to Miaurmario.",
-      "magicLinkNote": "The email link always works, whether you have a password or not.",
       "statusNone": "No password set: you sign in with an email link only.",
       "statusSet": "Password set. You can sign in with your email or username and password.",
       "lastChanged": "Last updated: {date}",
@@ -1398,21 +1393,16 @@
       "everywhereFailed": "We couldn't sign you out everywhere. Try again.",
       "savedOthersOut": "Password saved. Your other devices have been signed out."
     },
-    "notificationsCard": {
-      "title": "Notifications & app",
-      "description": "What we tell you by email and on your phone, and how to install Miaurmario.",
-      "manage": "Notifications",
-      "install": "Install Miaurmario"
-    },
-    "styleQuiz": {
-      "title": "Your style with Stinky",
-      "description": "The card quiz: what you like, what you don't and how you like things to sit.",
-      "cta": "See your style"
-    },
     "stinkyMemory": {
-      "title": "Stinky remembers",
-      "description": "What Stinky has written down about you while you talk. See it, change it or delete it.",
-      "cta": "See what he remembers"
+      "title": "Stinky remembers"
+    },
+    "back": "← Settings",
+    "rows": {
+      "stinky": "Your Stinky",
+      "style": "Your style",
+      "ai": "AI",
+      "password": "With password",
+      "magicLink": "Email link"
     }
   },
   "invite": {
@@ -1517,13 +1507,11 @@
   "notifications": {
     "title": "Notifications",
     "subtitle": "Choose how and when Miaurmario should nudge you",
-    "pageSubtitle": "Choose what we tell you about and where",
     "schedulesTitle": "Schedules",
     "schedulesSubtitle": "When you get outfit suggestions",
     "empty": "You haven't set up any notifications yet.",
     "addScheduleCta": "Add a schedule",
     "schedulesCardTitle": "Outfit of the day",
-    "schedulesCardDescription": "When we prepare your look (sent through the channels above)",
     "schedulesEmptyTitle": "No schedules configured",
     "schedulesEmptyHint": "Add a schedule to receive daily outfit suggestions",
     "addSchedule": {
@@ -1562,7 +1550,6 @@
     "installApp": "Install the app",
     "defaults": {
       "title": "What we notify you about",
-      "description": "By email with zero setup, and on your phone once you enable this device.",
       "channels": {
         "email": "Email",
         "push": "This device"
@@ -1600,11 +1587,7 @@
         }
       },
       "emailTo": "Emails go to {email}. Each one has a one-tap unsubscribe link.",
-      "emailUnavailable": "Email isn't configured on this server yet.",
-      "pushNeedsDevice": "Enable this device to choose what reaches your phone.",
-      "lowNoise": "No spam: we never notify you about every reaction.",
       "timeLabel": "Time",
-      "dailyDefaults": "By default: the morning look is off (it needs a time) and friend activity only reaches this device, never your inbox.",
       "saveError": "Couldn't save. Please try again.",
       "device": {
         "title": "This device",
@@ -2271,22 +2254,17 @@
   "integrations": {
     "eyebrow": "Connections",
     "title": "Integrations",
-    "subtitle": "Connect external services to feed your wardrobe and your style.",
     "backToSettings": "← Settings",
     "backToIntegrations": "← Integrations",
     "loading": "Loading…",
     "status": {
       "connected": "Connected",
-      "notConnected": "Not connected",
+      "notConnected": "Connect",
       "unavailable": "Unavailable",
       "pending": "Pending"
     },
     "lastfm": {
-      "eyebrow": "Music for everyone",
       "title": "Last.fm",
-      "description": "Connect your Last.fm username: your listening history and music mood, with no account limit.",
-      "tagline": "Your scrobbles, translated into style.",
-      "manage": "Manage Last.fm",
       "connectTitle": "Connect your Last.fm username",
       "connectDescription": "Type your Last.fm username. We'll read your public scrobbles every 15 minutes for your history, your tops and Stinky's music mood. No password needed.",
       "usernameLabel": "Last.fm username",
@@ -2327,11 +2305,7 @@
         "bad_key": "There's a problem with the server's Last.fm configuration.",
         "unavailable": "The last Last.fm sync failed; we'll retry on our own."
       },
-      "gives": "Your history, your artists of the moment and Stinky's mood.",
-      "availability": "Open to everyone: no seats, no waiting list, just your username.",
       "availabilityBadge": "For everyone",
-      "recommended": "Start here",
-      "guideCta": "How to get Last.fm",
       "guide": {
         "eyebrow": "New to Last.fm",
         "title": "Getting Last.fm, in 3 steps",
@@ -2350,14 +2324,11 @@
         "publicTitle": "Your listening has to be public",
         "publicBody": "We can only read a profile that shows its recent listening. On Last.fm: Settings → Privacy → leave “Hide my recent listening” unchecked.",
         "publicLink": "Open Last.fm privacy settings"
-      }
+      },
+      "summary": "Your listens, for your history and Stinky's mood."
     },
     "spotify": {
-      "eyebrow": "Musical mood",
       "title": "Spotify",
-      "description": "Use what you listen to as mood inspiration for Stinky.",
-      "tagline": "What's in your headphones, translated into style.",
-      "manage": "Manage Spotify",
       "connectTitle": "Connect your Spotify account",
       "connectDescription": "Miaurmario will read what's playing now, what you played recently and your top artists to give Stinky a mood. It never plays or changes anything.",
       "connectButton": "Connect Spotify",
@@ -2373,7 +2344,6 @@
       "settingsFailed": "Could not save the setting.",
       "moodEyebrow": "Right now",
       "moodTitle": "Current mood",
-      "moodDescription": "What Stinky would use as musical context if you ask for an outfit without typing a song.",
       "moodLoading": "Checking Spotify…",
       "moodError": "We couldn't reach Spotify right now.",
       "currentSource": "Source",
@@ -2407,8 +2377,6 @@
         "not_allowlisted": "Your Spotify account doesn't have a seat in the app yet (development mode). Ask for one below and we'll let you know.",
         "profile_failed": "We connected to Spotify but couldn't read your profile. Please try again."
       },
-      "gives": "It knows what is playing right now, not just what you already played.",
-      "availability": "Limited seats: the app is in development mode, so only accounts we add by hand can connect.",
       "availabilityBadge": "Limited beta",
       "seat": {
         "title": "Ask for a Spotify seat",
@@ -2424,14 +2392,11 @@
         "doneBody": "We've asked Andrei; he'll let you know once your account is in.",
         "rateLimited": "We already asked a moment ago. Give Andrei a day and he'll let you know.",
         "error": "We couldn't send the request. Please try again."
-      }
+      },
+      "summary": "What you listen to, as Stinky's mood."
     },
     "pinterest": {
-      "eyebrow": "Inspiration",
       "title": "Pinterest",
-      "description": "Share boards with Stinky so he dresses you from your inspiration.",
-      "tagline": "Your boards, turned into references for Stinky.",
-      "manage": "Manage Pinterest",
       "connectTitle": "Connect your Pinterest account",
       "connectDescription": "Authorize Miaurmario to read your boards and pins, secret ones included. Only the boards you share with Stinky are used, and you can disconnect at any time.",
       "connectButton": "Connect Pinterest",
@@ -2461,8 +2426,6 @@
         "access_denied": "You cancelled the authorization on Pinterest.",
         "exchange_failed": "Pinterest rejected the authorization. Please try again in a few minutes."
       },
-      "gives": "Stinky reads the style of the boards you share and uses it in your looks and the chat.",
-      "availability": "Waiting for Pinterest to approve the app.",
       "boardsHint": "Choose which boards Stinky sees. From each one he looks at your 50 latest pins and writes one line of style; the photos are used for nothing else.",
       "board": {
         "share": "Share with Stinky",
@@ -2477,7 +2440,8 @@
         "removeConfirm": "Stop sharing “{name}”? Stinky will forget what he saw in it.",
         "removed": "Stinky no longer uses that board.",
         "secret": "Secret"
-      }
+      },
+      "summary": "Your boards, as inspiration for Stinky."
     },
     "disconnectMusic": {
       "title": "Disconnect {source}?",
@@ -2759,18 +2723,16 @@
   },
   "aiAccess": {
     "title": "Artificial intelligence",
-    "subtitle": "Choose how Miaurmario uses AI to tag your clothes and suggest looks.",
     "backToSettings": "← Back to settings",
     "yes": "yes",
     "no": "no",
     "access": {
       "none": "No AI",
-      "platform": "Miaurmario AI (gift from the admin)",
+      "platform": "Access included",
       "byok": "Your own key"
     },
     "current": {
       "title": "Your current access",
-      "description": "Which AI is used when you ask Stinky for something.",
       "capabilities": "Vision: {vision} · Text: {text}",
       "explain": {
         "none": "You don't have AI right now. Everything manual still works: uploading clothes, tagging them yourself, building and planning outfits. Add your own key below to turn on the smart features.",
@@ -2781,18 +2743,8 @@
       "usageWithCap": "This month: {requests} of {cap} requests · {tokens} tokens",
       "serverDisabled": "AI is currently disabled on this server."
     },
-    "explainer": {
-      "title": "What is AI used for here?",
-      "tagging": "Automatically tagging the clothes you upload (type, colour, fabric, season...).",
-      "suggest": "Stinky: outfit ideas based on the weather, the occasion and your taste.",
-      "pairings": "Pairings: ideas for what to wear with a specific piece.",
-      "withoutAi": "Without AI you can still use the whole app manually.",
-      "privacy": "Your key is stored encrypted, never shown again (only its last 4 characters) and only used for your own requests."
-    },
     "form": {
       "title": "Use your own key",
-      "description": "Any OpenAI-compatible provider. DeepSeek is cheap and works well for everything.",
-      "getDeepseekKey": "Get a DeepSeek key",
       "getKeyFrom": "Get a {provider} key",
       "provider": "Provider",
       "custom": "Custom",
@@ -2860,14 +2812,8 @@
       },
       "cta": "Turn on AI"
     },
-    "settingsCard": {
-      "title": "Artificial intelligence",
-      "description": "Use your own API key or check the AI the admin gifted you.",
-      "cta": "Set up AI"
-    },
     "adminCard": {
       "title": "Administration",
-      "description": "Manage users and gift access to Miaurmario's AI.",
       "cta": "Admin panel"
     }
   },
@@ -2918,7 +2864,6 @@
       "not_failed": "Only failed deletions can be retried."
     },
     "panelTitle": "Admin",
-    "panelSubtitle": "How Miaurmario is doing: users, sign-ups, inbox and system.",
     "tabs": {
       "label": "Admin sections",
       "summary": "Overview",
@@ -4567,8 +4512,6 @@
     "saveError": "Could not save. Try again.",
     "reset": "Back to good old {defaultName}",
     "previewLabel": "{name}, {coat} coat",
-    "settingsBody": "Their name and coat",
-    "settingsAction": "Customize",
     "voiceLabel": "How he talks",
     "voices": {
       "estilista": {

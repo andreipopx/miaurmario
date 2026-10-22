@@ -115,10 +115,7 @@ export function AvatarSettings({ user }: { user: UserProfile | undefined }) {
         size={72}
       />
       <div className="min-w-0 flex-1 space-y-2">
-        <div>
-          <p className="text-sm font-bold">{t('title')}</p>
-          <p className="text-sm text-muted-foreground">{t('description')}</p>
-        </div>
+        <p className="text-sm font-bold">{t('title')}</p>
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" variant="secondary" onClick={() => input.current?.click()}>
             <Camera className="h-4 w-4" strokeWidth={1.75} aria-hidden />

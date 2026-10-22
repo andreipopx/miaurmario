@@ -141,9 +141,29 @@ describe('daily alert copy', () => {
     }
   })
 
-  it('says what the defaults are', () => {
-    expect(es.notifications.defaults.dailyDefaults).toMatch(/desactivado/i)
-    expect(en.notifications.defaults.dailyDefaults).toMatch(/off/i)
+  it('keeps the footnotes to one line, and drops the email column when the server has no email', () => {
+    const extra = Object.keys(es.notifications.defaults).filter((k) =>
+      ['emailUnavailable', 'pushNeedsDevice', 'dailyDefaults', 'lowNoise', 'description'].includes(k)
+    )
+    expect(extra).toEqual([])
+  })
+})
+
+describe('Notificaciones · channels', () => {
+  it('hides the email column when email is not configured', async () => {
+    h.get.mockResolvedValue(defaultPrefs({ email_available: false }))
+    renderCard()
+    const row = await rowFor(es.notifications.defaults.events.friend_request.title)
+    expect(
+      within(row).queryByLabelText(
+        `${es.notifications.defaults.events.friend_request.title} · ${es.notifications.defaults.channels.email}`
+      )
+    ).toBeNull()
+    expect(
+      within(row).getByLabelText(
+        `${es.notifications.defaults.events.friend_request.title} · ${es.notifications.defaults.channels.push}`
+      )
+    ).toBeTruthy()
   })
 })
 

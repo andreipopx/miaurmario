@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Loader2, Music } from 'lucide-react';
@@ -10,8 +9,9 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageHeader } from '@/components/page-header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { More } from '@/components/settings/more';
+import { SettingsSection, SettingsSubpage } from '@/components/settings/subpage';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { DisconnectMusicDialog } from '@/components/music/disconnect-music-dialog';
@@ -66,14 +66,12 @@ export default function SpotifyIntegrationPage() {
   const fallbackLabel = status.data?.lastfm_configured ? t('source.lastfm') : t('source.musicbrainz');
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
-      <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
-        <Link href="/dashboard/settings/integrations">
-          {tI('backToIntegrations')}
-        </Link>
-      </Button>
-
-      <PageHeader title={t('title')} description={t('tagline')} />
+    <SettingsSubpage
+      title={t('title')}
+      backHref="/dashboard/settings/integrations"
+      backLabel={tI('backToIntegrations')}
+      className="max-w-4xl"
+    >
 
       {errorParam && (
         <Alert variant="destructive">
@@ -89,12 +87,9 @@ export default function SpotifyIntegrationPage() {
       )}
 
       {status.data && !connected && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('connectTitle')}</CardTitle>
-            <CardDescription>{t('connectDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <SettingsSection title={t('connectTitle')}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t('summary')}</p>
             {!status.data.configured ? (
               <p className="text-sm text-muted-foreground">{t('notConfigured')}</p>
             ) : (
@@ -105,15 +100,18 @@ export default function SpotifyIntegrationPage() {
                 {t('connectButton')}
               </Button>
             )}
-            <p className="eyebrow">{t('scopesNote')}</p>
-            <p className="text-sm text-muted-foreground">{t('allowlistNote')}</p>
+            <More>
+              <p>{t('connectDescription')}</p>
+              <p>{t('scopesNote')}</p>
+              <p>{t('allowlistNote')}</p>
+            </More>
             {/* Development Mode: the only way in is Andrei adding the account by hand.
                 Opens itself when Spotify has just rejected an account. */}
             {status.data.configured && (
               <SpotifySeatRequest defaultOpen={errorParam === 'not_allowlisted'} />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </SettingsSection>
       )}
 
       {status.data && connected && (
@@ -157,12 +155,9 @@ export default function SpotifyIntegrationPage() {
             <CardHeader>
               <p className="eyebrow">{t('moodEyebrow')}</p>
               <CardTitle className="flex items-center gap-2">
-                <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-full bg-pop-mint text-pop-foreground">
-                  <Music className="h-4 w-4" strokeWidth={1.75} />
-                </span>
+                <Music className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} aria-hidden />
                 {t('moodTitle')}
               </CardTitle>
-              <CardDescription>{t('moodDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {mood.isLoading && (
@@ -278,6 +273,6 @@ export default function SpotifyIntegrationPage() {
           )
         }
       />
-    </div>
+    </SettingsSubpage>
   );
 }

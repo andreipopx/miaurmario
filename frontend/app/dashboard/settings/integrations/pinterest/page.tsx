@@ -11,8 +11,8 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm-provider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageHeader } from '@/components/page-header';
+import { More } from '@/components/settings/more';
+import { SettingsSection, SettingsSubpage } from '@/components/settings/subpage';
 import { EmptyState } from '@/components/empty-state';
 import {
   isReadingBoard,
@@ -57,14 +57,12 @@ export default function PinterestIntegrationPage() {
   const boards = boardsQuery.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 py-2 sm:py-4">
-      <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
-        <Link href="/dashboard/settings/integrations">
-          {tI('backToIntegrations')}
-        </Link>
-      </Button>
-
-      <PageHeader title={t('title')} description={t('tagline')} />
+    <SettingsSubpage
+      title={t('title')}
+      backHref="/dashboard/settings/integrations"
+      backLabel={tI('backToIntegrations')}
+      className="max-w-5xl"
+    >
 
       {errorParam && (
         <Alert variant="destructive">
@@ -80,12 +78,9 @@ export default function PinterestIntegrationPage() {
       )}
 
       {status.data && !connected && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('connectTitle')}</CardTitle>
-            <CardDescription>{t('connectDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <SettingsSection title={t('connectTitle')}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t('summary')}</p>
             {/* No Pinterest secret on the server means the app is still waiting for
                 Pinterest to approve it. Same card, button just can't be pressed —
                 the day the secret arrives it starts working with no other change. */}
@@ -108,9 +103,12 @@ export default function PinterestIntegrationPage() {
               ) : null}
               {t('connectButton')}
             </Button>
-            <p className="eyebrow">{t('scopesNote')}</p>
-          </CardContent>
-        </Card>
+            <More>
+              <p>{t('connectDescription')}</p>
+              <p>{t('scopesNote')}</p>
+            </More>
+          </div>
+        </SettingsSection>
       )}
 
       {status.data && connected && (
@@ -182,7 +180,7 @@ export default function PinterestIntegrationPage() {
           </div>
         </section>
       )}
-    </div>
+    </SettingsSubpage>
   );
 }
 

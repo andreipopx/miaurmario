@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { KeyRound, Loader2, LogOut } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
@@ -68,10 +67,10 @@ export function localPasswordError(
 }
 
 /**
- * Settings → Seguridad: optional password on top of the magic link.
+ * Ajustes → Seguridad: optional password on top of the magic link.
  * Set (no current password needed), change (current required) or remove.
  */
-export function SecurityCard({ user }: { user: UserProfile | undefined }) {
+export function SecuritySettings({ user }: { user: UserProfile | undefined }) {
   const t = useTranslations('settings.security');
   const formatDate = useFormatDate();
   const setPassword = useSetPassword();
@@ -125,15 +124,7 @@ export function SecurityCard({ user }: { user: UserProfile | undefined }) {
   const updatedAt = user?.password_updated_at ? new Date(user.password_updated_at) : null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <KeyRound className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-          {t('title')}
-        </CardTitle>
-        <CardDescription>{t('description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-6">
         <div className="space-y-1 text-sm">
           <p className="text-foreground">{hasPassword ? t('statusSet') : t('statusNone')}</p>
           {hasPassword && updatedAt && (
@@ -141,7 +132,6 @@ export function SecurityCard({ user }: { user: UserProfile | undefined }) {
               {t('lastChanged', { date: formatDate(updatedAt, 'long') })}
             </p>
           )}
-          <p className="text-muted-foreground">{t('magicLinkNote')}</p>
         </div>
 
         <form onSubmit={submit} className="space-y-4" method="post">
@@ -244,8 +234,7 @@ export function SecurityCard({ user }: { user: UserProfile | undefined }) {
           {hasPassword && <p className="text-xs text-muted-foreground">{t('forgotHint')}</p>}
         </form>
         <LogoutEverywhere />
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 

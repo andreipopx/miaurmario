@@ -6,16 +6,22 @@ import {
   Camera,
   Compass,
   Home,
+  KeyRound,
   Layers,
   LayoutGrid,
+  MapPin,
   MessageCircle,
   Music,
+  Palette,
   Pin,
   Plane,
   Plug,
+  Ruler,
   Settings,
   Shirt,
+  SlidersHorizontal,
   Sparkles,
+  SwatchBook,
   UserRound,
   Users,
   type LucideIcon,
@@ -111,6 +117,9 @@ export const FRIENDS: NavSection = {
 /**
  * Ajustes: reached from the profile menu, never from the dock/sidebar. Admin lives in the profile menu.
  *
+ * Ajustes is a navigation list: every screen below is a row on it, so none of
+ * them shows in a tab strip (all hidden) and each one gets the in-app back button.
+ *
  * «Familia» (its feed and its settings) is hidden on purpose (FEATURES.families in
  * lib/features.ts): it overlaps with Amigos and confused people. Its pages send
  * you to Amigos while the flag is off; nothing was deleted.
@@ -121,9 +130,16 @@ export const SETTINGS: NavSection = {
   icon: Settings,
   tabs: [
     { key: 'general', href: '/dashboard/settings', icon: Settings },
-    { key: 'notifications', href: '/dashboard/notifications', icon: Bell },
+    { key: 'account', href: '/dashboard/settings/account', icon: UserRound, hidden: true },
+    { key: 'appearance', href: '/dashboard/settings/appearance', icon: Palette, hidden: true },
+    { key: 'security', href: '/dashboard/settings/security', icon: KeyRound, hidden: true },
+    { key: 'location', href: '/dashboard/settings/location', icon: MapPin, hidden: true },
+    { key: 'measurements', href: '/dashboard/settings/measurements', icon: Ruler, hidden: true },
+    { key: 'colors', href: '/dashboard/settings/colors', icon: SwatchBook, hidden: true },
+    { key: 'recommendations', href: '/dashboard/settings/recommendations', icon: SlidersHorizontal, hidden: true },
+    { key: 'notifications', href: '/dashboard/notifications', icon: Bell, hidden: true },
     { key: 'familySettings', href: '/dashboard/family', icon: Users, hidden: !FEATURES.families },
-    { key: 'integrations', href: '/dashboard/settings/integrations', icon: Plug },
+    { key: 'integrations', href: '/dashboard/settings/integrations', icon: Plug, hidden: true },
   ],
 };
 

@@ -4,12 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Plus, Trash2, Clock, Loader2, Calendar, Smartphone } from 'lucide-react';
+import { Plus, Trash2, Loader2, Calendar, Smartphone } from 'lucide-react';
 import { DefaultChannelsCard } from '@/components/notifications/default-channels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -90,9 +89,7 @@ function ScheduleCard({
       {/* Top row: Day info and main toggle */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pop-sky text-pop-foreground">
-            <Calendar className="h-5 w-5" strokeWidth={1.75} />
-          </div>
+          <Calendar className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden />
           <div className="min-w-0">
             <p className="font-bold">{day ? tDays(day.labelKey) : ''}</p>
             <p className="text-sm text-muted-foreground">
@@ -199,7 +196,7 @@ function AddScheduleDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="signature">
+        <Button variant="signature" size="sm">
           <Plus className="h-4 w-4" strokeWidth={1.75} />
           {t('buttonLabel')}
         </Button>
@@ -367,44 +364,18 @@ export default function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
-      <PageHeader
-        title={t('title')}
-        description={t('pageSubtitle')}
-        action={
-          inApp ? undefined : (
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/install">
-                <Smartphone className="h-4 w-4" strokeWidth={1.75} />
-                {t('installApp')}
-              </Link>
-            </Button>
-          )
-        }
-      />
+      <PageHeader title={t('title')} />
 
       {/* What we tell you about, by email and push (this device / the app) */}
       <DefaultChannelsCard />
 
       {/* Schedules */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-                {t('schedulesCardTitle')}
-              </CardTitle>
-              <CardDescription>
-                {t('schedulesCardDescription')}
-              </CardDescription>
-            </div>
-            <AddScheduleDialog
-              onAdd={handleCreateSchedule}
-              isLoading={createSchedule.isPending}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-4 px-1">
+          <h2 className="text-[17px] font-bold tracking-tight">{t('schedulesCardTitle')}</h2>
+          <AddScheduleDialog onAdd={handleCreateSchedule} isLoading={createSchedule.isPending} />
+        </div>
+        <div>
           {loadingSchedules ? (
             <div className="space-y-4">
               <Skeleton className="h-16 rounded-lg" />
@@ -435,8 +406,21 @@ export default function NotificationsPage() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+
+      {/* The app, for whoever reads this in a browser: a footer line, not a header button. */}
+      {!inApp && (
+        <p className="px-1 pt-2">
+          <Link
+            href="/dashboard/install"
+            className="inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <Smartphone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            {t('installApp')}
+          </Link>
+        </p>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

@@ -154,15 +154,17 @@ describe('integrations copy', () => {
 
   it('presents Last.fm as the one for everybody and Spotify as the limited one', () => {
     expect(esMessages.integrations.lastfm.availabilityBadge).toBe('Para todo el mundo')
-    expect(esMessages.integrations.lastfm.availability).toMatch(/Para todo el mundo/)
-    expect(esMessages.integrations.spotify.availability).toMatch(/Plazas limitadas/)
+    expect(esMessages.integrations.spotify.allowlistNote).toMatch(/modo desarrollo/)
     expect(esMessages.integrations.spotify.errors.not_allowlisted).toMatch(/Pide una aquí abajo/)
   })
 
-  it('gives every card a "what you get" line', () => {
+  it('gives every service one line on its page, with the rest behind «Más»', () => {
     for (const key of ['lastfm', 'spotify', 'pinterest'] as const) {
-      expect(esMessages.integrations[key].gives.length).toBeGreaterThan(10)
-      expect(esMessages.integrations[key].availability.length).toBeGreaterThan(10)
+      const summary = esMessages.integrations[key].summary
+      expect(summary.length).toBeGreaterThan(10)
+      expect(summary.length).toBeLessThan(70)
+      expect(esMessages.integrations[key].connectDescription.length).toBeGreaterThan(summary.length)
     }
+    expect(esMessages.common.more).toBe('Más')
   })
 })

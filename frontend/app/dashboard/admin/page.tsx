@@ -104,7 +104,7 @@ export default function AdminPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 py-2 sm:py-4">
-      <PageHeader title={t('panelTitle')} description={t('panelSubtitle')} />
+      <PageHeader title={t('panelTitle')} />
       <TabPills active={tab} onSelect={select} />
       <div role="tabpanel" id={`admin-panel-${tab}`} aria-labelledby={`admin-tab-${tab}`}>
         {tab === 'summary' && <OverviewSection />}

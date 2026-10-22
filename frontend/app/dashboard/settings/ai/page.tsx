@@ -4,26 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import {
-  CheckCircle2,
-  ExternalLink,
-  KeyRound,
-  Loader2,
-  ShieldCheck,
-  Sparkles,
-  Trash2,
-  XCircle,
-} from 'lucide-react';
+import { CheckCircle2, ExternalLink, KeyRound, Loader2, Trash2, XCircle } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -34,15 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/page-header';
-import { StinkyTip } from '@/components/stinky-tip';
-import { Stinky } from '@/components/stinky/stinky';
+import { SettingsSubpage } from '@/components/settings/subpage';
 import {
   applyPreset,
   type AICheckResult,
   type AITestResponse,
   type ByokFormState,
-  DEEPSEEK_KEY_URL,
   formFromStatus,
   getApiErrorCode,
   getPreset,
@@ -165,39 +146,18 @@ export default function AISettingsPage() {
   const accessLabel = status ? t(`access.${status.access}`) : '';
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 py-2 sm:py-4">
-      <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
-        <Link href="/dashboard/settings">{t('backToSettings')}</Link>
-      </Button>
-
-      <PageHeader title={t('title')} description={t('subtitle')} />
-
+    <SettingsSubpage title={t('title')} backLabel={t('backToSettings')}>
       {/* Current access */}
       <Card className="border-0 bg-panel">
-        <CardContent className="flex items-start gap-4 p-5 sm:p-6">
-          <div
-            aria-hidden
-            className="hidden h-20 w-20 shrink-0 items-center justify-center rounded-full bg-signature-soft sm:flex"
-          >
-            <Stinky
-              state={status?.access === 'none' ? 'sleepy' : 'happy'}
-              size={68}
-              label=""
-            />
-          </div>
+        <CardContent className="p-5 sm:p-6">
           <div className="min-w-0 flex-1 space-y-3">
-          <div className="space-y-1">
-            <p className="eyebrow">{t('current.title')}</p>
-            <p className="text-sm text-muted-foreground">{t('current.description')}</p>
-          </div>
+          <p className="eyebrow">{t('current.title')}</p>
           {isLoading || !status ? (
             <Skeleton className="h-8 w-48 rounded-full" />
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={status.access === 'none' ? 'secondary' : 'signature'}>
-                  {accessLabel}
-                </Badge>
+                <p className="text-[17px] font-bold tracking-tight">{accessLabel}</p>
                 {status.access !== 'none' && (
                   <span className="text-sm text-muted-foreground">
                     {t('current.capabilities', {
@@ -234,25 +194,6 @@ export default function AISettingsPage() {
         </CardContent>
       </Card>
 
-      {/* What AI does */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('explainer.title')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>{t('explainer.tagging')}</li>
-            <li>{t('explainer.suggest')}</li>
-            <li>{t('explainer.pairings')}</li>
-          </ul>
-          <p>{t('explainer.withoutAi')}</p>
-          <StinkyTip className="bg-panel text-foreground">
-            <ShieldCheck className="mr-1 inline h-4 w-4 align-[-3px]" strokeWidth={1.75} aria-hidden />
-            {t('explainer.privacy')}
-          </StinkyTip>
-        </CardContent>
-      </Card>
-
       {/* Bring your own key */}
       <Card>
         <CardHeader>
@@ -260,18 +201,6 @@ export default function AISettingsPage() {
             <KeyRound className="h-5 w-5" strokeWidth={1.75} aria-hidden />
             {t('form.title')}
           </CardTitle>
-          <CardDescription>
-            {t('form.description')}{' '}
-            <a
-              href={DEEPSEEK_KEY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-semibold text-foreground underline underline-offset-4"
-            >
-              {t('form.getDeepseekKey')}
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {status && !status.encryption_available && (
@@ -325,16 +254,17 @@ export default function AISettingsPage() {
             />
             <p className="text-xs text-muted-foreground">
               {hasSavedKey ? t('form.keyHintSaved') : t('form.keyHint')}
-              {preset.keyUrl && preset.id !== 'deepseek' && (
+              {preset.keyUrl && (
                 <>
                   {' '}
                   <a
                     href={preset.keyUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-foreground underline underline-offset-4"
+                    className="inline-flex items-center gap-1 font-semibold text-foreground underline underline-offset-4"
                   >
                     {t('form.getKeyFrom', { provider: preset.label })}
+                    <ExternalLink className="h-3 w-3" aria-hidden />
                   </a>
                 </>
               )}
@@ -425,18 +355,13 @@ export default function AISettingsPage() {
       </Card>
 
       {status?.is_admin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('adminCard.title')}</CardTitle>
-            <CardDescription>{t('adminCard.description')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="signature" asChild>
-              <Link href="/dashboard/admin">{t('adminCard.cta')}</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex items-center justify-between gap-4 px-1">
+          <h2 className="text-[17px] font-bold tracking-tight">{t('adminCard.title')}</h2>
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/admin">{t('adminCard.cta')}</Link>
+          </Button>
+        </div>
       )}
-    </div>
+    </SettingsSubpage>
   );
 }

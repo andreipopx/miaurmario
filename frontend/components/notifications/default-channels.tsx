@@ -20,7 +20,6 @@ import {
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,15 +47,6 @@ const EVENT_ICON: Record<NotificationEvent, React.ReactNode> = {
   friend_request: <UserPlus className="h-5 w-5" strokeWidth={1.75} />,
   friend_accepted: <UserCheck className="h-5 w-5" strokeWidth={1.75} />,
   daily_outfit: <CalendarHeart className="h-5 w-5" strokeWidth={1.75} />,
-};
-
-const EVENT_BG: Record<NotificationEvent, string> = {
-  morning_look: 'bg-pop-amber',
-  tomorrow_look: 'bg-pop-sky',
-  friend_activity: 'bg-pop-pink',
-  friend_request: 'bg-pop-sky',
-  friend_accepted: 'bg-pop-mint',
-  daily_outfit: 'bg-pop-amber',
 };
 
 const HHMM = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
@@ -112,7 +102,10 @@ function AlertTime({ event, prefs }: { event: TimedEvent; prefs: NotificationPre
   );
 }
 
-/** Event x channel switches: Email and "Este dispositivo" (Web Push). */
+/**
+ * Event x channel switches: Email and "Este dispositivo" (Web Push). A channel
+ * the server cannot send on (no email configured) is not a column at all.
+ */
 function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
   const t = useTranslations('notifications.defaults');
   const update = useUpdateNotificationPreferences();
@@ -126,12 +119,16 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
   };
 
   const columns: { key: DefaultChannel; label: string; icon: React.ReactNode; enabled: boolean }[] = [
-    {
-      key: 'email',
-      label: t('channels.email'),
-      icon: <Mail className="h-4 w-4" strokeWidth={1.75} aria-hidden />,
-      enabled: prefs.email_available,
-    },
+    ...(prefs.email_available
+      ? [
+          {
+            key: 'email' as const,
+            label: t('channels.email'),
+            icon: <Mail className="h-4 w-4" strokeWidth={1.75} aria-hidden />,
+            enabled: true,
+          },
+        ]
+      : []),
     {
       key: 'push',
       label: t('channels.push'),
@@ -139,12 +136,19 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
       enabled: pushReady,
     },
   ];
+  // A rem-sized column would eat the whole row at 320 px with a bigger system
+  // font, so the switches stack under the name there and the columns are fixed
+  // pixels above it.
+  const gridCols =
+    columns.length === 2
+      ? 'min-[380px]:grid-cols-[minmax(0,1fr)_56px_56px] sm:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem]'
+      : 'min-[380px]:grid-cols-[minmax(0,1fr)_56px] sm:grid-cols-[minmax(0,1fr)_6.5rem]';
 
   return (
     <div className="space-y-2">
       {/* Column headers only once there is room for columns; below that every
           row carries its own channel labels. */}
-      <div className="hidden items-end gap-2 px-1 min-[380px]:grid min-[380px]:grid-cols-[minmax(0,1fr)_56px_56px] sm:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem]">
+      <div className={cn('hidden items-end gap-2 px-1 min-[380px]:grid', gridCols)}>
         <span />
         {columns.map((c) => (
           <span
@@ -164,18 +168,9 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
           const on = prefs.email[event] || prefs.push[event];
           return (
             <li key={event} className="rounded-lg bg-panel p-3 sm:p-4">
-              {/* A rem-sized column would eat the whole row at 320 px with a
-                  bigger system font, so the switches stack under the name
-                  there and the columns are fixed pixels above it. */}
-              <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-[minmax(0,1fr)_56px_56px] min-[380px]:items-center sm:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem]">
+              <div className={cn('grid grid-cols-1 gap-2 min-[380px]:items-center', gridCols)}>
                 <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    aria-hidden
-                    className={cn(
-                      'hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-pop-foreground min-[400px]:flex',
-                      EVENT_BG[event]
-                    )}
-                  >
+                  <span aria-hidden className="hidden shrink-0 text-muted-foreground min-[400px]:flex">
                     {EVENT_ICON[event]}
                   </span>
                   <div className="min-w-0">
@@ -213,16 +208,9 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
           );
         })}
       </ul>
-      <div className="space-y-1 px-1 pt-1 text-xs text-muted-foreground">
-        {prefs.email_available ? (
-          <p>{t('emailTo', { email: prefs.email_address })}</p>
-        ) : (
-          <p>{t('emailUnavailable')}</p>
-        )}
-        {prefs.push_available && prefs.push_devices === 0 && <p>{t('pushNeedsDevice')}</p>}
-        <p>{t('dailyDefaults')}</p>
-        <p>{t('lowNoise')}</p>
-      </div>
+      {prefs.email_available && (
+        <p className="px-1 pt-1 text-xs text-muted-foreground">{t('emailTo', { email: prefs.email_address })}</p>
+      )}
     </div>
   );
 }
@@ -287,7 +275,7 @@ function ThisDevice({ prefs }: { prefs: NotificationPreferences }) {
     body = (
       <>
         <p className="flex items-center gap-2 text-sm font-semibold">
-          <CheckCircle2 className="h-5 w-5 text-pop-mint" strokeWidth={2} aria-hidden />
+          <CheckCircle2 className="h-5 w-5" strokeWidth={2} aria-hidden />
           {t('enabledHere')}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -329,12 +317,7 @@ function ThisDevice({ prefs }: { prefs: NotificationPreferences }) {
   return (
     <div className="space-y-3 rounded-lg bg-panel p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <span
-          aria-hidden
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signature text-signature-foreground"
-        >
-          <Smartphone className="h-5 w-5" strokeWidth={1.75} />
-        </span>
+        <Smartphone className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden />
         <div className="min-w-0">
           <p className="font-bold leading-tight">{t('title')}</p>
           {prefs.push_devices > 0 && (
@@ -347,33 +330,26 @@ function ThisDevice({ prefs }: { prefs: NotificationPreferences }) {
   );
 }
 
+/** «Qué te avisamos»: a header and the rows, no card around them. */
 export function DefaultChannelsCard() {
   const t = useTranslations('notifications.defaults');
   const { data: prefs, isLoading } = useNotificationPreferences();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BellRing className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-          {t('title')}
-        </CardTitle>
-        <CardDescription>{t('description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {isLoading || !prefs ? (
-          <div className="space-y-2">
-            <Skeleton className="h-16 rounded-lg" />
-            <Skeleton className="h-16 rounded-lg" />
-            <Skeleton className="h-16 rounded-lg" />
-          </div>
-        ) : (
-          <>
-            <PreferencesMatrix prefs={prefs} />
-            {prefs.push_available && <ThisDevice prefs={prefs} />}
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <section className="space-y-3">
+      <h2 className="px-1 text-[17px] font-bold tracking-tight">{t('title')}</h2>
+      {isLoading || !prefs ? (
+        <div className="space-y-2">
+          <Skeleton className="h-16 rounded-lg" />
+          <Skeleton className="h-16 rounded-lg" />
+          <Skeleton className="h-16 rounded-lg" />
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <PreferencesMatrix prefs={prefs} />
+          {prefs.push_available && <ThisDevice prefs={prefs} />}
+        </div>
+      )}
+    </section>
   );
 }

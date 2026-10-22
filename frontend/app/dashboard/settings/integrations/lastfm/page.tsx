@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { ExternalLink, Loader2 } from 'lucide-react';
@@ -9,11 +8,11 @@ import { toast } from 'sonner';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { PageHeader } from '@/components/page-header';
+import { More } from '@/components/settings/more';
+import { SettingsSection, SettingsSubpage } from '@/components/settings/subpage';
 import { DisconnectMusicDialog } from '@/components/music/disconnect-music-dialog';
 import { LastfmGuide } from '@/components/music/lastfm-guide';
 import { MusicPrefsCard } from '@/components/music/music-prefs-card';
@@ -115,12 +114,12 @@ export default function LastfmIntegrationPage() {
   const syncError = status.data?.last_error;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 py-2 sm:py-4">
-      <Button variant="ghost" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
-        <Link href="/dashboard/settings/integrations">{tI('backToIntegrations')}</Link>
-      </Button>
-
-      <PageHeader title={t('title')} description={t('tagline')} />
+    <SettingsSubpage
+      title={t('title')}
+      backHref="/dashboard/settings/integrations"
+      backLabel={tI('backToIntegrations')}
+      className="max-w-4xl"
+    >
 
       {errorParam && (
         <Alert variant="destructive">
@@ -138,12 +137,9 @@ export default function LastfmIntegrationPage() {
       )}
 
       {status.data && !connected && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('connectTitle')}</CardTitle>
-            <CardDescription>{t('connectDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
+        <SettingsSection title={t('connectTitle')}>
+          <div className="space-y-5">
+            <p className="text-sm text-muted-foreground">{t('summary')}</p>
             {!status.data.configured ? (
               <p className="text-sm text-muted-foreground">{t('notConfigured')}</p>
             ) : (
@@ -202,10 +198,13 @@ export default function LastfmIntegrationPage() {
                     </Button>
                   </div>
                 )}
+                <More>
+                  <p>{t('connectDescription')}</p>
+                </More>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </SettingsSection>
       )}
 
       {/* The 3-step guide: most people have never heard of Last.fm or scrobbling.
@@ -285,6 +284,6 @@ export default function LastfmIntegrationPage() {
         pending={disconnect.isPending}
         onConfirm={onDisconnect}
       />
-    </div>
+    </SettingsSubpage>
   );
 }

@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PollsSection } from '@/components/social/polls-section';
 import { LazyStinky } from '@/components/native/lazy-stinky';
 import { LoadMoreSentinel } from '@/components/native/load-more-sentinel';
 import { FeedDayCard } from '@/components/social/feed-day-card';
@@ -332,7 +333,8 @@ export default function FriendsPage() {
             <CountDot count={summary?.pending_requests ?? 0} label={t('tabs.pendingLabel', { count: summary?.pending_requests ?? 0 })} />
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="feed" className="mt-4">
+        <TabsContent value="feed" className="mt-4 space-y-4">
+          <PollsSection hasFriends={hasFriends} />
           <FeedTab hasFriends={hasFriends} />
         </TabsContent>
         <TabsContent value="friends" className="mt-4">

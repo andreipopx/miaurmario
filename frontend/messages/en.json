@@ -3429,6 +3429,42 @@
         "public": "Now public"
       },
       "error": "Couldn't change it. Try again."
+    },
+    "polls": {
+      "sectionLabel": "Which one should I wear?",
+      "ask": "Which one should I wear? Ask your friends",
+      "mineTitle": "Your question",
+      "askTitle": "{name} asks",
+      "defaultQuestion": "Which one should I wear?",
+      "delete": "Delete question",
+      "option": "Look {n}",
+      "optionLabel": "Vote for look {n}",
+      "voted": "Vote sent to {name}",
+      "voteError": "Couldn't vote. Try again.",
+      "winning": "Look {n} is winning ({count, plural, one {# vote} other {# votes}})",
+      "tied": "Tied ({count, plural, one {# vote} other {# votes}})",
+      "noVotesYet": "No votes yet",
+      "changeVote": "You can change your vote",
+      "tapToVote": "Tap the one you like best",
+      "closes": "closes at {time}",
+      "back": "Friends",
+      "newTitle": "Which one should I wear?",
+      "newBody": "Pick two or three looks and your friends vote. Only they see them, and the vote lasts 12 hours.",
+      "noFriends": "You don't have friends on Miaurmario yet: invite someone so they can vote.",
+      "questionLabel": "Your question (optional)",
+      "questionPlaceholder": "For Saturday dinner?",
+      "pickLooks": "Pick your looks: {count} of {max}",
+      "fewLooksTitle": "You need at least two looks",
+      "fewLooksBody": "Ask Stinky for looks or make your own and come back.",
+      "send": "Ask my friends",
+      "sent": "Asked! Your friends will see it on Today and in Friends",
+      "sendError": "Couldn't send. Try again."
+    },
+    "today": {
+      "title": "Your friends today",
+      "seeAll": "See",
+      "asking": "Which one? Vote",
+      "more": "+{count} more"
     }
   },
   "stinkyChat": {

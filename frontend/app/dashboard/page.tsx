@@ -42,6 +42,7 @@ import { Button } from '@/components/ui/button';
 import { POP_BG, type PopColor } from '@/components/chip';
 import { DayMoments } from '@/components/today/day-moments';
 import { StinkyMeals } from '@/components/today/stinky-meals';
+import { FriendsToday } from '@/components/today/friends-today';
 import { InstallHint } from '@/components/install/install-hint';
 import { GettingStarted } from '@/components/onboarding/getting-started';
 import { FirstStepsCard } from '@/components/onboarding/first-steps-card';
@@ -420,6 +421,7 @@ export default function DashboardPage() {
           {showMoments && <DayMoments />}
           {/* Right under the look: saying you wore it is what feeds him. */}
           {showMoments && <StinkyMeals />}
+          <FriendsToday />
           {/* Blocked on clothes: the wardrobe card is the only nudge. Once looks can
               be made, «Primeros pasos» takes over (and goes away when all is done). */}
           {showMoments ? (

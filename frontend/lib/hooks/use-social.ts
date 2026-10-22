@@ -42,6 +42,8 @@ export interface SearchResult {
 export interface SocialSummary {
   pending_requests: number;
   new_reactions: number;
+  /** Friends' open «¿Cuál me pongo?» not voted on yet. */
+  open_polls?: number;
   total: number;
 }
 
@@ -148,6 +150,7 @@ export const SOCIAL_KEYS = {
   profileOutfits: (username: string) => ['social', 'profile', username, 'outfits'] as const,
   reactions: (outfitId: string) => ['social', 'reactions', outfitId] as const,
   activity: ['social', 'activity'] as const,
+  polls: ['social', 'polls'] as const,
 };
 
 /** The share link for /u/{username}, on whatever origin the app is served from. */
@@ -363,5 +366,72 @@ export function useUnshareOutfit() {
   return useMutation({
     mutationFn: (outfitId: string) => api.delete<Outfit>(`/outfits/${outfitId}/share`),
     onSuccess: onDone,
+  });
+}
+
+
+// --- «¿Cuál me pongo?» -------------------------------------------------------------------
+
+export interface PollOption {
+  outfit: SocialOutfit;
+  /** null until you have voted (the author always sees them). */
+  votes: number | null;
+}
+
+export interface LookPoll {
+  id: string;
+  author: PublicUser;
+  is_mine: boolean;
+  question: string | null;
+  created_at: string;
+  closes_at: string;
+  is_open: boolean;
+  options: PollOption[];
+  total_votes: number;
+  my_vote: string | null;
+}
+
+export interface PollsOverview {
+  mine: LookPoll | null;
+  friends: LookPoll[];
+}
+
+export function usePolls(enabled = true) {
+  return useQuery({
+    queryKey: SOCIAL_KEYS.polls,
+    queryFn: () => api.get<PollsOverview>('/social/polls'),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useCreatePoll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { outfit_ids: string[]; question?: string }) =>
+      api.post<LookPoll>('/social/polls', body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SOCIAL_KEYS.polls }),
+  });
+}
+
+export function useVotePoll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ pollId, outfitId }: { pollId: string; outfitId: string }) =>
+      api.put<LookPoll>(`/social/polls/${pollId}/vote`, { outfit_id: outfitId }),
+    onSuccess: (poll) => {
+      queryClient.setQueryData<PollsOverview>(SOCIAL_KEYS.polls, (prev) =>
+        prev ? { ...prev, friends: prev.friends.map((p) => (p.id === poll.id ? poll : p)) } : prev
+      );
+      void queryClient.invalidateQueries({ queryKey: SOCIAL_KEYS.summary });
+    },
+  });
+}
+
+export function useDeletePoll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (pollId: string) => api.delete(`/social/polls/${pollId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SOCIAL_KEYS.polls }),
   });
 }

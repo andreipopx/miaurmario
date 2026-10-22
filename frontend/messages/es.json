@@ -3429,6 +3429,42 @@
         "public": "Ahora es público"
       },
       "error": "No se ha podido cambiar. Inténtalo de nuevo."
+    },
+    "polls": {
+      "sectionLabel": "¿Cuál me pongo?",
+      "ask": "¿Cuál me pongo? Pregunta a tus amigos",
+      "mineTitle": "Tu pregunta",
+      "askTitle": "{name} pregunta",
+      "defaultQuestion": "¿Cuál me pongo?",
+      "delete": "Borrar pregunta",
+      "option": "Look {n}",
+      "optionLabel": "Votar el look {n}",
+      "voted": "Voto enviado a {name}",
+      "voteError": "No se ha podido votar. Prueba otra vez.",
+      "winning": "Va ganando el look {n} ({count, plural, one {# voto} other {# votos}})",
+      "tied": "Empate ({count, plural, one {# voto} other {# votos}})",
+      "noVotesYet": "Aún sin votos",
+      "changeVote": "Puedes cambiar tu voto",
+      "tapToVote": "Toca el que más te guste",
+      "closes": "cierra a las {time}",
+      "back": "Amigos",
+      "newTitle": "¿Cuál me pongo?",
+      "newBody": "Elige dos o tres looks y tus amigos votan. Solo ellos los ven, y la votación dura 12 horas.",
+      "noFriends": "Aún no tienes amigos en Miaurmario: invita a alguien para que pueda votar.",
+      "questionLabel": "Tu pregunta (opcional)",
+      "questionPlaceholder": "¿Para la cena del sábado?",
+      "pickLooks": "Elige tus looks: {count} de {max}",
+      "fewLooksTitle": "Necesitas al menos dos looks",
+      "fewLooksBody": "Pídele looks a Stinky o crea los tuyos y vuelve aquí.",
+      "send": "Preguntar a mis amigos",
+      "sent": "¡Preguntado! Tus amigos lo verán en Hoy y en Amigos",
+      "sendError": "No se ha podido enviar. Prueba otra vez."
+    },
+    "today": {
+      "title": "Tus amigos hoy",
+      "seeAll": "Ver",
+      "asking": "¿Cuál se pone? Vota",
+      "more": "+{count} más"
     }
   },
   "stinkyChat": {

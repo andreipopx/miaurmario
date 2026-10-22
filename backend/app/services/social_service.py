@@ -88,7 +88,7 @@ def _base_filters(owner_ids: list[UUID], visibilities: tuple[OutfitVisibility, .
     )
 
 
-def _load_options():
+def load_outfit_options():
     return (
         selectinload(Outfit.items)
         .selectinload(OutfitItem.item)
@@ -151,7 +151,7 @@ async def list_feed_groups(
             *_base_filters(owner_ids, visibilities),
             or_(*[and_(Outfit.user_id == g.user_id, FEED_DAY == g.day) for g in groups]),
         )
-        .options(*_load_options())
+        .options(*load_outfit_options())
         .order_by(*_within_day_order())
     )
     by_key = {(g.user_id, g.day): g for g in groups}
@@ -177,7 +177,7 @@ async def list_shared_outfits(
         select(Outfit)
         .join(User, User.id == Outfit.user_id)
         .where(*_base_filters(owner_ids, visibilities))
-        .options(*_load_options())
+        .options(*load_outfit_options())
         .order_by(Outfit.shared_at.desc(), Outfit.id.desc())
         .limit(limit + 1)
     )

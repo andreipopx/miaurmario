@@ -36,6 +36,7 @@ from app.models.outfit import (
     UserFeedback,
 )
 from app.models.pinterest import PinterestBoard, PinterestConnection, PinterestPin
+from app.models.poll import LookPoll, LookPollOption, LookPollVote
 from app.models.preference import UserPreference
 from app.models.schedule import Schedule
 from app.models.spotify import SpotifyConnection
@@ -45,6 +46,9 @@ from app.models.user import User
 from app.models.user_ai_settings import UserAISettings
 
 __all__ = [
+    "LookPoll",
+    "LookPollOption",
+    "LookPollVote",
     "UserActivityDay",
     "AccountDeletion",
     "AdminAuditLog",

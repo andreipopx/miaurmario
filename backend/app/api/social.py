@@ -8,7 +8,7 @@ Privacy rules (enforced here and in `app.services.access_control`):
 - A user who blocked you is indistinguishable from a user that does not exist.
 """
 
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Annotated
 from uuid import UUID
 
@@ -22,6 +22,7 @@ from app.database import get_db
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.item import ClothingItem
 from app.models.outfit import Outfit, OutfitItem, OutfitRating, OutfitVisibility, RatingScope
+from app.models.poll import LookPoll, LookPollOption, LookPollVote
 from app.models.user import User
 from app.schemas.item import GarmentPhoto, ImageViewName
 from app.services import notification_queue
@@ -45,6 +46,7 @@ from app.services.social_service import (
     feed_day,
     list_feed_groups,
     list_shared_outfits,
+    load_outfit_options,
     my_reactions,
     reaction_stats,
     unseen_reaction_count,
@@ -119,6 +121,8 @@ class SearchResult(BaseModel):
 class SocialSummary(BaseModel):
     pending_requests: int
     new_reactions: int
+    #: Friends' open «¿Cuál me pongo?» I have not voted on yet.
+    open_polls: int = 0
     total: int
 
 
@@ -421,8 +425,12 @@ async def social_summary(db: Db, me: CurrentUser) -> SocialSummary:
     """Counts for the in-app badge: pending incoming requests + new reactions."""
     pending = await FriendshipService(db).pending_incoming_count(me)
     reactions = await unseen_reaction_count(db, me)
+    polls = await _open_polls_to_answer(db, me)
     return SocialSummary(
-        pending_requests=pending, new_reactions=reactions, total=pending + reactions
+        pending_requests=pending,
+        new_reactions=reactions,
+        open_polls=polls,
+        total=pending + reactions + polls,
     )
 
 
@@ -723,5 +731,203 @@ async def recent_activity(
 @social_router.post("/activity/seen", status_code=status.HTTP_204_NO_CONTENT)
 async def mark_activity_seen(db: Db, me: CurrentUser) -> Response:
     me.social_seen_at = datetime.now(UTC)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- «¿Cuál me pongo?» ------------------------------------------------------------------
+
+POLL_HOURS = 12
+POLL_DAILY_LIMIT = (10, 86400)
+
+
+class PollOptionOut(BaseModel):
+    outfit: SocialOutfit
+    #: None until the viewer has voted (the author always sees them).
+    votes: int | None = None
+
+
+class PollOut(BaseModel):
+    id: UUID
+    author: PublicUser
+    is_mine: bool
+    question: str | None
+    created_at: datetime
+    closes_at: datetime
+    is_open: bool
+    options: list[PollOptionOut]
+    total_votes: int
+    my_vote: UUID | None = None
+
+
+class PollsOut(BaseModel):
+    mine: PollOut | None = None
+    friends: list[PollOut] = Field(default_factory=list)
+
+
+class PollCreate(BaseModel):
+    outfit_ids: list[UUID] = Field(min_length=2, max_length=3)
+    question: str | None = Field(default=None, max_length=140)
+
+
+class PollVote(BaseModel):
+    outfit_id: UUID
+
+
+def _poll_options():
+    return (
+        selectinload(LookPoll.user),
+        selectinload(LookPoll.votes),
+        selectinload(LookPoll.options)
+        .selectinload(LookPollOption.outfit)
+        .options(*load_outfit_options()),
+    )
+
+
+def _poll_out(poll: LookPoll, me: User, now: datetime) -> PollOut:
+    counts: dict[UUID, int] = {}
+    my_vote = None
+    for vote in poll.votes:
+        counts[vote.outfit_id] = counts.get(vote.outfit_id, 0) + 1
+        if vote.voter_id == me.id:
+            my_vote = vote.outfit_id
+    mine = poll.user_id == me.id
+    show = mine or my_vote is not None or poll.closes_at <= now
+    return PollOut(
+        id=poll.id,
+        author=public_user(poll.user),
+        is_mine=mine,
+        question=poll.question,
+        created_at=poll.created_at,
+        closes_at=poll.closes_at,
+        is_open=poll.closes_at > now,
+        options=[
+            PollOptionOut(
+                outfit=_to_social_outfit(o.outfit, me, {}, {}),
+                votes=counts.get(o.outfit_id, 0) if show else None,
+            )
+            for o in poll.options
+            if o.outfit is not None
+        ],
+        total_votes=len(poll.votes),
+        my_vote=my_vote,
+    )
+
+
+async def _open_polls_to_answer(db: AsyncSession, me: User) -> int:
+    friend_ids = await accepted_friend_ids(db, me.id)
+    if not friend_ids:
+        return 0
+    voted = select(LookPollVote.poll_id).where(LookPollVote.voter_id == me.id)
+    rows = await db.execute(
+        select(LookPoll.id).where(
+            LookPoll.user_id.in_(friend_ids),
+            LookPoll.closes_at > datetime.now(UTC),
+            LookPoll.id.not_in(voted),
+        )
+    )
+    return len(rows.all())
+
+
+@social_router.get("/polls", response_model=PollsOut)
+async def list_polls(db: Db, me: CurrentUser) -> PollsOut:
+    """My latest poll (open, or closed in the last day) and my friends' open ones."""
+    now = datetime.now(UTC)
+    mine = (
+        await db.execute(
+            select(LookPoll)
+            .where(LookPoll.user_id == me.id, LookPoll.closes_at > now - timedelta(days=1))
+            .order_by(LookPoll.created_at.desc())
+            .limit(1)
+            .options(*_poll_options())
+        )
+    ).scalar_one_or_none()
+    friend_ids = await accepted_friend_ids(db, me.id)
+    friends: list[LookPoll] = []
+    if friend_ids:
+        friends = list(
+            (
+                await db.execute(
+                    select(LookPoll)
+                    .where(LookPoll.user_id.in_(friend_ids), LookPoll.closes_at > now)
+                    .order_by(LookPoll.created_at.desc())
+                    .limit(10)
+                    .options(*_poll_options())
+                )
+            ).scalars()
+        )
+    return PollsOut(
+        mine=_poll_out(mine, me, now) if mine else None,
+        friends=[_poll_out(p, me, now) for p in friends],
+    )
+
+
+@social_router.post("/polls", response_model=PollOut, status_code=status.HTTP_201_CREATED)
+async def create_poll(body: PollCreate, db: Db, me: CurrentUser) -> PollOut:
+    """Ask friends which of two or three of my looks to wear. A new question
+    closes the previous one: there is one open «¿Cuál me pongo?» at a time."""
+    await rate_limit_by_user(me.id, "look_poll", *POLL_DAILY_LIMIT)
+    ids = list(dict.fromkeys(body.outfit_ids))
+    if len(ids) < 2:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail={"code": "poll_needs_two"})
+    owned = (
+        await db.execute(
+            select(Outfit)
+            .where(Outfit.id.in_(ids), Outfit.user_id == me.id)
+            .options(selectinload(Outfit.items))
+        )
+    ).scalars()
+    found = {o.id: o for o in owned if o.items}
+    if len(found) != len(ids):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail={"code": "poll_outfit_not_found"})
+    now = datetime.now(UTC)
+    open_mine = await db.execute(
+        select(LookPoll).where(LookPoll.user_id == me.id, LookPoll.closes_at > now)
+    )
+    for poll in open_mine.scalars():
+        poll.closes_at = now
+    question = " ".join((body.question or "").split())[:140] or None
+    poll = LookPoll(user_id=me.id, question=question, closes_at=now + timedelta(hours=POLL_HOURS))
+    poll.options = [LookPollOption(outfit_id=oid, position=i) for i, oid in enumerate(ids)]
+    db.add(poll)
+    await db.commit()
+    loaded = (
+        await db.execute(select(LookPoll).where(LookPoll.id == poll.id).options(*_poll_options()))
+    ).scalar_one()
+    return _poll_out(loaded, me, now)
+
+
+@social_router.put("/polls/{poll_id}/vote", response_model=PollOut)
+async def vote_poll(poll_id: UUID, body: PollVote, db: Db, me: CurrentUser) -> PollOut:
+    now = datetime.now(UTC)
+    poll = (
+        await db.execute(select(LookPoll).where(LookPoll.id == poll_id).options(*_poll_options()))
+    ).scalar_one_or_none()
+    if (
+        poll is None
+        or poll.user_id == me.id
+        or poll.user_id not in await accepted_friend_ids(db, me.id)
+    ):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail={"code": "poll_not_found"})
+    if poll.closes_at <= now:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail={"code": "poll_closed"})
+    if body.outfit_id not in {o.outfit_id for o in poll.options}:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail={"code": "poll_bad_option"})
+    vote = next((v for v in poll.votes if v.voter_id == me.id), None)
+    if vote is None:
+        poll.votes.append(LookPollVote(voter_id=me.id, outfit_id=body.outfit_id))
+    else:
+        vote.outfit_id = body.outfit_id
+    await db.commit()
+    await db.refresh(poll, attribute_names=["votes"])
+    return _poll_out(poll, me, now)
+
+
+@social_router.delete("/polls/{poll_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_poll(poll_id: UUID, db: Db, me: CurrentUser) -> Response:
+    poll = await db.get(LookPoll, poll_id)
+    if poll is None or poll.user_id != me.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail={"code": "poll_not_found"})
+    await db.delete(poll)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Camera, ImagePlus, Link2, ListChecks } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { LazyStinky } from '@/components/native/lazy-stinky';
+import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import {
   MIN_ITEMS_FOR_LOOKS,
   type WardrobeCounts,
@@ -64,74 +64,66 @@ export function FirstStepsCard({ count }: { count: number }) {
       aria-labelledby="first-steps-title"
       data-testid="first-steps"
       data-stage={stage}
-      className="rounded-lg bg-signature-soft p-4 sm:p-6"
+      className="rounded-lg bg-panel p-4"
     >
-      <div className="flex flex-col items-center text-center">
-        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-background">
-          <LazyStinky state={copy.mascot} settleTo="idle" size={112} label="" />
-        </div>
-        <h2
-          id="first-steps-title"
-          className="mt-4 text-[22px] font-extrabold leading-tight tracking-tight"
-        >
+      {/* Stinky says it, small: the card is a line from him, not a poster. */}
+      <div className="flex items-center gap-3">
+        <StinkyAvatar size={40} className="bg-signature-soft" />
+        <h2 id="first-steps-title" className="min-w-0 text-[17px] font-bold leading-snug">
           {t(copy.title)}
         </h2>
-
-        <div className="mt-3 w-full max-w-sm">
-          <p className="text-[15px] font-semibold leading-snug">{t(copy.body, values)}</p>
-          {stage !== 'empty' && (
-            <div
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={goal}
-              aria-valuenow={counts.usable}
-              aria-label={t(copy.body, values)}
-              className="mt-3 h-3 w-full overflow-hidden rounded-full bg-background"
-            >
-              <div
-                className="h-full rounded-full bg-foreground transition-[width] duration-500 motion-reduce:transition-none"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          )}
-          {/* The empty card's body already says what to upload. */}
-          {stage !== 'empty' && <p className="mt-2 text-[13px] text-foreground/70">{t(copy.hint, values)}</p>}
-        </div>
-
-        <Button asChild size="lg" className="mt-5 w-full max-w-sm">
-          <Link href={taggingFirst ? REVIEW_HREF : UPLOAD_HREF}>
-            {taggingFirst ? (
-              <ListChecks className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-            ) : (
-              <Camera className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-            )}
-            {t(copy.cta, values)}
-          </Link>
-        </Button>
-        {taggingFirst && (
-          <Button asChild variant="ghost" size="sm" className="mt-2">
-            <Link href={UPLOAD_HREF}>{t('emptyCta')}</Link>
-          </Button>
-        )}
-        {/* Photographing the wardrobe is where people give up, so the first
-            garments can also come from a screenshot or a shop link. */}
-        {(stage === 'empty' || stage === 'progress') && (
-          <div className="mt-2 grid w-full max-w-sm grid-cols-2 gap-2">
-            <Button asChild variant="secondary">
-              <Link href={SCREENSHOT_HREF}>
-                <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-                {t('fromScreenshot')}
-              </Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href={LINK_HREF}>
-                <Link2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-                {t('fromLink')}
-              </Link>
-            </Button>
-          </div>
-        )}
       </div>
+
+      <p className="mt-3 text-[14px] leading-snug text-muted-foreground">{t(copy.body, values)}</p>
+      {stage !== 'empty' && (
+        <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={goal}
+          aria-valuenow={counts.usable}
+          aria-label={t(copy.body, values)}
+          className="mt-3 h-2 w-full overflow-hidden rounded-full bg-background"
+        >
+          <div
+            className="h-full rounded-full bg-foreground transition-[width] duration-500 motion-reduce:transition-none"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
+
+      <Button asChild className="mt-4 w-full">
+        <Link href={taggingFirst ? REVIEW_HREF : UPLOAD_HREF}>
+          {taggingFirst ? (
+            <ListChecks className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+          ) : (
+            <Camera className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+          )}
+          {t(copy.cta, values)}
+        </Link>
+      </Button>
+      {taggingFirst && (
+        <Button asChild variant="ghost" size="sm" className="mt-2 w-full">
+          <Link href={UPLOAD_HREF}>{t('emptyCta')}</Link>
+        </Button>
+      )}
+      {/* Photographing the wardrobe is where people give up, so the first
+          garments can also come from a screenshot or a shop link. */}
+      {(stage === 'empty' || stage === 'progress') && (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Button asChild variant="ghost" className="bg-background">
+            <Link href={SCREENSHOT_HREF}>
+              <ImagePlus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+              {t('fromScreenshot')}
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className="bg-background">
+            <Link href={LINK_HREF}>
+              <Link2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+              {t('fromLink')}
+            </Link>
+          </Button>
+        </div>
+      )}
     </section>
   );
 }
@@ -139,32 +131,12 @@ export function FirstStepsCard({ count }: { count: number }) {
 type Copy = {
   title: string;
   body: string;
-  hint: string;
   cta: string;
-  mascot: 'wave' | 'happy' | 'thinking';
 };
 
 const COPY: Record<Exclude<WardrobeStage, 'ready'>, Copy> = {
-  empty: { title: 'emptyTitle', body: 'emptyBody', hint: 'progressHint', cta: 'emptyCta', mascot: 'wave' },
-  untagged: {
-    title: 'untaggedTitle',
-    body: 'untagged',
-    hint: 'untaggedHint',
-    cta: 'untaggedCta',
-    mascot: 'thinking',
-  },
-  progress: {
-    title: 'progressTitle',
-    body: 'progress',
-    hint: 'progressHint',
-    cta: 'progressCta',
-    mascot: 'happy',
-  },
-  variety: {
-    title: 'varietyTitle',
-    body: 'variety',
-    hint: 'varietyHint',
-    cta: 'varietyCta',
-    mascot: 'happy',
-  },
+  empty: { title: 'emptyTitle', body: 'emptyBody', cta: 'emptyCta' },
+  untagged: { title: 'untaggedTitle', body: 'untagged', cta: 'untaggedCta' },
+  progress: { title: 'progressTitle', body: 'progress', cta: 'progressCta' },
+  variety: { title: 'varietyTitle', body: 'variety', cta: 'varietyCta' },
 };

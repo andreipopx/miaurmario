@@ -121,9 +121,10 @@ export default function MusicPage() {
           <Skeleton className="h-[220px] w-full" />
         </div>
       ) : overview.isError ? (
-        <EmptyState state="sad" title={t('errorTitle')} description={t('errorBody')} />
+        <EmptyState mascot={false} state="sad" title={t('errorTitle')} description={t('errorBody')} />
       ) : data && !connected && !hasHistory ? (
         <EmptyState
+          mascot={false}
           state="sleepy"
           title={t('emptyTitle')}
           description={data.configured || data.lastfm_configured ? undefined : t('notConfigured')}

@@ -166,7 +166,7 @@ export default function TripPage() {
     return (
       <div className="mx-auto max-w-2xl py-4">
         {back}
-        <EmptyState state="sad" title={t('notFound')} />
+        <EmptyState mascot={false} state="sad" title={t('notFound')} />
       </div>
     );
   }
@@ -200,6 +200,7 @@ export default function TripPage() {
         </div>
       ) : trip.status === 'error' ? (
         <EmptyState
+          mascot={false}
           state="sad"
           title={trip.error === 'wardrobe_too_small' ? t('tooSmall') : t('failed')}
           action={

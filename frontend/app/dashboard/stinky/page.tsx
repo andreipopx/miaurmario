@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowUp, Camera, Compass, History, Loader2, NotebookPen, Plane, Sparkles, Square, SquarePen } from 'lucide-react';
+import { ArrowUp, Camera, Compass, History, Loader2, NotebookPen, Palette, Plane, Sparkles, Square, SquarePen } from 'lucide-react';
 
 import { StinkyAvatar } from '@/components/brand/stinky-avatar';
 import { useStinkyPersona } from '@/components/stinky/stinky-persona';
@@ -42,13 +42,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useKeyboard } from '@/lib/native/keyboard';
 
-/** The rest of what Stinky does, one grey pill each (Tu Stinky lives in Ajustes). */
+/** The rest of what Stinky does, one pop-coloured pill each. */
 const STINKY_ACTIONS = [
-  { key: 'askLook', href: '/dashboard/suggest', icon: Sparkles },
-  { key: 'selfie', href: '/dashboard/selfie', icon: Camera },
-  { key: 'inspiration', href: '/dashboard/inspiration', icon: Compass },
+  { key: 'askLook', href: '/dashboard/suggest', icon: Sparkles, tint: 'bg-pop-amber' },
+  { key: 'selfie', href: '/dashboard/selfie', icon: Camera, tint: 'bg-pop-sky' },
+  { key: 'inspiration', href: '/dashboard/inspiration', icon: Compass, tint: 'bg-pop-mint' },
   // «Modo viaje»: looks and suitcase for a trip.
-  { key: 'trips', href: '/dashboard/trips', icon: Plane },
+  { key: 'trips', href: '/dashboard/trips', icon: Plane, tint: 'bg-pop-sky' },
+  { key: 'customize', href: '/dashboard/stinky/customize', icon: Palette, tint: 'bg-pop-pink' },
 ] as const;
 
 const TOOL_KEYS = new Set([
@@ -513,11 +514,14 @@ function StinkyChat() {
               aria-label={tNav('stinky')}
               className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0"
             >
-              {STINKY_ACTIONS.map(({ key, href, icon: Icon }) => (
+              {STINKY_ACTIONS.map(({ key, href, icon: Icon, tint }) => (
                 <Link
                   key={key}
                   href={href}
-                  className="pressable inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-panel pl-3 pr-4 text-[14px] font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className={cn(
+                    'pressable inline-flex h-10 shrink-0 items-center gap-2 rounded-full pl-3 pr-4 text-[14px] font-bold text-pop-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    tint
+                  )}
                 >
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
                   {tNav(key)}

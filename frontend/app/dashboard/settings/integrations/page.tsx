@@ -1,8 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { AudioLines, Music, Pin } from 'lucide-react';
-
+import { ServiceLogo } from '@/components/brand/service-logos';
 import { SettingsGroup, SettingsRow } from '@/components/settings/settings-list';
 import { SettingsSubpage } from '@/components/settings/subpage';
 import { usePinterestStatus } from '@/lib/hooks/use-pinterest';
@@ -10,12 +9,6 @@ import { useLastfmStatus } from '@/lib/hooks/use-lastfm';
 import { useSpotifyStatus } from '@/lib/hooks/use-spotify';
 
 type Key = 'lastfm' | 'spotify' | 'pinterest';
-
-const ICON: Record<Key, typeof Music> = {
-  lastfm: AudioLines,
-  spotify: Music,
-  pinterest: Pin,
-};
 
 /** Pinterest is waiting on Pinterest, not on this server — say so. */
 const UNAVAILABLE_LABEL: Record<Key, 'status.pending' | 'status.unavailable'> = {
@@ -44,7 +37,13 @@ export default function IntegrationsIndexPage() {
 
   const statusOf = (key: Key, s: (typeof entries)[number]['status']) => {
     if (s.isLoading || !s.data) return undefined;
-    if (s.data.connected) return t('status.connected');
+    if (s.data.connected)
+      return (
+        <>
+          <span className="h-2 w-2 rounded-full bg-pop-mint" aria-hidden />
+          {t('status.connected')}
+        </>
+      );
     if (!s.data.configured) return t(UNAVAILABLE_LABEL[key]);
     return t('status.notConnected');
   };
@@ -56,7 +55,7 @@ export default function IntegrationsIndexPage() {
           <SettingsRow
             key={key}
             href={`/dashboard/settings/integrations/${key}`}
-            icon={ICON[key]}
+            leading={<ServiceLogo service={key} size={32} />}
             label={t(`${key}.title`)}
             value={statusOf(key, status)}
           />

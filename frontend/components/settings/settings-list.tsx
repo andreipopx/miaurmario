@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { POP_BG, type PopColor } from '@/components/chip';
 
 /**
  * iOS-style settings list: groups of rows on one grey panel, a hairline between
- * rows. A row is a name, the current value on the right when it helps («Madrid»,
- * «Claro») and a chevron; the explanation lives on the page it opens.
+ * rows. A row is a coloured icon, a name, the current value on the right when it
+ * helps («Madrid», «Claro») and a chevron; the explanation lives on the page it opens.
  */
 export function SettingsGroup({
   label,
@@ -30,13 +31,19 @@ export function SettingsGroup({
 export function SettingsRow({
   href,
   icon: Icon,
+  tone = 'pink',
+  leading,
   label,
   value,
   onClick,
   className,
 }: {
   href?: string;
-  icon?: LucideIcon;
+  icon?: LucideIcon | React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  /** Colour of the icon's circle, from the Stinky pop palette. */
+  tone?: PopColor;
+  /** Replaces the icon (a service's own logo). */
+  leading?: React.ReactNode;
   label: React.ReactNode;
   /** Current value, shown muted on the right. */
   value?: React.ReactNode;
@@ -45,9 +52,15 @@ export function SettingsRow({
 }) {
   const body = (
     <>
-      {Icon && (
-        <Icon className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden />
-      )}
+      {leading ??
+        (Icon && (
+          <span
+            className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-pop-foreground', POP_BG[tone])}
+            aria-hidden
+          >
+            <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+          </span>
+        ))}
       <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{label}</span>
       {value != null && value !== '' && (
         <span className="flex min-w-0 max-w-[45%] shrink items-center justify-end gap-1 truncate text-sm text-muted-foreground">

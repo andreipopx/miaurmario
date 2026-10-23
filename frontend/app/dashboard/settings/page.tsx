@@ -75,38 +75,38 @@ export default function SettingsPage() {
       <PageHeader title={t('title')} />
 
       <SettingsGroup>
-        <SettingsRow href="/dashboard/settings/account" icon={UserRound} label={t('account.title')} value={profile?.display_name} />
-        <SettingsRow href="/dashboard/settings/appearance" icon={Palette} label={t('appearance.title')} value={themeLabel} />
+        <SettingsRow href="/dashboard/settings/account" icon={UserRound} tone="sky" label={t('account.title')} value={profile?.display_name} />
+        <SettingsRow href="/dashboard/settings/appearance" icon={Palette} tone="pink" label={t('appearance.title')} value={themeLabel} />
         <SettingsRow
           href="/dashboard/settings/security"
-          icon={KeyRound}
+          icon={KeyRound} tone="amber"
           label={t('security.title')}
           value={profile ? (profile.has_password ? t('rows.password') : t('rows.magicLink')) : undefined}
         />
       </SettingsGroup>
 
       <SettingsGroup>
-        <SettingsRow href="/dashboard/stinky/customize" icon={StinkyHeadIcon} label={t('rows.stinky')} value={stinkyName} />
-        <SettingsRow href="/dashboard/settings/style" icon={Wand2} label={t('rows.style')} />
-        <SettingsRow href="/dashboard/settings/memory" icon={NotebookPen} label={t('stinkyMemory.title')} />
-        <SettingsRow href="/dashboard/settings/ai" icon={Sparkles} label={t('rows.ai')} value={ai ? tAi(`access.${ai.access}`) : undefined} />
+        <SettingsRow href="/dashboard/stinky/customize" icon={StinkyHeadIcon} tone="pink" label={t('rows.stinky')} value={stinkyName} />
+        <SettingsRow href="/dashboard/settings/style" icon={Wand2} tone="amber" label={t('rows.style')} />
+        <SettingsRow href="/dashboard/settings/memory" icon={NotebookPen} tone="sky" label={t('stinkyMemory.title')} />
+        <SettingsRow href="/dashboard/settings/ai" icon={Sparkles} tone="mint" label={t('rows.ai')} value={ai ? tAi(`access.${ai.access}`) : undefined} />
       </SettingsGroup>
 
       <SettingsGroup>
-        <SettingsRow href="/dashboard/settings/location" icon={MapPin} label={t('location.title')} value={city} />
-        <SettingsRow href="/dashboard/settings/measurements" icon={Ruler} label={t('measurements.title')} />
+        <SettingsRow href="/dashboard/settings/location" icon={MapPin} tone="sky" label={t('location.title')} value={city} />
+        <SettingsRow href="/dashboard/settings/measurements" icon={Ruler} tone="amber" label={t('measurements.title')} />
         <SettingsRow
           href="/dashboard/settings/colors"
-          icon={SwatchBook}
+          icon={SwatchBook} tone="pink"
           label={t('colors.title')}
           value={<ColorDots colors={preferences?.color_favorites ?? []} />}
         />
-        <SettingsRow href="/dashboard/settings/recommendations" icon={SlidersHorizontal} label={t('recommendations.title')} />
+        <SettingsRow href="/dashboard/settings/recommendations" icon={SlidersHorizontal} tone="mint" label={t('recommendations.title')} />
       </SettingsGroup>
 
       <SettingsGroup>
-        <SettingsRow href="/dashboard/notifications" icon={Bell} label={t('notifications.title')} />
-        <SettingsRow href="/dashboard/settings/integrations" icon={Plug} label={t('integrations.title')} value={connected.join(' · ')} />
+        <SettingsRow href="/dashboard/notifications" icon={Bell} tone="amber" label={t('notifications.title')} />
+        <SettingsRow href="/dashboard/settings/integrations" icon={Plug} tone="mint" label={t('integrations.title')} value={connected.join(' · ')} />
       </SettingsGroup>
     </div>
   );

@@ -7,16 +7,15 @@ import type { StinkyStateInput } from '@/components/stinky/stinky-states';
 /**
  * Empty / error state: a short title, at most one line under it, and the action.
  *
- * Quiet by default — an empty list is not an event, and Stinky only appears where
- * he is saying something. `mascot` brings him back, small and without the pink
- * circle, for the few places where he is the point (his own pages).
+ * Stinky sits on top, in his pink circle: one cat per page. Pass `mascot={false}`
+ * where the page already shows him (a tip, the chat), so he never appears twice.
  */
 export function EmptyState({
   title,
   description,
   action,
   state = 'sleepy',
-  mascot = false,
+  mascot = true,
   className,
 }: {
   title: React.ReactNode;
@@ -30,8 +29,12 @@ export function EmptyState({
 }) {
   return (
     <div className={cn('flex flex-col items-center px-6 py-8 text-center', className)}>
-      {mascot && <LazyStinky state={state} size={72} label="" />}
-      <h2 className={cn('text-[17px] font-bold tracking-tight', mascot && 'mt-3')}>{title}</h2>
+      {mascot && (
+        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-signature-soft">
+          <LazyStinky state={state} size={80} label="" />
+        </div>
+      )}
+      <h2 className={cn('text-[17px] font-bold tracking-tight', mascot && 'mt-4')}>{title}</h2>
       {description && (
         <p className="mt-1 max-w-xs text-[14px] leading-snug text-muted-foreground">{description}</p>
       )}

@@ -12,6 +12,7 @@ import { useConfirm } from '@/components/confirm-provider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { More } from '@/components/settings/more';
+import { ServiceLogo } from '@/components/brand/service-logos';
 import { SettingsSection, SettingsSubpage } from '@/components/settings/subpage';
 import { EmptyState } from '@/components/empty-state';
 import {
@@ -58,7 +59,12 @@ export default function PinterestIntegrationPage() {
 
   return (
     <SettingsSubpage
-      title={t('title')}
+      title={
+        <span className="flex items-center gap-3">
+          <ServiceLogo service="pinterest" size={36} />
+          {t('title')}
+        </span>
+      }
       backHref="/dashboard/settings/integrations"
       backLabel={tI('backToIntegrations')}
       className="max-w-5xl"

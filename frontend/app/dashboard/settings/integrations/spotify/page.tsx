@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { More } from '@/components/settings/more';
+import { ServiceLogo } from '@/components/brand/service-logos';
 import { SettingsSection, SettingsSubpage } from '@/components/settings/subpage';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -67,7 +68,12 @@ export default function SpotifyIntegrationPage() {
 
   return (
     <SettingsSubpage
-      title={t('title')}
+      title={
+        <span className="flex items-center gap-3">
+          <ServiceLogo service="spotify" size={36} />
+          {t('title')}
+        </span>
+      }
       backHref="/dashboard/settings/integrations"
       backLabel={tI('backToIntegrations')}
       className="max-w-4xl"

@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { More } from '@/components/settings/more';
+import { ServiceLogo } from '@/components/brand/service-logos';
 import { SettingsSection, SettingsSubpage } from '@/components/settings/subpage';
 import { DisconnectMusicDialog } from '@/components/music/disconnect-music-dialog';
 import { LastfmGuide } from '@/components/music/lastfm-guide';
@@ -115,7 +116,12 @@ export default function LastfmIntegrationPage() {
 
   return (
     <SettingsSubpage
-      title={t('title')}
+      title={
+        <span className="flex items-center gap-3">
+          <ServiceLogo service="lastfm" size={36} />
+          {t('title')}
+        </span>
+      }
       backHref="/dashboard/settings/integrations"
       backLabel={tI('backToIntegrations')}
       className="max-w-4xl"

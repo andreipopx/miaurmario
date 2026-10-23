@@ -59,7 +59,7 @@ export default function FriendProfilePage() {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
         {back}
-        <EmptyState state="sad" title={notFound ? t('notFoundTitle') : t('errorTitle')} description={notFound ? t('notFoundBody') : undefined} />
+        <EmptyState mascot={false} state="sad" title={notFound ? t('notFoundTitle') : t('errorTitle')} description={notFound ? t('notFoundBody') : undefined} />
       </div>
     );
   }
@@ -132,6 +132,7 @@ export default function FriendProfilePage() {
           </div>
         ) : list.length === 0 ? (
           <EmptyState
+            mascot={false}
             size="sm"
             state="sleepy"
             title={relation === 'friends' || is_me ? t('noLooksTitle') : t('notFriendsTitle')}

@@ -138,7 +138,7 @@ export function usePinterestDisconnect() {
   });
 }
 
-export function usePinterestPins(limit = 50, offset = 0, boardId?: string) {
+export function usePinterestPins(limit = 50, offset = 0, boardId?: string, enabled = true) {
   useSetTokenIfAvailable();
   const params: Record<string, string> = {
     limit: String(limit),
@@ -148,6 +148,7 @@ export function usePinterestPins(limit = 50, offset = 0, boardId?: string) {
   return useQuery({
     queryKey: ['pinterest', 'pins', limit, offset, boardId ?? null],
     queryFn: () => api.get<PinterestPinList>('/pins', { params }),
+    enabled,
   });
 }
 

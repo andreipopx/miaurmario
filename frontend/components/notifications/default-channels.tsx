@@ -49,6 +49,15 @@ const EVENT_ICON: Record<NotificationEvent, React.ReactNode> = {
   daily_outfit: <CalendarHeart className="h-5 w-5" strokeWidth={1.75} />,
 };
 
+const EVENT_BG: Record<NotificationEvent, string> = {
+  morning_look: 'bg-pop-amber',
+  tomorrow_look: 'bg-pop-sky',
+  friend_activity: 'bg-pop-pink',
+  friend_request: 'bg-pop-sky',
+  friend_accepted: 'bg-pop-mint',
+  daily_outfit: 'bg-pop-amber',
+};
+
 const HHMM = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 
 function isTimed(event: NotificationEvent): event is TimedEvent {
@@ -170,7 +179,13 @@ function PreferencesMatrix({ prefs }: { prefs: NotificationPreferences }) {
             <li key={event} className="rounded-lg bg-panel p-3 sm:p-4">
               <div className={cn('grid grid-cols-1 gap-2 min-[380px]:items-center', gridCols)}>
                 <div className="flex min-w-0 items-center gap-3">
-                  <span aria-hidden className="hidden shrink-0 text-muted-foreground min-[400px]:flex">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-pop-foreground sm:h-10 sm:w-10',
+                      EVENT_BG[event]
+                    )}
+                  >
                     {EVENT_ICON[event]}
                   </span>
                   <div className="min-w-0">

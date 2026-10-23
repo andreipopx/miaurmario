@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useClothingTypeLabel } from '@/lib/clothing-type-label';
 import { addDays, isSameDay, startOfWeek } from 'date-fns';
-import { CalendarDays, Camera, ChevronRight, Cloud, CloudRain, CloudSnow, HeartHandshake, MapPin, Shirt, Sparkles, Sun, type LucideIcon } from 'lucide-react';
+import { ChevronRight, Cloud, CloudRain, CloudSnow, HeartHandshake, MapPin, Sun, type LucideIcon } from 'lucide-react';
 import { useWeatherConditionLabel } from '@/lib/weather-condition';
 import { useWeather, type Weather } from '@/lib/hooks/use-weather';
 import { usePreferences } from '@/lib/hooks/use-preferences';
@@ -18,10 +18,10 @@ import { displayValue, tempSymbol, TempUnit } from '@/lib/temperature';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { type PopColor } from '@/components/chip';
 import { DayMoments } from '@/components/today/day-moments';
 import { StinkyMeals } from '@/components/today/stinky-meals';
 import { FriendsToday } from '@/components/today/friends-today';
+import { InspirationTiles } from '@/components/today/inspiration-tiles';
 import { InstallHint } from '@/components/install/install-hint';
 import { GettingStarted } from '@/components/onboarding/getting-started';
 import { FirstStepsCard } from '@/components/onboarding/first-steps-card';
@@ -46,17 +46,6 @@ function SectionHeader({ title, href, cta }: { title: string; href?: string; cta
     </div>
   );
 }
-
-// -- Quick actions ----------------------------------------------------------------
-
-const QUICK_ACTIONS: { key: string; href: string; icon: LucideIcon; color: PopColor }[] = [
-  // Straight to the batch uploader: one garment at a time is what left every
-  // wardrobe empty.
-  { key: 'quickUpload', href: '/dashboard/wardrobe?bulk=1', icon: Camera, color: 'amber' },
-  { key: 'quickCreate', href: '/dashboard/outfits/new', icon: Shirt, color: 'pink' },
-  { key: 'quickAsk', href: '/dashboard/suggest', icon: Sparkles, color: 'sky' },
-  { key: 'quickPlan', href: '/dashboard/outfits?view=calendar', icon: CalendarDays, color: 'mint' },
-];
 
 // -- Week strip + weather -----------------------------------------------------------
 
@@ -276,6 +265,8 @@ export default function DashboardPage() {
           {/* Right under the look: saying you wore it is what feeds him. */}
           {showMoments && <StinkyMeals />}
           <FriendsToday />
+          {/* What he takes ideas from besides the wardrobe, one tap from Hoy. */}
+          {stage !== 'empty' && <InspirationTiles />}
           {/* Blocked on clothes: the wardrobe card is the only nudge. Once looks can
               be made, «Primeros pasos» takes over (and goes away when all is done). */}
           {showMoments ? (

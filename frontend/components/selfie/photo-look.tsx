@@ -355,6 +355,7 @@ export function PhotoLook({ pinId = null }: { pinId?: string | null }) {
 
       {analysis && garments.length === 0 && (
         <EmptyState
+          mascot={false}
           state="sad"
           title={t('nothingFound.title')}
           description={t('nothingFound.description')}

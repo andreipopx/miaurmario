@@ -4470,13 +4470,20 @@
   },
   "inspiration": {
     "title": "Inspiration",
+    "tip": "Besides your wardrobe, I look at what you listen to and what you save.",
     "music": {
       "title": "Your music",
-      "service": "Spotify or Last.fm"
+      "service": "Spotify or Last.fm",
+      "body": "The mood of what is playing goes into your looks.",
+      "connect": "Connect Spotify or Last.fm",
+      "playing": "Playing: {track} · {artist}",
+      "last": "Last played: {track} · {artist}"
     },
     "pins": {
-      "title": "Your pins",
-      "service": "Pinterest"
+      "title": "Your boards",
+      "service": "Pinterest",
+      "connect": "Connect Pinterest",
+      "count": "{count, plural, =0 {No pins yet} one {# pin} other {# pins}}"
     }
   },
   "stinkyCustomize": {

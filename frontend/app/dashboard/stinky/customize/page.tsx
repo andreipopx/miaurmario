@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { Check, Loader2, Minus, Plus } from 'lucide-react';
 
 import { Stinky } from '@/components/stinky/stinky';
+import { StinkySvg } from '@/components/stinky/stinky-svg';
+import { FEATURES } from '@/lib/features';
 import { stinkyNeutralStill } from '@/components/stinky/stinky-states';
 import { useApplyStinkyPersona, useStinkyPersona } from '@/components/stinky/stinky-persona';
 import { Button } from '@/components/ui/button';
@@ -222,20 +224,34 @@ export default function StinkyCustomizePage() {
                     selected ? 'ring-[3px] ring-foreground' : 'group-focus-visible:ring-2 group-focus-visible:ring-ring'
                   )}
                 >
-                  {(['light', 'dark'] as const).map((variant) => (
-                    <img
-                      key={variant}
-                      src={stinkyNeutralStill(variant, { small: true, coat: c, eyes })}
-                      alt=""
-                      aria-hidden
-                      draggable={false}
-                      loading="lazy"
-                      className={cn(
-                        'h-[118%] w-[118%] max-w-none translate-y-[5%] select-none object-contain',
-                        variant === 'light' ? 'block dark:hidden' : 'hidden dark:block'
-                      )}
+                  {FEATURES.svgStinky ? (
+                    // The vector rig in its neutral pose: the coat exactly as it will look.
+                    <StinkySvg
+                      paused
+                      interactive={false}
+                      label=""
+                      size={88}
+                      coat={c}
+                      eyes={eyes}
+                      accessory={null}
+                      className="translate-y-[5%]"
                     />
-                  ))}
+                  ) : (
+                    (['light', 'dark'] as const).map((variant) => (
+                      <img
+                        key={variant}
+                        src={stinkyNeutralStill(variant, { small: true, coat: c, eyes })}
+                        alt=""
+                        aria-hidden
+                        draggable={false}
+                        loading="lazy"
+                        className={cn(
+                          'h-[118%] w-[118%] max-w-none translate-y-[5%] select-none object-contain',
+                          variant === 'light' ? 'block dark:hidden' : 'hidden dark:block'
+                        )}
+                      />
+                    ))
+                  )}
                   {selected && (
                     <span className="absolute bottom-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background">
                       <Check className="h-3 w-3" strokeWidth={3} aria-hidden />

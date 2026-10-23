@@ -124,9 +124,9 @@ beforeEach(() => {
 })
 
 describe('the flags themselves', () => {
-  it('ship with every feature hidden (the SVG Stinky prototype included)', async () => {
+  it('ship laundry and families hidden, and Stinky drawn as the vector rig', async () => {
     const actual = await vi.importActual<typeof import('@/lib/features')>('@/lib/features')
-    expect(actual.FEATURES).toEqual({ laundry: false, families: false, svgStinky: false })
+    expect(actual.FEATURES).toEqual({ laundry: false, families: false, svgStinky: true })
   })
 })
 

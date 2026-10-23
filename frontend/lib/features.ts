@@ -11,11 +11,12 @@
  *   looks, family invite links). Amigos replaces it; the API is untouched.
  * - svgStinky: draw Stinky as the vector rig (components/stinky/stinky-svg.tsx,
  *   lib/stinky-rig.ts) instead of the pre-rendered WebP clips: <Stinky>,
- *   <LazyStinky> and the static <StinkyAvatar> all follow it. Prototype; compare
- *   both at /dashboard/stinky/lab.
+ *   <LazyStinky>, the static <StinkyAvatar> and the coat swatches all follow it.
+ *   On since 2026-10-23; `false` brings the WebP clips back (compare both at
+ *   /dashboard/stinky/lab).
  */
 export const FEATURES = {
   laundry: false,
   families: false,
-  svgStinky: false,
+  svgStinky: true,
 } as const;

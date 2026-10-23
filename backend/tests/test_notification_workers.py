@@ -95,8 +95,13 @@ class TestCheckScheduledNotifications:
             result = await check_scheduled_notifications(ctx)
 
         assert result["enqueued"] == 1
-        enqueue_mock.assert_called_once()
-        call_args = enqueue_mock.call_args
+        # The same run also enqueues the daily alerts of whichever users of the
+        # shared test database are due at this hour: count only the schedule's job.
+        scheduled = [
+            c for c in enqueue_mock.call_args_list if c.args[0] == "process_scheduled_notification"
+        ]
+        assert len(scheduled) == 1
+        call_args = scheduled[0]
         assert call_args.args == ("process_scheduled_notification", str(schedule.id))
         assert call_args.kwargs["_queue_name"] == "arq:tagging"
         assert call_args.kwargs["_job_id"].startswith(f"sched:{schedule.id}:")
